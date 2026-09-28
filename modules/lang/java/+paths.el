@@ -69,6 +69,9 @@ the newest such JDK `bin/hellmacs sync' found. Projects compile against
 other JDKs: see `hellmacs-jdks'."
   :type '(choice (const :tag "Choose one" nil) directory))
 
+(defvar hellmacs-jvm-maven-toolchains "~/.m2/toolchains.xml"
+  "Maven's toolchains.xml, which `bin/hellmacs doctor' checks. Only read.")
+
 (defun hellmacs-jvm--path-java-home ()
   "The JDK home of the java on the PATH, or nil."
   (when-let* ((java (executable-find "java")))

@@ -268,5 +268,91 @@
                      (funcall home "j25")))
       (should-not (hellmacs-jdk-pick (list (funcall home "j27") (funcall home "j8")) 21 25)))))
 
+(ert-deftest test-jdk/toolchains-xml-jdks ()
+  "toolchains.xml's JDKs, with the home each gives."
+  (test-jdk--with-fake-fs
+      '("m2")
+      '(("m2/toolchains.xml" . "<toolchains>
+  <toolchain><type>jdk</type><provides><version>1.8</version></provides>
+    <configuration><jdkHome>/opt/jdks/jdk-8</jdkHome></configuration></toolchain>
+  <toolchain><type>jdk</type><provides><version>17</version></provides></toolchain>
+</toolchains>"))
+    (should (equal (hellmacs-jdk-toolchains-xml-jdks (expand-file-name "m2/toolchains.xml" test-jdk--root))
+                   '(("JavaSE-1.8" . "/opt/jdks/jdk-8") ("JavaSE-17"))))))
+
+(ert-deftest test-jdk/gradle-build-request ()
+  "What a Gradle build asks its toolchain for, and where, from anywhere inside it."
+  (test-jdk--with-fake-fs
+      '("app/src/main/java")
+      '(("app/settings.gradle" . "rootProject.name = 'app'\n")
+        ("app/build.gradle" . "plugins {\n    id 'java'\n}\n\njava {\n    toolchain {\n        languageVersion = JavaLanguageVersion.of(11)\n    }\n}\n"))
+    (let ((root (expand-file-name "app/" test-jdk--root)))
+      (should (equal (hellmacs-jdk-build-request (expand-file-name "src/main/java/" root))
+                     (list :tool 'gradle :release "JavaSE-11"
+                           :file (expand-file-name "build.gradle" root) :line 7)))))
+  (test-jdk--with-fake-fs
+      '("k")
+      '(("k/build.gradle.kts" . "kotlin {\n    jvmToolchain(17)\n}\n"))
+    (should (equal (plist-get (hellmacs-jdk-build-request (expand-file-name "k/" test-jdk--root)) :release)
+                   "JavaSE-17")))
+  (test-jdk--with-fake-fs
+      '("plain")
+      '(("plain/build.gradle" . "plugins { id 'java' }\n"))
+    (should-not (hellmacs-jdk-build-request (expand-file-name "plain/" test-jdk--root)))))
+
+(ert-deftest test-jdk/maven-build-request ()
+  "What maven-toolchains-plugin asks for, in either of its forms; nothing without it."
+  (test-jdk--with-fake-fs
+      '("m" "s" "none")
+      '(("m/pom.xml" . "<project>
+  <build><plugins>
+    <plugin>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <configuration><release>8</release></configuration>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-toolchains-plugin</artifactId>
+      <configuration>
+        <toolchains>
+          <jdk>
+            <version>[17,)</version>
+          </jdk>
+        </toolchains>
+      </configuration>
+    </plugin>
+  </plugins></build>
+</project>")
+        ("s/pom.xml" . "<project><build><plugins><plugin>
+<artifactId>maven-toolchains-plugin</artifactId>
+<configuration>
+<version>21</version>
+</configuration></plugin></plugins></build></project>")
+        ("none/pom.xml" . "<project><properties><maven.compiler.release>8</maven.compiler.release></properties></project>"))
+    (should (equal (hellmacs-jdk-build-request (expand-file-name "m/" test-jdk--root))
+                   (list :tool 'maven :release "JavaSE-17"
+                         :file (expand-file-name "m/pom.xml" test-jdk--root) :line 13)))
+    (should (equal (plist-get (hellmacs-jdk-build-request (expand-file-name "s/" test-jdk--root)) :release)
+                   "JavaSE-21"))
+    (should-not (hellmacs-jdk-build-request (expand-file-name "none/" test-jdk--root)))))
+
+(ert-deftest test-jdk/gradle-installations-and-provisioning ()
+  "Gradle's own JDK list (installations.paths) and whether it downloads JDKs."
+  (test-jdk--with-fake-fs
+      '("gh" "proj")
+      '(("gh/gradle.properties" . "org.gradle.jvmargs=-Xmx1g\norg.gradle.java.installations.paths=/opt/a, /opt/b\n")
+        ("proj/gradle.properties" . "org.gradle.java.installations.paths=/opt/c\n")
+        ("proj/settings.gradle.kts" . "plugins {\n    id(\"org.gradle.toolchains.foojay-resolver-convention\") version \"1.0.0\"\n}\n"))
+    (let ((process-environment (cons (concat "GRADLE_USER_HOME=" (expand-file-name "gh" test-jdk--root))
+                                     process-environment))
+          (proj (expand-file-name "proj/" test-jdk--root)))
+      (should (equal (hellmacs-jdk-gradle-installation-paths proj) '("/opt/c" "/opt/a" "/opt/b")))
+      (should (hellmacs-jdk-gradle-provisions-p proj))
+      (should-not (hellmacs-jdk-gradle-provisions-p (expand-file-name "gh/" test-jdk--root))))))
+
+(ert-deftest test-jdk/default-roots-include-intellij ()
+  "IntelliJ's downloaded JDKs (~/.jdks), which Gradle finds too."
+  (should (member (expand-file-name "~/.jdks") (hellmacs-jdk-default-roots))))
+
 (provide 'test-jdk)
 ;;; test-jdk.el ends here

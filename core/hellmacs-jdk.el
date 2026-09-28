@@ -122,7 +122,8 @@ nil searches `hellmacs-jdk-default-roots'.")
           (expand-file-name "~/Library/Java/JavaVirtualMachines")
           (expand-file-name "installs/java" (funcall env "ASDF_DATA_DIR" "~/.asdf"))
           (expand-file-name "versions" (funcall env "JENV_ROOT" "~/.jenv"))
-          (expand-file-name "installs/java" (funcall env "MISE_DATA_DIR" "~/.local/share/mise")))))
+          (expand-file-name "installs/java" (funcall env "MISE_DATA_DIR" "~/.local/share/mise"))
+          (expand-file-name "~/.jdks"))))       ; IntelliJ's downloads, which Gradle finds too
 
 (defun hellmacs-jdk--homes (root)
   "The JDK homes directly under ROOT; macOS keeps a JDK's in Contents/Home."
@@ -227,10 +228,124 @@ A version range (\"[11,)\") names its lower bound."
       (nreverse releases))))
 
 ;;;###autoload
+(defun hellmacs-jdk-toolchains-xml-jdks (file)
+  "The JDKs Maven's toolchains.xml FILE lists, as (RELEASE . JDK-HOME).
+JDK-HOME is nil for an entry without one."
+  (when (file-readable-p file)
+    (require 'xml)
+    (let ((root (car (ignore-errors (xml-parse-file file))))
+          (text (lambda (node &rest path)
+                  (dolist (name path) (setq node (car (xml-get-children node name))))
+                  (let ((value (car (xml-node-children node))))
+                    (and (stringp value) (string-trim value)))))
+          jdks)
+      (dolist (toolchain (and root (xml-get-children root 'toolchain)))
+        (let ((version (funcall text toolchain 'provides 'version)))
+          (when (and (equal (funcall text toolchain 'type) "jdk") version
+                     (string-match "[0-9][0-9.]*" version))
+            (when-let* ((name (hellmacs-jdk-release-name (match-string 0 version))))
+              (push (cons name (funcall text toolchain 'configuration 'jdkHome)) jdks)))))
+      (nreverse jdks))))
+
+(defconst hellmacs-jdk--gradle-toolchain-regexp
+  "\\(?:JavaLanguageVersion\\.of\\|jvmToolchain\\)(\\s-*\\([0-9]+\\)\\s-*)"
+  "A Gradle toolchain request: Java's `JavaLanguageVersion.of(N)', Kotlin's `jvmToolchain(N)'.")
+
+;;;###autoload
 (defun hellmacs-jdk-parse-gradle-toolchain (content)
   "The release a Gradle build script's CONTENT asks its toolchain for, or nil."
-  (when (string-match "JavaLanguageVersion\\.of(\\s-*\\([0-9]+\\)\\s-*)" content)
+  (when (string-match hellmacs-jdk--gradle-toolchain-regexp content)
     (hellmacs-jdk-release-name (match-string 1 content))))
+
+(defun hellmacs-jdk--gradle-root (dir)
+  "The root of the Gradle build around DIR (where settings.gradle is), or nil."
+  (locate-dominating-file dir (lambda (d) (seq-some (lambda (f) (file-exists-p (expand-file-name f d)))
+                                                    '("settings.gradle" "settings.gradle.kts")))))
+
+(defun hellmacs-jdk--gradle-request (file)
+  "(RELEASE . LINE) of the toolchain request in Gradle build FILE, or nil."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (when (re-search-forward hellmacs-jdk--gradle-toolchain-regexp nil t)
+      (let ((line (line-number-at-pos (match-beginning 0)))) ; before the match data changes
+        (when-let* ((name (hellmacs-jdk-release-name (match-string 1))))
+          (cons name line))))))
+
+(defun hellmacs-jdk--maven-request (file)
+  "(RELEASE . LINE) of what maven-toolchains-plugin in pom FILE asks for, or nil.
+Its `toolchains' goal's <toolchains><jdk><version>, or 3.2's
+`select-jdk-toolchain' <version>: either way, inside its <configuration>."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (when (re-search-forward "<artifactId>\\s-*maven-toolchains-plugin\\s-*</artifactId>" nil t)
+      (let ((end (save-excursion (or (re-search-forward "</plugin>" nil t) (point-max)))))
+        (when (and (re-search-forward "<configuration>" end t)
+                   (re-search-forward "<version>\\s-*\\([^<]+\\)</version>" end t))
+          (let ((version (match-string 1)) (line (line-number-at-pos (match-beginning 0))))
+            (when (string-match "[0-9][0-9.]*" version)
+              (when-let* ((name (hellmacs-jdk-release-name (match-string 0 version))))
+                (cons name line)))))))))
+
+;;;###autoload
+(defun hellmacs-jdk-build-request (dir)
+  "The JDK the build around DIR asks for: (:tool TOOL :release R :file F :line N).
+TOOL is `gradle' (a toolchain in the nearest build script, else the
+root's) or `maven' (maven-toolchains-plugin in the nearest pom.xml);
+nil when the build asks for none."
+  (let* ((dir (file-name-as-directory (expand-file-name dir)))
+         (scripts '("build.gradle" "build.gradle.kts"))
+         (gradle-files (delete-dups
+                        (delq nil (mapcar (lambda (d)
+                                            (when d
+                                              (seq-some (lambda (f) (let ((file (expand-file-name f d)))
+                                                                      (and (file-exists-p file) file)))
+                                                        scripts)))
+                                          (list (locate-dominating-file
+                                                 dir (lambda (d) (seq-some (lambda (f) (file-exists-p (expand-file-name f d)))
+                                                                           scripts)))
+                                                (hellmacs-jdk--gradle-root dir))))))
+         (pom (when-let* ((d (locate-dominating-file dir "pom.xml"))) (expand-file-name "pom.xml" d))))
+    (or (seq-some (lambda (file)
+                    (when-let* ((found (hellmacs-jdk--gradle-request file)))
+                      (list :tool 'gradle :release (car found) :file file :line (cdr found))))
+                  gradle-files)
+        (when-let* ((found (and pom (hellmacs-jdk--maven-request pom))))
+          (list :tool 'maven :release (car found) :file pom :line (cdr found))))))
+
+(defun hellmacs-jdk--property (file key)
+  "The value of KEY in the Java properties FILE, or nil."
+  (when (file-readable-p file)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (when (re-search-forward (concat "^[ \t]*" (regexp-quote key) "[ \t]*[=:][ \t]*\\(.*\\)$") nil t)
+        (string-trim (match-string 1))))))
+
+;;;###autoload
+(defun hellmacs-jdk-gradle-installation-paths (dir)
+  "The JDKs listed for Gradle in org.gradle.java.installations.paths.
+From the gradle.properties of the build around DIR, then of the Gradle
+user home ($GRADLE_USER_HOME, else ~/.gradle)."
+  (let ((home (or (let ((h (getenv "GRADLE_USER_HOME"))) (and h (not (string-empty-p h)) h))
+                  "~/.gradle")))
+    (mapcan (lambda (props)
+              (when-let* ((value (hellmacs-jdk--property props "org.gradle.java.installations.paths")))
+                (split-string value "[ \t]*,[ \t]*" t)))
+            (list (expand-file-name "gradle.properties" (or (hellmacs-jdk--gradle-root dir) dir))
+                  (expand-file-name "gradle.properties" home)))))
+
+;;;###autoload
+(defun hellmacs-jdk-gradle-provisions-p (dir)
+  "Non-nil if the Gradle build around DIR downloads the JDKs it lacks.
+That takes a toolchain resolver in its settings (the foojay plugin, or
+a `toolchainManagement' block)."
+  (let ((root (or (hellmacs-jdk--gradle-root dir) dir)))
+    (seq-some (lambda (name)
+                (let ((file (expand-file-name name root)))
+                  (and (file-readable-p file)
+                       (with-temp-buffer
+                         (insert-file-contents file)
+                         (re-search-forward "foojay-resolver\\|toolchainManagement" nil t)))))
+              '("settings.gradle" "settings.gradle.kts"))))
 
 (provide 'hellmacs-jdk)
 ;;; hellmacs-jdk.el ends here

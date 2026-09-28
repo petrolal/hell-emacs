@@ -120,6 +120,54 @@ Says which it is, and why JAVA_HOME's or the PATH's was passed over."
   (unless (getenv "JAVA_HOME")
     (hellmacs-doctor-info "JAVA_HOME isn't set")))
 
+(defun hellmacs-jvm--major-string (release)
+  "RELEASE (\"JavaSE-1.8\") as its major number (\"8\")."
+  (number-to-string (hellmacs-jdk--major (replace-regexp-in-string "\\`[A-Za-z0-9]+-" "" release))))
+
+(defun hellmacs-jvm-doctor-toolchains (dir)
+  "Check the JDKs builds ask for: Maven's toolchains.xml, and the build around DIR.
+Every JDK toolchains.xml lists must be there. A Gradle toolchain needs a
+JDK of its release where Gradle looks (or a resolver to download one); a
+Maven toolchain, an entry in toolchains.xml. Build files are only read."
+  (let* ((xml (expand-file-name hellmacs-jvm-maven-toolchains))
+         (listed (hellmacs-jdk-toolchains-xml-jdks xml))
+         (request (hellmacs-jdk-build-request dir)))
+    (pcase-dolist (`(,release . ,home) listed)
+      (let ((major (hellmacs-jvm--major-string release))
+            (actual (and home (hellmacs-jdk-home-release home))))
+        (cond ((null home)
+               (hellmacs-doctor-warn "%s lists a JDK %s with no jdkHome" (abbreviate-file-name xml) major))
+              ((equal actual release)
+               (hellmacs-doctor-ok "Maven toolchain JDK %s: %s" major (abbreviate-file-name home)))
+              (t (hellmacs-doctor-error "%s gives %s for JDK %s, which %s" (abbreviate-file-name xml)
+                                        (abbreviate-file-name home) major
+                                        (if actual (format "is a JDK %s" (hellmacs-jvm--major-string actual))
+                                          "isn't a JDK"))))))
+    (when request
+      (let* ((release (plist-get request :release))
+             (major (hellmacs-jvm--major-string release))
+             (where (format "%s:%d" (file-name-nondirectory (plist-get request :file)) (plist-get request :line)))
+             (asks (format "%s asks for a JDK %s toolchain" where major)))
+        (pcase (plist-get request :tool)
+          ('gradle
+           (let ((home (seq-find (lambda (home) (equal (hellmacs-jdk-home-release home) release))
+                                 (append (mapcar #'cdr (hellmacs-jdk-detect))
+                                         (hellmacs-jdk-gradle-installation-paths dir)))))
+             (cond (home (hellmacs-doctor-ok "%s: %s" asks (abbreviate-file-name home)))
+                   ((hellmacs-jdk-gradle-provisions-p dir)
+                    (hellmacs-doctor-info "%s; none is installed, so Gradle downloads one (its toolchain resolver)" asks))
+                   (t (hellmacs-doctor-error "%s, and none is installed. Install one (SDKMAN, your package manager), or list it in org.gradle.java.installations.paths (~/.gradle/gradle.properties)"
+                                             asks)))))
+          ('maven
+           (let ((home (cdr (seq-find (lambda (jdk) (and (equal (car jdk) release) (cdr jdk)
+                                                         (equal (hellmacs-jdk-home-release (cdr jdk)) release)))
+                                      listed))))
+             (if home
+                 (hellmacs-doctor-ok "%s: %s" asks (abbreviate-file-name home))
+               (hellmacs-doctor-error "%s, and %s %s. Add the JDK there (<toolchain> of type jdk, with its jdkHome)"
+                                      asks (abbreviate-file-name xml)
+                                      (if (file-exists-p xml) "has none" "doesn't exist"))))))))))
+
 ;;; JDKs for projects (Phase 12.3) ---------------------------------------------
 
 (defun hellmacs-jvm-sync-detect-jdks ()

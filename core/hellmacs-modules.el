@@ -697,7 +697,9 @@ this file for the order."
 (dolist (fn '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
               hellmacs-jdk-home-release hellmacs-jdk-home-major hellmacs-jdk-pick hellmacs-jdk-default-roots hellmacs-jdk-scan-roots hellmacs-jdk-detect
               hellmacs-jdk-write hellmacs-jdk-read hellmacs-jdk-lsp-runtimes
-              hellmacs-jdk-parse-toolchains-xml hellmacs-jdk-parse-gradle-toolchain))
+              hellmacs-jdk-parse-toolchains-xml hellmacs-jdk-parse-gradle-toolchain
+              hellmacs-jdk-toolchains-xml-jdks hellmacs-jdk-build-request
+              hellmacs-jdk-gradle-installation-paths hellmacs-jdk-gradle-provisions-p))
   (autoload fn "hellmacs-jdk"))
 
 (provide 'hellmacs-modules)

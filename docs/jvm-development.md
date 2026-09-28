@@ -44,6 +44,12 @@ JDTLS itself runs on one JDK, and each project compiles against the JDK of the r
 * A program you debug (`:tools debugger`) runs on its project's JDK too: a Java 8 program on JDK 8. A `:javaExec` in your own launch configuration wins.
 * The command-line build (`C-x p c`) runs on the JDK its environment gives it, as in a terminal. Maven needs `JAVA_HOME` to be the project's JDK: give the project an `.envrc` (next section). Gradle finds the JDK its toolchain asks for on its own, if it's installed where Gradle looks.
 
+### Build toolchains
+Builds that ask for a JDK themselves keep doing so; Hellmacs only reads their files, never changes them.
+* **Gradle** (`JavaLanguageVersion.of(N)`, or Kotlin's `jvmToolchain(N)`) finds the JDK on its own: where Hellmacs looks too, plus `org.gradle.java.installations.paths`, or it downloads one if the build has a toolchain resolver. If it can't, JDTLS's import fails and the echo area says which JDK is missing.
+* **Maven** (`maven-toolchains-plugin`) takes it from `~/.m2/toolchains.xml`.
+* Run `bin/hellmacs doctor` inside a project to check. It names a JDK the build asks for that isn't there, with the file and line that asked (`build.gradle:10 asks for a JDK 11 toolchain, and none is installed`). It also checks that every JDK `~/.m2/toolchains.xml` lists exists and is the release it claims.
+
 ### Per-project environments (`:tools direnv`)
 A project's `.envrc`, run by [direnv](https://direnv.net), sets its own `JAVA_HOME`, `MAVEN_OPTS`, `GRADLE_USER_HOME`, proxy variables and so on. With `:tools direnv` (on by default), those apply to that project's buffers only. Everything started from them gets them: the build and tests (`C-x p c`, `C-c l j t`), shell commands, a language server. Switch to another project's buffer and its own environment applies.
 ```sh

@@ -325,6 +325,7 @@ yours (`hellmacs-jdks', or runtimes you set) win."
       (delete-file hellmacs-jdk-file))))
 
 (defvar hellmacs-jvm-jdtls-java-max)
+(defvar hellmacs-jdk-roots)
 
 (defmacro test-java--with-jdks (&rest body)
   "Run BODY with fake JDK homes `j21', `j25' and `j27', all stored by sync,
@@ -337,6 +338,7 @@ no JAVA_HOME, and no java on the PATH."
           (hellmacs-jdk-file (expand-file-name "jdks.eld" root))
           (hellmacs-jvm-java-home nil)
           (hellmacs-jvm-jdtls-java-max 25)
+          (hellmacs-jdk-roots (list root))  ; live detection sees only these
           (exec-path nil)
           (process-environment (cons "JAVA_HOME" process-environment)))
      (unwind-protect
@@ -404,6 +406,76 @@ a :javaExec you gave is kept, and without an answer java-debug decides."
                            :javaExec))
     (should-not (plist-get (hellmacs-jvm--launch-on-project-jdk-a (list :request "attach"))
                            :javaExec))))
+
+(defvar hellmacs-jvm-maven-toolchains)
+
+(defun test-java--doctor-toolchains (dir)
+  "What `hellmacs-jvm-doctor-toolchains' reports for DIR."
+  (with-output-to-string (hellmacs-jvm-doctor-toolchains dir)))
+
+(ert-deftest test-java/doctor-gradle-toolchain ()
+  "A Gradle toolchain's JDK: found, missing (named with where it's asked for), or downloaded."
+  (test-java--load-cli)
+  (test-java--with-jdks
+    (let* ((proj (expand-file-name "proj/" root))
+           (hellmacs-cli--problems 0)
+           (hellmacs-jvm-maven-toolchains (expand-file-name "none.xml" root))
+           (process-environment (cons (concat "GRADLE_USER_HOME=" (expand-file-name "gh" root))
+                                      process-environment)))
+      (make-directory proj t)
+      (with-temp-file (expand-file-name "build.gradle" proj)
+        (insert "plugins { id 'java' }\njava {\n  toolchain {\n    languageVersion = JavaLanguageVersion.of(11)\n  }\n}\n"))
+      (let ((out (test-java--doctor-toolchains proj)))
+        (should (string-match-p "✗ build.gradle:4 asks for a JDK 11 toolchain, and none is installed" out))
+        (should (= hellmacs-cli--problems 1)))
+      ;; Listed for Gradle in org.gradle.java.installations.paths.
+      (let ((j11 (expand-file-name "elsewhere/j11" root))) ; not where JDKs are looked for
+        (make-directory j11 t)
+        (with-temp-file (expand-file-name "release" j11) (insert "JAVA_VERSION=\"11.0.2\"\n"))
+        (with-temp-file (expand-file-name "gradle.properties" proj)
+          (insert "org.gradle.java.installations.paths=" j11 "\n"))
+        (should (string-match-p (concat "✓ build.gradle:4 asks for a JDK 11 toolchain: "
+                                        (regexp-quote (abbreviate-file-name j11)))
+                                (test-java--doctor-toolchains proj)))
+        (delete-file (expand-file-name "gradle.properties" proj)))
+      ;; A toolchain resolver: Gradle downloads it.
+      (with-temp-file (expand-file-name "settings.gradle" proj)
+        (insert "plugins { id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0' }\n"))
+      (let ((hellmacs-cli--problems 0))
+        (should (string-match-p "· build.gradle:4 asks for a JDK 11 toolchain; none is installed, so Gradle downloads one"
+                                (test-java--doctor-toolchains proj)))
+        (should (zerop hellmacs-cli--problems))))))
+
+(ert-deftest test-java/doctor-maven-toolchains ()
+  "Maven's toolchains.xml: each JDK it lists must be there; the build's request must be listed."
+  (test-java--load-cli)
+  (test-java--with-jdks
+    (let ((proj (expand-file-name "mproj/" root))
+          (hellmacs-jvm-maven-toolchains (expand-file-name "toolchains.xml" root))
+          (hellmacs-cli--problems 0))
+      (make-directory proj t)
+      (with-temp-file (expand-file-name "pom.xml" proj)
+        (insert "<project><build><plugins><plugin>\n<artifactId>maven-toolchains-plugin</artifactId>\n"
+                "<configuration><toolchains><jdk>\n<version>25</version>\n</jdk></toolchains></configuration>\n"
+                "</plugin></plugins></build></project>\n"))
+      (with-temp-file hellmacs-jvm-maven-toolchains
+        (insert (format "<toolchains>
+<toolchain><type>jdk</type><provides><version>21</version></provides><configuration><jdkHome>%s</jdkHome></configuration></toolchain>
+<toolchain><type>jdk</type><provides><version>17</version></provides><configuration><jdkHome>/nowhere/17</jdkHome></configuration></toolchain>
+</toolchains>" j21)))
+      (let ((out (test-java--doctor-toolchains proj)))
+        (should (string-match-p (concat "✓ Maven toolchain JDK 21: " (regexp-quote (abbreviate-file-name j21))) out))
+        (should (string-match-p "✗ .*toolchains.xml gives /nowhere/17 for JDK 17, which isn't a JDK" out))
+        (should (string-match-p "✗ pom.xml:4 asks for a JDK 25 toolchain, and .*toolchains.xml has none" out))
+        (should (= hellmacs-cli--problems 2)))
+      (with-temp-file hellmacs-jvm-maven-toolchains
+        (insert (format "<toolchains><toolchain><type>jdk</type><provides><version>25</version></provides><configuration><jdkHome>%s</jdkHome></configuration></toolchain></toolchains>" j25)))
+      (let ((hellmacs-cli--problems 0))
+        (should (string-match-p (concat "✓ pom.xml:4 asks for a JDK 25 toolchain: " (regexp-quote (abbreviate-file-name j25)))
+                                (test-java--doctor-toolchains proj)))
+        (should (zerop hellmacs-cli--problems)))
+      ;; Outside any build: only toolchains.xml is checked.
+      (should-not (string-match-p "asks for" (test-java--doctor-toolchains root))))))
 
 (provide 'test-java)
 ;;; test-java.el ends here

@@ -32,6 +32,10 @@
 ;; The JDKs projects compile against, each for its own release (cli.el).
 (hellmacs-jvm-doctor-jdks)
 
+;; The JDKs builds ask for: Maven's toolchains.xml, and the toolchain of
+;; the build doctor runs in (cli.el).
+(hellmacs-jvm-doctor-toolchains default-directory)
+
 ;; The build tools' own settings, which JDTLS imports with (config.el):
 ;; internal repositories and mirrors configured there work in Emacs too.
 (let ((file (expand-file-name (or (bound-and-true-p hellmacs-maven-settings) "~/.m2/settings.xml"))))

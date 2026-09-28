@@ -110,7 +110,7 @@ them, the principle wins and the feature finds another way.
 | **Phase 11** | Consolidation & Tooling | **DONE [x]** | Unified server status, declarations, compiled startup, shared test helpers |
 | **Phase 12.1** | Corporate Networks & Proxies | **DONE [x]** | Corporate CA bundles, HTTP proxies, Artifactory/Nexus, doctor probes, offline bundles & E2E verification |
 | **Phase 12.2** | Platforms & CI | **DONE [x]** | GitHub Actions multi-OS matrix (Linux x86_64/arm64, macOS Apple Silicon/Intel), WSL2 support & platform checks |
-| **Phase 12.3** | Multi-JDKs & Build Environments | **IN PROGRESS [/]** | Side-by-side JDK auto-discovery, per-project toolchains and direnv |
+| **Phase 12.3** | Multi-JDKs & Build Environments | **DONE [x]** | Side-by-side JDK auto-discovery, per-project toolchains and direnv |
 | **Phase 12.4-12.6** | Spring Boot & Toolbelt | **PLANNED [ ]** | Spring profiles, JUnit XML, database clients, `.http` REST files |
 | **Phase 12.7-12.11** | Enterprise Scale & 1.0 Pilot | **PLANNED [ ]** | SBOM generator, license compliance, migration guides, real pilot |
 | **Phase 13** | Hellmacs Manual & Purist Onboarding | **PLANNED [ ]** | GNU Info manual, Vanilla startup actions on The Altar, C-h help suite |
@@ -172,7 +172,7 @@ them, the principle wins and the feature finds another way.
   - [x] Corporate HTTP proxy & custom internal CA certificate management (12.1)
   - [x] Standalone offline bundle builder for zero-internet environments (12.1)
   - [ ] Multi-platform CI (macOS arm64/x86_64, Windows WSL/native) (12.2)
-  - [ ] Dynamic multi-JDK switching and directory-based toolchains (12.3)
+  - [x] Dynamic multi-JDK switching and directory-based toolchains (12.3)
   - [ ] Spring Boot dashboard & active profile launcher (`application-*.yml`) (12.4)
   - [ ] JUnit XML test reports and code coverage visualization (12.5)
   - [ ] Database client and `.http` REST execution tooling (12.6)
@@ -2963,10 +2963,47 @@ JDTLS's installer uses.
       never runs `after-init-hook`, so the first-file hooks never fire
       there. The script ends startup itself; interactive sessions are
       unaffected.
-- [ ] **Toolchains.** Gradle toolchains and Maven `toolchains.xml` are read,
+- [x] **Toolchains.** Gradle toolchains and Maven `toolchains.xml` are read,
       not replaced. When a build asks for a JDK that isn't installed, JDTLS's
       import failure already says so (Phase 6), and `doctor` names the
-      missing release and where the build asked for it.
+      missing release and where the build asked for it. (2026-09-28)
+  - *Done:*
+    - `core/hellmacs-jdk.el` reads what a build asks for, with its file and
+      line (`hellmacs-jdk-build-request`):
+      - Gradle's `JavaLanguageVersion.of(N)` or Kotlin's `jvmToolchain(N)`,
+        in the nearest build script, else the root's;
+      - maven-toolchains-plugin's `<toolchains><jdk><version>` or 3.2's
+        `<version>`, inside its `<configuration>` (not the plugin's own
+        version); a range names its lower bound.
+      - It also reads toolchains.xml's JDKs with their homes, Gradle's
+        `org.gradle.java.installations.paths` (the project's and the user
+        home's gradle.properties), and whether the settings have a toolchain
+        resolver.
+      - `~/.jdks` (IntelliJ's downloads, which Gradle finds) joined the
+        places JDKs are looked for.
+    - `doctor`, run inside a project (`hellmacs-jvm-doctor-toolchains`):
+      - checks each JDK in `~/.m2/toolchains.xml`
+        (`hellmacs-jvm-maven-toolchains`) is there and of its release;
+      - for the build's request: ✓ with the JDK that serves it; ✗ naming
+        `file:line`, the release, and where to add one; or, with a Gradle
+        resolver, a note that Gradle downloads it.
+      - Nothing is written to any build file.
+  - *Verified (2026-09-28):*
+    - Unit tests (`test-jdk/toolchains-xml-jdks`, `-gradle-build-request`,
+      `-maven-build-request`, `-gradle-installations-and-provisioning`,
+      `-default-roots-include-intellij`; `test-java/doctor-gradle-toolchain`,
+      `-doctor-maven-toolchains`).
+    - By hand, doctor's verdict matched the build tool's own, both ways:
+      - legacy-11-gradle without a JDK 11: `✗ build.gradle:10 ...`, and
+        Gradle failed ("Cannot find a Java installation ...
+        languageVersion=11"). With one in installations.paths: ✓, and
+        Gradle built.
+      - A legacy-8 copy whose maven-toolchains-plugin asks for 11, without
+        toolchains.xml: `✗ pom.xml:38 ...`, and Maven failed. With a JDK 11
+        entry: ✓, and Maven built with "Toolchain in maven-compiler-plugin:
+        JDK[...jdk-11...]".
+    - Not covered: what JDTLS's own Maven import says when a Maven
+      toolchain is missing (Phase 6 covered Gradle's).
 - [x] **Legacy targets.** A Java 8 Maven fixture (`test/fixtures/java/legacy-8`)
       and a Java 11 Gradle one join the end-to-end suite. (2026-09-28)
   - *Done:*
@@ -3010,6 +3047,20 @@ JDTLS's installer uses.
 - *Verify:* one machine with JDKs 8, 11, 17, 21 and 25; the legacy fixtures
   import, build, test and debug against their own JDK; a project with an
   `.envrc` switches JDK when you switch buffers.
+  *Done (2026-09-28):* one run with Temurin 8u504, 11.0.32 and 17.0.20
+  (in a scratch directory, through `hellmacs-jdk-roots`), SDKMAN's 21 and
+  25, and the system's 27. Sync found all six. Then:
+  - legacy-8 (`JAVA_HOME` = JDK 8) and legacy-11-gradle (`JAVA_HOME` = 21,
+    its toolchain's JDK 11 in installations.paths) passed every check.
+    JDTLS ran on 25 and 21; each project compiled against its own JDK;
+    class files 52 and 55; the debugged programs reported 1.8.0_504 and
+    11.0.32.1.
+  - `java-e2e.el` (maven-demo, Java 21) passed fully: it compiled against
+    SDKMAN's 21.
+  - `direnv-e2e.el` passed: Maven ran on 1.8.0_504 in the `.envrc` project
+    and on 27 in the other, and JDTLS stayed on 25.
+
+  JDK 17 was installed, but no fixture targets Java 17.
 
 #### 12.4 Spring Boot
 
