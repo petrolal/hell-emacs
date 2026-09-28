@@ -106,6 +106,56 @@ move what it needs into place. MARKER then records SHA256 (see
       (delete-directory stage t)
       (when (file-exists-p zip) (delete-file zip)))))
 
+(defun hellmacs-sync-install-binary (label url sha256 dest marker)
+  "Install LABEL, a single executable at URL pinned by SHA256, as DEST.
+The download is checked (`hellmacs-sync-download-verified'), made
+executable, and MARKER records SHA256 (`hellmacs-marker-current-p')."
+  (hellmacs-sync-download-verified url dest sha256 label)
+  (set-file-modes dest #o755)
+  (hellmacs-marker-write marker sha256))
+
+(defconst hellmacs-npm-registry "https://registry.npmjs.org/"
+  "npm's registry; `hellmacs-mirrors' can point it at a company mirror.")
+
+(defun hellmacs-npm-environment ()
+  "npm's settings for Hellmacs' installs, as environment entries.
+Its cache under Hellmacs' own (not ~/.npm), the registry (or its mirror),
+the proxy and CA bundle `hellmacs-net' uses, and no update check."
+  (let ((proxy (hellmacs-net-proxy))
+        (ca (hellmacs-net-ca-file)))
+    (delq nil
+          (list (concat "npm_config_cache=" (expand-file-name "npm/" hellmacs-cache-dir))
+                (concat "npm_config_registry=" (hellmacs-net-rewrite hellmacs-npm-registry))
+                "npm_config_update_notifier=false"
+                (and proxy (concat "npm_config_proxy=" proxy))
+                (and proxy (concat "npm_config_https_proxy=" proxy))
+                (when-let* ((hosts (and proxy (hellmacs-net-no-proxy))))
+                  (concat "npm_config_noproxy=" (string-join hosts ",")))
+                (and ca (concat "npm_config_cafile=" ca))))))
+
+(defun hellmacs-sync-npm-install (label lock-dir dir)
+  "Install LABEL's npm packages into DIR, exactly as LOCK-DIR's lockfile pins them.
+LOCK-DIR (a module's directory) holds package.json and package-lock.json;
+they are copied to DIR and installed with `npm ci', which checks every
+package against the lockfile's integrity hash. Install scripts don't run.
+The lockfile's SHA-256 is recorded (`hellmacs-npm-installed-p')."
+  (when hellmacs-net-offline
+    (error "Offline install: %s isn't installed, and the bundle doesn't carry it" label))
+  (unless (executable-find "npm")
+    (error "Node.js and npm are needed to install %s" label))
+  (make-directory dir t)
+  (let ((marker (expand-file-name ".hellmacs-lock-sha256" dir))
+        (default-directory (file-name-as-directory dir)))
+    (when (file-exists-p marker) (delete-file marker))
+    (dolist (file '("package.json" "package-lock.json"))
+      (copy-file (expand-file-name file lock-dir) (expand-file-name file dir) t))
+    (with-hellmacs-network
+      (let ((process-environment (append (hellmacs-npm-environment) process-environment)))
+        (with-temp-buffer
+          (unless (zerop (call-process "npm" nil t nil "ci" "--ignore-scripts" "--no-audit" "--no-fund"))
+            (error "npm couldn't install %s: %s" label (string-trim (buffer-string)))))))
+    (hellmacs-marker-write marker (hellmacs-file-sha256 (expand-file-name "package-lock.json" lock-dir)))))
+
 (defun hellmacs-sync--packages ()
   "Return the installed Elpaca records for every declared package.
 Includes their dependencies, with each package after the packages it

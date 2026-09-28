@@ -270,7 +270,46 @@ Clojure support combines **CIDER** for interactive REPL-driven development with 
 
 ---
 
-## 10. Troubleshooting Project Imports
+## 10. Project File Types (`:lang data`, `yaml`, `json`, `markdown`, `sh`, `docker`)
+
+Every JVM project also carries XML, YAML, JSON, shell scripts, READMEs and
+Dockerfiles. Each of these modules is off by default and adds a language server
+through lsp-mode, so `C-c l`, `M-.`, completion and diagnostics work as they do in
+Java. None of them adds keys. `bin/hellmacs sync` installs each server pinned,
+and `bin/hellmacs doctor` checks it.
+
+```elisp
+(hellmacs! :tools lsp
+           :lang data (yaml +tree-sitter) (json +tree-sitter) markdown
+                 (sh +tree-sitter) (docker +tree-sitter))
+```
+
+| Module | Files | Server | Pinned as |
+|---|---|---|---|
+| `:lang data` | `pom.xml` and other XML, `.pom`, `.classpath`, `.launch` (`nxml-mode`) | lemminx 0.31.2 | uber jar by SHA-256; runs on your JDK (11+) |
+| `:lang yaml` | YAML (`yaml-mode`, `yaml-ts-mode`) | yaml-language-server 1.24.0 | npm lockfile; needs Node |
+| `:lang json` | JSON (`js-json-mode`, `json-ts-mode`) | vscode-json-language-server 4.10.0 | npm lockfile; needs Node |
+| `:lang markdown` | Markdown (`markdown-mode`, `gfm-mode`) | marksman 2026-02-08 | binary by SHA-256 |
+| `:lang sh` | Shell scripts, `gradlew`, `mvnw` (`sh-mode`, `bash-ts-mode`) | bash-language-server 5.8.1 | npm lockfile; needs Node 20+ |
+| `:lang docker` | Dockerfiles, Compose files (`dockerfile-mode`, `dockerfile-ts-mode`) | docker-language-server 0.20.1 | binary by SHA-256 |
+
+* **npm servers** are installed with `npm ci --ignore-scripts` from the lockfile in
+  the module's directory, so every package is checked against its integrity hash.
+  npm's cache lives in Hellmacs' cache directory, and it uses your proxy, CA
+  bundle and a registry mirror (`hellmacs-mirrors` for `https://registry.npmjs.org/`).
+* **XML schemas** that files name (such as Maven's POM XSD) are fetched by lemminx
+  through your proxy and cached under Hellmacs' cache directory.
+* **YAML schemas from SchemaStore** are off, because they would be fetched while you
+  edit. Set `hellmacs-yaml-schemastore` to `t` to enable them, or map your own
+  schemas in `lsp-yaml-schemas`. Spring Boot's `application*.yml` go to the Spring
+  server (`:lang java +spring`).
+* **Compose files** (`compose.yaml`, `docker-compose*.yml`) stay in the YAML mode
+  and are handled by Docker's server instead of the YAML one.
+* **ShellCheck** diagnostics appear in shell scripts when `shellcheck` is installed.
+
+---
+
+## 11. Troubleshooting Project Imports
 
 The mode-line shows the state of the active language server: `JVM:igniting`, `JVM:ready`, or `JVM:purgatory` when a project fails to import or build.
 

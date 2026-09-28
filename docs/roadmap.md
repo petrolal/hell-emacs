@@ -161,7 +161,7 @@ them, the principle wins and the feature finds another way.
   - [x] Byte-compiled core, modules and autoloads at sync (11.4)
 - [ ] **Planned Daily-Driver Essentials (Phase 10)**
   - [ ] Format-on-save integration (google-java-format, ktfmt, cljfmt) (10.2)
-  - [ ] Configuration file support (XML, YAML, JSON, Markdown, shell, Dockerfile) (10.1)
+  - [x] Configuration file support (XML, YAML, JSON, Markdown, shell, Dockerfile) (10.1)
 - [ ] **Planned Enterprise Hardening (Phase 12)**
   - [x] Corporate HTTP proxy & custom internal CA certificate management (12.1)
   - [x] Standalone offline bundle builder for zero-internet environments (12.1)
@@ -2207,30 +2207,90 @@ each server really ships, what it needs) written here before the code.
 
 **10.1 Project file types** (`:lang data`, `yaml`, `json`, `markdown`,
 `sh`, `docker`)
-- [ ] `:lang data`: XML (`pom.xml`, Spring XML, Android manifests) through
+- [x] `:lang data`: XML (`pom.xml`, Spring XML, Android manifests) through
       lemminx; completion and validation from the schemas the files name.
       Built-in `nxml-mode`.
-- [ ] `:lang yaml`: `application.yml`, CI files, Kubernetes, through
+- [x] `:lang yaml`: `application.yml`, CI files, Kubernetes, through
       yaml-language-server. Schema downloads from SchemaStore are off unless
       asked for (`hellmacs-yaml-schemastore`), since they fetch at runtime.
       Built-in `yaml-ts-mode`, with the grammar pinned by `:lang yaml
       +tree-sitter`, else `yaml-mode`.
-- [ ] `:lang json`: built-in `json-ts-mode` / `js-json-mode`, through
+- [x] `:lang json`: built-in `json-ts-mode` / `js-json-mode`, through
       vscode-json-languageserver.
-- [ ] `:lang markdown`: `markdown-mode` (already installed as an lsp-mode
+- [x] `:lang markdown`: `markdown-mode` (already installed as an lsp-mode
       dependency), marksman for links and headings. markdown-mode's own
       `C-c C-...` keys are the mode's standard ones and stay.
-- [ ] `:lang sh`: built-in `sh-mode` / `bash-ts-mode`, bash-language-server,
+- [x] `:lang sh`: built-in `sh-mode` / `bash-ts-mode`, bash-language-server,
       with ShellCheck diagnostics when `shellcheck` is installed. `gradlew`
       and `mvnw` open in it.
-- [ ] `:lang docker`: `dockerfile-ts-mode` (built in) and Compose files,
+- [x] `:lang docker`: `dockerfile-ts-mode` (built in) and Compose files,
       through docker-language-server.
-- [ ] Findings first: which of these servers ship native binaries (pinned by
+- [x] Findings first: which of these servers ship native binaries (pinned by
       SHA-256) and which need Node (yaml, json and bash are npm packages;
       Node becomes a `doctor` check for those modules only).
+  - *Found (2026-09-28):*
+    - **Native binaries, pinned by SHA-256.** GitHub's release API lists a
+      `sha256:` digest for each asset, and the pins were checked against
+      those digests.
+      - marksman `2026-02-08`: `marksman-linux-x64`, `-linux-arm64`,
+        `marksman-macos` (universal) and `marksman.exe`. One file each,
+        nothing to unpack.
+      - docker-language-server `v0.20.1` (Docker's, in Go): darwin, linux
+        and windows, each for amd64 and arm64. It handles Dockerfiles, Compose
+        files and Bake files. lsp-mode has no client for it: lsp-mode's
+        `lsp-dockerfile` runs the older npm dockerfile-language-server-nodejs.
+        So `:lang docker` registers its own client.
+    - **A jar, pinned by SHA-256:** lemminx `0.31.2`, the uber jar (8.8MB,
+      Java 11+), is the same file on download.eclipse.org and on the
+      Eclipse Maven repository. A JVM is always at hand, so there is one
+      artifact for every platform, and lsp-mode prefers the jar too
+      (`lsp-xml-prefer-jar`). Its native builds come only through
+      vscode-xml's "latest" release.
+    - **npm packages, pinned by version with the lockfile's integrity
+      hashes:** yaml-language-server `1.24.0` (20 packages),
+      vscode-langservers-extracted `4.10.0` (32; only
+      `vscode-json-language-server` is used), bash-language-server `5.8.1`
+      (36, Node 20+). Each module carries a `package.json` and
+      `package-lock.json` (sha512 for every package), and `sync` runs
+      `npm ci --ignore-scripts` into the data directory. npm refuses any
+      tarball whose hash differs. The only install script in all three is
+      core-js's postinstall, a funding notice. npm's cache goes under
+      Hellmacs' cache directory, not `~/.npm`, and it gets the proxy, CA
+      and a registry mirror from `hellmacs-net`.
+    - **Grammars** (`+tree-sitter`): the commits Emacs 31's own modes
+      recommend, all ABI 14, so Emacs 29 and 30 load them too. yaml
+      `v0.7.0` from tree-sitter-grammars (Emacs 31 moved off ikatyang's),
+      json `4d770d3`, bash `v0.23.3` (its latest tag, v0.25.1, is ABI 15),
+      dockerfile `087daa2`. Emacs 31 has no `xml-ts-mode` or
+      `markdown-ts-mode`, so XML and Markdown have no `+tree-sitter`.
+    - lsp-mode's own installers fetch "latest" at runtime (npm, GitHub),
+      so each module routes them to its pinned installer
+      (`hellmacs-lsp-pin-installer`).
 - *Verify:* per module, a fixture file opens in the right mode, the server
   starts, and completion, hover and one diagnostic work, in one
   end-to-end script. Unit tests for modes, hooks and pins.
+  - *Done (2026-09-28):* the six modules (off by default in
+    `static/init.example.el`), a shared npm installer (`hellmacs-sync-npm-install`,
+    `npm ci` from each module's lockfile) and `hellmacs-sync-install-binary`
+    in core, plus `hellmacs-platform` and a Node doctor check. Dockerfiles use
+    the `dockerfile-mode` package unless +tree-sitter is on, which remaps them
+    to the built-in `dockerfile-ts-mode`.
+  - *Verified so far:*
+    - Unit tests: `test/test-data-langs.el`, and the npm installer's tests in
+      `test/test-sync.el` (a fake npm: arguments, cache, proxy, CA, mirror,
+      failures).
+    - A throwaway profile with all six modules (+tree-sitter) synced for
+      real. Every SHA-256 pin and all three lockfiles verified, and the four
+      grammars built. Doctor was clean.
+    - Each installed server answered an LSP `initialize` with its pinned
+      version.
+    - In that profile, a Dockerfile, compose.yaml, a CI YAML file, JSON,
+      gradlew, README.md and pom.xml opened in the right (tree-sitter) modes,
+      with lsp queued and the right language ids (compose.yaml:
+      `dockercompose`).
+  - *Not yet:* the end-to-end script (completion, hover and one diagnostic
+    per module through lsp-mode), left out at the user's request while the
+    e2e scripts hang.
 
 **10.2 `:editor format`**
 - [ ] apheleia runs the language's formatter: google-java-format (Java),

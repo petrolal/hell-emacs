@@ -90,13 +90,13 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Step 7: Phase 10.1 project file types, 10.2 with 12.8's formatter work (roadmap "10.1", "10.2", "12.8")
 
-- [ ] 10.1 Findings first: which servers ship native binaries, and their pins
-- [ ] 10.1 `:lang data` (XML)
-- [ ] 10.1 `:lang yaml`
-- [ ] 10.1 `:lang json`
-- [ ] 10.1 `:lang markdown`
-- [ ] 10.1 `:lang sh`
-- [ ] 10.1 `:lang docker`
+- [x] 10.1 Findings first: which servers ship native binaries, and their pins (2026-09-28: in the roadmap; marksman and docker-language-server binaries, the lemminx jar, and yaml/json/bash as npm lockfiles)
+- [x] 10.1 `:lang data` (XML) (2026-09-28: lemminx 0.31.2 jar, pinned)
+- [x] 10.1 `:lang yaml` (2026-09-28: yaml-language-server 1.24.0, npm lockfile; SchemaStore off)
+- [x] 10.1 `:lang json` (2026-09-28: vscode-json-language-server 4.10.0, npm lockfile)
+- [x] 10.1 `:lang markdown` (2026-09-28: marksman 2026-02-08, pinned binary)
+- [x] 10.1 `:lang sh` (2026-09-28: bash-language-server 5.8.1, npm lockfile; gradlew/mvnw)
+- [x] 10.1 `:lang docker` (2026-09-28: docker-language-server 0.20.1, pinned binary, own lsp client; Compose files). For all six: unit tests (`test/test-data-langs.el`), a real sync of a throwaway profile, each server answering `initialize`, and files opening in the right modes; the e2e script isn't written yet
 - [ ] 10.2 `:editor format`: apheleia with google-java-format, ktfmt, cljfmt
 - [ ] 10.2 Formatter jars pinned by SHA-256 from Maven Central
 - [ ] 10.2 Keys: remap only, no new bindings

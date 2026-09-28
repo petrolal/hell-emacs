@@ -112,5 +112,23 @@
         (should (string-match-p "macOS"
                                 (with-output-to-string (hellmacs-cli--doctor-platform))))))))
 
+(ert-deftest test-cli/doctor-node ()
+  "Node is checked for the npm servers: missing, too old, or fine."
+  (let ((hellmacs-cli--problems 0))
+    (cl-letf (((symbol-function 'executable-find) #'ignore))
+      (should (string-match-p "node not found -- the YAML server"
+                              (with-output-to-string (hellmacs-doctor-node "the YAML server" 20))))
+      (should (= hellmacs-cli--problems 1)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (p) (concat "/usr/bin/" p)))
+              ((symbol-function 'hellmacs-cli--version) (lambda (&rest _) "v18.19.0")))
+      (should (string-match-p (regexp-quote "Node v18.19.0 is too old for the Bash server (it needs 20+)")
+                              (with-output-to-string (hellmacs-doctor-node "the Bash server" 20))))
+      (should (= hellmacs-cli--problems 2)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (p) (concat "/usr/bin/" p)))
+              ((symbol-function 'hellmacs-cli--version) (lambda (&rest _) "v26.10.0")))
+      (should (string-match-p "node: v26.10.0"
+                              (with-output-to-string (hellmacs-doctor-node "the Bash server" 20))))
+      (should (= hellmacs-cli--problems 2)))))
+
 (provide 'test-cli)
 ;;; test-cli.el ends here

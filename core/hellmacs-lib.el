@@ -283,6 +283,23 @@ Pinned installs write the pin they were made from to a marker file."
   "Record VALUE in the file MARKER, for `hellmacs-marker-current-p'."
   (with-temp-file marker (insert value "\n")))
 
+(defun hellmacs-platform ()
+  "This machine as release assets name it: \"linux-x86_64\", \"darwin-aarch64\"...
+nil on an operating system no pinned download is made for."
+  (when-let* ((os (pcase system-type
+                    ('gnu/linux "linux") ('darwin "darwin") ('windows-nt "windows"))))
+    (let ((cpu (car (split-string system-configuration "-"))))
+      (concat os "-" (if (member cpu '("arm64" "aarch64")) "aarch64" cpu)))))
+
+(defun hellmacs-npm-installed-p (lock-dir dir)
+  "Non-nil if DIR holds the npm packages LOCK-DIR's package-lock.json pins.
+`hellmacs-sync-npm-install' records the lockfile's SHA-256 in DIR."
+  (let ((lock (expand-file-name "package-lock.json" lock-dir)))
+    (and (file-exists-p lock)
+         (file-directory-p (expand-file-name "node_modules" dir))
+         (hellmacs-marker-current-p (expand-file-name ".hellmacs-lock-sha256" dir)
+                                    (hellmacs-file-sha256 lock)))))
+
 (defun hellmacs-file-pinned-p (file sha256)
   "Non-nil if FILE exists and its bytes have the SHA-256 SHA256."
   (and (file-exists-p file)

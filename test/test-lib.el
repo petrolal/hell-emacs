@@ -141,5 +141,18 @@
             (should (= asked 2)))
         (set-frame-parameter nil 'hellmacs--nerd-font nil)))))
 
+(ert-deftest test-lib/platform ()
+  "This machine as release assets name it: OS and CPU."
+  (let ((system-type 'gnu/linux) (system-configuration "x86_64-pc-linux-gnu"))
+    (should (equal (hellmacs-platform) "linux-x86_64")))
+  (let ((system-type 'darwin) (system-configuration "aarch64-apple-darwin23.4.0"))
+    (should (equal (hellmacs-platform) "darwin-aarch64")))
+  (let ((system-type 'darwin) (system-configuration "arm64-apple-darwin23"))
+    (should (equal (hellmacs-platform) "darwin-aarch64")))
+  (let ((system-type 'windows-nt) (system-configuration "x86_64-w64-mingw32"))
+    (should (equal (hellmacs-platform) "windows-x86_64")))
+  (let ((system-type 'berkeley-unix) (system-configuration "x86_64-unknown-freebsd14"))
+    (should-not (hellmacs-platform))))
+
 (provide 'test-lib)
 ;;; test-lib.el ends here

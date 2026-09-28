@@ -412,6 +412,22 @@ Returns PROGRAM's path, or nil."
              "%s not found -- %s" program why)
     nil))
 
+(defun hellmacs-doctor-node (why min-major)
+  "Check Node.js and npm, which WHY needs (a server installed with npm).
+MIN-MAJOR is the oldest Node release it runs on. Errors when missing or
+too old: the server can't be installed or started without it."
+  (let ((node (executable-find "node")))
+    (if (not node)
+        (hellmacs-doctor-error "node not found -- %s is an npm package; install Node.js %d+" why min-major)
+      (let* ((version (or (hellmacs-cli--version "node" "--version") ""))
+             (major (and (string-match "\\`v?\\([0-9]+\\)" version)
+                         (string-to-number (match-string 1 version)))))
+        (if (and major (< major min-major))
+            (hellmacs-doctor-error "Node %s is too old for %s (it needs %d+)" version why min-major)
+          (hellmacs-doctor-ok "node: %s" version)))
+      (unless (executable-find "npm")
+        (hellmacs-doctor-error "npm not found -- `bin/hellmacs sync' installs %s with it" why)))))
+
 (cl-defun hellmacs-doctor-pinned (label version valid present &key where stale-note missing-note)
   "Check the pinned install of LABEL (release VERSION) that sync makes.
 VALID is non-nil if it's the pinned release; PRESENT, if something is

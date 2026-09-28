@@ -123,9 +123,9 @@
            ;;crystal          ; [idea] Crystal: crystalline
            ;;csharp           ; [idea] C#: csharp-ls (Roslyn)
            ;;dart             ; [idea] Dart and Flutter: the Dart analysis server
-           ;;data             ; [planned] CSV and XML: lemminx for XML
+           ;;data             ; XML (pom.xml, Spring XML): lemminx, pinned jar on a JDK
            ;;dhall            ; [idea] Dhall: dhall-lsp-server
-           ;;docker           ; [planned] Dockerfile and Compose: docker-language-server
+           ;;docker           ; Dockerfile and Compose: docker-language-server (+tree-sitter)
            ;;elixir           ; [idea] Elixir: Expert (elixir-ls)
            ;;elm              ; [idea] Elm: elm-language-server
            ;;emacs-lisp       ; [idea] Emacs Lisp extras: macrostep, elisp-demos (no LSP)
@@ -141,13 +141,13 @@
            ;;haskell          ; [idea] Haskell: haskell-language-server
            ;;janet            ; [idea] Janet: janet-lsp
            ;;javascript       ; [idea] JavaScript, TypeScript, JSX: vtsls (typescript-language-server)
-           ;;json             ; [planned] JSON: vscode-json-languageserver
+           ;;json             ; JSON: vscode-json-language-server; needs Node (+tree-sitter)
            ;;julia            ; [idea] Julia: LanguageServer.jl
            ;;latex            ; [idea] LaTeX: texlab, AUCTeX
            ;;lean             ; [idea] Lean 4: the Lean server
            ;;ledger           ; [idea] Ledger accounting (no LSP)
            ;;lua              ; [idea] Lua: lua-language-server
-           ;;markdown         ; [planned] Markdown: marksman
+           ;;markdown         ; Markdown: marksman
            ;;nim              ; [idea] Nim: nimlangserver
            ;;nix              ; [idea] Nix: nixd (nil)
            ;;ocaml            ; [idea] OCaml: ocaml-lsp-server
@@ -163,7 +163,7 @@
            ;;ruby             ; [idea] Ruby: ruby-lsp
            ;;rust             ; [idea] Rust: rust-analyzer
            ;;scheme           ; [idea] Scheme: Geiser (no LSP)
-           ;;sh               ; [planned] Shell scripts: bash-language-server, shellcheck
+           ;;sh               ; Shell scripts, gradlew/mvnw: bash-language-server; needs Node (+tree-sitter)
            ;;sml              ; [idea] Standard ML: millet
            ;;solidity         ; [idea] Solidity: nomicfoundation-solidity-language-server
            ;;sql              ; [idea] SQL: sqls
@@ -171,7 +171,7 @@
            ;;terraform        ; [idea] Terraform and HCL: terraform-ls
            ;;toml             ; [idea] TOML: taplo
            ;;web              ; [idea] HTML and CSS: vscode-html/css-language-server
-           ;;yaml             ; [planned] YAML: yaml-language-server
+           ;;yaml             ; YAML: yaml-language-server; needs Node (+tree-sitter)
            ;;zig              ; [idea] Zig: zls
 
            :app

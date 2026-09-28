@@ -1,0 +1,8 @@
+{
+  "name": "hellmacs-lang-sh",
+  "private": true,
+  "description": "The bash-language-server server :lang sh pins; bin/hellmacs sync installs it with npm ci.",
+  "dependencies": {
+    "bash-language-server": "5.8.1"
+  }
+}
