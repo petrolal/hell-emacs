@@ -78,6 +78,25 @@
              (items (e2e-completion-items res)))
         (cl-some (lambda (i) (string-prefix-p "greet" (lsp-get i :label))) items)))
 
+    (e2e--say "\n== 12.3 JDKs for projects")
+    (e2e-check "JDTLS has the JDKs sync found as its runtimes"
+      (equal (mapcar (lambda (r) (cons (plist-get r :name) (plist-get r :path)))
+                     lsp-java-configuration-runtimes)
+             (or hellmacs-jdks (hellmacs-jdk-read))))
+    (let ((jdk21 (cdr (assoc "JavaSE-21" (or hellmacs-jdks (hellmacs-jdk-read))))))
+      (if (not jdk21)
+          (e2e--say "  - skipped: the project compiles against JavaSE-21's JDK (no JDK 21 found)")
+        (e2e-check "the project (Java 21) compiles against JavaSE-21's JDK, not JDTLS's own"
+          (let* ((key "org.eclipse.jdt.ls.core.vm.location")
+                 (settings (lsp-send-execute-command "java.project.getSettings"
+                                                     (vector (lsp--path-to-uri proj) (vector key))))
+                 (vm (if (hash-table-p settings)
+                         (gethash key settings)
+                       (plist-get settings (intern (concat ":" key))))))
+            (e2e--say "    project JDK: %s" vm)
+            (and vm (equal (file-truename (directory-file-name vm))
+                           (file-truename (directory-file-name jdk21))))))))
+
     (e2e--say "\n== 6.3 +lombok")
     (e2e-check "JDTLS runs with the Lombok javaagent"
       (cl-some (lambda (a) (string-match-p "lombok" a)) lsp-java-vmargs))

@@ -26,27 +26,11 @@
 
 (hellmacs-module-load "+paths")
 
-(defun hellmacs-jvm--doctor-java-major (java)
-  "Return the major version of the JDK whose java binary is JAVA, or nil."
-  (with-temp-buffer
-    (when (ignore-errors (zerop (call-process java nil t nil "-version")))
-      (goto-char (point-min))
-      (when (re-search-forward "version \"\\([0-9]+\\)\\(?:\\.\\([0-9]+\\)\\)?" nil t)
-        (let ((major (string-to-number (match-string 1))))
-          ;; Java 8 and older call themselves 1.8, 1.7...
-          (if (= major 1) (string-to-number (match-string 2)) major))))))
+;; The JDK that runs JDTLS: one it runs on, chosen unless you set one (cli.el).
+(hellmacs-jvm-doctor-jdtls-jdk)
 
-(let* ((home (getenv "JAVA_HOME"))
-       (java (if home (expand-file-name "bin/java" home) (executable-find "java")))
-       (major (and java (file-executable-p java) (hellmacs-jvm--doctor-java-major java))))
-  (cond ((null major)
-         (hellmacs-doctor-error "No JDK found (set JAVA_HOME or put java on the PATH); JDTLS needs 21+"))
-        ((< major 21)
-         (hellmacs-doctor-error "JDK %d at %s is too old to run JDTLS (needs 21+); set `hellmacs-jvm-java-home'"
-                                major (abbreviate-file-name java)))
-        (t (hellmacs-doctor-ok "JDK %d for JDTLS: %s" major (abbreviate-file-name java))))
-  (unless home
-    (hellmacs-doctor-info "JAVA_HOME isn't set; using java from the PATH")))
+;; The JDKs projects compile against, each for its own release (cli.el).
+(hellmacs-jvm-doctor-jdks)
 
 ;; The build tools' own settings, which JDTLS imports with (config.el):
 ;; internal repositories and mirrors configured there work in Emacs too.

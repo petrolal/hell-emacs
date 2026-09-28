@@ -58,17 +58,37 @@ the command line; Hellmacs never writes to it.")
   (let ((file (expand-file-name (or hellmacs-maven-settings "~/.m2/settings.xml"))))
     (and (file-readable-p file) file)))
 
-(defcustom hellmacs-jvm-java-home (getenv "JAVA_HOME")
-  "JDK that runs JDTLS itself; it must be 21 or newer.
-Defaults to $JAVA_HOME. Projects may compile against other JDKs: see
-`lsp-java-configuration-runtimes'."
-  :type '(choice (const :tag "java on the PATH" nil) directory))
+;; The JDK that runs JDTLS (`hellmacs-jvm-java-home', chosen among those it
+;; runs on) and `hellmacs-jvm-java-executable' are in +paths.el, so
+;; `bin/hellmacs doctor' checks the same one.
 
-(defun hellmacs-jvm-java-executable ()
-  "The java that runs JDTLS and debuggees: `hellmacs-jvm-java-home''s, else the PATH's."
-  (if hellmacs-jvm-java-home
-      (expand-file-name "bin/java" hellmacs-jvm-java-home)
-    "java"))
+;; Projects compile against the JDK of the release they target (a Java 8
+;; project against a JDK 8), while JDTLS itself runs on 21+ (Phase 12.3).
+(defvar lsp-java-configuration-runtimes)
+
+(defcustom hellmacs-jdks nil
+  "The JDKs projects compile against, as (NAME . HOME) pairs.
+NAME is JDTLS's name for the release: (\"JavaSE-1.8\" . \"/opt/jdk8\"),
+\(\"JavaSE-17\" . \"/opt/jdk-17\"). nil uses the JDKs `bin/hellmacs sync'
+found: SDKMAN's, /usr/lib/jvm, macOS's, asdf's, jenv's, mise's and
+JAVA_HOME. The JDK running JDTLS (`hellmacs-jvm-jdtls-java-home') is
+the default for projects that name no release."
+  :type '(alist :key-type string :value-type directory))
+
+(defvar hellmacs-jvm--runtimes nil
+  "The `lsp-java-configuration-runtimes' Hellmacs set last, to tell it from yours.")
+
+(defun hellmacs-jvm-apply-jdks ()
+  "Give JDTLS the JDKs (`hellmacs-jdks') as `lsp-java-configuration-runtimes'.
+Runtimes you set yourself are left alone."
+  (when (or (seq-empty-p lsp-java-configuration-runtimes)
+            (eq lsp-java-configuration-runtimes hellmacs-jvm--runtimes))
+    (setq hellmacs-jvm--runtimes
+          (hellmacs-jdk-lsp-runtimes (or hellmacs-jdks (hellmacs-jdk-read)) (hellmacs-jvm-jdtls-java-home))
+          lsp-java-configuration-runtimes hellmacs-jvm--runtimes)))
+
+(after! lsp-java
+  (hellmacs-jvm-apply-jdks))
 
 ;;; Status: echo-area announcements and the mode-line segment ------------------
 
@@ -204,8 +224,35 @@ JUnit test methods return void: the nearest void method above point."
 (defun hellmacs-jvm--setup-reload-h ()
   (setq-local hellmacs-reload-function #'hellmacs-jvm-reload))
 
+;; A launched program runs on its project's JDK (a Java 8 project on JDK 8),
+;; not on the one running JDTLS. java-debug falls back to JDTLS's own
+;; without a :javaExec, and dap-java gives none; this asks JDTLS for the
+;; project's, as VS Code does.
+(declare-function lsp-send-execute-command "ext:lsp-mode")
+
+(defun hellmacs-jvm--resolve-java-executable (main-class project-name)
+  "The java of the JDK PROJECT-NAME compiles against, as JDTLS resolves it for
+MAIN-CLASS; nil if it can't say."
+  (ignore-errors
+    (let ((java (lsp-send-execute-command "vscode.java.resolveJavaExecutable"
+                                          (vector main-class project-name))))
+      (and (stringp java) (not (string-empty-p java)) java))))
+
+(defun hellmacs-jvm--launch-on-project-jdk-a (conf)
+  "Give launch configuration CONF its project's java as :javaExec, unless it has one.
+A `:filter-return' advice on `dap-java--populate-launch-args'."
+  (let ((main (plist-get conf :mainClass))
+        (project (plist-get conf :projectName)))
+    (if-let* (((not (plist-get conf :javaExec)))
+              ((and main project))
+              (java (hellmacs-jvm--resolve-java-executable main project)))
+        (plist-put conf :javaExec java)
+      conf)))
+
 ;; Debugging (:tools debugger): dap-java, shipped with lsp-java, loads with it.
 (when (modulep! :tools debugger)
+  (with-eval-after-load 'dap-java
+    (advice-add 'dap-java--populate-launch-args :filter-return #'hellmacs-jvm--launch-on-project-jdk-a))
   (add-hook! (java-mode java-ts-mode) #'hellmacs-jvm--setup-reload-h)
   (with-eval-after-load 'dap-java
     (setq dap-java-java-command (hellmacs-jvm-java-executable)

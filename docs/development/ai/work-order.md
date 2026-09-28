@@ -63,10 +63,12 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Step 4: 12.3 JDKs and build environments (roadmap "12.3", takes in 10.5's direnv)
 
-- [ ] Several JDKs, found automatically
+- [x] Several JDKs, found automatically (2026-09-28: `core/hellmacs-jdk.el`, Java's sync step, config and doctor; unit tests plus java-e2e's 12.3 checks, where the Java 21 fixture compiled against SDKMAN's 21 while JDTLS ran on 25)
+- [x] JDTLS runs on a JDK it supports: found while doing the item above (JDTLS 1.57 fails on JDK 27). The range is pinned with JDTLS (21 to 25), a suitable JDK is chosen automatically, and doctor checks it (2026-09-28: unit tests; java-e2e passes with `JAVA_HOME` unset and the system java at 27). Roadmap "12.3", *Several JDKs*, "Found along the way"
 - [ ] Per-project environments: `:tools direnv` (envrc)
-- [ ] Toolchains: Gradle toolchains and Maven `toolchains.xml`
-- [ ] Legacy targets: Java 8 Maven fixture (`test/fixtures/java/legacy-8`)
+- [/] Toolchains: Gradle toolchains and Maven `toolchains.xml` (parsers in `core/hellmacs-jdk.el`, tested; doctor naming a missing release not done)
+- [x] Legacy targets: Java 8 Maven fixture (`test/fixtures/java/legacy-8`) (2026-09-28: `legacy-jdk-e2e.el` rewritten into a real run; both fixtures import, build, test and debug on their own JDK; debugged programs now run on the project's JDK, not JDTLS's)
+- [ ] Verify: one machine with JDKs 8, 11, 17, 21 and 25; the legacy fixtures import, build, test and debug on their own JDK (done for 8, 11, 21, 25; 17 not run yet); a project with an `.envrc` switches JDK with the buffer (needs `:tools direnv`). Roadmap "12.3", *Verify*
 
 ## Step 5: Phase 9.4, finish dashboard and modeline integration (roadmap "9.4 Integration")
 

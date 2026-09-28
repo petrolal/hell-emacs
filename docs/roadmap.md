@@ -2863,7 +2863,7 @@ JDTLS's installer uses.
 
 #### 12.3 JDKs and build environments
 
-- [ ] **Several JDKs, found automatically.**
+- [x] **Several JDKs, found automatically.** (2026-09-28)
   - `hellmacs-jdks` is detected at sync time from SDKMAN (`~/.sdkman`),
     `/usr/lib/jvm`, `/Library/Java/JavaVirtualMachines`, asdf, jenv, mise
     and `JAVA_HOME`.
@@ -2871,6 +2871,61 @@ JDTLS's installer uses.
     each project against the release it targets: a Java 8 or 11 project
     builds against a JDK 8 or 11, while JDTLS itself runs on 21+.
   - `doctor` lists them.
+  - *Done:*
+    - `core/hellmacs-jdk.el`, autoloaded (nothing at startup), does the
+      finding:
+      - a JDK is a directory with a `release` file, named by its
+        JAVA_VERSION in JDTLS's words (J2SE-1.5, JavaSE-1.6 to 1.8, then
+        JavaSE-9 on);
+      - it searches `JAVA_HOME`, the PATH's java, then
+        `hellmacs-jdk-default-roots` (the managers' own variables when set:
+        SDKMAN_DIR, ASDF_DATA_DIR, JENV_ROOT, MISE_DATA_DIR), plus
+        /usr/lib64/jvm and ~/Library/Java;
+      - it keeps one JDK per release (the first found, so `JAVA_HOME`
+        wins) and counts a link (jenv's are all links) once, with what it
+        points to.
+    - `:lang java`'s sync step (`hellmacs-jvm-sync-detect-jdks`) stores them
+      in `jvm/jdks.eld`, since scanning at startup would cost startup time.
+      When lsp-java loads, config.el (`hellmacs-jvm-apply-jdks`) hands them
+      (or your `hellmacs-jdks`) to `lsp-java-configuration-runtimes`, with
+      the JDK running JDTLS as the default, else the newest. It
+      leaves runtimes you set yourself alone.
+    - `doctor` lists each JDK and marks the default. It checks that each of
+      your `hellmacs-jdks` is a JDK of the release it's named for, and warns
+      about JDKs found since the last sync.
+    - The toolchain parsers (Maven's toolchains.xml, a Gradle build's
+      `JavaLanguageVersion.of(N)`) are in the same file, for the
+      *Toolchains* item below; nothing calls them yet.
+  - *Verified (2026-09-28):*
+    - Unit tests: `test/test-jdk.el` (the pre-written ones, plus eras, one
+      per release, links, macOS's Contents/Home, JAVA_HOME's precedence,
+      the managers' variables, storing, the default) and `test/test-java.el`
+      (runtimes applied and yours kept, the sync step, doctor's listing).
+    - A real sync in temporary directories found SDKMAN's 21 and 25 and
+      the system's 27.
+    - `java-e2e.el` (maven-demo), with JDTLS on JDK 25: its new 12.3 checks
+      pass, and JDTLS reports the Java 21 project's JDK as SDKMAN's 21, not
+      its own 25. Every other check passes too.
+    - Startup: 0.027 to 0.039s, no warnings.
+    - Found along the way: JDTLS 1.57 can't run on JDK 27 ("Unsupported
+      class file major version 71" when it starts m2e), yet `doctor`
+      accepted any JDK 21+ for JDTLS, and JDTLS ran on the PATH's java
+      whenever `JAVA_HOME` was unset. Fixed on 2026-09-28:
+      - JDTLS's JDK must be in the range its pin runs on
+        (`hellmacs-jvm-jdtls-java-min`/`-max`, 21 to 25, in +paths.el next
+        to the pin; raise the maximum with the pin once it's verified).
+      - `hellmacs-jvm-java-home` now defaults to nil, which chooses:
+        `JAVA_HOME`'s JDK if in range, else the PATH's, else the newest
+        in-range JDK that sync found (`hellmacs-jvm-jdtls-java-home`, in
+        +paths.el so doctor checks the same one). A value you set is used
+        as is.
+      - `doctor` names the JDK, says why `JAVA_HOME`'s or the PATH's was
+        passed over, and errors when no JDK is in range or yours isn't.
+      - *Verified:* unit tests (`test-jdk/home-major-and-pick`,
+        `test-java/jdtls-runs-on-a-jdk-it-supports`,
+        `test-java/doctor-checks-jdtls-jdk`). `java-e2e.el` passes fully
+        with `JAVA_HOME` unset and the PATH's java at 27: JDTLS started on
+        SDKMAN's 25 by itself. Startup 0.029s.
 - [ ] **Per-project environments.** Phase 10.5's `:tools direnv` moves here:
       envrc gives each project its own `JAVA_HOME`, `MAVEN_OPTS`,
       `GRADLE_USER_HOME` and proxy variables. JDTLS, Gradle and Maven started
@@ -2879,8 +2934,46 @@ JDTLS's installer uses.
       not replaced. When a build asks for a JDK that isn't installed, JDTLS's
       import failure already says so (Phase 6), and `doctor` names the
       missing release and where the build asked for it.
-- [ ] **Legacy targets.** A Java 8 Maven fixture (`test/fixtures/java/legacy-8`)
-      and a Java 11 Gradle one join the end-to-end suite.
+- [x] **Legacy targets.** A Java 8 Maven fixture (`test/fixtures/java/legacy-8`)
+      and a Java 11 Gradle one join the end-to-end suite. (2026-09-28)
+  - *Done:*
+    - The fixtures got their wrappers (mvnw, gradlew, copied from the demo
+      fixtures). legacy-11-gradle's build now declares the JUnit Platform
+      launcher (Gradle 9 wants it) through JUnit 5's BOM (JUnit 6 needs
+      Java 17).
+    - `test/integration/legacy-jdk-e2e.el` was a stub that couldn't run
+      (`e2e-assert` doesn't exist) and is now a real run, per fixture:
+      - the JDK for its release is among those sync found;
+      - JDTLS imports it, on a JDK it supports;
+      - `java.project.getSettings` names the project's own JDK;
+      - a call its JDK lacks (`isBlank` for 8, `formatted` for 11) is an
+        error;
+      - the wrapper build passes, and the class file has the release's
+        version (52, 55);
+      - the test at point passes;
+      - a debug launch stops, and the program reports its own JDK's
+        `java.version`.
+    - Found by that last check: a debugged program ran on JDTLS's JDK. dap-java
+      sends no `:javaExec`, and java-debug then uses its own JVM. Now
+      `hellmacs-jvm--launch-on-project-jdk-a` (a `:filter-return` on
+      `dap-java--populate-launch-args`) asks JDTLS for the project's
+      (`vscode.java.resolveJavaExecutable`, as VS Code does). A `:javaExec`
+      of yours wins. Unit test: `test-java/debug-launch-on-the-project-jdk`.
+  - *Verified (2026-09-28):* with Temurin 8u504 and 11.0.32 (in a scratch
+    directory, added through `hellmacs-jdk-roots`, and for Gradle
+    `org.gradle.java.installations.paths`), SDKMAN's 21 and 25, and the
+    system's 27:
+    - legacy-8 (`JAVA_HOME` = JDK 8) and legacy-11-gradle (`JAVA_HOME` =
+      21) pass every check;
+    - JDTLS ran on 25 and 21 respectively;
+    - the debugged programs reported 1.8.0_504 and 11.0.32.1;
+    - with JDK 11 hidden from Gradle, the build refused ("Cannot find a
+      Java installation ... languageVersion=11"), so it did compile on 11;
+    - `java-e2e.el` (maven-demo, Java 21) still passes fully;
+    - startup 0.029s.
+
+    JDK 17 wasn't among them, so the *Verify* below (8, 11, 17, 21, 25) is
+    still open.
 - *Verify:* one machine with JDKs 8, 11, 17, 21 and 25; the legacy fixtures
   import, build, test and debug against their own JDK; a project with an
   `.envrc` switches JDK when you switch buffers.

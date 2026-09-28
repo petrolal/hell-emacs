@@ -29,6 +29,10 @@
 (require 'cl-lib)
 (require 'hellmacs-modules)
 
+(defvar test-jdk--root)
+(defvar hellmacs-jdk-roots)
+(defvar hellmacs-jdk-file)
+
 (defmacro test-jdk--with-fake-fs (dirs files &rest body)
   "Run BODY with a mock filesystem containing DIRS and FILES alist."
   (declare (indent 2))
@@ -148,6 +152,121 @@
         (groovy-content "java {\n    toolchain {\n        languageVersion = JavaLanguageVersion.of(11)\n    }\n}"))
     (should (equal (hellmacs-jdk-parse-gradle-toolchain kts-content) "JavaSE-17"))
     (should (equal (hellmacs-jdk-parse-gradle-toolchain groovy-content) "JavaSE-11"))))
+
+(ert-deftest test-jdk/release-names-across-eras ()
+  "JDTLS's names: J2SE-1.5, JavaSE-1.6 to 1.8, then JavaSE-9 on; junk is nil."
+  (should (equal (hellmacs-jdk-release-name "1.5") "J2SE-1.5"))
+  (should (equal (hellmacs-jdk-release-name "1.7.0_80") "JavaSE-1.7"))
+  (should (equal (hellmacs-jdk-release-name "9") "JavaSE-9"))
+  (should (equal (hellmacs-jdk-release-name "17.0.9") "JavaSE-17"))
+  (should (equal (hellmacs-jdk-release-name 21) "JavaSE-21"))
+  (should-not (hellmacs-jdk-release-name "abc"))
+  (should-not (hellmacs-jdk-release-name nil))
+  (should-not (hellmacs-jdk-parse-release-content "IMPLEMENTOR=\"Eclipse Adoptium\"\n")))
+
+(ert-deftest test-jdk/scan-keeps-one-per-release ()
+  "One JDK per release, in version order; links and non-JDKs are skipped."
+  (test-jdk--with-fake-fs
+      '("jvm/a-17" "jvm/b-17" "jvm/not-a-jdk" "jvm/x-11"
+        "macos/temurin-8.jdk/Contents/Home")
+      '(("jvm/a-17/release" . "JAVA_VERSION=\"17.0.1\"\n")
+        ("jvm/b-17/release" . "JAVA_VERSION=\"17.0.9\"\n")
+        ("jvm/x-11/release" . "JAVA_VERSION=\"11.0.2\"\n")
+        ("jvm/stray-file" . "")
+        ("macos/temurin-8.jdk/Contents/Home/release" . "JAVA_VERSION=\"1.8.0_402\"\n"))
+    (make-symbolic-link (expand-file-name "jvm/x-11" test-jdk--root)
+                        (expand-file-name "jvm/default-java" test-jdk--root))
+    (let ((found (hellmacs-jdk-scan-roots
+                  (list (expand-file-name "jvm" test-jdk--root)
+                        (expand-file-name "macos" test-jdk--root)
+                        (expand-file-name "missing" test-jdk--root)))))
+      (should (equal (mapcar #'car found) '("JavaSE-1.8" "JavaSE-11" "JavaSE-17")))
+      (should (equal (cdr (assoc "JavaSE-17" found))
+                     (expand-file-name "jvm/a-17" test-jdk--root)))
+      (should (equal (cdr (assoc "JavaSE-1.8" found))
+                     (expand-file-name "macos/temurin-8.jdk/Contents/Home" test-jdk--root))))))
+
+(ert-deftest test-jdk/detect-prefers-java-home ()
+  "JAVA_HOME counts even outside the scanned places, and wins its release."
+  (test-jdk--with-fake-fs
+      '("jvm/distro-21" "elsewhere/my-21" "jvm/distro-17")
+      '(("jvm/distro-21/release" . "JAVA_VERSION=\"21.0.1\"\n")
+        ("jvm/distro-17/release" . "JAVA_VERSION=\"17.0.1\"\n")
+        ("elsewhere/my-21/release" . "JAVA_VERSION=\"21.0.4\"\n"))
+    (let ((hellmacs-jdk-roots (list (expand-file-name "jvm" test-jdk--root)))
+          (process-environment (cons (concat "JAVA_HOME=" (expand-file-name "elsewhere/my-21" test-jdk--root))
+                                     process-environment))
+          (exec-path nil))              ; no java on the PATH to find
+      (should (equal (hellmacs-jdk-detect)
+                     (list (cons "JavaSE-17" (expand-file-name "jvm/distro-17" test-jdk--root))
+                           (cons "JavaSE-21" (expand-file-name "elsewhere/my-21" test-jdk--root))))))))
+
+(ert-deftest test-jdk/default-roots ()
+  "The places searched follow SDKMAN's, asdf's and mise's own variables."
+  (let ((process-environment (append '("SDKMAN_DIR=/sdk" "ASDF_DATA_DIR=/asdf" "MISE_DATA_DIR=/mise")
+                                     process-environment)))
+    (let ((roots (hellmacs-jdk-default-roots)))
+      (should (member "/sdk/candidates/java" roots))
+      (should (member "/asdf/installs/java" roots))
+      (should (member "/mise/installs/java" roots))
+      (should (member "/usr/lib/jvm" roots))
+      (should (member "/Library/Java/JavaVirtualMachines" roots))
+      (should (member (expand-file-name "~/.jenv/versions") roots)))))
+
+(ert-deftest test-jdk/store-round-trip ()
+  "What sync found is written, and read back at startup; nothing stored reads as nil."
+  (let ((hellmacs-jdk-file (make-temp-file "hellmacs-test-jdks" nil ".eld")))
+    (unwind-protect
+        (progn
+          (delete-file hellmacs-jdk-file)
+          (should-not (hellmacs-jdk-read))
+          (hellmacs-jdk-write '(("JavaSE-11" . "/j/11") ("JavaSE-21" . "/j/21")))
+          (should (equal (hellmacs-jdk-read) '(("JavaSE-11" . "/j/11") ("JavaSE-21" . "/j/21"))))
+          (with-temp-file hellmacs-jdk-file (insert "(unbalanced"))
+          (should-not (hellmacs-jdk-read)))
+      (when (file-exists-p hellmacs-jdk-file) (delete-file hellmacs-jdk-file)))))
+
+(ert-deftest test-jdk/runtimes-default-fallback ()
+  "Without a matching default, the newest JDK is; no JDKs, an empty vector."
+  (let ((runtimes (hellmacs-jdk-lsp-runtimes '(("JavaSE-11" . "/j/11") ("JavaSE-21" . "/j/21")) nil)))
+    (should (equal (plist-get (aref runtimes 0) :default) :json-false))
+    (should (equal (plist-get (aref runtimes 1) :default) t)))
+  (let ((runtimes (hellmacs-jdk-lsp-runtimes '(("JavaSE-11" . "/j/11") ("JavaSE-21" . "/j/21")) "/j/11/")))
+    (should (equal (plist-get (aref runtimes 0) :default) t))
+    (should (equal (plist-get (aref runtimes 1) :default) :json-false)))
+  (should (equal (hellmacs-jdk-lsp-runtimes nil nil) [])))
+
+(ert-deftest test-jdk/toolchain-versions-and-ranges ()
+  "Version ranges name their lower bound; no toolchain block, nil."
+  (test-jdk--with-fake-fs
+      '("m2")
+      '(("m2/toolchains.xml" . "<toolchains><toolchain><type>jdk</type><provides><version>[11,)</version></provides></toolchain>\
+<toolchain><type>netbeans</type><provides><version>12</version></provides></toolchain></toolchains>"))
+    (should (equal (hellmacs-jdk-parse-toolchains-xml (expand-file-name "m2/toolchains.xml" test-jdk--root))
+                   '("JavaSE-11")))
+    (should-not (hellmacs-jdk-parse-toolchains-xml (expand-file-name "m2/none.xml" test-jdk--root))))
+  (should-not (hellmacs-jdk-parse-gradle-toolchain "plugins { id 'java' }"))
+  (should (equal (hellmacs-jdk-parse-gradle-toolchain "languageVersion = JavaLanguageVersion.of( 8 )")
+                 "JavaSE-1.8")))
+
+(ert-deftest test-jdk/home-major-and-pick ()
+  "A JDK's major release comes from its release file; the pick is the first in range."
+  (test-jdk--with-fake-fs
+      '("j8" "j21" "j25" "j27" "junk")
+      '(("j8/release" . "JAVA_VERSION=\"1.8.0_402\"\n")
+        ("j21/release" . "JAVA_VERSION=\"21.0.1\"\n")
+        ("j25/release" . "JAVA_VERSION=\"25.0.4\"\n")
+        ("j27/release" . "JAVA_VERSION=\"27\"\n"))
+    (let ((home (lambda (d) (expand-file-name d test-jdk--root))))
+      (should (= (hellmacs-jdk-home-major (funcall home "j8")) 8))
+      (should (= (hellmacs-jdk-home-major (funcall home "j25")) 25))
+      (should-not (hellmacs-jdk-home-major (funcall home "junk")))
+      (should-not (hellmacs-jdk-home-major nil))
+      (should (equal (hellmacs-jdk-pick (list nil (funcall home "j27") (funcall home "junk")
+                                              (funcall home "j8") (funcall home "j25") (funcall home "j21"))
+                                        21 25)
+                     (funcall home "j25")))
+      (should-not (hellmacs-jdk-pick (list (funcall home "j27") (funcall home "j8")) 21 25)))))
 
 (provide 'test-jdk)
 ;;; test-jdk.el ends here

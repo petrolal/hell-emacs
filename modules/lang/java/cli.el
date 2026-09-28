@@ -78,6 +78,90 @@ the directory (java-debug, the test runner) is installed again after."
 
 (add-hook 'hellmacs-sync-functions #'hellmacs-jvm-sync-install-server)
 
+(defun hellmacs-jvm--java-major (home)
+  "The major release of the JDK in HOME: its release file's, else `java -version''s."
+  (or (hellmacs-jdk-home-major home)
+      (let ((java (expand-file-name "bin/java" home)))
+        (when (file-executable-p java)
+          (with-temp-buffer
+            (when (ignore-errors (zerop (call-process java nil t nil "-version")))
+              (goto-char (point-min))
+              (when (re-search-forward "version \"\\([0-9.]+\\)" nil t)
+                (hellmacs-jdk--major (match-string 1)))))))))
+
+(defun hellmacs-jvm-doctor-jdtls-jdk ()
+  "Check the JDK that runs JDTLS. For doctor.el.
+Says which it is, and why JAVA_HOME's or the PATH's was passed over."
+  (let* ((range (format "%d to %d" hellmacs-jvm-jdtls-java-min hellmacs-jvm-jdtls-java-max))
+         (fits (lambda (major) (and major (<= hellmacs-jvm-jdtls-java-min major hellmacs-jvm-jdtls-java-max))))
+         (home (hellmacs-jvm-jdtls-java-home))
+         (major (and home (hellmacs-jvm--java-major home))))
+    (cond
+     (hellmacs-jvm-java-home
+      (if (funcall fits major)
+          (hellmacs-doctor-ok "JDK %d for JDTLS: %s (`hellmacs-jvm-java-home')" major (abbreviate-file-name home))
+        (hellmacs-doctor-error "`hellmacs-jvm-java-home' is %s; JDTLS %s runs on %s"
+                               (if major (format "JDK %d" major) (format "%s, not a JDK" (abbreviate-file-name home)))
+                               hellmacs-jvm-jdtls-version range)))
+     ((null home)
+      (hellmacs-doctor-error "No JDK %s to run JDTLS %s; install one (then `bin/hellmacs sync'), or set `hellmacs-jvm-java-home'"
+                             range hellmacs-jvm-jdtls-version))
+     (t
+      (hellmacs-doctor-ok "JDK %d for JDTLS: %s" major (abbreviate-file-name home))
+      (pcase-dolist (`(,label . ,other)
+                     (list (cons "JAVA_HOME's" (let ((h (getenv "JAVA_HOME"))) (and h (not (string-empty-p h)) h)))
+                           (cons "The PATH's" (hellmacs-jvm--path-java-home))))
+        (when (and other (not (equal (file-truename (directory-file-name (expand-file-name other)))
+                                     (file-truename home))))
+          (let ((other-major (hellmacs-jvm--java-major other)))
+            (unless (funcall fits other-major)
+              (hellmacs-doctor-info "%s JDK %s can't run JDTLS %s (it runs on %s); using JDK %d instead"
+                                    label (or other-major "(unknown release)") hellmacs-jvm-jdtls-version range major))))))))
+  (unless (getenv "JAVA_HOME")
+    (hellmacs-doctor-info "JAVA_HOME isn't set")))
+
+;;; JDKs for projects (Phase 12.3) ---------------------------------------------
+
+(defun hellmacs-jvm-sync-detect-jdks ()
+  "Find the JDKs on this machine and store them for JDTLS. For `hellmacs-sync-functions'.
+Stored rather than looked for at startup, which would cost startup time;
+config.el reads them when lsp-java loads."
+  (let ((jdks (hellmacs-jdk-detect)))
+    (hellmacs-jdk-write jdks)
+    (hellmacs-sync--log "JDKs for projects: %s"
+                        (if jdks
+                            (mapconcat (lambda (jdk) (replace-regexp-in-string "\\`[A-Za-z0-9]+-" "" (car jdk)))
+                                       jdks ", ")
+                          "none found (set `hellmacs-jdks' if yours are elsewhere)"))))
+
+(add-hook 'hellmacs-sync-functions #'hellmacs-jvm-sync-detect-jdks)
+
+(defun hellmacs-jvm-doctor-jdks ()
+  "Report the JDKs projects compile against. For doctor.el.
+Yours (`hellmacs-jdks') must each be a JDK of the release they're named
+for; found ones are compared with what the last sync stored."
+  (let* ((yours (bound-and-true-p hellmacs-jdks))
+         (jdks (or yours (hellmacs-jdk-detect)))
+         (default-home (hellmacs-jvm-jdtls-java-home))
+         (runtimes (append (hellmacs-jdk-lsp-runtimes jdks default-home) nil)))
+    (when yours
+      (hellmacs-doctor-info "Using your `hellmacs-jdks'"))
+    (dolist (runtime runtimes)
+      (let* ((name (plist-get runtime :name))
+             (home (plist-get runtime :path))
+             (actual (hellmacs-jdk-home-release home)))
+        (if (and yours (not (equal actual name)))
+            (hellmacs-doctor-error "`hellmacs-jdks' names %s for %s, which %s" name (abbreviate-file-name home)
+                                   (if actual (format "is a %s" actual) "isn't a JDK (no release file)"))
+          (hellmacs-doctor-ok "JDK %s: %s%s" name (abbreviate-file-name home)
+                              (if (eq (plist-get runtime :default) t) " (the default)" "")))))
+    (if (null jdks)
+        (hellmacs-doctor-info "No JDKs found for projects; set `hellmacs-jdks' if yours are elsewhere")
+      (unless yours
+        (when-let* ((unseen (seq-remove (lambda (jdk) (member jdk (hellmacs-jdk-read))) jdks)))
+          (hellmacs-doctor-warn "%s not known to JDTLS yet; `bin/hellmacs sync' stores them"
+                                (mapconcat #'car unseen ", ")))))))
+
 (defun hellmacs-jvm-bundle-paths ()
   "JDTLS (with java-debug and the JUnit runner) and, with +lombok, the
 pinned Lombok jar. For `hellmacs-bundle-functions'."

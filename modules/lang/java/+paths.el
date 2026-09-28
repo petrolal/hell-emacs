@@ -51,6 +51,47 @@
           hellmacs-jvm-jdtls-version hellmacs-jvm-jdtls-version hellmacs-jvm-jdtls-build)
   "Where the pinned JDTLS tarball is downloaded from.")
 
+;; The JDKs the pinned JDTLS runs on. Its bundled bytecode tools reject
+;; newer class files: 1.57 fails to start on JDK 27 ("Unsupported class
+;; file major version 71", in m2e's activation). Raise the maximum with
+;; the pin, once JDTLS is verified on the newer JDK.
+(defconst hellmacs-jvm-jdtls-java-min 21
+  "The oldest JDK the pinned JDTLS runs on.")
+
+(defconst hellmacs-jvm-jdtls-java-max 25
+  "The newest JDK the pinned JDTLS is verified to run on.")
+
+(defcustom hellmacs-jvm-java-home nil
+  "JDK that runs JDTLS itself (and debuggees), or nil to choose one.
+nil takes $JAVA_HOME's JDK, else the PATH's java, when JDTLS runs on it
+\(`hellmacs-jvm-jdtls-java-min' to `hellmacs-jvm-jdtls-java-max'), else
+the newest such JDK `bin/hellmacs sync' found. Projects compile against
+other JDKs: see `hellmacs-jdks'."
+  :type '(choice (const :tag "Choose one" nil) directory))
+
+(defun hellmacs-jvm--path-java-home ()
+  "The JDK home of the java on the PATH, or nil."
+  (when-let* ((java (executable-find "java")))
+    (directory-file-name
+     (file-name-directory (directory-file-name (file-name-directory (file-truename java)))))))
+
+(defun hellmacs-jvm-jdtls-java-home ()
+  "The JDK home that runs JDTLS: see `hellmacs-jvm-java-home'.
+nil when none JDTLS runs on is known (then the PATH's java is tried)."
+  (or hellmacs-jvm-java-home
+      (hellmacs-jdk-pick
+       (append (list (let ((home (getenv "JAVA_HOME")))
+                       (and home (not (string-empty-p home)) (directory-file-name (expand-file-name home))))
+                     (hellmacs-jvm--path-java-home))
+               (reverse (mapcar #'cdr (or (bound-and-true-p hellmacs-jdks) (hellmacs-jdk-read)))))
+       hellmacs-jvm-jdtls-java-min hellmacs-jvm-jdtls-java-max)))
+
+(defun hellmacs-jvm-java-executable ()
+  "The java that runs JDTLS and debuggees: `hellmacs-jvm-jdtls-java-home''s, else the PATH's."
+  (if-let* ((home (hellmacs-jvm-jdtls-java-home)))
+      (expand-file-name "bin/java" home)
+    "java"))
+
 (defvar hellmacs-jvm-jdtls-dir (expand-file-name "eclipse.jdt.ls/" lsp-server-install-dir)
   "Where JDTLS is installed (lsp-java's `lsp-java-server-install-dir').")
 

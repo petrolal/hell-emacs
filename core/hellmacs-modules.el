@@ -693,5 +693,12 @@ this file for the order."
 (autoload 'hellmacs-sync "hellmacs-sync"
   "Install every declared package, then write the synced profile." t)
 
+;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.
+(dolist (fn '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
+              hellmacs-jdk-home-release hellmacs-jdk-home-major hellmacs-jdk-pick hellmacs-jdk-default-roots hellmacs-jdk-scan-roots hellmacs-jdk-detect
+              hellmacs-jdk-write hellmacs-jdk-read hellmacs-jdk-lsp-runtimes
+              hellmacs-jdk-parse-toolchains-xml hellmacs-jdk-parse-gradle-toolchain))
+  (autoload fn "hellmacs-jdk"))
+
 (provide 'hellmacs-modules)
 ;;; hellmacs-modules.el ends here

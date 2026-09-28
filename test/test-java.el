@@ -243,5 +243,167 @@ Caused by: ToolchainProvisioningException: Cannot find a Java installation on yo
         (cl-letf (((symbol-function 'url-copy-file) (lambda (&rest _) (error "Shouldn't download"))))
           (hellmacs-jvm-sync-install-lombok))))))
 
+(defvar lsp-java-configuration-runtimes)
+(defvar hellmacs-jdks)
+(defvar hellmacs-jdk-file)
+(defvar hellmacs-sync-functions)
+(defvar hellmacs-cli--problems)
+
+(ert-deftest test-java/jdks-become-runtimes ()
+  "The JDKs sync found become JDTLS's runtimes, JDTLS's own JDK the default;
+yours (`hellmacs-jdks', or runtimes you set) win."
+  (test-java--load)
+  (let ((hellmacs-jdk-file (make-temp-file "hellmacs-test-jdks" nil ".eld"))
+        (hellmacs-jvm-java-home "/j/21")
+        (hellmacs-jdks nil)
+        (lsp-java-configuration-runtimes []))
+    (unwind-protect
+        (progn
+          (hellmacs-jdk-write '(("JavaSE-1.8" . "/j/8") ("JavaSE-21" . "/j/21") ("JavaSE-25" . "/j/25")))
+          (hellmacs-jvm-apply-jdks)
+          (should (equal (mapcar (lambda (r) (plist-get r :name)) lsp-java-configuration-runtimes)
+                         '("JavaSE-1.8" "JavaSE-21" "JavaSE-25")))
+          (should (eq (plist-get (aref lsp-java-configuration-runtimes 1) :default) t))
+          ;; Yours: `hellmacs-jdks' instead of what sync found.
+          (let ((hellmacs-jdks '(("JavaSE-11" . "/mine/11"))))
+            (hellmacs-jvm-apply-jdks)
+            (should (equal (plist-get (aref lsp-java-configuration-runtimes 0) :path) "/mine/11")))
+          ;; Runtimes you set yourself are left alone.
+          (let ((lsp-java-configuration-runtimes [(:name "JavaSE-17" :path "/x")]))
+            (hellmacs-jvm-apply-jdks)
+            (should (equal lsp-java-configuration-runtimes [(:name "JavaSE-17" :path "/x")]))))
+      (delete-file hellmacs-jdk-file))))
+
+(defun test-java--load-cli ()
+  (require 'hellmacs-cli)
+  (require 'hellmacs-jdk)               ; loaded now, so its functions can be stubbed
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp :lang java))
+    (hellmacs-module--load '(:lang . java) "cli.el")))
+
+(ert-deftest test-java/sync-stores-jdks ()
+  "Sync stores the JDKs it finds, and says which."
+  (test-java--load-cli)
+  (should (memq 'hellmacs-jvm-sync-detect-jdks hellmacs-sync-functions))
+  (let ((hellmacs-jdk-file (make-temp-file "hellmacs-test-jdks" nil ".eld"))
+        (logged nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'hellmacs-jdk-detect)
+                   (lambda () '(("JavaSE-1.8" . "/j/8") ("JavaSE-21" . "/j/21"))))
+                  ((symbol-function 'hellmacs-sync--log)
+                   (lambda (fmt &rest args) (push (apply #'format fmt args) logged))))
+          (hellmacs-jvm-sync-detect-jdks)
+          (should (equal (hellmacs-jdk-read) '(("JavaSE-1.8" . "/j/8") ("JavaSE-21" . "/j/21"))))
+          (should (string-match-p "JDKs for projects: 1\\.8, 21" (car logged))))
+      (delete-file hellmacs-jdk-file))))
+
+(ert-deftest test-java/doctor-lists-jdks ()
+  "Doctor lists each JDK, marks JDTLS's default, and says when sync hasn't seen them."
+  (test-java--load-cli)
+  (let ((hellmacs-jdk-file (make-temp-file "hellmacs-test-jdks" nil ".eld"))
+        (hellmacs-jvm-java-home "/j/21")
+        (hellmacs-jdks nil)
+        (hellmacs-cli--problems 0)
+        (found '(("JavaSE-1.8" . "/j/8") ("JavaSE-21" . "/j/21"))))
+    (unwind-protect
+        (cl-letf (((symbol-function 'hellmacs-jdk-detect) (lambda () found)))
+          (hellmacs-jdk-write found)
+          (let ((out (with-output-to-string (hellmacs-jvm-doctor-jdks))))
+            (should (string-match-p "✓ JDK JavaSE-1\\.8: /j/8$" out))
+            (should (string-match-p "✓ JDK JavaSE-21: /j/21 (the default)" out))
+            (should-not (string-match-p "sync" out)))
+          ;; A JDK installed since the last sync.
+          (setq found (append found '(("JavaSE-25" . "/j/25"))))
+          (should (string-match-p "! .*JavaSE-25.*`bin/hellmacs sync'"
+                                  (with-output-to-string (hellmacs-jvm-doctor-jdks))))
+          ;; Yours: each must be a JDK of the release it's named for.
+          (let ((hellmacs-jdks '(("JavaSE-17" . "/nowhere/17"))))
+            (should (string-match-p "✗ .*JavaSE-17.*/nowhere/17"
+                                    (with-output-to-string (hellmacs-jvm-doctor-jdks))))
+            (should (= hellmacs-cli--problems 1))))
+      (delete-file hellmacs-jdk-file))))
+
+(defvar hellmacs-jvm-jdtls-java-max)
+
+(defmacro test-java--with-jdks (&rest body)
+  "Run BODY with fake JDK homes `j21', `j25' and `j27', all stored by sync,
+no JAVA_HOME, and no java on the PATH."
+  (declare (indent 0))
+  `(let* ((root (make-temp-file "hellmacs-test-jdks" t))
+          (j21 (expand-file-name "j21" root))
+          (j25 (expand-file-name "j25" root))
+          (j27 (expand-file-name "j27" root))
+          (hellmacs-jdk-file (expand-file-name "jdks.eld" root))
+          (hellmacs-jvm-java-home nil)
+          (hellmacs-jvm-jdtls-java-max 25)
+          (exec-path nil)
+          (process-environment (cons "JAVA_HOME" process-environment)))
+     (unwind-protect
+         (progn
+           (dolist (jdk (list (cons j21 "21.0.1") (cons j25 "25.0.4") (cons j27 "27")))
+             (make-directory (car jdk) t)
+             (with-temp-file (expand-file-name "release" (car jdk))
+               (insert (format "JAVA_VERSION=\"%s\"\n" (cdr jdk)))))
+           (hellmacs-jdk-write (list (cons "JavaSE-21" j21) (cons "JavaSE-25" j25) (cons "JavaSE-27" j27)))
+           ,@body)
+       (delete-directory root t))))
+
+(ert-deftest test-java/jdtls-runs-on-a-jdk-it-supports ()
+  "JDTLS's JDK: yours if set; else JAVA_HOME's or the PATH's when JDTLS runs
+on it, else the newest JDK sync found that it runs on."
+  (test-java--load)
+  (test-java--with-jdks
+    (should (equal (hellmacs-jvm-jdtls-java-home) j25)) ; newest in range, not 27
+    (should (equal (hellmacs-jvm-java-executable) (expand-file-name "bin/java" j25)))
+    (let ((process-environment (cons (concat "JAVA_HOME=" j21) process-environment)))
+      (should (equal (hellmacs-jvm-jdtls-java-home) j21)))
+    (let ((process-environment (cons (concat "JAVA_HOME=" j27) process-environment)))
+      (should (equal (hellmacs-jvm-jdtls-java-home) j25)))
+    (let ((hellmacs-jvm-java-home j27))  ; yours, even if JDTLS can't run on it
+      (should (equal (hellmacs-jvm-jdtls-java-home) j27)))
+    (hellmacs-jdk-write (list (cons "JavaSE-27" j27)))
+    (should-not (hellmacs-jvm-jdtls-java-home))
+    (should (equal (hellmacs-jvm-java-executable) "java"))))
+
+(ert-deftest test-java/doctor-checks-jdtls-jdk ()
+  "Doctor names JDTLS's JDK, why another was passed over, and what to do when none fits."
+  (test-java--load-cli)
+  (test-java--with-jdks
+    (let ((hellmacs-cli--problems 0)
+          (process-environment (cons (concat "JAVA_HOME=" j27) process-environment)))
+      (let ((out (with-output-to-string (hellmacs-jvm-doctor-jdtls-jdk))))
+        (should (string-match-p (concat "✓ JDK 25 for JDTLS: " (regexp-quote (abbreviate-file-name j25))) out))
+        (should (string-match-p "JAVA_HOME's JDK 27 can't run JDTLS .* (it runs on 21 to 25)" out)))
+      (should (zerop hellmacs-cli--problems))
+      (let ((hellmacs-jvm-java-home j27))
+        (should (string-match-p "✗ `hellmacs-jvm-java-home' is JDK 27; JDTLS .* runs on 21 to 25"
+                                (with-output-to-string (hellmacs-jvm-doctor-jdtls-jdk)))))
+      (hellmacs-jdk-write (list (cons "JavaSE-27" j27)))
+      (should (string-match-p "✗ No JDK 21 to 25 to run JDTLS"
+                              (with-output-to-string (hellmacs-jvm-doctor-jdtls-jdk))))
+      (should (= hellmacs-cli--problems 2)))))
+
+(ert-deftest test-java/debug-launch-on-the-project-jdk ()
+  "A launch runs the program on its project's JDK, as JDTLS resolves it;
+a :javaExec you gave is kept, and without an answer java-debug decides."
+  (test-java--load)
+  (cl-letf (((symbol-function 'hellmacs-jvm--resolve-java-executable)
+             (lambda (main project)
+               (and (equal main "a.Main") (equal project "p") "/jdk8/bin/java"))))
+    (should (equal (plist-get (hellmacs-jvm--launch-on-project-jdk-a
+                               (list :mainClass "a.Main" :projectName "p"))
+                              :javaExec)
+                   "/jdk8/bin/java"))
+    (should (equal (plist-get (hellmacs-jvm--launch-on-project-jdk-a
+                               (list :mainClass "a.Main" :projectName "p" :javaExec "/mine/java"))
+                              :javaExec)
+                   "/mine/java"))
+    (should-not (plist-get (hellmacs-jvm--launch-on-project-jdk-a
+                            (list :mainClass "b.Other" :projectName "p"))
+                           :javaExec))
+    (should-not (plist-get (hellmacs-jvm--launch-on-project-jdk-a (list :request "attach"))
+                           :javaExec))))
+
 (provide 'test-java)
 ;;; test-java.el ends here

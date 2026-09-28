@@ -30,6 +30,20 @@ When you open a `.java` file in a Maven or Gradle project:
 2. The echo area displays `[FORGE IGNITED]` while JDTLS starts up.
 3. Once indexed, `[DAEMON READY]` appears, and the mode-line reports `JVM:ready`.
 
+### Several JDKs
+JDTLS itself runs on one JDK, and each project compiles against the JDK of the release it targets: a Java 8 project against a JDK 8, a Java 17 one against a JDK 17.
+* **The JDK that runs JDTLS** must be one the pinned JDTLS supports: 21 to 25 for JDTLS 1.57 (it fails to start on JDK 27). Hellmacs chooses it: `$JAVA_HOME`'s JDK if JDTLS runs on it, else the `PATH`'s `java`, else the newest suitable JDK that `bin/hellmacs sync` found. So a newer system JDK doesn't break Java editing. `bin/hellmacs doctor` says which JDK it chose, and why it passed over the others. To choose it yourself, set `hellmacs-jvm-java-home` in `init.el`.
+* `bin/hellmacs sync` finds your JDKs and tells JDTLS about them. It looks in `JAVA_HOME`, the `java` on your `PATH`, SDKMAN (`~/.sdkman`), `/usr/lib/jvm`, macOS's `JavaVirtualMachines`, asdf, jenv and mise. It keeps one JDK per release, and `JAVA_HOME`'s wins for its release.
+* After installing another JDK, run `bin/hellmacs sync` again. `bin/hellmacs doctor` lists the JDKs, marks the default (JDTLS's own), and warns about any it finds that the last sync didn't store.
+* If your JDKs are elsewhere, list them yourself in `~/.config/hellmacs/init.el`, named as JDTLS names releases:
+  ```elisp
+  (setq hellmacs-jdks '(("JavaSE-1.8" . "/opt/jdk8")
+                        ("JavaSE-17"  . "/opt/jdk-17")))
+  ```
+  `doctor` checks that each one is a JDK of that release. If you set `lsp-java-configuration-runtimes` yourself, Hellmacs leaves it alone.
+* A program you debug (`:tools debugger`) runs on its project's JDK too: a Java 8 program on JDK 8. A `:javaExec` in your own launch configuration wins.
+* The command-line build (`C-x p c`) runs on the JDK your shell gives it, as in a terminal. Maven needs `JAVA_HOME` to be the project's JDK. Gradle finds the JDK its toolchain asks for on its own, if it's installed where Gradle looks.
+
 ### Java Keybindings (`C-c l j`)
 | Key | Command | Description |
 |---|---|---|
