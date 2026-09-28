@@ -32,6 +32,11 @@
 (package! dap-mode)
 (package! lsp-java)                     ; also provides dap-java
 
+;; +spring: application.yml is edited in yaml-mode, which the Spring Boot
+;; server attaches to (lsp-java-boot).
+(when (modulep! +spring)
+  (package! yaml-mode))
+
 ;; java-ts-mode is built into Emacs; `bin/hellmacs sync' builds its grammar.
 (when (modulep! +tree-sitter)
   (hellmacs-treesit!

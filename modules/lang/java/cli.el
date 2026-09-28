@@ -210,10 +210,43 @@ for; found ones are compared with what the last sync stored."
           (hellmacs-doctor-warn "%s not known to JDTLS yet; `bin/hellmacs sync' stores them"
                                 (mapconcat #'car unseen ", ")))))))
 
+;;; Spring Boot's language server (+spring) --------------------------------------
+
+(defun hellmacs-jvm-sync-install-spring ()
+  "Install the pinned Spring Boot language server and its JDTLS extensions.
+For `hellmacs-sync-functions', with +spring. Only its language server
+and the jars JDTLS loads are kept from the VSIX (83MB, mostly VS Code's)."
+  (if (hellmacs-jvm-spring-installed-p)
+      (hellmacs-sync--log "Spring Boot Tools %s is installed" hellmacs-jvm-spring-version)
+    (hellmacs-sync--log "Downloading Spring Boot Tools %s (83MB)..." hellmacs-jvm-spring-version)
+    (make-directory hellmacs-jvm-spring-dir t)
+    (hellmacs-sync-install-zip
+     "Spring Boot Tools" hellmacs-jvm-spring-url hellmacs-jvm-spring-sha256
+     hellmacs-jvm-spring-dir (hellmacs-jvm-spring--marker)
+     (lambda (stage)
+       (let ((server (expand-file-name "language-server" hellmacs-jvm-spring-dir))
+             (jars (expand-file-name "jars" hellmacs-jvm-spring-dir)))
+         (dolist (dir (list server jars))
+           (when (file-directory-p dir) (delete-directory dir t)))
+         (rename-file (expand-file-name "extension/language-server" stage) server)
+         (make-directory jars)
+         (dolist (jar hellmacs-jvm-spring-extensions)
+           (rename-file (expand-file-name (concat "extension/jars/" jar) stage)
+                        (expand-file-name jar jars))))))
+    (unless (hellmacs-jvm-spring-installed-p)
+      (error "Spring Boot Tools was unpacked, but its server or JDTLS extensions are missing from %s"
+             (abbreviate-file-name hellmacs-jvm-spring-dir)))
+    (hellmacs-sync--log "Spring Boot Tools %s installed (SHA-256 verified)" hellmacs-jvm-spring-version)))
+
+(when (modulep! +spring)
+  (add-hook 'hellmacs-sync-functions #'hellmacs-jvm-sync-install-spring))
+
 (defun hellmacs-jvm-bundle-paths ()
-  "JDTLS (with java-debug and the JUnit runner) and, with +lombok, the
+  "JDTLS (with java-debug and the JUnit runner); with +spring, the Spring Boot
+server; with +lombok, the
 pinned Lombok jar. For `hellmacs-bundle-functions'."
   (list hellmacs-jvm-jdtls-dir
+        (when (modulep! +spring) hellmacs-jvm-spring-dir)
         (when (and (modulep! +lombok)
                    (equal hellmacs-jvm-lombok-jar hellmacs-jvm--default-lombok-jar))
           hellmacs-jvm-lombok-jar)))

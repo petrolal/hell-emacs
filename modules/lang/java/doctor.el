@@ -65,6 +65,13 @@
 (hellmacs-doctor-pinned "JUnit test runner" hellmacs-jvm-junit-runner-version
                         (hellmacs-jvm-junit-runner-valid-p) (file-exists-p dap-java-test-runner))
 
+;; +spring: Spring Boot's language server, pinned; it runs on JDTLS's JDK.
+(when (modulep! +spring)
+  (hellmacs-doctor-pinned "Spring Boot Tools" hellmacs-jvm-spring-version
+                          (hellmacs-jvm-spring-installed-p)
+                          (file-directory-p hellmacs-jvm-spring-dir)
+                          :where hellmacs-jvm-spring-dir))
+
 (when (modulep! +lombok)
   (cond ((hellmacs-jvm-lombok-jar-valid-p)
          (hellmacs-doctor-ok "Lombok: %s" (abbreviate-file-name hellmacs-jvm-lombok-jar)))

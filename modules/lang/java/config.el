@@ -224,6 +224,48 @@ JUnit test methods return void: the nearest void method above point."
 (defun hellmacs-jvm--setup-reload-h ()
   (setq-local hellmacs-reload-function #'hellmacs-jvm-reload))
 
+;; +spring: Spring Boot's language server (Phase 12.4), through lsp-java's
+;; lsp-java-boot, beside JDTLS. It completes and checks properties in
+;; application*.yml/.properties, and knows beans and request mappings
+;; (workspace symbols `@+' and `@/'). `bin/hellmacs sync' installs the
+;; pinned server (+paths.el). lsp-java-boot's own launch is from an older
+;; server: this one embeds a web server, which must stay off, as VS Code
+;; keeps it.
+(defvar lsp-java-bundles)
+(defvar lsp-language-id-configuration)
+
+(defun hellmacs-jvm-spring-ls-command (port)
+  "The command starting the Spring Boot server, which connects back to PORT."
+  (list (hellmacs-jvm-java-executable)
+        "-Xmx1024m"
+        (format "-Dspring.lsp.client-port=%d" port)
+        "-Dsts.lsp.client=vscode"
+        "-Dspring.config.location=classpath:/application.properties"
+        "-Dspring.main.web-application-type=NONE"
+        "-Djdk.util.zip.disableZip64ExtraFieldValidation=true"
+        (concat "-Dsts.log.file=" (expand-file-name "spring-boot/sts.log" hellmacs-cache-dir))
+        (concat "-Dlogging.file.name=" (expand-file-name "spring-boot/server.log" hellmacs-cache-dir))
+        "-jar" (hellmacs-jvm-spring-server-jar)))
+
+(defun hellmacs-jvm--spring-lsp-h ()
+  "Start lsp in a Spring Boot config file (application.yml...), for its server."
+  (when (and buffer-file-name (hellmacs-spring-config-file-p buffer-file-name))
+    (lsp-deferred)))
+
+(when (modulep! +spring)
+  (after! lsp-java
+    ;; Before JDTLS starts: its extensions come with its initialization.
+    (when (hellmacs-jvm-spring-installed-p)
+      (setq lsp-java-bundles (append lsp-java-bundles (hellmacs-jvm-spring-extension-jars))))
+    (require 'lsp-java-boot)
+    (advice-add 'lsp-java-boot--server-jar :override #'hellmacs-jvm-spring-server-jar)
+    (advice-add 'lsp-java-boot--ls-command :override #'hellmacs-jvm-spring-ls-command))
+  (after! lsp-mode
+    ;; First, so they win over the modes' own (yaml, properties).
+    (dolist (entry (reverse hellmacs-spring-language-ids))
+      (add-to-list 'lsp-language-id-configuration entry)))
+  (add-hook! (yaml-mode conf-javaprop-mode) #'hellmacs-jvm--spring-lsp-h))
+
 ;; A launched program runs on its project's JDK (a Java 8 project on JDK 8),
 ;; not on the one running JDTLS. java-debug falls back to JDTLS's own
 ;; without a :javaExec, and dap-java gives none; this asks JDTLS for the

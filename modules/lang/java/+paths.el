@@ -187,3 +187,49 @@ own only has to exist."
 (defun hellmacs-jvm-java-debug-jar-valid-p ()
   "Return non-nil if the java-debug jar JDTLS loads is the pinned release."
   (hellmacs-file-pinned-p hellmacs-jvm-java-debug-jar hellmacs-jvm-java-debug-sha256))
+
+;;; Spring Boot's language server (+spring) --------------------------------------
+
+;; From VS Code's Spring Boot Tools, its 2.4.0 release on Open VSX (the
+;; daily builds between releases are marked pre-release there). Its
+;; SHA-256 matched Open VSX's published one. The server needs Java 21+,
+;; like JDTLS, and runs on JDTLS's JDK. Kept apart from JDTLS's own
+;; directory, which a JDTLS update replaces whole.
+(defconst hellmacs-jvm-spring-version "2.4.0"
+  "Spring Boot Tools release `bin/hellmacs sync' installs with +spring.")
+
+(defconst hellmacs-jvm-spring-sha256
+  "7743e50a9028a6c1ba8f82986576a95c613dd6222650f8e9795ecf7a1aaebb79"
+  "SHA-256 of the pinned Spring Boot Tools VSIX.")
+
+(defconst hellmacs-jvm-spring-url
+  (format "https://open-vsx.org/api/VMware/vscode-spring-boot/%s/file/VMware.vscode-spring-boot-%s.vsix"
+          hellmacs-jvm-spring-version hellmacs-jvm-spring-version)
+  "Where the pinned Spring Boot Tools VSIX is downloaded from.")
+
+(defvar hellmacs-jvm-spring-dir (expand-file-name "spring-boot/" lsp-server-install-dir)
+  "Where the Spring Boot language server and its JDTLS extensions are installed.")
+
+(defconst hellmacs-jvm-spring-extensions
+  '("io.projectreactor.reactor-core.jar" "org.reactivestreams.reactive-streams.jar"
+    "jdt-ls-commons.jar" "jdt-ls-extension.jar" "sts-gradle-tooling.jar")
+  "The JDTLS extensions the pinned release gives JDTLS, in order (its
+package.json's javaExtensions): its `sts.java.*' commands live there.")
+
+(defun hellmacs-jvm-spring-server-jar ()
+  "The installed Spring Boot language server's jar, or nil."
+  (car (file-expand-wildcards (expand-file-name "language-server/*-exec.jar" hellmacs-jvm-spring-dir))))
+
+(defun hellmacs-jvm-spring-extension-jars ()
+  "The JDTLS extensions' jars, as installed."
+  (mapcar (lambda (jar) (expand-file-name (concat "jars/" jar) hellmacs-jvm-spring-dir))
+          hellmacs-jvm-spring-extensions))
+
+(defun hellmacs-jvm-spring--marker ()
+  (expand-file-name ".hellmacs-sha256" hellmacs-jvm-spring-dir))
+
+(defun hellmacs-jvm-spring-installed-p ()
+  "Non-nil if the pinned Spring Boot server and its JDTLS extensions are installed."
+  (and (hellmacs-jvm-spring-server-jar)
+       (seq-every-p #'file-exists-p (hellmacs-jvm-spring-extension-jars))
+       (hellmacs-marker-current-p (hellmacs-jvm-spring--marker) hellmacs-jvm-spring-sha256)))

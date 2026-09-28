@@ -29,6 +29,12 @@
 (require 'cl-lib)
 (require 'hellmacs-modules)
 
+;; :lang java's code, where the Spring helpers live.
+(let ((hellmacs-modules (make-hash-table :test #'equal))
+      (warning-minimum-log-level :emergency))
+  (hellmacs--enable-modules '(:tools lsp :lang (java +spring)))
+  (hellmacs-module--load '(:lang . java) "autoload.el"))
+
 (defmacro test-spring--with-tree (files &rest body)
   "Run BODY in a temporary directory holding FILES (alist of path . content)."
   (declare (indent 1))
@@ -61,6 +67,23 @@
   (let ((spring-files '("application.properties" "application-dev.yml" "bootstrap.yaml")))
     (dolist (file spring-files)
       (should (hellmacs-spring-config-file-p file)))))
+
+(ert-deftest test-spring/config-files-and-language-ids ()
+  "Spring's config files, by name, and the language ids its server expects for them."
+  (dolist (file '("pom.xml" "src/app.yml" "config.properties" "application.xml" "my-application.yml"))
+    (should-not (hellmacs-spring-config-file-p file)))
+  (should (hellmacs-spring-config-file-p "/p/src/main/resources/application-dev.properties"))
+  (should (equal (hellmacs-spring-language-id "/p/src/main/resources/application.yml")
+                 "spring-boot-properties-yaml"))
+  (should (equal (hellmacs-spring-language-id "/p/bootstrap-cloud.yaml") "spring-boot-properties-yaml"))
+  (should (equal (hellmacs-spring-language-id "/p/application-dev.properties") "spring-boot-properties"))
+  (should-not (hellmacs-spring-language-id "/p/src/main/resources/logback.yml"))
+  ;; As lsp-mode reads them: (FILE-REGEXP . ID), matched against the file name.
+  (pcase-dolist (`(,file . ,id) '(("/p/application.yml" . "spring-boot-properties-yaml")
+                                  ("/p/application-x.properties" . "spring-boot-properties")))
+    (should (equal (cdr (seq-find (lambda (entry) (string-match-p (car entry) file))
+                                  hellmacs-spring-language-ids))
+                   id))))
 
 (provide 'test-spring)
 ;;; test-spring.el ends here

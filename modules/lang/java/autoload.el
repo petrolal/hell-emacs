@@ -77,3 +77,24 @@ build file is saved; this is for changes it missed."
     (with-current-buffer (find-file-noselect build)
       (lsp-java-update-project-configuration))
     (message "Re-importing %s" (abbreviate-file-name build))))
+
+;;; Spring Boot (+spring) ------------------------------------------------------------
+
+;;;###autoload
+(defconst hellmacs-spring-language-ids
+  '(("/\\(?:application\\|bootstrap\\)[^/]*\\.ya?ml\\'" . "spring-boot-properties-yaml")
+    ("/\\(?:application\\|bootstrap\\)[^/]*\\.properties\\'" . "spring-boot-properties"))
+  "Spring Boot's config files, as lsp-mode's (FILE-REGEXP . LANGUAGE-ID).
+The Spring Boot server completes and checks properties in documents of
+these language ids (VS Code's), not plain yaml or properties.")
+
+;;;###autoload
+(defun hellmacs-spring-language-id (file)
+  "The Spring Boot server's language id for FILE, or nil if FILE isn't a Spring config."
+  (let ((path (concat "/" (file-name-nondirectory file))))
+    (cdr (seq-find (lambda (entry) (string-match-p (car entry) path)) hellmacs-spring-language-ids))))
+
+;;;###autoload
+(defun hellmacs-spring-config-file-p (file)
+  "Non-nil if FILE is a Spring Boot config: application*.yml/.yaml/.properties, bootstrap*."
+  (and (hellmacs-spring-language-id file) t))

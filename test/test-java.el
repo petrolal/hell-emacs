@@ -408,6 +408,8 @@ a :javaExec you gave is kept, and without an answer java-debug decides."
                            :javaExec))))
 
 (defvar hellmacs-jvm-maven-toolchains)
+(defvar hellmacs-bundle-functions)
+(defvar hellmacs--loaded-cli-files)
 
 (defun test-java--doctor-toolchains (dir)
   "What `hellmacs-jvm-doctor-toolchains' reports for DIR."
@@ -476,6 +478,98 @@ a :javaExec you gave is kept, and without an answer java-debug decides."
         (should (zerop hellmacs-cli--problems)))
       ;; Outside any build: only toolchains.xml is checked.
       (should-not (string-match-p "asks for" (test-java--doctor-toolchains root))))))
+
+(defvar hellmacs-jvm-spring-dir)
+(defvar hellmacs-jvm-spring-sha256)
+(defvar hellmacs-jvm-spring-url)
+
+(defun test-java--fake-vsix (root)
+  "A VSIX laid out like Spring Boot Tools', in ROOT; return its path."
+  (let ((src (expand-file-name "vsix" root)))
+    (dolist (file (append '("extension/language-server/spring-boot-language-server-9.9.9-exec.jar"
+                            "extension/language-server/lib/spring-core.jar"
+                            "extension/node_modules/junk.js")
+                          (mapcar (lambda (jar) (concat "extension/jars/" jar))
+                                  '("io.projectreactor.reactor-core.jar" "org.reactivestreams.reactive-streams.jar"
+                                    "jdt-ls-commons.jar" "jdt-ls-extension.jar" "sts-gradle-tooling.jar"
+                                    "xml-ls-extension.jar"))))
+      (let ((path (expand-file-name file src)))
+        (make-directory (file-name-directory path) t)
+        (with-temp-file path (insert file))))
+    (let ((default-directory (file-name-as-directory src)))
+      (call-process "zip" nil nil nil "-q" "-r" "../boot.vsix" "extension"))
+    (expand-file-name "boot.vsix" root)))
+
+(ert-deftest test-java/spring-server-install-is-pinned ()
+  "+spring: sync installs Spring Boot Tools' server and JDTLS extensions, only if the VSIX
+matches its pin, and keeps only what's used."
+  (skip-unless (and (executable-find "zip") (executable-find "unzip")))
+  (test-java--load-cli)
+  (let* ((root (make-temp-file "hellmacs-test-spring" t))
+         (vsix (test-java--fake-vsix root))
+         (hellmacs-jvm-spring-dir (expand-file-name "lsp/spring-boot/" root))
+         (hellmacs-jvm-spring-url "https://example.invalid/boot.vsix"))
+    (unwind-protect
+        (cl-letf (((symbol-function 'url-copy-file) (lambda (_url file &rest _) (copy-file vsix file t)))
+                  ((symbol-function 'hellmacs-sync--log) #'ignore))
+          (let ((hellmacs-jvm-spring-sha256 (make-string 64 ?0)))
+            (should-error (hellmacs-jvm-sync-install-spring))
+            (should-not (hellmacs-jvm-spring-installed-p)))
+          (let ((hellmacs-jvm-spring-sha256 (hellmacs-file-sha256 vsix)))
+            (hellmacs-jvm-sync-install-spring)
+            (should (hellmacs-jvm-spring-installed-p))
+            (should (equal (file-name-nondirectory (hellmacs-jvm-spring-server-jar))
+                           "spring-boot-language-server-9.9.9-exec.jar"))
+            (should (file-exists-p (expand-file-name "language-server/lib/spring-core.jar" hellmacs-jvm-spring-dir)))
+            ;; The five jars VS Code gives JDTLS, in its order; nothing else.
+            (should (equal (mapcar #'file-name-nondirectory (hellmacs-jvm-spring-extension-jars))
+                           '("io.projectreactor.reactor-core.jar" "org.reactivestreams.reactive-streams.jar"
+                             "jdt-ls-commons.jar" "jdt-ls-extension.jar" "sts-gradle-tooling.jar")))
+            (should (seq-every-p #'file-exists-p (hellmacs-jvm-spring-extension-jars)))
+            (should-not (file-exists-p (expand-file-name "node_modules" hellmacs-jvm-spring-dir)))))
+      (delete-directory root t))))
+
+(ert-deftest test-java/spring-server-command ()
+  "The server runs as VS Code runs it (no web server of its own), on JDTLS's JDK."
+  (test-java--load)
+  (let* ((root (make-temp-file "hellmacs-test-spring" t))
+         (hellmacs-jvm-spring-dir (file-name-as-directory root))
+         (jar (expand-file-name "language-server/spring-boot-language-server-9.9.9-exec.jar" root))
+         (hellmacs-jvm-java-home "/j/21"))
+    (unwind-protect
+        (progn
+          (make-directory (file-name-directory jar) t)
+          (with-temp-file jar (insert "jar"))
+          (let ((command (hellmacs-jvm-spring-ls-command 5555)))
+            (should (equal (car command) "/j/21/bin/java"))
+            (dolist (arg '("-Xmx1024m" "-Dspring.lsp.client-port=5555" "-Dsts.lsp.client=vscode"
+                           "-Dspring.main.web-application-type=NONE"
+                           "-Dspring.config.location=classpath:/application.properties"))
+              (should (member arg command)))
+            (should-not (seq-some (lambda (a) (string-prefix-p "-Dserver.port" a)) command))
+            (should (equal (last command 2) (list "-jar" jar)))))
+      (delete-directory root t))))
+
+(ert-deftest test-java/spring-flag-hooks ()
+  "With +spring, sync installs the server and bundles carry it; without, neither."
+  (require 'hellmacs-cli)
+  (require 'hellmacs-jdk)
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (hellmacs-sync-functions nil)
+        (hellmacs-bundle-functions nil)
+        (hellmacs--loaded-cli-files nil)
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp :lang (java +spring)))
+    (hellmacs-module--load '(:lang . java) "cli.el")
+    (should (memq 'hellmacs-jvm-sync-install-spring hellmacs-sync-functions))
+    (should (member hellmacs-jvm-spring-dir (hellmacs-jvm-bundle-paths))))
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (hellmacs-sync-functions nil)
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp :lang java))
+    (hellmacs-module--load '(:lang . java) "cli.el")
+    (should-not (memq 'hellmacs-jvm-sync-install-spring hellmacs-sync-functions))
+    (should-not (member hellmacs-jvm-spring-dir (hellmacs-jvm-bundle-paths)))))
 
 (provide 'test-java)
 ;;; test-java.el ends here
