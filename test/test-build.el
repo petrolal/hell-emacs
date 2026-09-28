@@ -231,6 +231,31 @@ With FULL, the file is its whole resolved path."
   (let ((hellmacs-ux-enable nil))
     (should (equal (hellmacs-forge-announce 'damnation "1 of 3 tests") "Tests failed: 1 of 3 tests"))))
 
+(ert-deftest test-build/commands-for-several-tests ()
+  "A list of tests runs in one build: Gradle repeats --tests, Surefire takes a comma list."
+  (test-build--with-tree '("gradlew" "build.gradle")
+    (should (equal (hellmacs-forge--command 'test '("p.A#one" "p.B"))
+                   "./gradlew test --console=plain --tests p.A.one --tests p.B")))
+  (test-build--with-tree '("pom.xml")
+    (should (equal (hellmacs-forge--command 'test '("p.A#one" "p.B"))
+                   "mvn -B test -Dtest=p.A\\#one,p.B -Dsurefire.failIfNoSpecifiedTests=false"))))
+
+(ert-deftest test-build/damnation-hint ()
+  "Failing tests' message ends with `hellmacs-forge-test-failures-hint', when set."
+  (let ((hellmacs-ux-enable t)
+        (hellmacs-forge-test-failures-hint " -- see *hellmacs-tests*")
+        (shown nil))
+    (with-current-buffer (get-buffer-create " *test-build-hint*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert "BrokenTest > fails() FAILED\n\n3 tests completed, 1 failed\n"))
+      (compilation-mode)
+      (cl-letf (((symbol-function 'message) (lambda (_fmt text) (setq shown text))))
+        (hellmacs-forge--report-h (current-buffer) "exited abnormally with code 1\n"))
+      (kill-buffer))
+    (should (equal (substring-no-properties shown)
+                   "[TEST DAMNATION] 1 of 3 tests -- see *hellmacs-tests*"))))
+
 (ert-deftest test-build/build-problem-without-a-location ()
   "Failures with no file:line show the build tool's own reason."
   (with-temp-buffer

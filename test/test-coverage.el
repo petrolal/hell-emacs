@@ -1,4 +1,4 @@
-;;; test-coverage.el --- Tests for JaCoCo code coverage (Phase 12.5) -*- lexical-binding: t; -*-
+;;; test-coverage.el --- Tests for :tools test's coverage marks (Phase 12.5) -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -27,6 +27,15 @@
 
 (require 'ert)
 (require 'cl-lib)
+(require 'compile)
+(require 'hellmacs-modules)
+
+;; :tools test's code, and :tools build's, which runs the tests.
+(let ((hellmacs-modules (make-hash-table :test #'equal))
+      (warning-minimum-log-level :emergency))
+  (hellmacs--enable-modules '(:tools build test))
+  (hellmacs-module--load '(:tools . build) "autoload.el")
+  (hellmacs-module--load '(:tools . test) "autoload.el"))
 
 (defmacro test-cov--with-tree (files &rest body)
   "Run BODY in a temporary directory holding FILES (alist of path . content)."
@@ -40,13 +49,14 @@
                (make-directory (file-name-directory path) t)
                (with-temp-file path (insert (cdr f)))))
            ,@body)
+       (ignore-errors (hellmacs-coverage-hide))
+       (dolist (b (buffer-list))
+         (when (and (buffer-file-name b) (string-prefix-p root (buffer-file-name b)))
+           (kill-buffer b)))
        (delete-directory root t))))
 
-(ert-deftest test-coverage/parse-jacoco-xml ()
-  "Parses JaCoCo XML coverage report into per-line coverage statuses."
-  (test-cov--with-tree
-      '(("target/site/jacoco/jacoco.xml" .
-         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
+(defconst test-cov--report
+  "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
 <!DOCTYPE report PUBLIC \"-//JACOCO//DTD Report 1.1//EN\" \"report.dtd\">
 <report name=\"demo\">
   <package name=\"com/example\">
@@ -56,7 +66,21 @@
       <line nr=\"7\" mi=\"0\" ci=\"1\" mb=\"1\" cb=\"1\"/>
     </sourcefile>
   </package>
-</report>"))
+</report>")
+
+(defconst test-cov--app (mapconcat (lambda (n) (format "line %d" n)) (number-sequence 1 10) "\n"))
+
+(defun test-cov--marks ()
+  "This buffer's coverage marks, as ((LINE . STATUS) ...)."
+  (sort (mapcar (lambda (o) (cons (line-number-at-pos (overlay-start o))
+                                  (overlay-get o 'hellmacs-coverage)))
+                (seq-filter (lambda (o) (overlay-get o 'hellmacs-coverage))
+                            (overlays-in (point-min) (point-max))))
+        (lambda (a b) (< (car a) (car b)))))
+
+(ert-deftest test-coverage/parse-jacoco-xml ()
+  "Parses JaCoCo XML coverage report into per-line coverage statuses."
+  (test-cov--with-tree `(("target/site/jacoco/jacoco.xml" . ,test-cov--report))
     (let* ((xml-file (expand-file-name "target/site/jacoco/jacoco.xml" root))
            (cov-data (hellmacs-coverage-parse-jacoco-xml xml-file)))
       (should (assoc "com/example/App.java" cov-data))
@@ -72,9 +96,106 @@
   "Finds JaCoCo XML reports in Maven target and Gradle build locations."
   (test-cov--with-tree
       '(("target/site/jacoco/jacoco.xml" . "<report name=\"maven\"/>")
-        ("build/reports/jacoco/test/jacocoTestReport.xml" . "<report name=\"gradle\"/>"))
+        ("build/reports/jacoco/test/jacocoTestReport.xml" . "<report name=\"gradle\"/>")
+        ("build/reports/tests/test/index.html" . "<html/>")
+        ("src/main/resources/jacoco.xml" . "<report/>"))
     (let ((reports (hellmacs-coverage-find-reports root)))
       (should (= (length reports) 2)))))
+
+(ert-deftest test-coverage/marks-in-source-buffers ()
+  "show marks each reported line of open buffers, and files opened later; hide removes them."
+  (test-cov--with-tree `(("target/site/jacoco/jacoco.xml" . ,test-cov--report)
+                         ("src/main/java/com/example/App.java" . ,test-cov--app)
+                         ("src/main/java/com/example/Other.java" . ,test-cov--app))
+    (let ((app (find-file-noselect (expand-file-name "src/main/java/com/example/App.java" root))))
+      (hellmacs-coverage-show root)
+      (with-current-buffer app
+        (should (equal (test-cov--marks) '((5 . covered) (6 . missed) (7 . partial)))))
+      (with-current-buffer (find-file-noselect (expand-file-name "src/main/java/com/example/Other.java" root))
+        (should-not (test-cov--marks)))
+      ;; Opened after `show': marked too.
+      (kill-buffer app)
+      (with-current-buffer (find-file-noselect (expand-file-name "src/main/java/com/example/App.java" root))
+        (should (= (length (test-cov--marks)) 3))
+        (hellmacs-coverage-hide)
+        (should-not (test-cov--marks))
+        (should (= left-margin-width 0)))
+      (kill-buffer "App.java")
+      (with-current-buffer (find-file-noselect (expand-file-name "src/main/java/com/example/App.java" root))
+        (should-not (test-cov--marks))))))
+
+(ert-deftest test-coverage/fringe-or-margin ()
+  "A graphical frame gets fringe marks; a terminal, margin marks."
+  (test-cov--with-tree `(("target/site/jacoco/jacoco.xml" . ,test-cov--report)
+                         ("src/main/java/com/example/App.java" . ,test-cov--app))
+    (with-current-buffer (find-file-noselect (expand-file-name "src/main/java/com/example/App.java" root))
+      (cl-letf (((symbol-function 'display-graphic-p) #'ignore))
+        (hellmacs-coverage-show root))
+      (let ((mark (seq-find (lambda (o) (overlay-get o 'hellmacs-coverage)) (overlays-in 1 (point-max)))))
+        (should (equal (car (get-text-property 0 'display (overlay-get mark 'before-string)))
+                       '(margin left-margin)))
+        (should (> left-margin-width 0)))
+      (hellmacs-coverage-hide)
+      (cl-letf (((symbol-function 'display-graphic-p) #'always))
+        (hellmacs-coverage-show root))
+      (let ((mark (seq-find (lambda (o) (overlay-get o 'hellmacs-coverage)) (overlays-in 1 (point-max)))))
+        (should (eq (car (get-text-property 0 'display (overlay-get mark 'before-string)))
+                    'left-fringe))))))
+
+(ert-deftest test-coverage/modules ()
+  "A module's report marks that module's sources, not another's of the same name."
+  (test-cov--with-tree `(("lib/target/site/jacoco/jacoco.xml" . ,test-cov--report)
+                         ("lib/src/main/java/com/example/App.java" . ,test-cov--app)
+                         ("app/src/main/java/com/example/App.java" . ,test-cov--app))
+    (let ((lib (find-file-noselect (expand-file-name "lib/src/main/java/com/example/App.java" root)))
+          (app (find-file-noselect (expand-file-name "app/src/main/java/com/example/App.java" root))))
+      (hellmacs-coverage-show root)
+      (should (= 3 (length (with-current-buffer lib (test-cov--marks)))))
+      (should-not (with-current-buffer app (test-cov--marks))))))
+
+(ert-deftest test-coverage/summary ()
+  "Per file: lines covered (JaCoCo's rule: some instruction ran) of lines with code."
+  (test-cov--with-tree `(("target/site/jacoco/jacoco.xml" . ,test-cov--report))
+    (should (equal (hellmacs-coverage-summary-rows root)
+                   '(("com/example/App.java" 2 3))))
+    (with-current-buffer (hellmacs-coverage-summary root)
+      (should (derived-mode-p 'tabulated-list-mode))
+      (goto-char (point-min))
+      (should (equal (aref (tabulated-list-get-entry) 0) "com/example/App.java"))
+      (should (equal (aref (tabulated-list-get-entry) 1) "66.7%"))
+      (kill-buffer))))
+
+(ert-deftest test-coverage/commands ()
+  "JaCoCo comes in on the command line, never in the build file."
+  (test-cov--with-tree '(("gradlew" . "") ("build.gradle" . ""))
+    (let ((command (hellmacs-coverage--command)))
+      (should (string-prefix-p "./gradlew test jacocoTestReport --console=plain --init-script " command))
+      (let ((script (car (last (split-string-shell-command command)))))
+        (should (file-exists-p script))
+        (with-temp-buffer
+          (insert-file-contents script)
+          (should (search-forward "apply plugin: 'jacoco'" nil t))
+          (should (search-forward "xml.required = true" nil t))))))
+  (test-cov--with-tree '(("pom.xml" . ""))
+    (should (equal (hellmacs-coverage--command)
+                   (concat "mvn -B org.jacoco:jacoco-maven-plugin:" hellmacs-coverage-jacoco-version
+                           ":prepare-agent test org.jacoco:jacoco-maven-plugin:"
+                           hellmacs-coverage-jacoco-version ":report")))))
+
+(ert-deftest test-coverage/shown-after-a-coverage-run ()
+  "The build `hellmacs-coverage-run' starts shows its marks when it's done."
+  (test-cov--with-tree `(("target/site/jacoco/jacoco.xml" . ,test-cov--report)
+                         ("src/main/java/com/example/App.java" . ,test-cov--app)
+                         ("pom.xml" . ""))
+    (let ((app (find-file-noselect (expand-file-name "src/main/java/com/example/App.java" root))))
+      (with-temp-buffer
+        (setq default-directory root)
+        (compilation-mode)
+        (hellmacs-coverage--after-build-h (current-buffer) "finished\n")
+        (should-not (with-current-buffer app (test-cov--marks)))  ; not a coverage run
+        (setq hellmacs-coverage--run-root root)
+        (hellmacs-coverage--after-build-h (current-buffer) "exited abnormally\n") ; failing tests too
+        (should (= 3 (length (with-current-buffer app (test-cov--marks)))))))))
 
 (provide 'test-coverage)
 ;;; test-coverage.el ends here

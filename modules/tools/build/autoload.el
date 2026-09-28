@@ -61,22 +61,25 @@ the wrapper (\"./gradlew\") if there is one, else the installed tool."
 
 (defun hellmacs-forge--command (task &optional test build)
   "Return the shell command for TASK (`build' or `test') in the current build.
-TEST narrows `test' to a class (\"pkg.Class\") or method (\"pkg.Class#method\").
-BUILD is the build's (TOOL ROOT PROGRAM), if already known."
+TEST narrows `test' to a class (\"pkg.Class\") or method (\"pkg.Class#method\"),
+or a list of them. BUILD is the build's (TOOL ROOT PROGRAM), if already known."
   (pcase-let ((`(,tool ,_root ,program) (or build (hellmacs-forge-build-tool)
-                                            (user-error "No Gradle or Maven build here"))))
+                                            (user-error "No Gradle or Maven build here")))
+              (tests (ensure-list test)))
     (pcase (list tool task)
       ('(gradle build) (concat program " build --console=plain"))
       ('(maven build) (concat program " -B verify"))
       ('(gradle test)
        (concat program " test --console=plain"
-               (when test (concat " --tests " (shell-quote-argument (string-replace "#" "." test))))))
+               (mapconcat (lambda (test) (concat " --tests " (shell-quote-argument (string-replace "#" "." test))))
+                          tests)))
       ('(maven test)
        (concat program " -B test"
-               (when test
+               (when tests
                  ;; Surefire wants Class#method (simple class name works
-                 ;; too); don't fail modules that have no such test.
-                 (concat " -Dtest=" (shell-quote-argument test)
+                 ;; too), comma-separated; don't fail modules that have no
+                 ;; such test.
+                 (concat " -Dtest=" (mapconcat #'shell-quote-argument tests ",")
                          " -Dsurefire.failIfNoSpecifiedTests=false")))))))
 
 ;;;###autoload
@@ -329,6 +332,10 @@ The PLAIN wording is used when `hellmacs-ux-enable' is nil."
   :type '(repeat (list symbol face string string))
   :group 'hellmacs-forge)
 
+(defvar hellmacs-forge-test-failures-hint nil
+  "Text added to the failing tests' message, pointing to where to see them.
+:tools test sets it to name its results view.")
+
 (defvar-local hellmacs-forge--started nil
   "When this compilation started (`float-time').")
 
@@ -394,7 +401,8 @@ For `compilation-finish-functions'. Only real compilations, not grep."
             (hellmacs-forge-announce 'tempered elapsed)
           (let ((where (hellmacs-forge--first-error)))
             (if-let* ((tests (hellmacs-forge--test-failures)))
-                (hellmacs-forge-announce 'damnation (if where (format "%s (%s)" tests where) tests))
+                (hellmacs-forge-announce 'damnation (concat (if where (format "%s (%s)" tests where) tests)
+                                                           hellmacs-forge-test-failures-hint))
               (hellmacs-forge-announce 'purgatory (or where (hellmacs-forge--build-problem)
                                                       (string-trim status))))))
         ;; The project's language servers show failed until the next good

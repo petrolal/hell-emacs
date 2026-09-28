@@ -135,6 +135,34 @@ export MAVEN_OPTS="-Xmx2g"
   * `C-c l j t`: Run the test method at point.
   * `C-c l j T`: Run the entire test class.
 
+### Test Results & Coverage (`:tools test`, `C-c t`)
+
+After a build that ran tests, `*hellmacs-tests*` lists them, failures first, with
+suite, time and message. They come from the JUnit XML reports the build wrote
+(`build/test-results/`, `target/surefire-reports/`, `failsafe-reports/`), so
+Java, Kotlin, Groovy and Scala all work. The `[TEST DAMNATION]` message points to it.
+
+| Key | Command | Description |
+|---|---|---|
+| `C-c t t` | `hellmacs-test-results` | Show the project's test results |
+| `C-c t f` | `hellmacs-test-results-rerun-failures` | Rerun every failing test, in one build |
+| `C-c t c` | `hellmacs-coverage-run` | Run the tests with JaCoCo, then mark coverage |
+| `C-c t s` | `hellmacs-coverage-show` | Mark coverage from the project's JaCoCo reports |
+| `C-c t h` | `hellmacs-coverage-hide` | Remove the coverage marks |
+
+In the results view: `RET` goes to the test (to the failing line), `r` reruns the
+test at point, `f` reruns the failing ones, `g` reads every report again, and
+`c` shows line coverage per file.
+
+Coverage marks covered, partly covered and missed lines in the fringe (the margin
+in a terminal). JaCoCo is added on the command line only: a Gradle init script
+(`test jacocoTestReport`), or the Maven plugin by its coordinates
+(`org.jacoco:jacoco-maven-plugin:0.8.15`). Your build files stay unchanged.
+
+With `(test +watch)`, saving a JVM source file reruns its class's tests
+(`hellmacs-test-watch-mode`). A test class runs itself, and any other class runs its
+`...Test` class if there is one.
+
 ---
 
 ## 6. Run Configurations (`:tools run`, `C-c r`)

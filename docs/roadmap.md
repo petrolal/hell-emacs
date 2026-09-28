@@ -3160,12 +3160,14 @@ JDTLS's installer uses.
       e2e's own task runs with `--no-daemon`, but that one daemon remains
       (this affects java-e2e with gradle-demo too).
 
-- [ ] **Spring Boot language server** (`:lang java +spring`):
+- [x] **Spring Boot language server** (`:lang java +spring`): (2026-09-28;
+      unit tests only, `test/integration/spring-e2e.el` written but not run)
   - `application.properties` and `application.yml` completion and
     validation.
   - Navigation to beans and request mappings, through `lsp-java-boot`.
   - Pinned and installed by `sync` like the other servers.
-- [ ] **Profiles and actuator.** The run list offers each configuration once
+- [x] **Profiles and actuator.** (2026-09-28: profiles, unit tests only;
+      actuator not done) The run list offers each configuration once
       per Spring profile found in `application-*.yml`.
 - *Verify:* a Spring Boot fixture (Maven and Gradle, with a profile and an H2
   database so it starts without infrastructure) runs, is debugged with a
@@ -3175,7 +3177,11 @@ JDTLS's installer uses.
 
 #### 12.5 Tests and coverage
 
-- [ ] **A test results view.**
+- [x] **A test results view.** (2026-09-28: `:tools test`, `C-c t`;
+      `test/test-results-view.el`, and the view read the real reports of
+      java/maven-demo, java/gradle-demo and kotlin/gradle-demo, RET landing
+      on the failing assertion. Rerun and refresh verified by unit tests only.
+      Not yet: reports from dap-java test runs, which write none.)
   - After any test run (`:tools build`, dap-java or `:tools run`), the JUnit
     XML reports are read into a `tabulated-list-mode` buffer: suites, tests,
     time, and failures with their message.
@@ -3186,7 +3192,9 @@ JDTLS's installer uses.
   - `RET` jumps to the test, `r` reruns the one at point, `f` reruns the
     failures, `g` refreshes.
   - The echo-area `[TEST DAMNATION]` line gains "see *hellmacs-tests*".
-- [ ] **Coverage.**
+- [x] **Coverage.** (2026-09-28: `C-c t c`/`s`/`h`; `test/test-coverage.el`.
+      The per-file summary is its own view, `c` from the results. Not yet
+      checked against a real JaCoCo run: that's the *Verify* below.)
   - Coverage comes from JaCoCo's XML report (`jacocoTestReport` in Gradle,
     `jacoco:report` in Maven; the module adds the task on the command line,
     never to the build file).
@@ -3195,7 +3203,9 @@ JDTLS's installer uses.
     project.
   - `M-x hellmacs-coverage-show` and `-hide`, plus a per-file summary in the
     results view.
-- [ ] **Continuous testing (optional flag).** `+watch` reruns the tests of
+- [x] **Continuous testing (optional flag).** (2026-09-28: `(test +watch)`,
+      `hellmacs-test-watch-mode`; a saved class also runs its ...Test class;
+      unit tests only) `+watch` reruns the tests of
       the class you just saved, through the build tool's own test filter.
 - *Verify:* the fixtures' passing and failing tests appear correctly for
   Gradle and Maven, reruns work, and the coverage marks match JaCoCo's own

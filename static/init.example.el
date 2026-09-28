@@ -82,6 +82,7 @@
            lsp                ; code intelligence via lsp-mode, C-c l
            magit              ; Git via Magit: C-x g status, C-x M-g dispatch, C-c M-g file
            run                ; run configurations (.hellmacs/run.eld, IntelliJ .run/, Eclipse .launch), C-c r
+           test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c t (+watch)
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
            ;;docker           ; [idea] Docker containers and images

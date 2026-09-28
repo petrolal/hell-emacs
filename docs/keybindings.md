@@ -80,6 +80,21 @@ With `:tools run`. Configurations come from `.hellmacs/run.eld`, IntelliJ's `.ru
 
 ---
 
+## Test Results & Coverage (`C-c t`)
+With `:tools test`. Results come from the build's JUnit XML reports, and coverage from JaCoCo's XML report (see the JVM guide).
+
+| Key | Command | Description |
+|---|---|---|
+| `C-c t t` | `hellmacs-test-results` | Show the test results (`*hellmacs-tests*`) |
+| `C-c t f` | `hellmacs-test-results-rerun-failures` | Rerun the failing tests |
+| `C-c t c` | `hellmacs-coverage-run` | Run the tests with coverage, then mark it |
+| `C-c t s` | `hellmacs-coverage-show` | Show coverage marks |
+| `C-c t h` | `hellmacs-coverage-hide` | Hide coverage marks |
+
+In `*hellmacs-tests*`: `RET` jump to the test, `r` rerun it, `f` rerun failures, `g` refresh, `c` coverage per file.
+
+---
+
 ## Language Server & Refactoring (`C-c l`)
 
 | Key | Command | Description |
