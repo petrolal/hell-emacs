@@ -31,6 +31,7 @@
 
 (require 'hellmacs-sync)
 (require 'hellmacs-bundle)
+(require 'hellmacs-config)
 
 ;;; Output ---------------------------------------------------------------------
 
@@ -283,7 +284,11 @@ on a detached HEAD, which has no upstream to update from."
     (with-hellmacs-network
       (hellmacs-cli--upgrade-packages))
     (when locked
-      (hellmacs-cli--write-lock))))
+      (hellmacs-cli--write-lock))
+    ;; New default modules come with updates; your block may miss them.
+    (when-let* ((lines (hellmacs-config-report-lines)))
+      (hellmacs-cli--say "")
+      (mapc (lambda (line) (hellmacs-cli--say "%s" line)) lines))))
 
 (defun hellmacs-cli--upgrade-packages ()
   "Fetch and merge every unpinned package, then write the profile. For `upgrade'."
@@ -306,6 +311,26 @@ on a detached HEAD, which has no upstream to update from."
     (hellmacs--elpaca-wait))
   (hellmacs-sync--check-failures)
   (hellmacs-sync--log "Synced %d packages" (length (hellmacs-sync--write-profile))))
+
+;;; config -------------------------------------------------------------------
+
+(defun hellmacs-cli-config (&rest args)
+  "List the default modules your `hellmacs!' block misses.
+With --add-defaults in ARGS, add them (keeping a backup of init.el)."
+  (if (not (member "--add-defaults" args))
+      (if-let* ((lines (hellmacs-config-report-lines)))
+          (mapc (lambda (line) (hellmacs-cli--say "%s" line)) lines)
+        (hellmacs-cli--say "Your hellmacs! block has every module that's on by default."))
+    (if-let* ((added (hellmacs-config-add-defaults)))
+        (progn
+          (hellmacs-cli--say "Added %d modules to %s (the old one is %s):"
+                             (length added)
+                             (abbreviate-file-name (expand-file-name "init.el" hellmacs-user-dir))
+                             (file-name-nondirectory hellmacs-config-last-backup))
+          (dolist (m added)
+            (hellmacs-cli--say "  %s" (string-trim (cdr m))))
+          (hellmacs-cli--say "Now run `bin/hellmacs sync' to install them."))
+      (hellmacs-cli--say "Nothing to add: your hellmacs! block has every module that's on by default."))))
 
 ;;; gc -------------------------------------------------------------------------
 
@@ -591,6 +616,8 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
   (hellmacs-cli--check 'info "Modules: %s"
                        (mapconcat (lambda (k) (format "%s %s" (car k) (cdr k)))
                                   (hellmacs-module-list) ", "))
+  (dolist (line (hellmacs-config-report-lines))
+    (hellmacs-cli--check 'info "%s" (string-trim line)))
   (let* ((profile (hellmacs-profile-read))
          (reason (and profile (hellmacs-profile--stale-reason profile))))
     (cond ((null profile)
@@ -655,6 +682,10 @@ Commands:
              without internet. It's for this platform and Emacs version, and
              for your modules, or SPEC's (--modules \":lang java :tools lsp\").
              .tar.gz, .tar.xz and .tar work too.
+  config [--add-defaults]
+             List the modules on by default that your hellmacs! block misses
+             (made from an older template?); --add-defaults adds them, keeping
+             a backup of init.el. Then run sync.
   gc [-n]    Delete installed packages nothing declares any more.
              -n, --dry-run: only list them.
   env [--clear]

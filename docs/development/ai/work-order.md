@@ -75,6 +75,10 @@ This file only tracks progress. Don't copy specs into it.
 - [x] README: new palette, `:ui dashboard` and `:ui modeline`, Nerd Font note, terminal behaviour; note in Phase 7 pointing to it (2026-09-26)
 - [x] Verify: GUI start (shown=0.353s, <0.12s Hellmacs overhead), tty start (0.022s), modeline e2e script, and all unit tests passing (2026-09-26)
 
+## Step 5a: 12.8 Configs keep up with new default modules (moved to the front on 2026-09-28, at the user's request)
+
+- [x] Configs keep up with new default modules (2026-09-28: `core/hellmacs-config.el`, `bin/hellmacs config [--add-defaults]`, doctor and upgrade notes; `test/test-config.el`; a copy of an early-template config got its 8 modules, synced, and `C-x g` opened Magit): doctor and `upgrade` list default modules missing from your `hellmacs!` block (e.g. `:tools magit`, the version control manager); `bin/hellmacs config --add-defaults` adds them on request, then `sync` installs them. Roadmap "12.8", *Configs keep up with new default modules*
+
 ## Step 6: 12.4 Spring Boot and 12.5 Tests and coverage (roadmap "12.4", "12.5")
 
 - [ ] 12.4 Run configurations: `:tools run`

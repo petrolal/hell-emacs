@@ -218,6 +218,7 @@ adoption, not by phase number:
 | 2 | **12.1 Corporate networks** | Without it, `bin/hellmacs install` fails on the first corporate laptop |
 | 3 | **12.2 Platforms and CI** | Most enterprise laptops are macOS or Windows; CI keeps them working |
 | 4 | **12.3 JDKs and build environments** (takes in 10.5's direnv) | Several JDKs and internal repositories are the norm, not the exception |
+| 5a | **12.8's configs keep up with new default modules** (moved here on 2026-09-28) | Existing configs silently miss modules added since, such as Magit; it affects current users now |
 | 5 | **Phase 9.4** (finish dashboard and modeline integration) | Small: what's left is the README and a GUI start (see 9.4) |
 | 6 | **12.4 Spring Boot**, **12.5 Tests and coverage** | The biggest daily gaps against IntelliJ |
 | 7 | **Phase 10.1** (XML, YAML, JSON, Docker, shell), **10.2** with **12.8**'s formatter work | Every enterprise repo carries these files |
@@ -3212,6 +3213,61 @@ pass against what enterprise developers already use.
     `M-x hellmacs-where-is-intellij` answers "what is Shift-F6 here?"
     (rename: `C-c l r r`).
   - which-key already shows every `C-c` group.
+- [x] **Configs keep up with new default modules.** (Added 2026-09-28; done the same day, moved to the front at the user's request.)
+  - The gap: a new module is enabled by default in `static/init.example.el`,
+    but that file is only copied when a user has no config yet, and nothing
+    rewrites an existing `init.el` (rightly). So a config made before a
+    module existed never gets it, and nothing says so.
+  - Found on a real config from an early template: no `:tools` section at
+    all. It had no version control manager (`:tools magit`: Magit, `C-x g`),
+    no build, debugger, direnv or LSP, and no `:lang` modules. The Linux
+    distribution had no Magit either.
+  - `doctor`, under Configuration:
+    - lists each module that `static/init.example.el` enables but your
+      `hellmacs!` block neither enables nor mentions in a comment (a
+      commented-out module is a choice, so it isn't listed);
+    - shows it with its one-line description and the line to add, e.g.
+      `:tools magit ; Git via Magit: C-x g status ...`.
+    - It's an info note, not an error.
+  - `bin/hellmacs upgrade` prints the same list after updating, since that
+    is when new defaults arrive.
+  - `bin/hellmacs config --add-defaults`, only when asked, inserts those
+    lines into the right group of your `hellmacs!` block (creating the
+    group, like `:tools`, if it's missing). It keeps your other lines and
+    comments, keeps `init.el.bak`, and ends by saying to run
+    `bin/hellmacs sync`, which installs the new packages (Magit and its
+    dependencies included). Nothing changes your `init.el` otherwise.
+  - *Verify:* unit tests with an `init.el` from an early template (no
+    `:tools`, no `:lang`). Doctor lists `:tools build debugger direnv lsp
+    magit` and the default `:lang` modules, and not the ones commented out.
+    `config --add-defaults` gives a block that enables them with everything
+    else intact. A sync after it installs Magit, and `C-x g` opens a
+    repository's status.
+  - *Done:*
+    - `core/hellmacs-config.el` reads the defaults from
+      `static/init.example.el`'s block, with each module's line.
+    - It finds your block's modules, and the ones you commented out, by
+      reading the `hellmacs!` form itself.
+    - `bin/hellmacs config` lists what's missing; doctor lists it under
+      Configuration; `upgrade` prints it after updating.
+    - `--add-defaults` adds the lines, merged per place, bottom up. A
+      keyword sharing a line with `(hellmacs!` is moved to its own line.
+      The file is checked afterwards and restored from the backup if it
+      doesn't read back complete.
+  - *Verified (2026-09-28):*
+    - Unit tests in `test/test-config.el` (six, written first): the
+      defaults, what's missing (with a commented module and no block),
+      the report, adding to new groups and to an existing one (with a
+      backup already there), the CLI.
+    - A copy of the real early-template config: `config` listed the 8
+      missing modules and `--add-defaults` added them. The diff touched
+      only the block: `:tools` and `:lang` went before `:config`.
+    - A sync of it installed Magit, `C-x g` ran `magit-status` and opened
+      the repository's status, and doctor's Magit check passed. Doctor on
+      the real config lists the 8.
+    - Not run: the `upgrade` message after a real update (it prints the
+      same lines as doctor).
+
 - [ ] **Onboarding in one command.** `bin/hellmacs install --team URL`:
       clone, install, sync, env, doctor, and a first-run page on the
       dashboard with the keys a new user needs this week.

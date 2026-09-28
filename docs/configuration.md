@@ -57,6 +57,9 @@ Modules support granular flags:
 * `(java +lombok)`: Downloads and attaches Lombok javaagent to JDTLS.
 * `(java +tree-sitter)`: Activates `java-ts-mode` instead of classic `java-mode`.
 
+### New Default Modules
+Your `init.el` is never rewritten, so a config made before a module existed doesn't get it. `bin/hellmacs doctor` (and `upgrade`) lists the modules on by default that your block misses, such as `:tools magit` for Git. Add the ones you want, or all of them with `bin/hellmacs config --add-defaults` (it keeps `init.el.bak`), then run `bin/hellmacs sync`. Modules you commented out are left alone.
+
 ---
 
 ## Declaring Additional Packages (`packages.el`)

@@ -97,6 +97,17 @@ bin/hellmacs env [--clear]
 
 ---
 
+### `config`
+```sh
+bin/hellmacs config [--add-defaults]
+```
+* Lists the modules that are on by default (`static/init.example.el`) but missing from your `hellmacs!` block, each with its line. A config made from an older template misses every module added since, `:tools magit` for one. `doctor` shows the same list, and so does `upgrade` after updating.
+* A module you commented out in your block is your choice, so it isn't listed. Flags are yours too: only missing modules count.
+* With `--add-defaults`, it adds them to your block, each in its group, as the template writes it. A missing group is created, in the template's order. `init.el` is kept as `init.el.bak`, or `init.el.bak.N` if that exists. If the result doesn't read back with the modules in it, the old file is restored.
+* Then run `sync` to install them.
+
+---
+
 ### `gc`
 ```sh
 bin/hellmacs gc [-n]
