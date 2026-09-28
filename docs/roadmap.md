@@ -3072,8 +3072,35 @@ JDTLS's installer uses.
   properties and YAML completion, bean navigation, live hovers.
 - What IntelliJ's `.run/*.run.xml` and Eclipse's `.launch` files contain for
   Spring Boot and JUnit.
+  - *Found (2026-09-28), and what `:tools run` reads:*
+    - IntelliJ keeps one `<configuration name type>` per `.run/NAME.run.xml`
+      (in a `<component>`).
+      - `Application` has `MAIN_CLASS_NAME`; `SpringBootApplicationConfigurationType`
+        has `SPRING_BOOT_MAIN_CLASS` (some versions `MAIN_CLASS_NAME`).
+      - Both have `VM_PARAMETERS` and `PROGRAM_PARAMETERS` (a command line),
+        `WORKING_DIRECTORY` (with `$PROJECT_DIR$`/`$MODULE_DIR$`),
+        `<envs><env name value/>`, `<module name/>`. Spring Boot's also has
+        `ACTIVE_PROFILES`, comma-separated.
+      - `GradleRunConfiguration` keeps its tasks under
+        `ExternalSystemSettings`/`taskNames`, plus `scriptParameters` and
+        an `env` map. `MavenRunConfiguration` keeps its goals under
+        `MavenSettings`/`MavenRunnerParameters`/`goals`, plus
+        `workingDirPath`.
+      - `JUnit` holds a package, class or method to test, which `:tools
+        build` already runs, so it's skipped.
+    - An Eclipse `NAME.launch` has `<launchConfiguration type>`. A Java
+      application (`org.eclipse.jdt.launching.localJavaApplication`, and
+      Spring Tools' `org.springframework.ide.eclipse.boot.launch`) keeps
+      `org.eclipse.jdt.launching.` attributes: `MAIN_TYPE`, `PROJECT_ATTR`,
+      `PROGRAM_ARGUMENTS`, `VM_ARGUMENTS`, `WORKING_DIRECTORY` (with
+      `${workspace_loc:...}`). Its environment is a `mapAttribute`
+      `org.eclipse.debug.core.environmentVariables`. JUnit launches
+      (`org.eclipse.jdt.junit.launchconfig`) are skipped, as in IntelliJ.
+    - Read from those formats, not from files exported by the IDEs
+      themselves: a real team's files are the first thing the 12.4
+      *Verify* should try.
 
-- [ ] **Run configurations: `:tools run`.**
+- [x] **Run configurations: `:tools run`.** (2026-09-28)
   - A run configuration is a main class or build task, arguments, JVM
     options, environment, active Spring profiles, and a working directory.
   - They are read from, in order:
@@ -3089,6 +3116,56 @@ JDTLS's installer uses.
   - Output goes to a comint buffer with ANSI colours, exception highlighting
     (`hellmacs-ux`) and clickable stack frames (`:tools build`'s rules).
   - `C-c r` is a new group owned by `:tools run`; it is free today.
+  - *Done* (`modules/tools/run/`, on by default, depends on `:tools build`):
+    - The readers for the three sources (above), merged in order, a
+      name only once, with each configuration's `:source`. `.launch`
+      files are searched two levels deep, skipping build output and VCS
+      directories.
+    - A main class runs as `java` with the project's JDK
+      (`vscode.java.resolveJavaExecutable`) and the classpath JDTLS
+      resolves (`vscode.java.resolveClasspath`), in `*run: NAME*`: comint,
+      `compilation-shell-minor-mode` for clickable frames, and
+      `hellmacs-ux`'s exception faces.
+    - A task runs through the build's wrapper. Profiles and arguments go
+      to `bootRun`/`run` as `--args=`, and to `spring-boot:run` as
+      `-Dspring-boot.run.*`.
+    - The environment is the configuration's over the calling buffer's
+      (envrc's). comint starts its process from its own buffer, so the
+      environment is set there.
+    - Debugging a main class goes through dap-java (with the project's
+      JDK, 12.3's advice). Debugging `run`/`bootRun` uses `--debug-jvm`,
+      and `spring-boot:run` a JDWP `jvmArguments`; the debugger attaches
+      once the output says "Listening for transport dt_socket at
+      address: 5005" (probing the port could take the agent's one
+      connection). Running again stops the previous run.
+  - *Verified (2026-09-28):*
+    - Unit tests in `test/test-run.el`: the three pre-written parser
+      tests, now against the module; the self-checking keymap test
+      replaced by the module's real `C-c r`; plus IntelliJ's and Eclipse's
+      details and skipped types, the order and deduplication, the command
+      lines (run and debug), a real task run through a fake `gradlew`
+      (environment, envrc's, comint, clickable frames, `C-c r l`), and a
+      main class without JDTLS.
+    - `test/integration/run-e2e.el` passed on maven-demo and gradle-demo.
+      The fixture's copy gets a Probe class and one configuration from
+      each source. Checked:
+      - each run got its own arguments, JVM options and environment, and
+        IntelliJ's `$PROJECT_DIR$/src` working directory;
+      - it ran on the JDK JDTLS gives the project (21 for maven-demo; 25,
+        the JVM running Gradle, for gradle-demo, which has no toolchain);
+      - `M-g n` opened Probe.java from the stack trace, and `C-c r l`
+        reran;
+      - `C-c r d` stopped at a breakpoint with the environment in place;
+      - gradle-demo's `run` task ran, and debugging it attached and
+        stopped at a breakpoint in App.java.
+    - Startup 0.029s.
+    - Not yet: `spring-boot:run` and `bootRun` against a real Spring Boot
+      app (the 12.4 *Verify*'s fixture).
+    - A test-harness note: the Gradle daemon JDTLS starts outlives the
+      e2e scripts and can recreate `.gradle/` in the deleted copy. The
+      e2e's own task runs with `--no-daemon`, but that one daemon remains
+      (this affects java-e2e with gradle-demo too).
+
 - [ ] **Spring Boot language server** (`:lang java +spring`):
   - `application.properties` and `application.yml` completion and
     validation.

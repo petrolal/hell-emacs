@@ -81,7 +81,7 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Step 6: 12.4 Spring Boot and 12.5 Tests and coverage (roadmap "12.4", "12.5")
 
-- [ ] 12.4 Run configurations: `:tools run`
+- [x] 12.4 Run configurations: `:tools run` (2026-09-28: `modules/tools/run/`, C-c r r/d/l; `.hellmacs/run.eld`, IntelliJ `.run/`, Eclipse `.launch`; `test/test-run.el`, `run-e2e.el` on maven-demo and gradle-demo, runs and debugs for main classes and a Gradle task)
 - [ ] 12.4 Spring Boot language server (`:lang java +spring`)
 - [ ] 12.4 Profiles and actuator
 - [ ] 12.5 A test results view (JUnit XML)

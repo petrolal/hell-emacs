@@ -69,6 +69,17 @@ Hellmacs adheres to **stock Emacs keybindings** (no modal Vim emulation by defau
 
 ---
 
+## Run Configurations (`C-c r`)
+With `:tools run`. Configurations come from `.hellmacs/run.eld`, IntelliJ's `.run/*.run.xml` and Eclipse `.launch` files (see the JVM guide).
+
+| Key | Command | Description |
+|---|---|---|
+| `C-c r r` | `hellmacs-run` | Run a configuration (with completion) |
+| `C-c r d` | `hellmacs-run-debug` | Debug a configuration |
+| `C-c r l` | `hellmacs-run-last` | Run the last one again, the same way |
+
+---
+
 ## Language Server & Refactoring (`C-c l`)
 
 | Key | Command | Description |

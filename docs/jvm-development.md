@@ -44,6 +44,25 @@ JDTLS itself runs on one JDK, and each project compiles against the JDK of the r
 * A program you debug (`:tools debugger`) runs on its project's JDK too: a Java 8 program on JDK 8. A `:javaExec` in your own launch configuration wins.
 * The command-line build (`C-x p c`) runs on the JDK its environment gives it, as in a terminal. Maven needs `JAVA_HOME` to be the project's JDK: give the project an `.envrc` (next section). Gradle finds the JDK its toolchain asks for on its own, if it's installed where Gradle looks.
 
+### Run configurations (`:tools run`, `C-c r`)
+A run configuration is a main class or a build task, with its arguments, JVM options, environment, Spring profiles and working directory. Hellmacs reads them from, in order:
+1. `.hellmacs/run.eld` in the project, Hellmacs' own, committed with the code:
+   ```elisp
+   ((:name "Server" :main "com.example.App" :args ("--port=8080")
+     :jvm-args ("-Xmx1g") :env (("STAGE" . "local")) :profiles ("dev"))
+    (:name "Boot" :task "bootRun" :profiles ("dev")))   ; a build task
+   ```
+   Other keys: `:cwd` (relative to the project), `:project` (JDTLS's project name), `:build-args` (for the build tool itself).
+2. IntelliJ's shared `.run/*.run.xml`: Application, Spring Boot, Gradle and Maven configurations.
+3. Eclipse `.launch` files in the project: Java applications, and Spring Tools' Boot launches.
+
+A team's existing shared configurations work as they are. A name that appears twice is taken from the first source, and types Hellmacs doesn't run (JUnit...) are skipped: tests run through `:tools build`.
+
+* `C-c r r` runs one. A main class runs on the classpath JDTLS resolves and on the project's JDK. A task runs through the project's `gradlew`/`mvnw`. Output goes to `*run: NAME*`, with colours, highlighted exceptions and clickable stack frames (`M-g n`). Running it again stops the previous run first.
+* `C-c r d` debugs it. A main class launches through dap-java. `run`/`bootRun` (Gradle) and `spring-boot:run` (Maven) start with a JDWP agent on port 5005 (`hellmacs-run-debug-port`), and the debugger attaches when the application says it's listening. Other tasks can't be debugged.
+* `C-c r l` runs the last one again, the same way.
+* The run gets the environment of the buffer you started it from (including an `.envrc`'s), plus the configuration's own. For Gradle tasks, JVM options come from the build; for `spring-boot:run` they're passed along.
+
 ### Build toolchains
 Builds that ask for a JDK themselves keep doing so; Hellmacs only reads their files, never changes them.
 * **Gradle** (`JavaLanguageVersion.of(N)`, or Kotlin's `jvmToolchain(N)`) finds the JDK on its own: where Hellmacs looks too, plus `org.gradle.java.installations.paths`, or it downloads one if the build has a toolchain resolver. If it can't, JDTLS's import fails and the echo area says which JDK is missing.
