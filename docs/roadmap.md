@@ -110,7 +110,7 @@ them, the principle wins and the feature finds another way.
 | **Phase 11** | Consolidation & Tooling | **DONE [x]** | Unified server status, declarations, compiled startup, shared test helpers |
 | **Phase 12.1** | Corporate Networks & Proxies | **DONE [x]** | Corporate CA bundles, HTTP proxies, Artifactory/Nexus, doctor probes, offline bundles & E2E verification |
 | **Phase 12.2** | Platforms & CI | **DONE [x]** | GitHub Actions multi-OS matrix (Linux x86_64/arm64, macOS Apple Silicon/Intel), WSL2 support & platform checks |
-| **Phase 12.3** | Multi-JDKs & Build Environments | **PLANNED [ ]** | Side-by-side JDK auto-discovery, per-project toolchains and direnv |
+| **Phase 12.3** | Multi-JDKs & Build Environments | **IN PROGRESS [/]** | Side-by-side JDK auto-discovery, per-project toolchains and direnv |
 | **Phase 12.4-12.6** | Spring Boot & Toolbelt | **PLANNED [ ]** | Spring profiles, JUnit XML, database clients, `.http` REST files |
 | **Phase 12.7-12.11** | Enterprise Scale & 1.0 Pilot | **PLANNED [ ]** | SBOM generator, license compliance, migration guides, real pilot |
 | **Phase 13** | Hellmacs Manual & Purist Onboarding | **PLANNED [ ]** | GNU Info manual, Vanilla startup actions on The Altar, C-h help suite |
@@ -2286,7 +2286,7 @@ each server really ships, what it needs) written here before the code.
 
 **10.5 `:tools direnv` and `:ui workspaces`** (`:tools direnv` moved to 12.3, where
 per-project JDKs need it; `:ui workspaces` stays here)
-- [ ] `:tools direnv`: envrc, buffer-local environments from `.envrc`, so a
+- [x] `:tools direnv` (done in 12.3, 2026-09-28): envrc, buffer-local environments from `.envrc`, so a
       per-project `JAVA_HOME` reaches JDTLS, Gradle and the other servers.
       No keys (envrc suggests `C-c e`; not bound): `M-x envrc-reload`,
       `envrc-allow`. `doctor` checks for `direnv`.
@@ -2926,10 +2926,43 @@ JDTLS's installer uses.
         `test-java/doctor-checks-jdtls-jdk`). `java-e2e.el` passes fully
         with `JAVA_HOME` unset and the PATH's java at 27: JDTLS started on
         SDKMAN's 25 by itself. Startup 0.029s.
-- [ ] **Per-project environments.** Phase 10.5's `:tools direnv` moves here:
+- [x] **Per-project environments.** Phase 10.5's `:tools direnv` moves here:
       envrc gives each project its own `JAVA_HOME`, `MAVEN_OPTS`,
       `GRADLE_USER_HOME` and proxy variables. JDTLS, Gradle and Maven started
-      from that project's buffers inherit them.
+      from that project's buffers inherit them. (2026-09-28)
+  - *Done:*
+    - `modules/tools/direnv/` declares envrc, and is on by default in
+      `static/init.example.el`.
+    - `envrc-global-mode` comes on with `hellmacs-first-file-hook`, not at
+      startup, and late, as envrc recommends.
+    - No keys are bound: `envrc-command-map` is left for a prefix of your
+      own. `doctor` checks for `direnv`, which is optional (a warning).
+    - Nothing else was needed: Emacs' `compile` (and `recompile`) already
+      starts the build with the calling buffer's environment, which
+      `test-direnv/the-project-build-gets-the-buffer-environment` now
+      guards, and lsp-mode starts servers from the buffer.
+    - JDTLS keeps to a JDK it supports (the range check above) whatever
+      `JAVA_HOME` an `.envrc` sets.
+  - *Verified (2026-09-28):*
+    - Unit tests in `test/test-direnv.el`: the module and its default,
+      on with the first file with no keys, doctor, and a real
+      `hellmacs-forge-build` getting the buffer's `JAVA_HOME`. The
+      pre-written ones there only exercised Emacs itself.
+    - `test/integration/direnv-e2e.el`, with direnv 2.37.1, legacy-8 with
+      an `.envrc` (JDK 8 and a MAVEN_OPTS marker), and maven-demo without
+      one:
+      - Maven from each project's buffer reported 1.8.0_504, then 27, then
+        1.8 again after switching back, with the MAVEN_OPTS only in the
+        first;
+      - the Java 8 build passed;
+      - JDTLS, started from the JDK 8 buffer, ran on 25.
+    - A real terminal session opening the file had envrc on, with the
+      buffer's `JAVA_HOME` from `.envrc` and Emacs' own unchanged. Startup
+      0.029s.
+    - Found along the way: `emacs --batch -l init.el` (every e2e script)
+      never runs `after-init-hook`, so the first-file hooks never fire
+      there. The script ends startup itself; interactive sessions are
+      unaffected.
 - [ ] **Toolchains.** Gradle toolchains and Maven `toolchains.xml` are read,
       not replaced. When a build asks for a JDK that isn't installed, JDTLS's
       import failure already says so (Phase 6), and `doctor` names the

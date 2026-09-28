@@ -78,11 +78,11 @@
            :tools
            build              ; build/test with Gradle or Maven (C-x p c), clickable errors
            debugger           ; debug via dap-mode, C-c d (Java: breakpoints, tests, hot swap)
+           direnv             ; per-project environments from .envrc (JAVA_HOME, MAVEN_OPTS...); needs direnv
            lsp                ; code intelligence via lsp-mode, C-c l
            magit              ; Git via Magit: C-x g status, C-x M-g dispatch, C-c M-g file
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
-           ;;direnv           ; [planned] per-project environments (envrc)
            ;;docker           ; [idea] Docker containers and images
            ;;editorconfig     ; [planned] honour .editorconfig files
            ;;eval             ; [idea] run code in a REPL or inline, per language

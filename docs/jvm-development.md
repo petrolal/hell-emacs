@@ -42,7 +42,23 @@ JDTLS itself runs on one JDK, and each project compiles against the JDK of the r
   ```
   `doctor` checks that each one is a JDK of that release. If you set `lsp-java-configuration-runtimes` yourself, Hellmacs leaves it alone.
 * A program you debug (`:tools debugger`) runs on its project's JDK too: a Java 8 program on JDK 8. A `:javaExec` in your own launch configuration wins.
-* The command-line build (`C-x p c`) runs on the JDK your shell gives it, as in a terminal. Maven needs `JAVA_HOME` to be the project's JDK. Gradle finds the JDK its toolchain asks for on its own, if it's installed where Gradle looks.
+* The command-line build (`C-x p c`) runs on the JDK its environment gives it, as in a terminal. Maven needs `JAVA_HOME` to be the project's JDK: give the project an `.envrc` (next section). Gradle finds the JDK its toolchain asks for on its own, if it's installed where Gradle looks.
+
+### Per-project environments (`:tools direnv`)
+A project's `.envrc`, run by [direnv](https://direnv.net), sets its own `JAVA_HOME`, `MAVEN_OPTS`, `GRADLE_USER_HOME`, proxy variables and so on. With `:tools direnv` (on by default), those apply to that project's buffers only. Everything started from them gets them: the build and tests (`C-x p c`, `C-c l j t`), shell commands, a language server. Switch to another project's buffer and its own environment applies.
+```sh
+# legacy-app/.envrc
+export JAVA_HOME=$HOME/.sdkman/candidates/java/8.0.402-tem
+export MAVEN_OPTS="-Xmx1g"
+```
+* Install `direnv` from your package manager; `bin/hellmacs doctor` checks for it. Without it, the module does nothing.
+* A new or changed `.envrc` must be allowed first, as in a shell: `M-x envrc-allow` (or `direnv allow` in a terminal), then `M-x envrc-reload`.
+* No keys are bound. To put envrc's commands on a prefix of your own:
+  ```elisp
+  (with-eval-after-load 'envrc
+    (keymap-set envrc-mode-map "C-c e" 'envrc-command-map))
+  ```
+* JDTLS keeps running on a JDK it supports, whatever `JAVA_HOME` a project's `.envrc` sets. One JDTLS serves every open Java project, and it starts with the environment of the buffer that started it.
 
 ### Java Keybindings (`C-c l j`)
 | Key | Command | Description |
