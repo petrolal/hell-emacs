@@ -26,7 +26,9 @@
 ;; arguments, JVM options, environment, Spring profiles and working
 ;; directory. Read from the project's `.hellmacs/run.eld', then IntelliJ's
 ;; `.run/*.run.xml', then Eclipse `.launch' files, so a team's shared
-;; configurations work as they are (autoload.el).
+;; configurations work as they are (autoload.el). In a Spring Boot project
+;; (with :lang java), each one that starts the application is offered again
+;; per profile found in application-*.yml/.properties: "App [dev]".
 ;;
 ;; Owns `C-c r':
 ;;   r run one (with completion)   d debug one   l run the last again

@@ -94,6 +94,7 @@ Hellmacs strictly follows the **XDG Base Directory Specification**, keeping your
 ## Next Steps
 
 * [Configuration Guide](configuration.md) — Learn how to enable/disable modules and flags.
-* [JVM Development](jvm-development.md) — Set up Java, Kotlin, and Clojure workflows.
-* [Debugging Guide](debugging.md) — Use DAP mode, breakpoints, and hot code replacement.
+* [JVM Development](jvm-development.md) — Set up Java, Kotlin, and Clojure workflows, code completion, and DAP debugging.
 * [Keybindings Reference](keybindings.md) — Explore the full keyboard shortcut map.
+* [CLI Reference](cli.md) — Manage packages, offline bundles, doctor checks, and profiles.
+

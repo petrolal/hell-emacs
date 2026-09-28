@@ -9,7 +9,7 @@
 ;; upgrading Hellmacs never touches it. Without it, Hellmacs uses the
 ;; `hellmacs!' block below (it reads this very file from static/).
 ;;
-;; After changing this block, run `bin/hellmacs sync' (or `C-c h s').
+;; After changing this block, run `bin/hellmacs sync' (or `C-c h S').
 ;;
 ;; Modules load in the order listed. Comment a line out to disable a
 ;; module; +flags turn on optional behavior, documented at the top of
@@ -106,7 +106,7 @@
 
            :lang
            ;; JVM (Hellmacs' own). Each language server is pinned and installed by `sync'.
-           (java +lombok)     ; Java: JDTLS; a JDK 21+ (+lombok, +tree-sitter)
+           (java +lombok +spring) ; Java: JDTLS, Spring Boot; a JDK 21+ (+lombok, +spring, +tree-sitter)
            kotlin             ; Kotlin: kotlin-language-server; a JDK (+tree-sitter)
            clojure            ; Clojure: CIDER REPL + clojure-lsp (+tree-sitter: Emacs 30.1+)
            ;;groovy           ; [planned] Groovy, Gradle scripts, Jenkinsfiles: groovy-language-server

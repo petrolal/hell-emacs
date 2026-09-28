@@ -89,6 +89,21 @@ nil when none JDTLS runs on is known (then the PATH's java is tried)."
                (reverse (mapcar #'cdr (or (bound-and-true-p hellmacs-jdks) (hellmacs-jdk-read)))))
        hellmacs-jvm-jdtls-java-min hellmacs-jvm-jdtls-java-max)))
 
+(defun hellmacs-jvm-runtime-jdks (jdks)
+  "JDKS, as (NAME . HOME), without the releases the pinned JDTLS doesn't know.
+JDTLS rejects a runtime newer than it knows (\"not compatible with the
+'JavaSE-27' environment\"); `hellmacs-jvm-jdtls-java-max' marks it."
+  (require 'hellmacs-jdk)
+  (seq-filter (lambda (jdk)
+                (let ((major (hellmacs-jdk--name-major (car jdk))))
+                  (and major (<= major hellmacs-jvm-jdtls-java-max))))
+              jdks))
+
+(defun hellmacs-jvm-lsp-runtimes (jdks)
+  "`lsp-java-configuration-runtimes' for JDKS: those JDTLS knows, the default
+the one it runs on (`hellmacs-jvm-runtime-jdks', `hellmacs-jdk-lsp-runtimes')."
+  (hellmacs-jdk-lsp-runtimes (hellmacs-jvm-runtime-jdks jdks) (hellmacs-jvm-jdtls-java-home)))
+
 (defun hellmacs-jvm-java-executable ()
   "The java that runs JDTLS and debuggees: `hellmacs-jvm-jdtls-java-home''s, else the PATH's."
   (if-let* ((home (hellmacs-jvm-jdtls-java-home)))

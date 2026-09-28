@@ -225,12 +225,11 @@ Comprehensive guides, module references, and architectural specifications are lo
 |---|---|
 | 🏁 **[Getting Started](docs/getting-started.md)** | Prerequisites, installation walkthrough, directory layout, and initial setup |
 | ⚙️ **[Configuration Guide](docs/configuration.md)** | Module system (`hellmacs!`), flags, custom packages, and user profiles |
-| ☕ **[JVM Development](docs/jvm-development.md)** | Java (JDTLS, Lombok, Maven/Gradle), Kotlin, and Clojure workflows |
-| 🐞 **[Debugging & Hot Reload](docs/debugging.md)** | DAP debugging, breakpoints, variable inspection, and Hot Code Replace |
-| 🔍 **[Completion & Navigation](docs/completion-and-navigation.md)** | Corfu, Cape, Vertico, Consult, Orderless, and LSP code intelligence |
-| ⌨️ **[Keybindings Reference](docs/keybindings.md)** | Complete keyboard cheatsheet for standard and leader commands |
-| 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `sync`, `upgrade`, `doctor`, `lock`, `test`) |
+| ☕ **[JVM Development](docs/jvm-development.md)** | Java, Kotlin, Clojure, autocompletion, semantic navigation, DAP debugging, and HCR |
+| ⌨️ **[Keybindings Reference](docs/keybindings.md)** | Complete keyboard cheatsheet for standard GNU and `C-c` leader commands |
+| 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `bundle`, `sync`, `upgrade`, `doctor`, `lock`, `test`) |
 | 🗺️ **[Enterprise Roadmap](docs/roadmap.md)** | Multi-phase roadmap and IntelliJ/Eclipse feature parity matrix |
+
 
 ---
 
@@ -276,9 +275,11 @@ Manage packages declaratively in `~/.config/hellmacs/packages.el` and custom hoo
 ## 🚀 Contributing
 
 Contributions are warmly welcomed! Please check our development guides before contributing:
-- [Contributing & Workflows](docs/development/human/contributing-and-workflows.md)
-- [Architecture & Design](docs/development/human/architecture-and-design.md)
-- [Vision & Business Rules](docs/development/human/vision-and-business-rules.md)
+- [Contributing & Module Development](docs/development/contributing.md)
+- [System Architecture & Design System](docs/development/architecture.md)
+- [Vision & Operational Invariants](docs/development/vision-and-rules.md)
+- [Roadmap Work Order](docs/development/work-order.md)
+
 
 Pull requests are verified through unit and integration suites run via `bin/hellmacs test`.
 

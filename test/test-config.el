@@ -78,7 +78,7 @@
     (should-not (member '(:tools . docker) (test-config--keys defaults))) ; commented out there
     (should (string-match-p "^ +magit +; Git via Magit"
                             (cdr (assoc '(:tools . magit) defaults))))
-    (should (string-match-p "^ +(java \\+lombok) +; Java"
+    (should (string-match-p "^ +(java \\+lombok \\+spring) +; Java"
                             (cdr (assoc '(:lang . java) defaults))))))
 
 (ert-deftest test-config/missing-defaults ()
@@ -132,7 +132,7 @@
       (let ((spec (hellmacs-config--block-spec init)))
         (should (equal (car spec) :ui))
         (should (memq 'magit spec))
-        (should (member '(java +lombok) spec))
+        (should (member '(java +lombok +spring) spec))
         (should (eq (car (last spec)) 'default))))
     ;; Nothing left: a second run adds nothing and leaves the file alone.
     (let ((before (file-attribute-modification-time (file-attributes init))))

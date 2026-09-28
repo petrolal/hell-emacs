@@ -77,20 +77,14 @@ them, the principle wins and the feature finds another way.
   * [Getting Started](getting-started.md)
   * [Configuration](configuration.md)
   * [JVM Development](jvm-development.md)
-  * [Debugging & Hot Reload](debugging.md)
-  * [Completion & Navigation](completion-and-navigation.md)
   * [Keybindings Reference](keybindings.md)
   * [CLI Reference](cli.md)
-* 👤 **Human Developer Track**:
-  * [Vision, Business Rules & Use Cases](development/human/vision-and-business-rules.md)
-  * [Architecture & Design System](development/human/architecture-and-design.md)
-  * [Contributing & Development Workflows](development/human/contributing-and-workflows.md)
-* 🤖 **AI / Machine-Readable Track**:
-  * [AI Architecture Specification](development/ai/system-architecture.md)
-  * [Module API Contracts & Schemas](development/ai/module-spec-and-contracts.md)
-  * [JVM Subsystems Integration Contracts](development/ai/jvm-integration-contracts.md)
-  * [AI Agent Context Primer](development/ai/context-primer.md)
-  * [Work Order & Progress Checklist](development/ai/work-order.md)
+* 🛠️ **Development & Architecture**:
+  * [Vision, Business Rules & Invariants](development/vision-and-rules.md)
+  * [System Architecture & Design System](development/architecture.md)
+  * [Contributing & Module Contracts](development/contributing.md)
+  * [Work Order & Progress Checklist](development/work-order.md)
+
 
 ---
 
@@ -157,10 +151,10 @@ them, the principle wins and the feature finds another way.
   - [x] Themed daemon notices (`[FORGE IGNITED]`, `[DAEMON READY]`, `[BYTECODE PURGATORY]`)
   - [x] Enterprise neutrality switch (`hellmacs-ux-enable nil`)
 - [x] **Documentation System**
-  - [x] Modular user guides (`docs/*.md`)
-  - [x] Human developer track (`docs/development/human/*.md`)
-  - [x] AI agent machine-readable track (`docs/development/ai/*.md`)
+  - [x] Streamlined user guides (`docs/*.md`)
+  - [x] Unified development & architecture specifications (`docs/development/*.md`)
   - [x] Comprehensive enterprise roadmap & parity matrix (`docs/roadmap.md`)
+
 - [x] **Consolidation (Phase 11)**
   - [x] Shared language server status and daemon lifecycle orchestrator (11.2)
   - [x] Module dependencies and tree-sitter declared once per module (11.3)

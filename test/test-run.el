@@ -195,6 +195,33 @@
       (should (equal (plist-get (car configs) :source) ".hellmacs/run.eld"))
       (should (equal (plist-get (nth 2 configs) :source) "tools/Tool.launch")))))
 
+(ert-deftest test-run/spring-profiles ()
+  "The run list offers each configuration that starts the application once
+more per Spring profile; builds, and configurations that already choose
+profiles, stay as they are."
+  (let ((configs '((:name "App" :main "a.App")
+                   (:name "Boot" :task "bootRun")
+                   (:name "Build" :task "build")
+                   (:name "Dev" :main "a.App" :profiles ("dev")))))
+    (should (equal (hellmacs-run--with-profiles configs '("dev" "prod"))
+                   '((:name "App" :main "a.App")
+                     (:name "App [dev]" :main "a.App" :profiles ("dev"))
+                     (:name "App [prod]" :main "a.App" :profiles ("prod"))
+                     (:name "Boot" :task "bootRun")
+                     (:name "Boot [dev]" :task "bootRun" :profiles ("dev"))
+                     (:name "Boot [prod]" :task "bootRun" :profiles ("prod"))
+                     (:name "Build" :task "build")
+                     (:name "Dev" :main "a.App" :profiles ("dev")))))
+    (should (equal (hellmacs-run--with-profiles configs nil) configs)))
+  ;; With :lang java, the profiles come from the project's application-*.yml.
+  (test-run--with-tree
+      '((".hellmacs/run.eld" . "((:name \"App\" :main \"a.App\"))\n")
+        ("src/main/resources/application-dev.yml" . "x: 1\n"))
+    (cl-letf (((symbol-function 'hellmacs-spring-discover-profiles)
+               (lambda (dir) (should (file-equal-p dir root)) '("dev"))))
+      (should (equal (mapcar (lambda (c) (plist-get c :name)) (hellmacs-run-configurations root))
+                     '("App" "App [dev]"))))))
+
 (ert-deftest test-run/commands ()
   "The java command line, and the build's, for running and for debugging."
   (should (equal (hellmacs-run--java-command

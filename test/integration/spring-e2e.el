@@ -81,12 +81,12 @@
   (switch-to-buffer (find-file-noselect app))
   (e2e-check "the pinned Spring Boot server is installed"
     (hellmacs-jvm-spring-installed-p))
-  (e2e-check "JDTLS gets Spring Tools' extensions"
-    (seq-some (lambda (jar) (string-suffix-p "jdt-ls-extension.jar" jar)) lsp-java-bundles))
   (e2e-check "JDTLS imports the project"
     (e2e-add-project proj)
     (lsp)
     (e2e--wait (lambda () (eq (hellmacs-jvm-state proj) 'ready)) 600))
+  (e2e-check "JDTLS got Spring Tools' extensions"
+    (seq-some (lambda (jar) (string-suffix-p "jdt-ls-extension.jar" jar)) lsp-java-bundles))
   (e2e-check "the Spring Boot server starts beside it, on a JDK JDTLS runs on"
     (and (e2e--wait #'e2e--boot-ws 120)
          (let* ((java (car (process-command (lsp--workspace-proc (e2e--boot-ws)))))
@@ -98,6 +98,8 @@
   (with-current-buffer (find-file-noselect (expand-file-name "application.yml" resources))
     (e2e-check "application.yml: yaml-mode, the Spring server, its language id"
       (and (derived-mode-p 'yaml-mode)
+           lsp--buffer-deferred         ; our hook asked for lsp...
+           (progn (lsp) t)              ; ...but `lsp-deferred' waits for a redisplay
            (e2e--wait (lambda () (memq (e2e--boot-ws) (lsp-workspaces))) 120)
            (equal (lsp-buffer-language) "spring-boot-properties-yaml")))
     (e2e-check "application.yml completes Spring Boot properties (server.po -> port)"
@@ -114,7 +116,9 @@
 
   (with-current-buffer (find-file-noselect (expand-file-name "application.properties" resources))
     (e2e-check "application.properties: the Spring server, its language id"
-      (and (e2e--wait (lambda () (memq (e2e--boot-ws) (lsp-workspaces))) 120)
+      (and lsp--buffer-deferred
+           (progn (lsp) t)
+           (e2e--wait (lambda () (memq (e2e--boot-ws) (lsp-workspaces))) 120)
            (equal (lsp-buffer-language) "spring-boot-properties")))
     (e2e-check "application.properties completes them too (server.por -> server.port)"
       (goto-char (point-max))
@@ -133,6 +137,31 @@
     (e2e--wait (lambda () (seq-some (lambda (n) (string-match-p "greetingController" n))
                                     (e2e--symbols "@+")))
                60))
+
+  (e2e--say "\n== 12.4 Profiles (with :tools run)")
+  (if (not (fboundp 'hellmacs-run-configurations))
+      (e2e--say "  skipped: :tools run isn't enabled")
+    (make-directory (expand-file-name ".hellmacs" proj) t)
+    (with-temp-file (expand-file-name ".hellmacs/run.eld" proj)
+      ;; A random port: the dev profile's own (8081) may be taken.
+      (insert "((:name \"Boot\" :task \"spring-boot:run\" :args (\"--server.port=0\")))\n"))
+    (let ((default-directory proj))
+      (e2e-check "the run list offers the configuration once more per profile: Boot [dev]"
+        (equal (mapcar (lambda (c) (plist-get c :name)) (hellmacs-run-configurations))
+               '("Boot" "Boot [dev]")))
+      (e2e-check "Boot [dev] starts the application with the dev profile active"
+        (let ((buffer (hellmacs-run-config
+                       (seq-find (lambda (c) (equal (plist-get c :name) "Boot [dev]"))
+                                 (hellmacs-run-configurations)))))
+          (prog1 (e2e--wait (lambda ()
+                              (with-current-buffer buffer
+                                (save-excursion
+                                  (goto-char (point-min))
+                                  (re-search-forward "profile is active: \"dev\"" nil t))))
+                            300)
+            (when-let* ((process (get-buffer-process buffer)))
+              (interrupt-process process)
+              (e2e--wait (lambda () (not (process-live-p process))) 30)))))))
 
   (unless (getenv "HELLMACS_E2E_KEEP")
     (delete-directory (file-name-directory (directory-file-name proj)) t)))

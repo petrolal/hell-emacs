@@ -103,13 +103,17 @@ where stdout is the screen, sets it to `external-debugging-output'.")
 (defconst e2e--build-output-dirs '("build" "target" ".gradle" ".kotlin" ".settings" ".idea")
   "Directories left behind when a project is copied: build output and IDE state.")
 
+(defvar e2e--copies nil
+  "The temporary directories `e2e-copy-project' made: the only ones deleted at exit.")
+
 (defun e2e-copy-project (src &optional name)
   "Copy directory SRC into a new temporary directory; return the copy.
 The copy is named NAME, else like SRC; build output and IDE state stay
 behind (`e2e--build-output-dirs'), so JDTLS and the build tool start clean."
   (let* ((src (directory-file-name (expand-file-name src)))
-         (dst (expand-file-name (or name (file-name-nondirectory src))
-                                (make-temp-file "hellmacs-e2e" t))))
+         (tmp (make-temp-file "hellmacs-e2e" t))
+         (dst (expand-file-name (or name (file-name-nondirectory src)) tmp)))
+    (push (file-name-as-directory tmp) e2e--copies)
     (copy-directory src dst nil t t)
     (dolist (d e2e--build-output-dirs)
       (let ((dir (expand-file-name d dst)))
@@ -196,11 +200,11 @@ Set HELLMACS_E2E_KEEP to keep the copies (for a look after the run)."
       (ignore-errors
         (let ((inhibit-message t))
           (lsp-workspace-folders-remove proj)))
-      ;; The copy's own temporary directory, never anything outside it.
+      ;; The copy's own temporary directory, and only if `e2e-copy-project'
+      ;; made it: a project added from anywhere else is left where it is.
       (let ((dir (file-name-directory (directory-file-name root))))
         (when (and (member (getenv "HELLMACS_E2E_KEEP") '(nil ""))
-                   (file-in-directory-p dir temporary-file-directory)
-                   (not (file-equal-p dir temporary-file-directory)))
+                   (member dir e2e--copies))
           (delete-directory dir t)))))
   (setq e2e--projects nil))
 

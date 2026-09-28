@@ -98,3 +98,22 @@ these language ids (VS Code's), not plain yaml or properties.")
 (defun hellmacs-spring-config-file-p (file)
   "Non-nil if FILE is a Spring Boot config: application*.yml/.yaml/.properties, bootstrap*."
   (and (hellmacs-spring-language-id file) t))
+
+(defconst hellmacs-spring--skipped-dirs
+  '(".git" ".hg" ".svn" "build" "target" "out" "bin" ".gradle" ".idea" "node_modules" "test")
+  "Directories never searched for profiles: build output, VCS, IDE state, and
+test sources (src/test/resources isn't on the application's classpath).")
+
+;;;###autoload
+(defun hellmacs-spring-discover-profiles (root)
+  "The Spring profiles the project at ROOT has a config for, sorted.
+From its application-NAME.yml/.yaml/.properties, in any module; `default'
+is left out: it's active when no other profile is."
+  (sort (delete "default"
+                (delete-dups
+                 (mapcar (lambda (file) (substring (file-name-base file) (length "application-")))
+                         (directory-files-recursively
+                          (expand-file-name root) "\\`application-.+\\.\\(?:ya?ml\\|properties\\)\\'" nil
+                          (lambda (dir)
+                            (not (member (file-name-nondirectory dir) hellmacs-spring--skipped-dirs)))))))
+        #'string<))

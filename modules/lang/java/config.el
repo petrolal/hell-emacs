@@ -84,7 +84,7 @@ Runtimes you set yourself are left alone."
   (when (or (seq-empty-p lsp-java-configuration-runtimes)
             (eq lsp-java-configuration-runtimes hellmacs-jvm--runtimes))
     (setq hellmacs-jvm--runtimes
-          (hellmacs-jdk-lsp-runtimes (or hellmacs-jdks (hellmacs-jdk-read)) (hellmacs-jvm-jdtls-java-home))
+          (hellmacs-jvm-lsp-runtimes (or hellmacs-jdks (hellmacs-jdk-read)))
           lsp-java-configuration-runtimes hellmacs-jvm--runtimes)))
 
 (after! lsp-java
@@ -228,24 +228,41 @@ JUnit test methods return void: the nearest void method above point."
 ;; lsp-java-boot, beside JDTLS. It completes and checks properties in
 ;; application*.yml/.properties, and knows beans and request mappings
 ;; (workspace symbols `@+' and `@/'). `bin/hellmacs sync' installs the
-;; pinned server (+paths.el). lsp-java-boot's own launch is from an older
-;; server: this one embeds a web server, which must stay off, as VS Code
-;; keeps it.
+;; pinned server (+paths.el). lsp-java-boot's own launch is for an older
+;; server that connected back over TCP: this one talks over stdio, as VS
+;; Code runs it, and embeds a web server, which must stay off.
 (defvar lsp-java-bundles)
 (defvar lsp-language-id-configuration)
 
-(defun hellmacs-jvm-spring-ls-command (port)
-  "The command starting the Spring Boot server, which connects back to PORT."
-  (list (hellmacs-jvm-java-executable)
-        "-Xmx1024m"
-        (format "-Dspring.lsp.client-port=%d" port)
-        "-Dsts.lsp.client=vscode"
-        "-Dspring.config.location=classpath:/application.properties"
-        "-Dspring.main.web-application-type=NONE"
-        "-Djdk.util.zip.disableZip64ExtraFieldValidation=true"
-        (concat "-Dsts.log.file=" (expand-file-name "spring-boot/sts.log" hellmacs-cache-dir))
-        (concat "-Dlogging.file.name=" (expand-file-name "spring-boot/server.log" hellmacs-cache-dir))
-        "-jar" (hellmacs-jvm-spring-server-jar)))
+(declare-function lsp-stdio-connection "ext:lsp-mode")
+(defvar lsp-clients)
+
+(defun hellmacs-jvm-spring-ls-command ()
+  "The command starting the Spring Boot server, which talks over stdio.
+Its log goes to files in the cache: on the console it would mix with
+the protocol."
+  (let ((logs (expand-file-name "spring-boot/" hellmacs-cache-dir)))
+    (make-directory logs t)
+    (list (hellmacs-jvm-java-executable)
+          "-Xmx1024m"
+          "-Dsts.lsp.client=vscode"
+          "-Dspring.config.location=classpath:/application.properties"
+          "-Dspring.main.web-application-type=NONE"
+          "-Djdk.util.zip.disableZip64ExtraFieldValidation=true"
+          "-Dlogging.pattern.console="
+          (concat "-Dsts.log.file=" (expand-file-name "sts.log" logs))
+          (concat "-Dlogging.file.name=" (expand-file-name "server.log" logs))
+          "-jar" (hellmacs-jvm-spring-server-jar))))
+
+(declare-function lsp--path-to-uri "ext:lsp-mode")
+(declare-function lsp-session "ext:lsp-mode")
+(declare-function lsp-session-folders "ext:lsp-mode")
+
+(defun hellmacs-jvm-spring-initialization-options (folders)
+  "What the Spring Boot server needs to initialize, for the project FOLDERS.
+As VS Code sends it; without it, the server fails on a JSON null."
+  (list :workspaceFolders (vconcat (mapcar #'lsp--path-to-uri folders))
+        :enableJdtClasspath :json-false))
 
 (defun hellmacs-jvm--spring-lsp-h ()
   "Start lsp in a Spring Boot config file (application.yml...), for its server."
@@ -259,7 +276,17 @@ JUnit test methods return void: the nearest void method above point."
       (setq lsp-java-bundles (append lsp-java-bundles (hellmacs-jvm-spring-extension-jars))))
     (require 'lsp-java-boot)
     (advice-add 'lsp-java-boot--server-jar :override #'hellmacs-jvm-spring-server-jar)
-    (advice-add 'lsp-java-boot--ls-command :override #'hellmacs-jvm-spring-ls-command))
+    ;; Its client, with its handlers, over stdio instead of lsp-java-boot's TCP.
+    ;; Stored by the slot's position, looked up now: no `setf' of it can be
+    ;; expanded where this file is read, before lsp-mode (or cl-lib's
+    ;; setters) are loaded.
+    (let ((client (gethash 'boot-ls lsp-clients)))
+      (aset client (cl-struct-slot-offset 'lsp--client 'new-connection)
+            (lsp-stdio-connection #'hellmacs-jvm-spring-ls-command
+                                  #'hellmacs-jvm-spring-server-jar))
+      (aset client (cl-struct-slot-offset 'lsp--client 'initialization-options)
+            (lambda () (hellmacs-jvm-spring-initialization-options
+                        (lsp-session-folders (lsp-session)))))))
   (after! lsp-mode
     ;; First, so they win over the modes' own (yaml, properties).
     (dolist (entry (reverse hellmacs-spring-language-ids))

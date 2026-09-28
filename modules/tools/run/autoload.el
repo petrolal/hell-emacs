@@ -48,6 +48,7 @@
 (require 'compile)
 
 (declare-function hellmacs-forge-build-tool "../build/autoload")
+(declare-function hellmacs-spring-discover-profiles "../../lang/java/autoload")
 (declare-function hellmacs-jvm--resolve-java-executable "../../lang/java/config")
 (declare-function lsp-find-workspace "ext:lsp-mode")
 (declare-function lsp--workspace-buffers "ext:lsp-mode")
@@ -259,14 +260,40 @@ root (the current one's by default)."
                              (and (file-directory-p dir) (directory-files dir t "\\.run\\.xml\\'"))))
                    (mapcar (lambda (f) (cons #'hellmacs-run-parse-eclipse f))
                            (hellmacs-run--launch-files root))))
-         (seen nil))
-    (cl-loop for (parse . file) in sources
-             append (cl-loop for config in (funcall parse file)
-                             for name = (plist-get config :name)
-                             unless (member name seen)
-                             collect (progn (push name seen)
-                                            (plist-put (copy-sequence config) :source
-                                                       (file-relative-name file root)))))))
+         (seen nil)
+         (configs (cl-loop for (parse . file) in sources
+                           append (cl-loop for config in (funcall parse file)
+                                           for name = (plist-get config :name)
+                                           unless (member name seen)
+                                           collect (progn (push name seen)
+                                                          (plist-put (copy-sequence config) :source
+                                                                     (file-relative-name file root)))))))
+    (hellmacs-run--with-profiles
+     configs (and (fboundp 'hellmacs-spring-discover-profiles)
+                  (seq-some #'hellmacs-run--starts-app-p configs)
+                  (hellmacs-spring-discover-profiles root)))))
+
+(defun hellmacs-run--starts-app-p (config)
+  "Non-nil if CONFIG starts the application: a main class, or a task that runs it."
+  (or (plist-get config :main)
+      (when-let* ((task (plist-get config :task)))
+        (or (hellmacs-run--runnable-task-p task 'gradle)
+            (hellmacs-run--runnable-task-p task 'maven)))))
+
+(defun hellmacs-run--with-profiles (configs profiles)
+  "CONFIGS, each that starts the application followed by one per Spring PROFILES.
+\"App [dev]\" runs App with the dev profile; a configuration that already
+chooses its profiles is left alone."
+  (mapcan (lambda (config)
+            (cons config
+                  (and (hellmacs-run--starts-app-p config)
+                       (not (plist-get config :profiles))
+                       (mapcar (lambda (profile)
+                                 (plist-put (plist-put (copy-sequence config) :name
+                                                       (format "%s [%s]" (plist-get config :name) profile))
+                                            :profiles (list profile)))
+                               profiles))))
+          configs))
 
 ;;; Command lines -----------------------------------------------------------------
 

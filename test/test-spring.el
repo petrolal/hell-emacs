@@ -60,7 +60,19 @@
       (should (member "dev" profiles))
       (should (member "prod" profiles))
       (should (member "test" profiles))
-      (should-not (member "default" profiles)))))
+      (should-not (member "default" profiles))))
+  ;; Once each, sorted; test resources, build output and the default profile
+  ;; (active when no other is) aren't offered.
+  (test-spring--with-tree
+      '(("src/main/resources/application-dev.yml" . "")
+        ("src/main/resources/application-dev.properties" . "")
+        ("api/src/main/resources/config/application-local.yaml" . "")
+        ("src/main/resources/application-default.yml" . "")
+        ("src/test/resources/application-it.yml" . "")
+        ("target/classes/application-stale.yml" . "")
+        ("build/resources/main/application-stale.yml" . "")
+        ("src/main/resources/logback-dev.xml" . ""))
+    (should (equal (hellmacs-spring-discover-profiles root) '("dev" "local")))))
 
 (ert-deftest test-spring/properties-yaml-completion-hooks ()
   "Verifies association of Spring application properties/yaml files with spring ls."

@@ -274,6 +274,24 @@ yours (`hellmacs-jdks', or runtimes you set) win."
             (should (equal lsp-java-configuration-runtimes [(:name "JavaSE-17" :path "/x")]))))
       (delete-file hellmacs-jdk-file))))
 
+(ert-deftest test-java/runtimes-only-releases-jdtls-knows ()
+  "A JDK newer than JDTLS knows isn't offered as a runtime: JDTLS rejects it
+(\"not compatible with the 'JavaSE-27' environment\")."
+  (test-java--load)
+  (let ((hellmacs-jdk-file (make-temp-file "hellmacs-test-jdks" nil ".eld"))
+        (hellmacs-jvm-java-home "/j/21")
+        (hellmacs-jvm-jdtls-java-max 25)
+        (hellmacs-jdks nil)
+        (lsp-java-configuration-runtimes []))
+    (unwind-protect
+        (progn
+          (hellmacs-jdk-write '(("JavaSE-1.8" . "/j/8") ("JavaSE-21" . "/j/21")
+                                ("JavaSE-25" . "/j/25") ("JavaSE-27" . "/j/27")))
+          (hellmacs-jvm-apply-jdks)
+          (should (equal (mapcar (lambda (r) (plist-get r :name)) lsp-java-configuration-runtimes)
+                         '("JavaSE-1.8" "JavaSE-21" "JavaSE-25"))))
+      (delete-file hellmacs-jdk-file))))
+
 (defun test-java--load-cli ()
   (require 'hellmacs-cli)
   (require 'hellmacs-jdk)               ; loaded now, so its functions can be stubbed
@@ -313,6 +331,15 @@ yours (`hellmacs-jdks', or runtimes you set) win."
             (should (string-match-p "✓ JDK JavaSE-1\\.8: /j/8$" out))
             (should (string-match-p "✓ JDK JavaSE-21: /j/21 (the default)" out))
             (should-not (string-match-p "sync" out)))
+          ;; Newer than JDTLS knows: listed, but not offered to it.
+          (let ((before found)
+                (hellmacs-jvm-jdtls-java-max 25))
+            (setq found (append found '(("JavaSE-27" . "/j/27")))) ; the stub sees this `found'
+            (hellmacs-jdk-write found)
+            (should (string-match-p "· JDK JavaSE-27: /j/27 (newer than JDTLS .* knows; not offered to it)"
+                                    (with-output-to-string (hellmacs-jvm-doctor-jdks))))
+            (setq found before)
+            (hellmacs-jdk-write found))
           ;; A JDK installed since the last sync.
           (setq found (append found '(("JavaSE-25" . "/j/25"))))
           (should (string-match-p "! .*JavaSE-25.*`bin/hellmacs sync'"
@@ -530,25 +557,39 @@ matches its pin, and keeps only what's used."
       (delete-directory root t))))
 
 (ert-deftest test-java/spring-server-command ()
-  "The server runs as VS Code runs it (no web server of its own), on JDTLS's JDK."
+  "The server runs as VS Code runs it: over stdio, its console log off (it would
+corrupt the protocol), no web server of its own, on JDTLS's JDK."
   (test-java--load)
   (let* ((root (make-temp-file "hellmacs-test-spring" t))
          (hellmacs-jvm-spring-dir (file-name-as-directory root))
+         (hellmacs-cache-dir (file-name-as-directory (expand-file-name "cache" root)))
          (jar (expand-file-name "language-server/spring-boot-language-server-9.9.9-exec.jar" root))
          (hellmacs-jvm-java-home "/j/21"))
     (unwind-protect
         (progn
           (make-directory (file-name-directory jar) t)
           (with-temp-file jar (insert "jar"))
-          (let ((command (hellmacs-jvm-spring-ls-command 5555)))
+          (let ((command (hellmacs-jvm-spring-ls-command)))
             (should (equal (car command) "/j/21/bin/java"))
-            (dolist (arg '("-Xmx1024m" "-Dspring.lsp.client-port=5555" "-Dsts.lsp.client=vscode"
+            (dolist (arg '("-Xmx1024m" "-Dsts.lsp.client=vscode" "-Dlogging.pattern.console="
                            "-Dspring.main.web-application-type=NONE"
                            "-Dspring.config.location=classpath:/application.properties"))
               (should (member arg command)))
-            (should-not (seq-some (lambda (a) (string-prefix-p "-Dserver.port" a)) command))
-            (should (equal (last command 2) (list "-jar" jar)))))
+            (should-not (seq-some (lambda (a) (string-match-p "server\\.port\\|client-port" a)) command))
+            (should (equal (last command 2) (list "-jar" jar)))
+            ;; Its log files go to Hellmacs' cache, which exists by then.
+            (should (file-directory-p (expand-file-name "spring-boot" hellmacs-cache-dir)))))
       (delete-directory root t))))
+
+(ert-deftest test-java/spring-initialization-options ()
+  "The server gets VS Code's initialization options; without them it fails to
+initialize (a JsonNull cast in JdtLsProjectCache.initialize)."
+  (test-java--load)
+  (cl-letf (((symbol-function 'lsp--path-to-uri) (lambda (path) (concat "file://" path))))
+    (should (equal (hellmacs-jvm-spring-initialization-options '("/p/a" "/p/b"))
+                   '(:workspaceFolders ["file:///p/a" "file:///p/b"] :enableJdtClasspath :json-false)))
+    (should (equal (hellmacs-jvm-spring-initialization-options nil)
+                   '(:workspaceFolders [] :enableJdtClasspath :json-false)))))
 
 (ert-deftest test-java/spring-flag-hooks ()
   "With +spring, sync installs the server and bundles carry it; without, neither."

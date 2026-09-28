@@ -1,10 +1,10 @@
 # JVM Development Guide
 
-Hellmacs is built first and foremost as a high-performance environment for the Java Virtual Machine ecosystem (Java, Kotlin, Clojure, Scala, Groovy).
+Hellmacs is built first and foremost as a high-performance, enterprise-grade environment for the Java Virtual Machine ecosystem (Java, Kotlin, Clojure, Scala, Groovy).
 
 ---
 
-## Java Development (`:lang java`)
+## 1. Java Development (`:lang java`)
 
 Java support is powered by **Eclipse JDTLS**, **LSP Mode**, **Tree-sitter**, and **DAP Mode**.
 
@@ -12,10 +12,14 @@ Java support is powered by **Eclipse JDTLS**, **LSP Mode**, **Tree-sitter**, and
 In `~/.config/hellmacs/init.el`:
 
 ```elisp
-(hellmacs! :tools
-           build              ; Gradle / Maven build integration
-           debugger           ; DAP debugger & Hot Code Replace
-           lsp                ; LSP Mode
+(hellmacs! :completion
+           (corfu +tab)       ; In-buffer completion popups
+           vertico            ; Minibuffer completion (Consult + Marginalia + Orderless)
+
+           :tools
+           build              ; Gradle / Maven build integration & test assertion links
+           debugger           ; DAP debugger & Hot Code Replacement
+           lsp                ; Language Server Protocol (lsp-mode)
            magit              ; Git interface
 
            :lang
@@ -30,120 +34,204 @@ When you open a `.java` file in a Maven or Gradle project:
 2. The echo area displays `[FORGE IGNITED]` while JDTLS starts up.
 3. Once indexed, `[DAEMON READY]` appears, and the mode-line reports `JVM:ready`.
 
-### Several JDKs
-JDTLS itself runs on one JDK, and each project compiles against the JDK of the release it targets: a Java 8 project against a JDK 8, a Java 17 one against a JDK 17.
-* **The JDK that runs JDTLS** must be one the pinned JDTLS supports: 21 to 25 for JDTLS 1.57 (it fails to start on JDK 27). Hellmacs chooses it: `$JAVA_HOME`'s JDK if JDTLS runs on it, else the `PATH`'s `java`, else the newest suitable JDK that `bin/hellmacs sync` found. So a newer system JDK doesn't break Java editing. `bin/hellmacs doctor` says which JDK it chose, and why it passed over the others. To choose it yourself, set `hellmacs-jvm-java-home` in `init.el`.
-* `bin/hellmacs sync` finds your JDKs and tells JDTLS about them. It looks in `JAVA_HOME`, the `java` on your `PATH`, SDKMAN (`~/.sdkman`), `/usr/lib/jvm`, macOS's `JavaVirtualMachines`, asdf, jenv and mise. It keeps one JDK per release, and `JAVA_HOME`'s wins for its release.
-* After installing another JDK, run `bin/hellmacs sync` again. `bin/hellmacs doctor` lists the JDKs, marks the default (JDTLS's own), and warns about any it finds that the last sync didn't store.
-* If your JDKs are elsewhere, list them yourself in `~/.config/hellmacs/init.el`, named as JDTLS names releases:
-  ```elisp
-  (setq hellmacs-jdks '(("JavaSE-1.8" . "/opt/jdk8")
-                        ("JavaSE-17"  . "/opt/jdk-17")))
-  ```
-  `doctor` checks that each one is a JDK of that release. If you set `lsp-java-configuration-runtimes` yourself, Hellmacs leaves it alone.
-* A program you debug (`:tools debugger`) runs on its project's JDK too: a Java 8 program on JDK 8. A `:javaExec` in your own launch configuration wins.
-* The command-line build (`C-x p c`) runs on the JDK its environment gives it, as in a terminal. Maven needs `JAVA_HOME` to be the project's JDK: give the project an `.envrc` (next section). Gradle finds the JDK its toolchain asks for on its own, if it's installed where Gradle looks.
+---
 
-### Run configurations (`:tools run`, `C-c r`)
-A run configuration is a main class or a build task, with its arguments, JVM options, environment, Spring profiles and working directory. Hellmacs reads them from, in order:
-1. `.hellmacs/run.eld` in the project, Hellmacs' own, committed with the code:
-   ```elisp
-   ((:name "Server" :main "com.example.App" :args ("--port=8080")
-     :jvm-args ("-Xmx1g") :env (("STAGE" . "local")) :profiles ("dev"))
-    (:name "Boot" :task "bootRun" :profiles ("dev")))   ; a build task
-   ```
-   Other keys: `:cwd` (relative to the project), `:project` (JDTLS's project name), `:build-args` (for the build tool itself).
-2. IntelliJ's shared `.run/*.run.xml`: Application, Spring Boot, Gradle and Maven configurations.
-3. Eclipse `.launch` files in the project: Java applications, and Spring Tools' Boot launches.
+## 2. Completion & Minibuffer Search
 
-A team's existing shared configurations work as they are. A name that appears twice is taken from the first source, and types Hellmacs doesn't run (JUnit...) are skipped: tests run through `:tools build`.
+Hellmacs provides a modern, fast completion stack using minimalist packages:
 
-* `C-c r r` runs one. A main class runs on the classpath JDTLS resolves and on the project's JDK. A task runs through the project's `gradlew`/`mvnw`. Output goes to `*run: NAME*`, with colours, highlighted exceptions and clickable stack frames (`M-g n`). Running it again stops the previous run first.
-* `C-c r d` debugs it. A main class launches through dap-java. `run`/`bootRun` (Gradle) and `spring-boot:run` (Maven) start with a JDWP agent on port 5005 (`hellmacs-run-debug-port`), and the debugger attaches when the application says it's listening. Other tasks can't be debugged.
-* `C-c r l` runs the last one again, the same way.
-* The run gets the environment of the buffer you started it from (including an `.envrc`'s), plus the configuration's own. For Gradle tasks, JVM options come from the build; for `spring-boot:run` they're passed along.
+### In-Buffer Autocomplete (Corfu & Cape)
+* **Automatic Popups**: As you type (after 2 characters and 0.15s delay), a floating child frame appears with completion candidates.
+* **Documentation Hover (`corfu-popupinfo`)**: Displays Javadoc, method signatures, and markdown documentation next to the selected candidate.
+* **TAB Completion**: With `(corfu +tab)` in `init.el`, `TAB` cycles through completions. `C-M-i` (`complete-at-point`) is always available.
+* **Cape Fallback Extensions**: Fallback completion sources for file paths and open buffers.
 
-### Build toolchains
-Builds that ask for a JDK themselves keep doing so; Hellmacs only reads their files, never changes them.
-* **Gradle** (`JavaLanguageVersion.of(N)`, or Kotlin's `jvmToolchain(N)`) finds the JDK on its own: where Hellmacs looks too, plus `org.gradle.java.installations.paths`, or it downloads one if the build has a toolchain resolver. If it can't, JDTLS's import fails and the echo area says which JDK is missing.
-* **Maven** (`maven-toolchains-plugin`) takes it from `~/.m2/toolchains.xml`.
-* Run `bin/hellmacs doctor` inside a project to check. It names a JDK the build asks for that isn't there, with the file and line that asked (`build.gradle:10 asks for a JDK 11 toolchain, and none is installed`). It also checks that every JDK `~/.m2/toolchains.xml` lists exists and is the release it claims.
+### Minibuffer Completion (Vertico + Consult + Orderless)
+* **Vertical Minibuffer**: Clean, vertical list UI for finding files, buffers, commands, and project symbols.
+* **Orderless Matching**: Search with space-separated tokens in any order (e.g. `user contr test` matches `UserControllerTest.java`).
+* **Marginalia Annotations**: Adds rich metadata to minibuffer lists (file sizes, docstrings, keybindings, timestamps).
 
-### Per-project environments (`:tools direnv`)
-A project's `.envrc`, run by [direnv](https://direnv.net), sets its own `JAVA_HOME`, `MAVEN_OPTS`, `GRADLE_USER_HOME`, proxy variables and so on. With `:tools direnv` (on by default), those apply to that project's buffers only. Everything started from them gets them: the build and tests (`C-x p c`, `C-c l j t`), shell commands, a language server. Switch to another project's buffer and its own environment applies.
-```sh
-# legacy-app/.envrc
-export JAVA_HOME=$HOME/.sdkman/candidates/java/8.0.402-tem
-export MAVEN_OPTS="-Xmx1g"
-```
-* Install `direnv` from your package manager; `bin/hellmacs doctor` checks for it. Without it, the module does nothing.
-* A new or changed `.envrc` must be allowed first, as in a shell: `M-x envrc-allow` (or `direnv allow` in a terminal), then `M-x envrc-reload`.
-* No keys are bound. To put envrc's commands on a prefix of your own:
-  ```elisp
-  (with-eval-after-load 'envrc
-    (keymap-set envrc-mode-map "C-c e" 'envrc-command-map))
-  ```
-* JDTLS keeps running on a JDK it supports, whatever `JAVA_HOME` a project's `.envrc` sets. One JDTLS serves every open Java project, and it starts with the environment of the buffer that started it.
-
-### Java Keybindings (`C-c l j`)
 | Key | Command | Description |
 |---|---|---|
-| `C-c l j b` | `lsp-java-build-project` | Trigger a full/incremental JDTLS build |
-| `C-c l j u` | `lsp-java-update-project-configuration` | Re-import `pom.xml` or `build.gradle` changes |
-| `C-c l j o` | `lsp-java-organize-imports` | Clean and optimize Java imports |
-| `C-c l j g` | `lsp-java-generate-getters-and-setters` | Generate getters/setters for fields |
+| `C-c f f` / `C-x C-f` | `find-file` | Open or find a file |
+| `C-c f r` | `consult-recent-file` | Search recently opened files |
+| `C-c b b` / `C-x b` | `consult-buffer` | Switch buffer with previews |
+| `C-c s s` | `consult-line` | Interactive search for lines in current buffer |
+| `C-c s p` / `C-c h f` | `consult-ripgrep` | Blazing-fast regex search across the entire project |
+| `C-c s i` | `consult-imenu` | Jump to functions/methods/symbols in current buffer |
+
+---
+
+## 3. Code Navigation, Refactoring & Diagnostics
+
+Centralized under the standard GNU keys and the **`C-c l`** (LSP) prefix:
+
+### Semantic Navigation
+| Key | Action | Description |
+|---|---|---|
+| `M-.` | Go to Definition | Jump to symbol definition (decompiles bytecode for 3rd-party JARs) |
+| `M-?` | Find References | List all usages across the workspace |
+| `M-,` | Pop Tag / Back | Jump back to where you were before `M-.` |
+| `C-M-.` | Workspace Symbols | Search classes, methods, and symbols across the entire project |
+| `C-c l g d` | Type Definition | Jump to declaration of the type |
+| `C-c l g i` | Implementation | Jump to interface implementations |
+| `C-c l j h` | Type Hierarchy | View class/type hierarchy |
+
+### Semantic Refactoring & Code Actions
+| Key | Command / Action | Description |
+|---|---|---|
+| `C-c l a a` | `lsp-execute-code-action` | Quick fixes, generate methods, missing imports |
+| `C-c l r r` | `lsp-rename` | Semantic, workspace-wide symbol rename |
+| `C-c l r o` / `C-c l j o` | `lsp-organize-imports` | Optimize and clean up unused imports |
+| `C-c l = =` | `lsp-format-buffer` | Format according to project code style |
+| `C-c l j g` | `lsp-java-generate-getters-and-setters` | Generate getters and setters |
 | `C-c l j s` | `lsp-java-generate-to-string` | Generate `toString()` method |
 | `C-c l j e` | `lsp-java-generate-equals-and-hash-code` | Generate `equals()` and `hashCode()` |
 | `C-c l j i` | `lsp-java-add-unimplemented-methods` | Implement interface or abstract methods |
 | `C-c l j m` | `lsp-java-extract-method` | Refactor: Extract selected code to a method |
 | `C-c l j v` | `lsp-java-extract-to-local-variable` | Refactor: Extract expression to local variable |
 | `C-c l j c` | `lsp-java-extract-to-constant` | Refactor: Extract expression to constant |
-| `C-c l j h` | `lsp-java-type-hierarchy` | View class/type hierarchy |
-| `C-c l j t` | `hellmacs-build-test-at-point` | Run the test method at point |
-| `C-c l j T` | `hellmacs-build-test-class` | Run the entire test class |
 
-### Building with Maven & Gradle (`:tools build`)
-* `C-x p c` (`project-compile`): Runs Gradle or Maven build tasks using the wrapper (`./gradlew` / `./mvnw`) or system binaries.
-* `M-g n` / `M-g p`: Jump to next / previous compilation error or failing test assertion in buffer.
+### Diagnostics & Errors
+* Real-time errors and warnings are highlighted in the buffer.
+* `C-c ! n`: Jump to next diagnostic error/warning.
+* `C-c ! p`: Jump to previous diagnostic error/warning.
+* `C-c ! l`: List all diagnostics in a project/buffer summary.
 
 ---
 
-## Kotlin Development (`:lang kotlin`)
+## 4. Multiple JDKs & Toolchains
+
+JDTLS runs on one JDK, while projects compile against the JDK of their target release:
+* **The JDK that runs JDTLS**: Must be supported by the pinned JDTLS version (JDK 21 to 25 for JDTLS 1.57). Hellmacs auto-detects it: `$JAVA_HOME` if suitable, else `PATH`'s `java`, else the newest suitable JDK found by `bin/hellmacs sync`. To set explicitly, define `hellmacs-jvm-java-home` in `init.el`.
+* **JDK Auto-Discovery**: `bin/hellmacs sync` searches `JAVA_HOME`, `PATH`, SDKMAN (`~/.sdkman`), `/usr/lib/jvm`, macOS `JavaVirtualMachines`, asdf, jenv, and mise.
+* **Manual JDK List**: In `~/.config/hellmacs/init.el`:
+  ```elisp
+  (setq hellmacs-jdks '(("JavaSE-1.8" . "/opt/jdk8")
+                        ("JavaSE-17"  . "/opt/jdk-17")
+                        ("JavaSE-21"  . "/opt/jdk-21")))
+  ```
+* **Build Toolchains**:
+  * **Gradle**: Toolchains (`JavaLanguageVersion.of(N)` or `jvmToolchain(N)`) are resolved automatically.
+  * **Maven**: Reads toolchains from `~/.m2/toolchains.xml`.
+  * Run `bin/hellmacs doctor` inside a project to verify that all requested JDK toolchains exist.
+
+### Per-Project Environments (`:tools direnv`)
+A project's `.envrc` (via [direnv](https://direnv.net)) isolates `JAVA_HOME`, `MAVEN_OPTS`, `GRADLE_USER_HOME`, and proxies per project:
+```sh
+# .envrc
+export JAVA_HOME=$HOME/.sdkman/candidates/java/17.0.10-tem
+export MAVEN_OPTS="-Xmx2g"
+```
+* Allow with `M-x envrc-allow` (or `direnv allow` in shell), then `M-x envrc-reload`.
+
+---
+
+## 5. Building & Testing (`:tools build`)
+
+* **Project Compilation**: `C-x p c` (`project-compile`) invokes the wrapper (`./gradlew` or `./mvnw`) or system build tool.
+* **Clickable Error Navigation**: `M-g n` (next error) and `M-g p` (previous error) jump directly to compiler errors or failing test assertions.
+* **Testing at Point**:
+  * `C-c l j t`: Run the test method at point.
+  * `C-c l j T`: Run the entire test class.
+
+---
+
+## 6. Run Configurations (`:tools run`, `C-c r`)
+
+Hellmacs reads run configurations from, in order:
+1. **`.hellmacs/run.eld`** in the project root:
+   ```elisp
+   ((:name "Server" :main "com.example.App" :args ("--port=8080")
+     :jvm-args ("-Xmx1g") :env (("STAGE" . "local")) :profiles ("dev"))
+    (:name "Boot" :task "bootRun" :profiles ("dev")))
+   ```
+2. **IntelliJ Shared Run Configurations**: `.run/*.run.xml` (Application, Spring Boot, Gradle, Maven).
+3. **Eclipse Launch Configurations**: `.launch` files in the project.
+
+| Key | Command | Description |
+|---|---|---|
+| `C-c r r` | `hellmacs-run` | Select and run a configuration (output in `*run: NAME*`) |
+| `C-c r d` | `hellmacs-run-debug` | Debug a configuration (attaches DAP debugger) |
+| `C-c r l` | `hellmacs-run-last` | Re-run the last active configuration |
+
+---
+
+## 7. Debugging & Hot Code Replacement (`:tools debugger`, `C-c d`)
+
+Debugging is powered by **DAP Mode** and `dap-java` (Microsoft `java-debug` server).
+
+### Launching & Sessions
+| Key | Command | Description |
+|---|---|---|
+| `C-c d d` | `dap-debug` | Start a debug session (select launch template) |
+| `C-c d D` | `dap-debug-last` | Re-launch the last active debug configuration |
+| `C-c d r` | `dap-debug-restart` | Restart current debug session |
+| `C-c d q` | `dap-disconnect` | Disconnect and terminate debug session |
+
+### Breakpoints
+| Key | Command | Description |
+|---|---|---|
+| `C-c d b` | `dap-breakpoint-toggle` | Toggle breakpoint on current line |
+| `C-c d B` | `dap-breakpoint-condition` | Set a conditional breakpoint (e.g. `i == 10`) |
+| `C-c d L` | `dap-breakpoint-log-message` | Set a log point (logs message without halting) |
+| `C-c d x` | `dap-breakpoint-delete-all` | Clear all active breakpoints across workspace |
+
+### Stepping Through Code
+When paused at a breakpoint:
+* `C-c d n`: Step over (`next`)
+* `C-c d i`: Step in (`step-in`)
+* `C-c d o`: Step out (`step-out`)
+* `C-c d c`: Continue execution (`continue`)
+
+> **Fast Stepping**: After pressing `C-c d n` (or `i`, `o`, `c`), continue stepping simply by pressing `n`, `i`, `o`, or `c` repeatedly without the `C-c d` prefix. Press any other key to resume normal editing.
+
+### Inspecting Variables & Tests
+* `C-c d e`: Evaluate expression under point / selection.
+* `C-c d E`: Prompt to evaluate an arbitrary expression.
+* `C-c d t`: Debug unit test method under point.
+* `C-c d T`: Debug all tests in the current test class.
+
+### Hot Code Replacement (Crucible: `C-c h r`)
+Hellmacs supports live bytecode hot-swapping into running debug sessions:
+1. Start your application in debug mode via `C-c d d` (or `C-c r d`).
+2. Make code edits in your Java source files.
+3. Press **`C-c h r`** (Crucible).
+4. JDTLS compiles the updated class files and immediately hot-swaps the new bytecode into the running JVM process without an application restart.
+
+---
+
+## 8. Kotlin Development (`:lang kotlin`)
 
 Kotlin support is powered by `kotlin-language-server` and `kotlin-ts-mode`.
 
 ### Enabling Kotlin
 ```elisp
-(hellmacs! :tools
-           build
-           lsp
-           :lang
-           (kotlin +tree-sitter))
+(hellmacs! :tools build lsp
+           :lang (kotlin +tree-sitter))
 ```
 
-### Kotlin Workflow
+### Kotlin Features
 * **Server**: Automatically downloaded and pinned by `bin/hellmacs sync`.
-* **Navigation & Refactoring**: Full `M-.` (Go to Definition), `M-?` (References), semantic rename (`C-c l r r`), and parameter hints.
+* **Navigation & Refactoring**: `M-.` (Go to Definition), `M-?` (References), semantic rename (`C-c l r r`), and parameter hints.
 * **Testing & Building**:
   * `C-c l k b`: Build Kotlin project via Gradle.
-  * `C-c l k t`: Run the test method at point (supports backticked names).
-  * `C-c l k T`: Run the test class.
+  * `C-c l k t`: Run test method at point (supports backticked names).
+  * `C-c l k T`: Run test class.
 
 ---
 
-## Clojure Development (`:lang clojure`)
+## 9. Clojure Development (`:lang clojure`)
 
 Clojure support combines **CIDER** for interactive REPL-driven development with **clojure-lsp** for semantic code intelligence.
 
 ### Enabling Clojure
 ```elisp
-(hellmacs! :tools
-           lsp
-           :lang
-           (clojure +tree-sitter))
+(hellmacs! :tools lsp
+           :lang (clojure +tree-sitter))
 ```
 
-### Clojure Keybindings
+### Clojure Workflow & Keybindings
 * `C-c M-j`: Jack in (starts REPL via `lein`, `clojure`, or `bb`).
 * `C-c M-c`: Connect to an existing remote/local nREPL server.
 * `C-c C-k`: Load and compile current Clojure buffer.
@@ -154,11 +242,11 @@ Clojure support combines **CIDER** for interactive REPL-driven development with 
 
 ---
 
-## Troubleshooting Project Imports
+## 10. Troubleshooting Project Imports
 
-The mode-line shows the state of the buffer's language server (JDTLS, kotlin-language-server or clojure-lsp): `JVM:igniting`, `JVM:ready`, or `JVM:purgatory` when the project failed to import or its last build failed (`JVM:failed` with `hellmacs-ux-enable` off). A failed build clears on the next good one.
+The mode-line shows the state of the active language server: `JVM:igniting`, `JVM:ready`, or `JVM:purgatory` when a project fails to import or build.
 
-If you see `[BYTECODE PURGATORY] <project> failed to import: ...` and `JVM:purgatory` on the mode-line:
-1. **Toolchain Version Mismatch**: Your build may specify a JDK version not currently on your system. Install the required JDK (via SDKMAN or system package manager).
-2. **Re-import Project**: Run `C-c l j u` (`lsp-java-update-project-configuration`) to force JDTLS to re-evaluate the build configuration.
-3. **Environment Sync**: Run `bin/hellmacs env` in your terminal to refresh `PATH` and `JAVA_HOME` variables recognized by Emacs.
+If you encounter `[BYTECODE PURGATORY]`:
+1. **Toolchain Version Mismatch**: Check if the project requires a JDK version not installed. Run `bin/hellmacs doctor` inside the project directory.
+2. **Re-import Project**: Run `C-c l j u` (`lsp-java-update-project-configuration`) to force JDTLS to re-evaluate build configurations.
+3. **Environment Sync**: Run `bin/hellmacs env` in your terminal to refresh `PATH` and `JAVA_HOME` variables for GUI Emacs.

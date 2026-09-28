@@ -4,7 +4,7 @@
 ;; every module's packages.el, so it can also change their packages.
 ;; Configure them in config.el. See `package!' for all options.
 ;;
-;; After changing this file, run `bin/hellmacs sync' (or `C-c h s').
+;; After changing this file, run `bin/hellmacs sync' (or `C-c h S').
 
 ;; From (M)ELPA:
 ;; (package! magit)

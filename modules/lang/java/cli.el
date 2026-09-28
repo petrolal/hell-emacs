@@ -190,8 +190,7 @@ Yours (`hellmacs-jdks') must each be a JDK of the release they're named
 for; found ones are compared with what the last sync stored."
   (let* ((yours (bound-and-true-p hellmacs-jdks))
          (jdks (or yours (hellmacs-jdk-detect)))
-         (default-home (hellmacs-jvm-jdtls-java-home))
-         (runtimes (append (hellmacs-jdk-lsp-runtimes jdks default-home) nil)))
+         (runtimes (append (hellmacs-jvm-lsp-runtimes jdks) nil)))
     (when yours
       (hellmacs-doctor-info "Using your `hellmacs-jdks'"))
     (dolist (runtime runtimes)
@@ -203,6 +202,9 @@ for; found ones are compared with what the last sync stored."
                                    (if actual (format "is a %s" actual) "isn't a JDK (no release file)"))
           (hellmacs-doctor-ok "JDK %s: %s%s" name (abbreviate-file-name home)
                               (if (eq (plist-get runtime :default) t) " (the default)" "")))))
+    (dolist (jdk (seq-difference jdks (hellmacs-jvm-runtime-jdks jdks)))
+      (hellmacs-doctor-info "JDK %s: %s (newer than JDTLS %s knows; not offered to it)"
+                            (car jdk) (abbreviate-file-name (cdr jdk)) hellmacs-jvm-jdtls-version))
     (if (null jdks)
         (hellmacs-doctor-info "No JDKs found for projects; set `hellmacs-jdks' if yours are elsewhere")
       (unless yours

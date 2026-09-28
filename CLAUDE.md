@@ -28,7 +28,7 @@ emacs --init-directory .          # run this checkout interactively
   ```
   Fixture projects live in `test/fixtures/`.
 
-The project rules (`docs/development/ai/context-primer.md`) require running `bin/hellmacs test` and `bin/hellmacs doctor` after any change to the core engine or to modules.
+The project rules (`docs/development/vision-and-rules.md`) require running `bin/hellmacs test` and `bin/hellmacs doctor` after any change to the core engine or to modules.
 
 ## Architecture
 
@@ -65,6 +65,7 @@ Some larger UI implementations live next to their module directories rather than
 
 ## Docs
 
-`docs/development/ai/` has machine-oriented specs: architecture, module contracts, and JVM integration contracts. `docs/roadmap.md` tracks phases; code comments often refer to them ("Phase 6.2", "Phase 9 spec"). Some docs describe planned features, so check the code before relying on them.
+`docs/development/` contains the engineering specifications: `vision-and-rules.md`, `architecture.md`, and `contributing.md`. `docs/roadmap.md` tracks phases; code comments often refer to them ("Phase 6.2", "Phase 9 spec"). Some docs describe planned features, so check the code before relying on them.
 
-`docs/development/ai/work-order.md` is the ordered checklist of remaining roadmap work. Take the next unchecked item from it. When an item is done and verified, tick it there and in `docs/roadmap.md`, with the date and a short note.
+`docs/development/work-order.md` is the ordered checklist of remaining roadmap work. Take the next unchecked item from it. When an item is done and verified, tick it there and in `docs/roadmap.md`, with the date and a short note.
+
