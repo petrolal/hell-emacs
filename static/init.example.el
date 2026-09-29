@@ -28,7 +28,7 @@
            dashboard          ; startup dashboard with the sigil, C-c h s
            modeline           ; minimal doom-modeline in the Hellmacs palette
            ;;emoji            ; [idea] emoji input and display
-           ;;hl-todo          ; [planned] highlight TODO/FIXME/HACK comments
+           ;;hl-todo          ; highlight TODO/FIXME/HACK/NOTE in comments; M-x hl-todo-next, hl-todo-occur
            ;;indent-guides    ; [idea] indentation guides
            ;;ligatures        ; [idea] font ligatures in graphical frames
            ;;minimap          ; [idea] a code minimap

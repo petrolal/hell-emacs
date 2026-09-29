@@ -2359,8 +2359,9 @@ each server really ships, what it needs) written here before the code.
 - [x] `:ui vc-gutter`: diff-hl in the fringe (the margin in a terminal),
       updated after Magit refreshes. Keys as shipped (see above).
       *Done 2026-09-29:* `modules/ui/vc-gutter/`, diff-hl 1.11.2 on the first file, the margin when there's no graphical display, `diff-hl-update-async` and off over TRAMP; commented out in `static/init.example.el`; `test/test-vc-gutter.el`. Live: a throwaway profile synced, booted, and a saved edit was marked in the margin; with the real Magit a commit cleared the marks, and without the module's hook they went stale. Not yet: the fringe in a graphical frame.
-- [ ] `:ui hl-todo`: highlight TODO, FIXME, HACK, NOTE. No keys:
+- [x] `:ui hl-todo`: highlight TODO, FIXME, HACK, NOTE. No keys:
       `M-x hl-todo-next`, and `M-x hl-todo-occur`.
+      *Done 2026-09-29:* `modules/ui/hl-todo/`, hl-todo 3.9.4 on the first file; TODO, FIXME, BUG, XXX, HACK, KLUDGE, NOTE, REVIEW, DEPRECATED in the theme's own faces; no keys; commented out in `static/init.example.el`; `test/test-hl-todo.el`. Live: a throwaway profile synced and booted; in a Java file the comment keywords took `warning`, `error` and `success`, an identifier `TODOs` didn't, and `hl-todo-next` and `hl-todo-occur` worked.
 - [ ] `:tools editorconfig`: the built-in `editorconfig-mode` (Emacs 30+),
       on by default in this module.
 - *Verify:* a unit test per rule (which buffer lands where), the keymaps
