@@ -64,5 +64,19 @@ working alongside Hellmacs'."
                         (cons def (if (keymapp map) map (make-sparse-keymap))))
                     def)))))
 
+(declare-function which-key-add-key-based-replacements "which-key")
+(declare-function which-key-add-major-mode-key-based-replacements "which-key")
+
+(defun hellmacs-which-key-labels (mode &rest bindings)
+  "Name prefix keys for which-key, so none shows as \"+prefix\".
+BINDINGS alternate KEY LABEL, KEY in `kbd' syntax (\"C-x r\"). With MODE
+nil the names apply everywhere; else only in that major mode. Loads
+which-key if it isn't yet, so call it from a hook or `after!', never at
+startup. Only names: nothing is bound."
+  (when (require 'which-key nil t)
+    (if mode
+        (apply #'which-key-add-major-mode-key-based-replacements mode bindings)
+      (apply #'which-key-add-key-based-replacements bindings))))
+
 (provide 'hellmacs-keybinds)
 ;;; hellmacs-keybinds.el ends here

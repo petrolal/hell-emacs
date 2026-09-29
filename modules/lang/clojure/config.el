@@ -93,6 +93,20 @@
 (dolist (hook (cons 'cider-repl-mode-hook hellmacs-clojure--source-mode-hooks))
   (add-hook hook #'hellmacs-clojure--setup-reload-h))
 
+;; CIDER's and clojure-mode's prefix keys that come without a name, so
+;; which-key would show them as "+prefix". Names only.
+(defconst hellmacs-clojure--which-key-labels
+  '("C-c C-?"   "xref (who calls, deps)"
+    "C-c M-l"   "logging"
+    "C-c C-r n" "ns form"
+    "C-c C-r s" "let"))
+
+(defun hellmacs-clojure--which-key-h ()
+  (apply #'hellmacs-which-key-labels major-mode hellmacs-clojure--which-key-labels))
+
+(dolist (hook hellmacs-clojure--source-mode-hooks)
+  (add-hook hook #'hellmacs-clojure--which-key-h))
+
 ;; The REPL shows JVM exceptions; color them like build output does.
 (add-to-list 'hellmacs-ux-jvm-output-hooks 'cider-repl-mode-hook)
 

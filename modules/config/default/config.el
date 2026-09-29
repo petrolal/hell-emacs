@@ -26,6 +26,68 @@
 ;; `C-c q' (quit) and `C-c w' (built-in window commands). Feature modules fill their own groups,
 ;; e.g. `:completion vertico' owns `C-c f', `C-c b' and `C-c s'.
 
+;; Emacs' own prefix keys that come without a name, so which-key would
+;; show them as "+prefix". Names only; the keys are Emacs'. Some exist
+;; only in newer Emacsen (`C-x w f' is 31's); a name for a key that
+;; isn't there is never shown.
+(defun hellmacs-default--name-stock-prefixes ()
+  (hellmacs-which-key-labels
+   nil
+   "C-c ^"         "merge conflicts (smerge)"
+   "C-x a"         "abbrevs"
+   "C-x a i"       "inverse add abbrev"
+   "C-x C-a"       "debugger (gud)"
+   "C-x C-k C-q"   "quit macro if counter"
+   "C-x C-k C-r"   "counter registers"
+   "C-x C-k C-r a" "add counter to register if"
+   "C-x n"         "narrow"
+   "C-x p"         "project"
+   "C-x p C-x"     "project buffers"
+   "C-x r"         "registers, rectangles, bookmarks"
+   "C-x RET"       "coding systems, input methods"
+   "C-x t"         "tabs"
+   "C-x t ^"       "detach"
+   "C-x v"         "version control"
+   "C-x v b"       "branches"
+   "C-x v E"       "outgoing and edited"
+   "C-x v M"       "since the merge base"
+   "C-x v T"       "unintegrated"
+   "C-x v T R"     "unintegrated with remote"
+   "C-x v w"       "working trees"
+   "C-x w"         "window layout"
+   "C-x w ^"       "detach"
+   "C-x w f"       "flip layout"
+   "C-x w o"       "rotate windows"
+   "C-x w r"       "rotate layout"
+   "C-x x"         "buffer"
+   "M-s h"         "highlight"
+   ;; `C-x 8': insert a character, grouped by accent.
+   "C-x 8"         "insert character"
+   "C-x 8 \""      "¨ diaeresis"
+   "C-x 8 '"       "´ acute"
+   "C-x 8 )"       "˘ breve"
+   "C-x 8 *"       "• symbols"
+   "C-x 8 ,"       "¸ cedilla, ogonek"
+   "C-x 8 ."       "˙ dot"
+   "C-x 8 /"       "/ stroke, ligatures"
+   "C-x 8 ="       "¯ macron"
+   "C-x 8 = /"     "ǣ macron ligatures"
+   "C-x 8 ^"       "ˆ circumflex"
+   "C-x 8 ^ ^"     "ˇ caron"
+   "C-x 8 _"       "– dashes, ≤ ≥"
+   "C-x 8 `"       "` grave"
+   "C-x 8 ~"       "˜ tilde"
+   "C-x 8 1"       "† ½ ¼"
+   "C-x 8 1 /"     "fractions"
+   "C-x 8 2"       "‡"
+   "C-x 8 3"       "¾"
+   "C-x 8 3 /"     "fractions"
+   "C-x 8 a"       "→ arrows, æ"
+   "C-x 8 A"       "Æ"
+   "C-x 8 e"       "emoji"
+   "C-x 8 N"       "№"
+   "C-x 8 O"       "Œ"))
+
 (use-package which-key
   :defer 1
   :init
@@ -33,7 +95,8 @@
         which-key-sort-order 'which-key-key-order-alpha
         which-key-add-column-padding 1)
   :config
-  (which-key-mode 1))
+  (which-key-mode 1)
+  (hellmacs-default--name-stock-prefixes))
 
 ;;; C-c h -- the infernal meta map ---------------------------------------------
 ;;

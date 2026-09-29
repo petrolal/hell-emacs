@@ -137,5 +137,19 @@
           (should (hellmacs-clojure-lsp-installed-p)))
       (delete-directory dir t))))
 
+(ert-deftest test-clojure/which-key-names-cider-groups ()
+  "CIDER's and clojure-mode's unnamed groups get names in Clojure buffers."
+  (test-clojure--load)
+  (dolist (hook '(clojure-mode-hook clojure-ts-mode-hook))
+    (should (memq #'hellmacs-clojure--which-key-h (symbol-value hook))))
+  (let (args)
+    (cl-letf (((symbol-function 'hellmacs-which-key-labels) (lambda (&rest a) (setq args a))))
+      (with-temp-buffer
+        (setq major-mode 'clojure-mode)
+        (hellmacs-clojure--which-key-h)))
+    (should (eq (car args) 'clojure-mode))
+    (dolist (key '("C-c C-?" "C-c M-l" "C-c C-r n" "C-c C-r s"))
+      (should (stringp (plist-get (cdr args) key #'equal))))))
+
 (provide 'test-clojure)
 ;;; test-clojure.el ends here

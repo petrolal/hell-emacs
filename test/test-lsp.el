@@ -132,5 +132,26 @@
             (should (equal done "No network")))
         (advice-remove 'lsp-package-ensure #'hellmacs-lsp--package-ensure-a)))))
 
+(defvar lsp-mode-hook)
+
+(ert-deftest test-lsp/which-key-names-whenever-lsp-starts ()
+  "lsp-mode's `C-c l' groups are named even when a file opened at startup
+starts it before which-key has loaded: which-key is loaded first."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (hellmacs-packages nil)
+        (lsp-mode-hook nil)
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp))
+    (hellmacs-modules-read-packages)
+    (hellmacs-module--load '(:tools . lsp) "config.el")
+    (should (memq 'hellmacs-lsp--which-key-h lsp-mode-hook))
+    (should-not (memq 'lsp-enable-which-key-integration lsp-mode-hook)))
+  (let (calls)
+    (cl-letf (((symbol-function 'require) (lambda (feature &rest _) (push feature calls) t))
+              ((symbol-function 'lsp-enable-which-key-integration)
+               (lambda (&rest _) (push 'integration calls))))
+      (hellmacs-lsp--which-key-h))
+    (should (equal (nreverse calls) '(which-key integration)))))
+
 (provide 'test-lsp)
 ;;; test-lsp.el ends here

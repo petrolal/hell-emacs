@@ -57,6 +57,15 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   (and (assq 'lsp-mode hellmacs-packages)
        (not (hellmacs-package-disabled-p 'lsp-mode))))
 
+;; lsp-mode names its `C-c l' groups for which-key, but needs which-key
+;; loaded to: a file opened at startup can start lsp-mode first, and the
+;; error would also stop the rest of the hook.
+(declare-function lsp-enable-which-key-integration "lsp-mode")
+(defun hellmacs-lsp--which-key-h ()
+  "Name lsp-mode's `C-c l' groups in which-key, loading it if need be."
+  (when (require 'which-key nil t)
+    (lsp-enable-which-key-integration)))
+
 (when (hellmacs-lsp-mode-used-p)
   (use-package lsp-mode
     ;; Loaded in the background after startup, so the first file that
@@ -79,7 +88,7 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
     (lsp-enable-snippet nil)                ; no yasnippet (yet)
     (lsp-session-file (hellmacs-state-file "lsp-session"))
     :hook
-    (lsp-mode . lsp-enable-which-key-integration)
+    (lsp-mode . hellmacs-lsp--which-key-h)
     (lsp-mode . hellmacs-lsp--tune-process-output-h)
     (lsp-completion-mode . hellmacs-lsp--setup-completion-h)))
 
