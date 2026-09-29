@@ -3272,6 +3272,11 @@ JDTLS's installer uses.
     validation.
   - Navigation to beans and request mappings, through `lsp-java-boot`.
   - Pinned and installed by `sync` like the other servers.
+  - *Found in use (2026-09-29):* opening a file warned `Unknown
+    notification: spring/index/updated`. The server sends it to refresh
+    VS Code's Spring explorer, and lsp-java-boot's client had no handler.
+    It's now handled by doing nothing (`hellmacs-spring-ignore-notifications`,
+    `test-spring/vscode-only-notifications-are-quiet`).
 - [x] **Profiles and actuator.** (2026-09-28: profiles, unit tests only;
       actuator not done) The run list offers each configuration once
       per Spring profile found in `application-*.yml`.
@@ -3541,9 +3546,39 @@ pass against what enterprise developers already use.
 
 #### 12.7 Scale and performance
 
-- [ ] **A reference monorepo** for measurements: a public large project
+- [x] **A reference monorepo** for measurements: a public large project
       (Spring Framework itself, or Apache Kafka, both Gradle; Apache Camel,
       Maven) added to `java-parity.el`'s runs.
+  - *Done 2026-09-29:* Spring Framework v7.0.9 (commit `82a6b40b`), pinned in
+    `test/integration/reference.el`: a shallow clone of the tag into the cache
+    (or `$HELLMACS_REFERENCE_DIR`), refused if the tag isn't at the pinned
+    commit. `HELLMACS_PARITY_REFERENCE=spring-framework` runs java-parity on
+    it with the pin's working file (`DefaultListableBeanFactory.java`) and
+    build (`./gradlew compileJava`). `test/test-reference.el` checks the pins
+    and the fetch against a local repository. java-parity now also works in a
+    multi-project build's root, which has no `src/main/java`.
+  - *First measurements* (16 cores, 31GB, JDTLS 1.57 on JDK 25, cold JDTLS
+    workspace, with the three settings below turned off): 21 of 22 checks
+    pass. JDTLS ready in 8.5s, symbol search answered 63.5s later; 1454
+    references to the class; a rename touches 9 files; JDTLS 1732MB after
+    import, 2197MB peak (default `-Xmx2G`); `compileJava` 71.1s the first
+    time (2.5s with Gradle's cache warm).
+  - *With Hellmacs' defaults, navigation doesn't work on it.* Found by the runs,
+    to fix under *Tuning*:
+    - The Gradle import fails: JDTLS's annotation-processing init script
+      resolves `:framework-docs:annotationProcessor` without the exclusive
+      lock Gradle 9 requires. With
+      `lsp-java-import-gradle-annotation-processing-enabled` nil it imports.
+    - References and implementations code lenses (on in Hellmacs, off in VS
+      Code) fill JDTLS's 15 request threads with workspace searches as soon
+      as a big class opens; symbol search, outline, hover and rename queue
+      behind them and time out. A thread dump showed every request thread in
+      `CodeLensHandler.resolve`. With both off, all of those pass.
+    - Gradle ran on the system JDK (27, which Gradle 9.7 can't run on) until
+      `JAVA_HOME` pointed at 25: nothing picks the build's JDK for the
+      Gradle daemon.
+  - *Not yet:* the "quick fix offers an import" check still fails on it
+    (not diagnosed); Kafka or Camel as a second, Maven, reference.
 - [ ] **Budgets, measured in CI weekly and recorded here:**
 
   | Measurement | Budget |

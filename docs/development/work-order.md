@@ -117,9 +117,13 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Step 9: 12.7 Scale, 12.9 Security and compliance, 12.10 Documentation (roadmap "12.7", "12.9", "12.10")
 
-- [ ] 12.7 Reference monorepo for measurements
+- [x] 12.7 Reference monorepo for measurements (2026-09-29: Spring Framework v7.0.9, pinned by tag and commit in `test/integration/reference.el`, `HELLMACS_PARITY_REFERENCE=spring-framework` for java-parity; `test/test-reference.el`. Live: 21 of 22 checks pass once the three settings below are off; symbol search answered 72s after JDTLS started cold, 2197MB peak, `compileJava` 71.1s. With the defaults, navigation doesn't work on it; see the roadmap)
 - [ ] 12.7 Budgets measured weekly in CI
 - [ ] 12.7 Tuning justified by the measurements
+- [ ] 12.7 Tuning, found by the reference runs: Gradle 9 import fails with JDTLS's annotation-processing init script (Spring Framework). Roadmap "12.7", *A reference monorepo*
+- [ ] 12.7 Tuning, found by the reference runs: references/implementations code lenses starve JDTLS's request threads on big classes (off in VS Code). Roadmap "12.7", *A reference monorepo*
+- [ ] 12.7 Tuning, found by the reference runs: the Gradle daemon runs on the system JDK, not one the build supports. Roadmap "12.7", *A reference monorepo*
+- [ ] 12.7 The "quick fix offers an import" parity check fails on Spring Framework (not diagnosed). Roadmap "12.7", *A reference monorepo*
 - [ ] 12.7 Kotlin's server: track JetBrains' Kotlin LSP
 - [ ] 12.9 SBOM: `bin/hellmacs sbom` (CycloneDX)
 - [ ] 12.9 License report: `bin/hellmacs licenses`
