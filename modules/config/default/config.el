@@ -45,7 +45,8 @@
 
 (defvar-keymap hellmacs-prefix-map
   :doc "Hellmacs' own commands, on `C-c h'."
-  "s" (cons "+altar/return" #'hellmacs-splash)
+  ;; `:ui dashboard' remaps `hellmacs-splash' to itself.
+  "s" (cons (if (modulep! :ui dashboard) "+altar/dashboard" "+altar/return") #'hellmacs-splash)
   "c" (cons "+altar/reap" #'hellmacs-reap)
   "f" (cons "+forge/find-file" #'hellmacs-forge-find-file)
   "r" (cons "+crucible/reload" #'hellmacs-crucible-reload)

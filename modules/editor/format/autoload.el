@@ -44,6 +44,7 @@
 (declare-function apheleia-mode "apheleia")
 (declare-function lsp-format-buffer "lsp-mode")
 (declare-function lsp-feature? "lsp-mode")
+(declare-function eglot-managed-p "eglot")
 (declare-function project-root "project")
 (declare-function hellmacs-jdk-home-major "hellmacs-jdk")
 (declare-function hellmacs-jdk-java-executable "hellmacs-jdk")
@@ -168,13 +169,32 @@ Returns (FILE . PROFILE-NAME)."
                                                      (when-let* ((profile (hellmacs-format-parse-eclipse-profile text)))
                                                        (cons file (plist-get profile :name))))))))))
 
-(defvar-local hellmacs-format--eclipse-profile 'unknown
-  "This buffer's project's Eclipse profile, (FILE . NAME), nil, or `unknown' until looked up.")
+(defvar hellmacs-format--project-profiles (make-hash-table :test #'equal)
+  "Project root -> (STAMP . PROFILE): its Eclipse profile, (FILE . NAME) or nil.
+STAMP is the modification times of the directories a profile may be in,
+and of the profile: the lookup reads every XML file there, once per
+project until one of them changes.")
+
+(defun hellmacs-format--profile-stamp (root profile)
+  "What changes when ROOT's Eclipse profile may have: see `hellmacs-format--project-profiles'."
+  (mapcar (lambda (file) (file-attribute-modification-time (file-attributes file)))
+          (append (mapcar (lambda (dir) (expand-file-name dir root)) hellmacs-format--profile-dirs)
+                  (and profile (list (car profile))))))
 
 (defun hellmacs-format--eclipse-profile ()
-  (when (eq hellmacs-format--eclipse-profile 'unknown)
-    (setq hellmacs-format--eclipse-profile (hellmacs-format-eclipse-profile-file (hellmacs-format--root))))
-  hellmacs-format--eclipse-profile)
+  "The Eclipse profile of the project around `default-directory', (FILE . NAME) or nil."
+  (let* ((root (hellmacs-format--root))
+         (cached (gethash root hellmacs-format--project-profiles)))
+    (if (and cached (equal (car cached) (hellmacs-format--profile-stamp root (cdr cached))))
+        (cdr cached)
+      (let ((profile (hellmacs-format-eclipse-profile-file root)))
+        (puthash root (cons (hellmacs-format--profile-stamp root profile) profile)
+                 hellmacs-format--project-profiles)
+        profile))))
+
+(defun hellmacs-format--file-uri (file)
+  "FILE (absolute) as a file: URI; a Windows path gets the slash before its drive."
+  (concat "file://" (unless (string-prefix-p "/" file) "/") file))
 
 ;;;###autoload
 (defun hellmacs-format--java-profile-h ()
@@ -183,7 +203,7 @@ For Java buffers, before JDTLS starts (it reads the setting then). A
 project without one clears the setting, so another project's profile
 isn't used for it."
   (let ((profile (hellmacs-format--eclipse-profile)))
-    (setq lsp-java-format-settings-url (and profile (concat "file://" (car profile)))
+    (setq lsp-java-format-settings-url (and profile (hellmacs-format--file-uri (car profile)))
           lsp-java-format-settings-profile (cdr profile))))
 
 ;;; Commands ---------------------------------------------------------------------
@@ -199,12 +219,15 @@ isn't used for it."
 ;;;###autoload
 (defun hellmacs-format-buffer ()
   "Format the buffer with its language's formatter, else its language server's.
-On lsp-mode's own format keys (`C-c l = =') in buffers with a pinned formatter."
+On lsp-mode's own format keys (`C-c l = =') in buffers with a pinned formatter,
+and eglot's command: the server's is eglot's where eglot manages the buffer."
   (interactive)
   (if-let* ((formatter (hellmacs-format--formatter)))
       (progn (unless (fboundp 'apheleia-format-buffer) (require 'apheleia))
              (apheleia-format-buffer formatter))
-    (call-interactively #'lsp-format-buffer)))
+    (call-interactively (if (and (fboundp 'eglot-managed-p) (eglot-managed-p))
+                            #'eglot-format-buffer
+                          #'lsp-format-buffer))))
 
 (defvar hellmacs-format-mode-map
   (let ((map (make-sparse-keymap)))

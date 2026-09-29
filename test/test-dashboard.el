@@ -62,6 +62,21 @@
              ((symbol-function 'image-type-available-p) (lambda (&rest _) t)))
      ,@body))
 
+(defvar hellmacs-prefix-map)
+
+(ert-deftest test-dashboard/leader-label-says-dashboard ()
+  "With the dashboard on, which-key calls `C-c h s' the dashboard, as it opens it."
+  (dolist (modules '((:config default) (:config default :ui dashboard)))
+    (let ((hellmacs-modules (make-hash-table :test #'equal))
+          (mode-specific-map (make-sparse-keymap))
+          (warning-minimum-log-level :emergency))
+      (makunbound 'hellmacs-prefix-map)
+      (hellmacs--enable-modules modules)
+      (hellmacs-module--load '(:config . default) "config.el")
+      (let ((label (car (alist-get ?s (cdr hellmacs-prefix-map)))))
+        (should (equal label (if (memq :ui modules) "+altar/dashboard" "+altar/return"))))
+      (should (eq (keymap-lookup hellmacs-prefix-map "s") 'hellmacs-splash)))))
+
 (ert-deftest test-dashboard/banner-graphical ()
   "A graphical frame gets the small PNG first, with the text as fallback."
   (test-dashboard--with-assets '("banner-960.png" "banner.png" "banner.svg" "banner-ascii.txt")

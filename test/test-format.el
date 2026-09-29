@@ -161,6 +161,45 @@
           (hellmacs-format-buffer)
           (should (equal (car calls) '(lsp))))))))
 
+(ert-deftest test-format/format-buffer-with-eglot ()
+  "Where eglot manages the buffer, its own formatter is the fallback, not lsp-mode's."
+  (let (calls)
+    (cl-letf (((symbol-function 'eglot-managed-p) (lambda () t))
+              ((symbol-function 'eglot-format-buffer) (lambda () (interactive) (push '(eglot) calls)))
+              ((symbol-function 'lsp-format-buffer) (lambda () (interactive) (push '(lsp) calls))))
+      (test-format--with-tree '(("pom.xml" . "<project/>\n"))
+        (with-current-buffer (find-file-noselect (expand-file-name "pom.xml" root))
+          (setq major-mode 'nxml-mode)
+          (hellmacs-format-buffer)
+          (should (equal calls '((eglot)))))))))
+
+(ert-deftest test-format/eclipse-profile-looked-up-once-per-project ()
+  "Java buffers of one project share the lookup; a profile added later is found."
+  (test-format--with-tree '(("pom.xml" . "<project/>\n")
+                            ("src/A.java" . "class A {}\n") ("src/B.java" . "class B {}\n"))
+    (let ((lookups 0)
+          (hellmacs-format--project-profiles (make-hash-table :test #'equal)))
+      (cl-letf* ((lookup (symbol-function 'hellmacs-format-eclipse-profile-file))
+                 ((symbol-function 'hellmacs-format-eclipse-profile-file)
+                  (lambda (root) (cl-incf lookups) (funcall lookup root))))
+        (dolist (file '("src/A.java" "src/B.java"))
+          (with-current-buffer (find-file-noselect (expand-file-name file root))
+            (should-not (hellmacs-format--eclipse-profile))))
+        (should (= lookups 1))
+        ;; Committed since: the project's config/ directory is new.
+        (make-directory (expand-file-name "config/" root))
+        (with-temp-file (expand-file-name "config/eclipse-formatter.xml" root)
+          (insert test-format--eclipse-profile))
+        (with-temp-buffer
+          (setq default-directory (expand-file-name "src/" root))
+          (should (equal (cdr (hellmacs-format--eclipse-profile)) "HellmacsStyle")))
+        (should (= lookups 2))))))
+
+(ert-deftest test-format/profile-file-uri ()
+  "The profile's URI is well-formed for POSIX and Windows paths."
+  (should (equal (hellmacs-format--file-uri "/p/config/f.xml") "file:///p/config/f.xml"))
+  (should (equal (hellmacs-format--file-uri "C:/p/config/f.xml") "file:///C:/p/config/f.xml")))
+
 (ert-deftest test-format/onsave ()
   "+onsave: apheleia-mode where a formatter is pinned, the server's formatter elsewhere."
   (let (enabled)
