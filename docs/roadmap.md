@@ -3590,11 +3590,21 @@ pass against what enterprise developers already use.
       `CodeLensHandler.resolve`. With both off, all of those pass.
       *2026-09-29:* with them on (and the Gradle and Spring fixes above),
       symbol search, outline, hover and rename all passed; the import took
-      183s to answer symbol search, against 63s with them off. Still to
-      decide, from the weekly numbers.
+      183s to answer symbol search, against 63s with them off.
+      *Fixed 2026-09-29:* both off by default, as in VS Code
+      (`test-java/reference-code-lenses-off`); a user's config.el can turn
+      them back on.
     - Gradle ran on the system JDK (27, which Gradle 9.7 can't run on) until
       `JAVA_HOME` pointed at 25: nothing picks the build's JDK for the
-      Gradle daemon.
+      Gradle daemon. *Fixed 2026-09-29:* `hellmacs-jdk-gradle-environment`
+      reads the wrapper's Gradle release (Gradle's compatibility matrix:
+      9.1+ runs on 17 to 25) and, when `JAVA_HOME`'s (else the PATH's) JDK
+      can't run it, sets `JAVA_HOME` to the newest JDK sync found that can,
+      for builds from the buffer (`C-x p c`) and `:tools run` tasks. A build
+      that picks its own JVM (`gradle-daemon-jvm.properties`,
+      `org.gradle.java.home`) is left alone. Live: with `JAVA_HOME` unset
+      and JDK 27 on the PATH, `C-x p c` in Spring Framework ran on 25 and
+      finished.
   - *Not yet:* the "quick fix offers an import" check still fails on it
     (not diagnosed); Kafka or Camel as a second, Maven, reference.
 - [/] **Budgets, measured in CI weekly and recorded here:**

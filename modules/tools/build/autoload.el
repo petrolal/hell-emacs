@@ -87,9 +87,14 @@ or a list of them. BUILD is the build's (TOOL ROOT PROGRAM), if already known."
   "Make `compile-command' (and so `C-x p c') the build's own build command.
 Builds started from this buffer get your proxy and CA
 \(`hellmacs-net-jvm-options') in JAVA_TOOL_OPTIONS, which every JVM a
-Gradle or Maven build starts reads: the client, the daemon, the tests."
-  (when-let* ((command (ignore-errors (hellmacs-forge--command 'build))))
-    (setq-local compile-command command))
+Gradle or Maven build starts reads: the client, the daemon, the tests.
+Gradle builds run on a JDK their Gradle release runs on
+\(`hellmacs-jdk-gradle-environment')."
+  (let ((build (hellmacs-forge-build-tool)))
+    (when-let* ((command (and build (ignore-errors (hellmacs-forge--command 'build build)))))
+      (setq-local compile-command command))
+    (when-let* ((env (and (eq (car build) 'gradle) (hellmacs-jdk-gradle-environment (nth 1 build)))))
+      (setq-local compilation-environment (append env (bound-and-true-p compilation-environment)))))
   (when-let* ((options (hellmacs-net-jvm-options)))
     ;; compile.el may not be loaded yet (this runs as the file opens): the
     ;; buffer-local value then simply starts from its default, nil.

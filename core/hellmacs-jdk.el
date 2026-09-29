@@ -365,5 +365,67 @@ a `toolchainManagement' block)."
                          (re-search-forward "foojay-resolver\\|toolchainManagement" nil t)))))
               '("settings.gradle" "settings.gradle.kts"))))
 
+;;; The JDK Gradle itself runs on ----------------------------------------------
+
+(defconst hellmacs-jdk--gradle-max-java
+  '(("9.1" . 25) ("8.14" . 24) ("8.10" . 23) ("8.8" . 22) ("8.5" . 21) ("8.3" . 20)
+    ("7.6" . 19) ("7.5" . 18) ("7.3" . 17) ("7.0" . 16) ("6.7" . 15) ("6.3" . 14)
+    ("6.0" . 13) ("5.4" . 12) ("5.0" . 11) ("4.7" . 10))
+  "(GRADLE . JAVA): from Gradle release GRADLE on, it runs on Java up to JAVA.
+Gradle's compatibility matrix, newest first; older releases run on 8.")
+
+;;;###autoload
+(defun hellmacs-jdk-gradle-daemon-range (version)
+  "(MIN . MAX): the Java releases Gradle VERSION runs on, or nil if VERSION isn't one."
+  (when-let* ((v (ignore-errors (version-to-list version))))
+    (cons (if (version-list-<= '(9) v) 17 8)
+          (or (cdr (seq-find (lambda (entry) (version-list-<= (version-to-list (car entry)) v))
+                             hellmacs-jdk--gradle-max-java))
+              8))))
+
+(defun hellmacs-jdk--gradle-wrapper-root (dir)
+  "The directory of the Gradle wrapper around DIR, or nil."
+  (locate-dominating-file dir "gradle/wrapper/gradle-wrapper.properties"))
+
+;;;###autoload
+(defun hellmacs-jdk-gradle-version (dir)
+  "The Gradle release the wrapper of the build around DIR downloads, or nil."
+  (when-let* ((root (hellmacs-jdk--gradle-wrapper-root dir))
+              (url (hellmacs-jdk--property
+                    (expand-file-name "gradle/wrapper/gradle-wrapper.properties" root)
+                    "distributionUrl")))
+    (when (string-match "gradle-\\([0-9][^-/]*\\)-\\(?:bin\\|all\\)\\.zip" url)
+      (match-string 1 url))))
+
+(defun hellmacs-jdk--gradle-picks-own-jvm-p (root)
+  "Non-nil if the Gradle build at ROOT chooses its own JVM.
+A daemon JVM criteria file, or org.gradle.java.home in the build's or
+the Gradle user home's gradle.properties."
+  (let ((home (or (let ((h (getenv "GRADLE_USER_HOME"))) (and h (not (string-empty-p h)) h))
+                  "~/.gradle")))
+    (or (file-exists-p (expand-file-name "gradle/gradle-daemon-jvm.properties" root))
+        (seq-some (lambda (props) (hellmacs-jdk--property props "org.gradle.java.home"))
+                  (list (expand-file-name "gradle.properties" root)
+                        (expand-file-name "gradle.properties" home))))))
+
+;;;###autoload
+(defun hellmacs-jdk-gradle-environment (dir)
+  "The environment the Gradle build around DIR runs in, as \"VAR=value\" strings.
+JAVA_HOME set to a JDK its wrapper's Gradle release runs on, the newest
+one sync found, when JAVA_HOME's (else the PATH's) doesn't run it. nil
+when it does, when none does (Gradle then says why), or when the build
+chooses its own JVM."
+  (when-let* ((root (hellmacs-jdk--gradle-wrapper-root dir))
+              (range (hellmacs-jdk-gradle-daemon-range (hellmacs-jdk-gradle-version root))))
+    (unless (hellmacs-jdk--gradle-picks-own-jvm-p root)
+      (let* ((current (or (let ((home (getenv "JAVA_HOME")))
+                            (and home (not (string-empty-p home)) home))
+                          (hellmacs-jdk--path-home)))
+             (major (and current (hellmacs-jdk-home-major current))))
+        (unless (and major (<= (car range) major (cdr range)))
+          (when-let* ((home (hellmacs-jdk-pick (reverse (mapcar #'cdr (hellmacs-jdk-read)))
+                                               (car range) (cdr range))))
+            (list (concat "JAVA_HOME=" home))))))))
+
 (provide 'hellmacs-jdk)
 ;;; hellmacs-jdk.el ends here

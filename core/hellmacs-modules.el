@@ -694,12 +694,18 @@ this file for the order."
   "Install every declared package, then write the synced profile." t)
 
 ;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.
-(dolist (fn '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
-              hellmacs-jdk-home-release hellmacs-jdk-home-major hellmacs-jdk-pick hellmacs-jdk-default-roots hellmacs-jdk-scan-roots hellmacs-jdk-detect
-              hellmacs-jdk-write hellmacs-jdk-read hellmacs-jdk-lsp-runtimes hellmacs-jdk-java-executable
-              hellmacs-jdk-parse-toolchains-xml hellmacs-jdk-parse-gradle-toolchain
-              hellmacs-jdk-toolchains-xml-jdks hellmacs-jdk-build-request
-              hellmacs-jdk-gradle-installation-paths hellmacs-jdk-gradle-provisions-p))
+;; Every `;;;###autoload' function in hellmacs-jdk.el belongs here
+;; (`test-jdk/public-functions-autoloaded-from-core').
+(defconst hellmacs-modules--jdk-autoloads
+  '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
+    hellmacs-jdk-home-release hellmacs-jdk-home-major hellmacs-jdk-pick hellmacs-jdk-default-roots hellmacs-jdk-scan-roots hellmacs-jdk-detect
+    hellmacs-jdk-write hellmacs-jdk-read hellmacs-jdk-lsp-runtimes hellmacs-jdk-java-executable
+    hellmacs-jdk-parse-toolchains-xml hellmacs-jdk-parse-gradle-toolchain
+    hellmacs-jdk-toolchains-xml-jdks hellmacs-jdk-build-request
+    hellmacs-jdk-gradle-installation-paths hellmacs-jdk-gradle-provisions-p
+    hellmacs-jdk-gradle-daemon-range hellmacs-jdk-gradle-version hellmacs-jdk-gradle-environment)
+  "The functions core autoloads from hellmacs-jdk.el.")
+(dolist (fn hellmacs-modules--jdk-autoloads)
   (autoload fn "hellmacs-jdk"))
 
 (provide 'hellmacs-modules)

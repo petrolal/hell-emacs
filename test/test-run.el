@@ -272,6 +272,24 @@ frames, with its environment and the buffer's (envrc's); C-c r l runs it again."
         (should (string-match-p "STAGE=local" (with-current-buffer buf (buffer-string))))
         (kill-buffer buf)))))
 
+(ert-deftest test-run/gradle-task-runs-on-a-jdk-gradle-runs-on ()
+  "A Gradle task gets `hellmacs-jdk-gradle-environment''s JAVA_HOME; the
+configuration's own :env still wins over it."
+  (test-run--with-tree
+      '(("settings.gradle" . "rootProject.name = 'p'\n")
+        ("gradlew" . "#!/bin/sh\necho \"JAVA_HOME=$JAVA_HOME\"\n"))
+    (set-file-modes (expand-file-name "gradlew" root) #o755)
+    (with-temp-buffer
+      (setq default-directory root)
+      (cl-letf (((symbol-function 'hellmacs-jdk-gradle-environment)
+                 (lambda (dir) (and (file-equal-p dir root) '("JAVA_HOME=/jdk/25")))))
+        (dolist (case '(((:name "t" :task "run") . "JAVA_HOME=/jdk/25")
+                        ((:name "t" :task "run" :env (("JAVA_HOME" . "/mine"))) . "JAVA_HOME=/mine")))
+          (let ((buf (hellmacs-run-config (car case))))
+            (with-timeout (30) (while (process-live-p (get-buffer-process buf)) (accept-process-output nil 0.1)))
+            (should (string-match-p (regexp-quote (cdr case)) (with-current-buffer buf (buffer-string))))
+            (kill-buffer buf)))))))
+
 (ert-deftest test-run/debug-attaches-once ()
   "The debugger attaches once, when the JVM says it listens, however the line
 arrives; asking again replaces the earlier wait rather than adding one."

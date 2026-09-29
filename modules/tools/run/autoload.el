@@ -398,9 +398,11 @@ A run still going there is stopped first. Returns the buffer."
     (display-buffer buffer)
     buffer))
 
-(defun hellmacs-run--environment (config)
-  "The environment CONFIG runs with: its :env over this buffer's."
+(defun hellmacs-run--environment (config &optional extra)
+  "The environment CONFIG runs with: its :env over EXTRA over this buffer's.
+EXTRA is a list of \"VAR=value\" strings."
   (append (mapcar (lambda (e) (concat (car e) "=" (cdr e))) (plist-get config :env))
+          extra
           process-environment))
 
 (defvar-local hellmacs-run--pending-attach nil
@@ -455,6 +457,10 @@ dap's own)."
      ((plist-get config :task)
       (let* ((build (or (hellmacs-forge-build-tool root)
                         (user-error "No Gradle or Maven build in %s" (abbreviate-file-name root))))
+             ;; Gradle on a JDK its release runs on (docs/roadmap.md, 12.7).
+             (env (if (eq (car build) 'gradle)
+                      (hellmacs-run--environment config (hellmacs-jdk-gradle-environment (nth 1 build)))
+                    env))
              (buffer (hellmacs-run--start name (hellmacs-run--task-command config build debug)
                                           (or (plist-get config :cwd) (nth 1 build)) env)))
         (when debug

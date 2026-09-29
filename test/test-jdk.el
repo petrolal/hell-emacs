@@ -377,5 +377,84 @@
                 (should (equal (hellmacs-jdk-java-executable 99) "java"))))))
       (delete-directory root t))))
 
+(ert-deftest test-jdk/gradle-daemon-range ()
+  "The JDKs each Gradle release runs on, from Gradle's compatibility matrix."
+  (require 'hellmacs-jdk)
+  (should (equal (hellmacs-jdk-gradle-daemon-range "9.7.0") '(17 . 25)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "9.1.0") '(17 . 25)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "9.0.0") '(17 . 24)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "8.14.3") '(8 . 24)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "8.5") '(8 . 21)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "8.4") '(8 . 20)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "7.6.4") '(8 . 19)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "6.9") '(8 . 15)))
+  (should (equal (hellmacs-jdk-gradle-daemon-range "4.10") '(8 . 10)))
+  (should-not (hellmacs-jdk-gradle-daemon-range "not-a-version")))
+
+(ert-deftest test-jdk/gradle-version-from-wrapper ()
+  "The Gradle release the build's wrapper downloads, from any directory in the build."
+  (require 'hellmacs-jdk)
+  (test-jdk--with-fake-fs
+      '("proj/sub/src" "plain")
+      '(("proj/gradle/wrapper/gradle-wrapper.properties"
+         . "distributionBase=GRADLE_USER_HOME\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-9.7.0-bin.zip\n")
+        ("proj/settings.gradle" . ""))
+    (should (equal (hellmacs-jdk-gradle-version (expand-file-name "proj/sub/src/" test-jdk--root)) "9.7.0"))
+    (should-not (hellmacs-jdk-gradle-version (expand-file-name "plain/" test-jdk--root)))))
+
+(ert-deftest test-jdk/gradle-environment-runs-daemon-on-a-jdk-it-supports ()
+  "Gradle's JVM: JAVA_HOME set to a JDK its release runs on, only when needed.
+Found on Spring Framework: the system's JDK 27 can't run Gradle 9.7, and
+nothing picked another (docs/roadmap.md, 12.7)."
+  (require 'hellmacs-jdk)
+  (test-jdk--with-fake-fs
+      '("jdk/11/bin" "jdk/21/bin" "jdk/25/bin" "jdk/27/bin" "proj" "own" "props")
+      `(("jdk/11/release" . "JAVA_VERSION=\"11.0.2\"\n")
+        ("jdk/21/release" . "JAVA_VERSION=\"21.0.2\"\n")
+        ("jdk/25/release" . "JAVA_VERSION=\"25.0.4\"\n")
+        ("jdk/27/release" . "JAVA_VERSION=\"27\"\n")
+        ,@(mapcar (lambda (p) (cons (concat p "/gradle/wrapper/gradle-wrapper.properties")
+                                    "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.7.0-bin.zip\n"))
+                  '("proj" "own" "props"))
+        ("own/gradle/gradle-daemon-jvm.properties" . "toolchainVersion=21\n")
+        ("props/gradle.properties" . "org.gradle.java.home=/opt/jdk\n"))
+    (let* ((jdk (lambda (m) (expand-file-name (format "jdk/%d" m) test-jdk--root)))
+           (proj (expand-file-name "proj/" test-jdk--root)))
+      (cl-letf (((symbol-function 'hellmacs-jdk-read)
+                 (lambda () (mapcar (lambda (m) (cons (format "JavaSE-%d" m) (funcall jdk m)))
+                                    '(11 21 25 27))))
+                ((symbol-function 'executable-find) #'ignore))
+        ;; JDK 27 in JAVA_HOME: Gradle 9.7 gets the newest JDK it runs on.
+        (let ((process-environment (cons (concat "JAVA_HOME=" (funcall jdk 27)) process-environment)))
+          (should (equal (hellmacs-jdk-gradle-environment proj)
+                         (list (concat "JAVA_HOME=" (funcall jdk 25)))))
+          ;; A build that picks its own JVM is left to it.
+          (should-not (hellmacs-jdk-gradle-environment (expand-file-name "own/" test-jdk--root)))
+          (should-not (hellmacs-jdk-gradle-environment (expand-file-name "props/" test-jdk--root)))
+          ;; Not a Gradle build with a wrapper: nothing.
+          (should-not (hellmacs-jdk-gradle-environment (expand-file-name "jdk/" test-jdk--root))))
+        ;; JAVA_HOME's JDK already runs it: left alone, even if older.
+        (let ((process-environment (cons (concat "JAVA_HOME=" (funcall jdk 21)) process-environment)))
+          (should-not (hellmacs-jdk-gradle-environment proj)))
+        ;; None fits: left alone, and Gradle says why.
+        (cl-letf (((symbol-function 'hellmacs-jdk-read)
+                   (lambda () (list (cons "JavaSE-11" (funcall jdk 11))))))
+          (let ((process-environment (cons (concat "JAVA_HOME=" (funcall jdk 27)) process-environment)))
+            (should-not (hellmacs-jdk-gradle-environment proj))))))))
+
+(ert-deftest test-jdk/public-functions-autoloaded-from-core ()
+  "Every `;;;###autoload' function in hellmacs-jdk.el is autoloaded by core.
+Modules call them as a file opens, before anything requires hellmacs-jdk:
+a missing one broke Gradle buffers (\"void-function
+hellmacs-jdk-gradle-environment\") while the unit tests, which require the
+file, passed."
+  (let (fns)
+    (with-temp-buffer
+      (insert-file-contents (expand-file-name "hellmacs-jdk.el" hellmacs-core-dir))
+      (while (re-search-forward "^;;;###autoload\n(defun \\([^ ]+\\)" nil t)
+        (push (intern (match-string 1)) fns)))
+    (should fns)
+    (should (equal (seq-difference fns hellmacs-modules--jdk-autoloads) nil))))
+
 (provide 'test-jdk)
 ;;; test-jdk.el ends here

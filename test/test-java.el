@@ -291,6 +291,19 @@ The module's lsp-java settings are recorded, for when it loads, in the
   (should (assq 'use-package (get 'lsp-java-content-provider-preferred 'theme-value)))
   (should-not (assq 'use-package (get 'lsp-java-save-actions-organize-imports 'theme-value))))
 
+(ert-deftest test-java/reference-code-lenses-off ()
+  "References and implementations code lenses are off, as in VS Code.
+On a big class they fill JDTLS's request threads with workspace searches:
+on Spring Framework the import answered symbol search after 183s with
+them, 63s without (docs/roadmap.md, 12.7 Tuning). Your config.el can
+turn them back on."
+  (test-java--load)
+  (dolist (var '(lsp-java-references-code-lens-enabled
+                 lsp-java-implementations-code-lens-enabled))
+    (let ((setting (assq 'use-package (get var 'theme-value))))
+      (should setting)
+      (should-not (eval (cadr setting) t)))))
+
 (defvar lsp-clients)
 
 (ert-deftest test-java/spring-client-setup-warns-instead-of-failing ()

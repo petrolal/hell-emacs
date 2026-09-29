@@ -238,8 +238,11 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
                                              (vconcat (hellmacs-net-jvm-options))))
   (lsp-java-content-provider-preferred "fernflower") ; decompile library classes for M-.
   (lsp-java-maven-download-sources t)
-  (lsp-java-references-code-lens-enabled t)
-  (lsp-java-implementations-code-lens-enabled t)
+  ;; Off, as in VS Code: on a big class these lenses fill JDTLS's request
+  ;; threads with workspace searches, and the import took 3x as long on
+  ;; the reference monorepo (docs/roadmap.md, 12.7 Tuning).
+  (lsp-java-references-code-lens-enabled nil)
+  (lsp-java-implementations-code-lens-enabled nil)
   (lsp-java-completion-favorite-static-members
    ["org.junit.jupiter.api.Assertions.*" "org.assertj.core.api.Assertions.*"
     "org.mockito.Mockito.*" "org.mockito.ArgumentMatchers.*"]))

@@ -182,6 +182,23 @@ With FULL, the file is its whole resolved path."
               (should (equal compilation-environment '("JAVA_TOOL_OPTIONS=-Dx=1")))))
         (set-default 'compilation-environment saved)))))
 
+(ert-deftest test-build/gradle-builds-run-on-a-jdk-gradle-runs-on ()
+  "Builds from a Gradle buffer get `hellmacs-jdk-gradle-environment''s JAVA_HOME."
+  (test-build--with-tree '("settings.gradle" "gradlew")
+    (with-temp-buffer
+      (cl-letf (((symbol-function 'hellmacs-net-jvm-options) #'ignore)
+                ((symbol-function 'hellmacs-jdk-gradle-environment)
+                 (lambda (dir) (and (file-equal-p dir root) '("JAVA_HOME=/jdk/25")))))
+        (hellmacs-forge-setup-build-h)
+        (should (member "JAVA_HOME=/jdk/25" compilation-environment)))))
+  ;; Maven builds are left alone.
+  (test-build--with-tree '("pom.xml")
+    (with-temp-buffer
+      (cl-letf (((symbol-function 'hellmacs-net-jvm-options) #'ignore)
+                ((symbol-function 'hellmacs-jdk-gradle-environment) (lambda (_) '("JAVA_HOME=/jdk/25"))))
+        (hellmacs-forge-setup-build-h)
+        (should-not (local-variable-p 'compilation-environment))))))
+
 (ert-deftest test-build/source-index-is-kept-and-refreshed-on-a-miss ()
   "The project is walked once across builds; again only for a file that may be new."
   (test-build--with-tree '("pom.xml" "src/main/java/dev/x/Greeter.java")
