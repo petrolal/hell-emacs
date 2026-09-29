@@ -97,5 +97,23 @@
                                   hellmacs-spring-language-ids))
                    id))))
 
+(ert-deftest test-spring/vscode-only-notifications-are-quiet ()
+  "The server's notifications for VS Code's own views (spring/index/updated,
+when a file is opened) are handled, doing nothing: lsp-mode warns
+\"Unknown notification\" for any without a handler. Handlers the client
+already has are kept."
+  (let ((handlers (make-hash-table :test #'equal))
+        (own (lambda (_workspace _params) 'own)))
+    (puthash "sts/highlight" own handlers)
+    (should (eq (hellmacs-spring-ignore-notifications handlers) handlers))
+    (let ((handler (gethash "spring/index/updated" handlers)))
+      (should (functionp handler))
+      (should-not (funcall handler 'workspace '(:affectedProjects []))))
+    (should (eq (gethash "sts/highlight" handlers) own))
+    ;; Again (lsp-java reloaded): still one handler, the same.
+    (let ((before (hash-table-count handlers)))
+      (hellmacs-spring-ignore-notifications handlers)
+      (should (= (hash-table-count handlers) before)))))
+
 (provide 'test-spring)
 ;;; test-spring.el ends here

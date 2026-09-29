@@ -32,6 +32,16 @@
 ;;     emacs --batch -l early-init.el -l init.el \
 ;;           -l test/integration/java-parity.el
 ;;
+;; Or, instead of a project of your own, a pinned reference project
+;; (Phase 12.7; see reference.el), cloned on the first run:
+;;
+;;   HELLMACS_PARITY_REFERENCE=spring-framework HELLMACS_PARITY_TIMEOUT=1800 \
+;;     emacs --batch -l early-init.el -l init.el \
+;;           -l test/integration/java-parity.el
+;;
+;; Its pin supplies the file to work in and the build command, unless
+;; the variables below say otherwise.
+;;
 ;; Optional variables:
 ;;   HELLMACS_PARITY_FILE   a Java file, relative to the project, to work
 ;;                          in (default: the biggest under src/main/java)
@@ -49,13 +59,28 @@
 
 (require 'cl-lib)
 (load (expand-file-name "e2e-lib" (file-name-directory (or load-file-name buffer-file-name))) nil t)
+(load (expand-file-name "reference" (file-name-directory (or load-file-name buffer-file-name))) nil t)
 
 (defvar parity--start (float-time))
-(defvar parity--source (or (getenv "HELLMACS_PARITY_PROJECT")
-                           (error "Set HELLMACS_PARITY_PROJECT to a Maven or Gradle project")))
+(defvar parity--reference
+  (when-let* ((name (getenv "HELLMACS_PARITY_REFERENCE"))
+              ((not (string-empty-p name))))
+    (cons (intern name) (e2e-reference (intern name))))
+  "The reference project being measured, as (NAME . SPEC), or nil.")
+(when parity--reference
+  (let ((spec (cdr parity--reference)))
+    (unless (getenv "HELLMACS_PARITY_FILE") (setenv "HELLMACS_PARITY_FILE" (plist-get spec :file)))
+    (unless (getenv "HELLMACS_PARITY_BUILD") (setenv "HELLMACS_PARITY_BUILD" (plist-get spec :build)))))
+(defvar parity--source
+  (cond (parity--reference (e2e-reference-fetch (car parity--reference)))
+        ((getenv "HELLMACS_PARITY_PROJECT"))
+        (t (error "Set HELLMACS_PARITY_PROJECT to a Maven or Gradle project, or HELLMACS_PARITY_REFERENCE to one of: %s"
+                  (mapconcat (lambda (e) (symbol-name (car e))) e2e-reference-projects ", ")))))
 
 (defun parity--java-files (proj)
-  (directory-files-recursively (expand-file-name "src/main/java" proj) "\\.java\\'"))
+  "PROJ's Java sources under src/main/java; nil in a multi-project build's root."
+  (let ((dir (expand-file-name "src/main/java" proj)))
+    (and (file-directory-p dir) (directory-files-recursively dir "\\.java\\'"))))
 
 (defun parity--jdtls-pid ()
   (when-let* ((ws (car (lsp-workspaces))))
@@ -262,6 +287,9 @@
 (let* ((proj (e2e-copy-project parity--source))
        (file (ignore-errors (e2e-pick-file proj (parity--java-files proj)))))
   (e2e--say "Hellmacs parity run: %s (copied to %s)" (file-name-nondirectory (directory-file-name parity--source)) proj)
+  (when-let* ((spec (cdr parity--reference)))
+    (e2e--say "     reference: %s %s (%s)" (car parity--reference)
+              (plist-get spec :tag) (plist-get spec :commit)))
   (e2e--say "     METRIC Emacs startup (init.el done): %.2fs" (float-time (time-subtract (current-time) before-init-time)))
   (e2e--say "     working file: %s" (and file (file-relative-name file proj)))
   (cond ((and file (file-exists-p file))

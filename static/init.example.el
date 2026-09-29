@@ -44,7 +44,7 @@
 
            :editor
            undo               ; persistent undo history (undo-fu-session)
-           ;;file-templates   ; [planned] templates for new files (a Java class, a test)
+           ;;file-templates   ; new files filled from a template (auto-insert): FooTest.java gets its package, imports and class; needs snippets
            ;;fold             ; [idea] code folding (hideshow, treesit-fold)
            ;;format           ; formatters: google-java-format, ktfmt, cljfmt, on C-c l = = (+onsave)
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys

@@ -275,11 +275,14 @@ so, rather than an error in the middle of loading lsp-java."
       (let ((client (or (gethash 'boot-ls lsp-clients)
                         (error "lsp-java-boot registered no `boot-ls' client")))
             (connection (cl-struct-slot-offset 'lsp--client 'new-connection))
-            (options (cl-struct-slot-offset 'lsp--client 'initialization-options)))
+            (options (cl-struct-slot-offset 'lsp--client 'initialization-options))
+            (notifications (cl-struct-slot-offset 'lsp--client 'notification-handlers)))
         (aset client connection (lsp-stdio-connection #'hellmacs-jvm-spring-ls-command
                                                       #'hellmacs-jvm-spring-server-jar))
         (aset client options (lambda () (hellmacs-jvm-spring-initialization-options
                                          (lsp-session-folders (lsp-session)))))
+        ;; Its notifications for VS Code's views: quiet, not "Unknown notification".
+        (hellmacs-spring-ignore-notifications (aref client notifications))
         t)
     (error
      (display-warning

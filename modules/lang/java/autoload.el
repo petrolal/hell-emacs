@@ -99,6 +99,21 @@ these language ids (VS Code's), not plain yaml or properties.")
   "Non-nil if FILE is a Spring Boot config: application*.yml/.yaml/.properties, bootstrap*."
   (and (hellmacs-spring-language-id file) t))
 
+(defconst hellmacs-spring-ignored-notifications '("spring/index/updated")
+  "Notifications the Spring Boot server sends for VS Code's own views.
+spring/index/updated refreshes its Spring explorer; Emacs has none, and
+lsp-mode would warn \"Unknown notification\" each time a file opens.")
+
+;;;###autoload
+(defun hellmacs-spring-ignore-notifications (handlers)
+  "Handle `hellmacs-spring-ignored-notifications' in HANDLERS by doing nothing.
+HANDLERS is an lsp-mode client's notification-handlers table; the ones
+it has already are kept. Returns HANDLERS."
+  (dolist (method hellmacs-spring-ignored-notifications)
+    (unless (gethash method handlers)
+      (puthash method #'ignore handlers)))
+  handlers)
+
 (defconst hellmacs-spring--skipped-dirs
   '(".git" ".hg" ".svn" "build" "target" "out" "bin" ".gradle" ".idea" "node_modules" "test")
   "Directories never searched for profiles: build output, VCS, IDE state, and

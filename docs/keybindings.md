@@ -133,6 +133,16 @@ Type a snippet's name (`junit`, `controller`, `dataclass`, `deftest`, `munit`) a
 
 ---
 
+## File templates (`:editor file-templates`)
+
+No keys: opening a new, empty `FooTest.java`, `Foo.java`, `Foo.kt`, `FooTest.kt` or Clojure file asks whether to fill it from its template (package or namespace from the path). The snippet keys above then move between its fields.
+
+| Key | Command | Description |
+|---|---|---|
+| `M-x auto-insert` | `auto-insert` | Fill the current empty buffer from its file's template |
+
+---
+
 ## Language Server & Refactoring (`C-c l`)
 
 | Key | Command | Description |
