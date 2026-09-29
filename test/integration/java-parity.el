@@ -40,7 +40,9 @@
 ;;           -l test/integration/java-parity.el
 ;;
 ;; Its pin supplies the file to work in and the build command, unless
-;; the variables below say otherwise.
+;; the variables below say otherwise. With $HELLMACS_BUDGET_OUT set, the
+;; import time, completion latency and memory are also recorded there
+;; for Phase 12.7's budgets (budgets.el, .github/workflows/budgets.yml).
 ;;
 ;; Optional variables:
 ;;   HELLMACS_PARITY_FILE   a Java file, relative to the project, to work
@@ -60,6 +62,7 @@
 (require 'cl-lib)
 (load (expand-file-name "e2e-lib" (file-name-directory (or load-file-name buffer-file-name))) nil t)
 (load (expand-file-name "reference" (file-name-directory (or load-file-name buffer-file-name))) nil t)
+(load (expand-file-name "budgets" (file-name-directory (or load-file-name buffer-file-name))) nil t)
 
 (defvar parity--start (float-time))
 (defvar parity--reference
@@ -96,6 +99,27 @@
                                         (length (string-trim-left (buffer-substring beg end)))))
                               end)))))
 
+(defun parity--completion-latency (buf samples)
+  "Time SAMPLES completion requests in BUF, spread over it; report the p95.
+One request before them warms the server up and isn't counted. A request
+that fails or times out counts with the time it took."
+  (with-current-buffer buf
+    (let* ((points (budgets-completion-points (1+ samples)))
+           (times
+            (mapcar (lambda (pt)
+                      (goto-char pt)
+                      (let ((t0 (float-time)))
+                        (condition-case err
+                            (lsp-request "textDocument/completion" (lsp--text-document-position-params))
+                          (error (e2e--say "     completion at %d failed: %S" pt err)))
+                        (* 1000 (- (float-time) t0))))
+                    points))
+           (p95 (budgets-percentile (cdr times) 95)))
+      (e2e--say "     METRIC completion latency: p95 %s ms over %d request(s), max %s ms"
+                (and p95 (format "%.0f" p95)) (length (cdr times))
+                (and (cdr times) (format "%.0f" (apply #'max (cdr times)))))
+      (when p95 (budgets-record 'completion-p95-ms p95)))))
+
 (defun parity--lsp-checks (proj file)
   (let ((buf (find-file-noselect file)) ready-secs)
     (switch-to-buffer buf)
@@ -104,9 +128,13 @@
       (e2e-check "JDTLS starts and reports ready"
         (e2e-add-project proj)
         (lsp)
-        (setq ready-secs
-              (and (e2e--wait (lambda () (eq (hellmacs-jvm-state proj) 'ready)) e2e-parity-timeout)
-                   (- (float-time) t0)))))
+        ;; Until it's ready, or failed for good: a failed import stops the
+        ;; wait at once (a reimport, as for Gradle 9, is waited for).
+        (e2e--wait (lambda () (hellmacs-jvm-import-settled-p proj)) e2e-parity-timeout)
+        (setq ready-secs (and (eq (hellmacs-jvm-state proj) 'ready)
+                              (- (float-time) t0)))))
+    (when (eq (hellmacs-jvm-state proj) 'failed)
+      (e2e--say "     the import failed; see the JDTLS log (*lsp-log*)"))
     (e2e--say "     METRIC time until [DAEMON READY]: %s"
               (if ready-secs (format "%.1fs" ready-secs) "not reached"))
     (when ready-secs
@@ -118,8 +146,17 @@
                                     (append (lsp-request "workspace/symbol" (list :query class)) nil))
                                   e2e-parity-timeout)))
         (e2e--say "     METRIC time from ready until symbol search answers: %s"
-                  (if answered (format "%.1fs" (- (float-time) t1)) "never")))
+                  (if answered (format "%.1fs" (- (float-time) t1)) "never"))
+        ;; The first import: from starting JDTLS until the project answers.
+        (when answered
+          (budgets-record 'jdtls-import-seconds (+ ready-secs (- (float-time) t1)))))
       (accept-process-output nil 8)     ; let diagnostics settle
+      (parity--completion-latency buf 20)
+      (when-let* ((pid (parity--jdtls-pid)))
+        (let ((emacs (e2e-rss-mb (emacs-pid) "VmHWM"))
+              (jdtls (e2e-rss-mb pid "VmHWM")))
+          (e2e--say "     METRIC memory after import: Emacs %.0f MB + JDTLS %.0f MB (peaks)" emacs jdtls)
+          (budgets-record 'hellmacs-memory-mb (+ emacs jdtls))))
       (parity--navigation-checks buf)
       (parity--editing-checks buf)
       (let ((pid (parity--jdtls-pid)))

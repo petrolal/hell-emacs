@@ -118,9 +118,9 @@ This file only tracks progress. Don't copy specs into it.
 ## Step 9: 12.7 Scale, 12.9 Security and compliance, 12.10 Documentation (roadmap "12.7", "12.9", "12.10")
 
 - [x] 12.7 Reference monorepo for measurements (2026-09-29: Spring Framework v7.0.9, pinned by tag and commit in `test/integration/reference.el`, `HELLMACS_PARITY_REFERENCE=spring-framework` for java-parity; `test/test-reference.el`. Live: 21 of 22 checks pass once the three settings below are off; symbol search answered 72s after JDTLS started cold, 2197MB peak, `compileJava` 71.1s. With the defaults, navigation doesn't work on it; see the roadmap)
-- [ ] 12.7 Budgets measured weekly in CI
+- [/] 12.7 Budgets measured weekly in CI (weekly workflow `budgets.yml` + `test/integration/budgets.sh`, budgets and verdicts in `budgets.el`, `test/test-budgets.el`; full chain run live 2026-09-29, IntelliJ IDEA Community 2025.3 on the same checkout: startup 0.101s, completion p95 89ms and memory 3398MB vs IntelliJ's 4263MB pass; import 192s vs IntelliJ's 56s FAILS (budget 84s), for Tuning to fix. Left: the workflow's first CI run, once pushed)
 - [ ] 12.7 Tuning justified by the measurements
-- [ ] 12.7 Tuning, found by the reference runs: Gradle 9 import fails with JDTLS's annotation-processing init script (Spring Framework). Roadmap "12.7", *A reference monorepo*
+- [x] 12.7 Tuning, found by the reference runs: Gradle 9 import fails with JDTLS's annotation-processing init script (Spring Framework). Roadmap "12.7", *A reference monorepo* (2026-09-29: on that exact error, annotation processing off and an in-place reimport; plus the `+spring` deadlock that kept JDTLS from ever saying ready; `test/test-java.el`. Live: Spring Framework imports with the defaults, 21 of 22 parity checks)
 - [ ] 12.7 Tuning, found by the reference runs: references/implementations code lenses starve JDTLS's request threads on big classes (off in VS Code). Roadmap "12.7", *A reference monorepo*
 - [ ] 12.7 Tuning, found by the reference runs: the Gradle daemon runs on the system JDK, not one the build supports. Roadmap "12.7", *A reference monorepo*
 - [ ] 12.7 The "quick fix offers an import" parity check fails on Spring Framework (not diagnosed). Roadmap "12.7", *A reference monorepo*

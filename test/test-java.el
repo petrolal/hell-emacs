@@ -98,6 +98,121 @@ Caused by: ToolchainProvisioningException: Cannot find a Java installation on yo
           (should (string-match-p "DAEMON READY" (car shown))))
       (delete-directory root t))))
 
+;; What JDTLS logs when a Gradle 9 multi-project build rejects its
+;; annotation-processing init script (Spring Framework 7.0.9, Gradle 9.7).
+(defconst test-java--gradle9-apt-log
+  "Sep 29, 2026, 4:38:33 PM Could not fetch model of type 'Map' using connection to Gradle distribution 'https://services.gradle.org/distributions/gradle-9.7.0-bin.zip'.
+org.gradle.tooling.BuildException: Could not fetch model of type 'Map' using connection to Gradle distribution 'https://services.gradle.org/distributions/gradle-9.7.0-bin.zip'.
+	at org.eclipse.jdt.ls.core.internal.managers.GradleBuildSupport.syncAnnotationProcessingConfiguration(GradleBuildSupport.java:197)
+Caused by: org.gradle.internal.exceptions.LocationAwareException: Initialization script '/x/init.gradle' line: 12
+Resolution of the configuration ':framework-docs:annotationProcessor' was attempted without an exclusive lock. This is unsafe and not allowed.")
+
+(defvar lsp-java-import-gradle-annotation-processing-enabled)
+(defvar lsp--cur-workspace)
+
+(ert-deftest test-java/gradle-model-failure-is-a-failed-import ()
+  "A Gradle model JDTLS couldn't fetch while importing is a failed import,
+announced at once (not after waiting for a ServiceReady that doesn't help)."
+  (test-java--load)
+  (let* ((root (make-temp-file "hellmacs-test-java" t))
+         (hellmacs-lsp-status--sessions (make-hash-table :test #'equal))
+         (hellmacs-jvm--reimported nil)
+         (shown nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'message)
+                   (lambda (fmt &rest args) (push (apply #'format fmt args) shown))))
+          (hellmacs-lsp-status-ignite 'jdtls root)
+          (hellmacs-jvm--note-log root "Sep 29, 2026 Could not fetch model of type 'GradleBuild' using connection to Gradle distribution 'x'.
+Caused by: Could not resolve all dependencies for configuration ':compileClasspath'.")
+          (should (eq (hellmacs-jvm-state root) 'failed))
+          (should (string-match-p "Gradle sync failed" (car shown)))
+          (should (hellmacs-jvm-import-settled-p root)))
+      (delete-directory root t))))
+
+(ert-deftest test-java/gradle9-annotation-processing-reimports-without-it ()
+  "Gradle 9 refusing JDTLS's annotation-processing script: annotation processing
+is turned off, JDTLS is told, and the workspace imported again in place, once.
+The import isn't settled until that second import reports."
+  (test-java--load)
+  (let* ((root (make-temp-file "hellmacs-test-java" t))
+         (hellmacs-lsp-status--sessions (make-hash-table :test #'equal))
+         (hellmacs-jvm--reimported nil)
+         (lsp-java-import-gradle-annotation-processing-enabled t)
+         (sent nil)
+         (shown nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'message)
+                   (lambda (fmt &rest args) (push (apply #'format fmt args) shown)))
+                  ((symbol-function 'run-at-time)
+                   (lambda (_time _repeat fn &rest args) (apply fn args)))
+                  ((symbol-function 'lsp-find-workspace)
+                   (lambda (server dir) (and (eq server 'jdtls) (list 'workspace dir))))
+                  ((symbol-function 'lsp-configuration-section)
+                   (lambda (section)
+                     (list section lsp-java-import-gradle-annotation-processing-enabled)))
+                  ((symbol-function 'lsp--set-configuration)
+                   (lambda (settings) (push (list 'configuration settings lsp--cur-workspace) sent)))
+                  ((symbol-function 'lsp-request-async)
+                   (lambda (method params _callback &rest _)
+                     (push (list method params lsp--cur-workspace) sent))))
+          (hellmacs-lsp-status-ignite 'jdtls root)
+          (hellmacs-jvm--note-log root test-java--gradle9-apt-log)
+          (should-not lsp-java-import-gradle-annotation-processing-enabled)
+          (should (string-match-p "annotation processing" (car shown)))
+          ;; The new setting first, then the import, both to JDTLS for ROOT.
+          (should (equal (reverse sent)
+                         `((configuration ("java" nil) (workspace ,root))
+                           ("workspace/executeCommand" (:command "java.project.import") (workspace ,root)))))
+          (should (eq (hellmacs-jvm-state root) 'failed))
+          (should-not (hellmacs-jvm-import-settled-p root))
+          ;; JDTLS repeating itself doesn't import again.
+          (hellmacs-jvm--note-log root test-java--gradle9-apt-log)
+          (should (= (length sent) 2))
+          ;; The second import succeeds: JDTLS's project status says OK.
+          (hellmacs-jvm--note-notification root "language/status" '(:type "ProjectStatus" :message "OK"))
+          (should (eq (hellmacs-jvm-state root) 'ready))
+          (should (hellmacs-jvm-import-settled-p root)))
+      (delete-directory root t))))
+
+(ert-deftest test-java/reimport-that-fails-again-is-settled ()
+  "If the import without annotation processing fails too, that's the verdict."
+  (test-java--load)
+  (let* ((root (make-temp-file "hellmacs-test-java" t))
+         (hellmacs-lsp-status--sessions (make-hash-table :test #'equal))
+         (hellmacs-jvm--reimported (list root))
+         (lsp-java-import-gradle-annotation-processing-enabled nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'message) #'ignore))
+          (hellmacs-lsp-status-ignite 'jdtls root)
+          (hellmacs-lsp-status-fail 'jdtls root "first attempt")
+          (should-not (hellmacs-jvm-import-settled-p root))
+          (hellmacs-jvm--note-log root "Sep 29 Synchronize project demo failed due to an error.
+Caused by: Could not resolve org.acme:missing:1.0")
+          (should (hellmacs-jvm-import-settled-p root)))
+      (delete-directory root t))))
+
+(ert-deftest test-java/spring-client-commands-always-answered ()
+  "JDTLS's Spring extension asks the client to start or stop the Spring server
+(`vscode-spring-boot.ls.start', no arguments) and waits for the answer: its
+import can't finish until then. Hellmacs runs that server itself, so these
+are answered at once; anything else is lsp-java's to forward, and if that
+fails JDTLS still gets an answer."
+  (test-java--load)
+  (let ((forwarded nil))
+    (cl-flet ((orig (workspace params) (push (list workspace params) forwarded) 'forwarded)
+              (broken (_workspace _params) (signal 'args-out-of-range '([] 2))))
+      (dolist (command '("vscode-spring-boot.ls.start" "vscode-spring-boot.ls.stop"))
+        (should-not (hellmacs-jvm--spring-client-command-a
+                     #'orig 'jdtls (list :command command :arguments []))))
+      (should-not forwarded)
+      (should (eq (hellmacs-jvm--spring-client-command-a
+                   #'orig 'jdtls '(:command "sts.java.addClasspathListener" :arguments ["a" "b" t]))
+                  'forwarded))
+      (should (= (length forwarded) 1))
+      (cl-letf (((symbol-function 'message) #'ignore))
+        (should-not (hellmacs-jvm--spring-client-command-a
+                     #'broken 'jdtls '(:command "sts.java.addClasspathListener" :arguments [])))))))
+
 (ert-deftest test-java/service-ready-means-ready ()
   (test-java--load)
   (let* ((root (make-temp-file "hellmacs-test-java" t))

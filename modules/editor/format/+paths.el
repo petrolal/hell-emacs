@@ -43,3 +43,9 @@
        :jdk 17
        :size "71MB")))
   "The pinned formatter jars: (NAME :version :url :sha256 :file :jdk :size).")
+
+;; Here, not in autoload.el: cli.el needs it in `bin/hellmacs sync', which
+;; loads no module's autoload.el.
+(defun hellmacs-format-jar-spec (name)
+  "The pinned jar of formatter NAME: a plist of :version :url :sha256 :file :jdk."
+  (cdr (assq name hellmacs-format-jars)))

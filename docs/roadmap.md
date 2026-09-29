@@ -3569,24 +3569,64 @@ pass against what enterprise developers already use.
       resolves `:framework-docs:annotationProcessor` without the exclusive
       lock Gradle 9 requires. With
       `lsp-java-import-gradle-annotation-processing-enabled` nil it imports.
+      *Fixed 2026-09-29:* on exactly that error Hellmacs turns Gradle
+      annotation processing off for the session, says so, sends JDTLS the
+      setting and imports again in place (`java.project.import`); other
+      projects keep annotation processing. A Gradle model JDTLS can't fetch
+      now counts as a failed import at once (`hellmacs-jvm-import-settled-p`).
+      Unit tests in `test/test-java.el`; live, Spring Framework imports with
+      the defaults.
+    - *Found and fixed 2026-09-29, the reason JDTLS never said ready:* with
+      `+spring`, JDTLS's Spring extension asks the client to
+      `vscode-spring-boot.ls.start`/`stop` (no arguments) when its first job
+      ends, and waits. lsp-java's forwarder failed on the empty arguments, so
+      no answer came, the job never ended and everything after it (ready,
+      imports) waited forever. Hellmacs now answers those itself, and any
+      client command whose forwarding fails still gets an answer.
     - References and implementations code lenses (on in Hellmacs, off in VS
       Code) fill JDTLS's 15 request threads with workspace searches as soon
       as a big class opens; symbol search, outline, hover and rename queue
       behind them and time out. A thread dump showed every request thread in
       `CodeLensHandler.resolve`. With both off, all of those pass.
+      *2026-09-29:* with them on (and the Gradle and Spring fixes above),
+      symbol search, outline, hover and rename all passed; the import took
+      183s to answer symbol search, against 63s with them off. Still to
+      decide, from the weekly numbers.
     - Gradle ran on the system JDK (27, which Gradle 9.7 can't run on) until
       `JAVA_HOME` pointed at 25: nothing picks the build's JDK for the
       Gradle daemon.
   - *Not yet:* the "quick fix offers an import" check still fails on it
     (not diagnosed); Kafka or Camel as a second, Maven, reference.
-- [ ] **Budgets, measured in CI weekly and recorded here:**
+- [/] **Budgets, measured in CI weekly and recorded here:**
 
-  | Measurement | Budget |
-  |---|---|
-  | Emacs startup, synced profile, all enterprise modules on | < 0.3 s |
-  | JDTLS first import of the reference monorepo | within 1.5x IntelliJ's own import on the same machine |
-  | Completion latency (p95) in a large class | < 200 ms |
-  | Memory, Emacs plus JDTLS, after import | < IntelliJ's for the same project |
+  | Measurement | Budget | Measured 2026-09-29 (workstation) |
+  |---|---|---|
+  | Emacs startup, synced profile, all enterprise modules on | < 0.3 s | 0.101 s (init 0.030 s), no warnings: pass |
+  | JDTLS first import of the reference monorepo | within 1.5x IntelliJ's own import on the same machine | 192 s (ready 9.2 s, symbol search 183 s later); IntelliJ 56 s, so the budget is 84 s: **FAIL** |
+  | Completion latency (p95) in a large class | < 200 ms | 89 ms (max 183 ms, 20 requests in `DefaultListableBeanFactory`): pass |
+  | Memory, Emacs plus JDTLS, after import | < IntelliJ's for the same project | 3398 MB peak (Emacs 447 + JDTLS 2951); IntelliJ 4263 MB peak: pass |
+
+  - *How:* `.github/workflows/budgets.yml`, Mondays and by hand, runs
+    `test/integration/budgets.sh` on `ubuntu-latest`: it syncs a profile
+    with every module Hellmacs ships, then startup-bench.el, java-parity.el
+    on the reference project and intellij-baseline.el (IntelliJ IDEA
+    Community 2025.3, pinned by SHA-256, `idea.sh warmup`, timed by the
+    script and its IDE process's peak memory polled from /proc)
+    on the same checkout. Each records to one file; budgets-check.el prints
+    the table (and the job summary) and fails on a budget broken or not
+    measured. The budgets and verdicts are `test/integration/budgets.el`,
+    unit-tested in `test/test-budgets.el`.
+  - *Measured* on the workstation (16 cores, 31GB, JDK 25) with Hellmacs'
+    defaults: 21 of 22 parity checks pass (not the quick-fix import).
+    The import is slower than the 72s of the first reference run, with
+    code lenses on: see *Tuning*.
+  - IntelliJ, same machine and checkout: imported and indexed 435,815 files
+    in 56.0s and 57.6s (two runs), 4263MB and 4248MB peak. Hellmacs' first
+    import is 3.4x IntelliJ's: the budget the *Tuning* items must bring in.
+  - *Not yet:* the workflow's first run in CI (it runs once pushed).
+  - *Found by it:* turning every module on broke `bin/hellmacs sync`:
+    `:editor format`'s cli.el called a function only its autoload.el
+    defined. Fixed (in `+paths.el`), with `test-format/cli-alone`.
 - [ ] **Tuning** that the measurements justify:
   - Exclude generated directories from JDTLS and file watching.
   - JDTLS heap auto-sized from the project (`hellmacs-jvm-vmargs`), and

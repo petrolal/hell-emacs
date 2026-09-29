@@ -74,11 +74,6 @@ these too: `clojurescript-mode' is a `clojure-mode').")
   (cdr (seq-find (lambda (entry) (provided-mode-derived-p mode (car entry)))
                  hellmacs-format-mode-alist)))
 
-;;;###autoload
-(defun hellmacs-format-jar-spec (name)
-  "The pinned jar of formatter NAME: a plist of :version :url :sha256 :file :jdk."
-  (cdr (assq name hellmacs-format-jars)))
-
 ;;; Running them -----------------------------------------------------------------
 
 (defun hellmacs-format--jar-command (name)

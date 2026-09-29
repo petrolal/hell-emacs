@@ -109,11 +109,67 @@ Runtimes you set yourself are left alone."
         ((string-match-p "Maven" message) "the Maven import failed (see the *lsp-log* buffer)")
         (t "see the *lsp-log* buffer")))
 
+(defvar lsp-java-import-gradle-annotation-processing-enabled)
+(defvar lsp--cur-workspace)
+(defvar lsp--buffer-workspaces)
+(declare-function lsp-find-workspace "lsp-mode")
+(declare-function lsp-configuration-section "lsp-mode")
+(declare-function lsp--set-configuration "lsp-mode")
+(declare-function lsp-request-async "lsp-mode")
+
+(defvar hellmacs-jvm--reimported nil
+  "Project roots being imported again without annotation processing, until
+that second import reports (see `hellmacs-jvm-import-settled-p').")
+
+(defun hellmacs-jvm--gradle9-apt-failure-p (message)
+  "Non-nil if MESSAGE is Gradle 9 refusing JDTLS's annotation-processing script.
+Gradle 9 won't resolve a project's `annotationProcessor' configuration
+from an init script without a lock (Spring Framework's multi-project
+build, for one); nothing else in the import is wrong."
+  (string-match-p "annotationProcessor' was attempted without an exclusive lock" message))
+
+(defun hellmacs-jvm--reimport-without-apt (root)
+  "Import ROOT again, in place, with annotation processing off for Gradle.
+Off for the rest of the session, which the announcement says. JDTLS gets
+the new setting, then imports the workspace again; a ProjectStatus OK
+afterwards is the recovery `hellmacs-jvm--note-notification' knows."
+  (setq lsp-java-import-gradle-annotation-processing-enabled nil)
+  (push root hellmacs-jvm--reimported)
+  (run-at-time 0 nil
+               (lambda ()
+                 (when-let* ((workspace (lsp-find-workspace 'jdtls root)))
+                   (let ((lsp--cur-workspace workspace)
+                         (lsp--buffer-workspaces (list workspace)))
+                     (lsp--set-configuration (lsp-configuration-section "java"))
+                     (lsp-request-async "workspace/executeCommand"
+                                        (list :command "java.project.import")
+                                        #'ignore))))))
+
 (defun hellmacs-jvm--note-log (root message)
   "React to JDTLS log MESSAGE for project ROOT: a failed import is announced.
-JDTLS goes on to say ServiceReady even then, but nothing works."
-  (when (string-match-p "\\`[^\n]*Synchronize project .* failed" message)
-    (hellmacs-lsp-status-fail 'jdtls root (hellmacs-jvm--import-failure-reason message))))
+JDTLS goes on to say ServiceReady even then, but nothing works. Gradle 9
+refusing annotation processing is worked around: imported again without it."
+  (when (or (string-match-p "\\`[^\n]*Synchronize project .* failed" message)
+            ;; While importing, a Gradle model the tooling API couldn't build.
+            (string-match-p "\\`[^\n]*Could not fetch model of type" message))
+    (let ((apt (hellmacs-jvm--gradle9-apt-failure-p message)))
+      (cond ((and apt lsp-java-import-gradle-annotation-processing-enabled)
+             (hellmacs-lsp-status-fail
+              'jdtls root "Gradle 9 refused JDTLS's annotation processing; importing again without it")
+             (hellmacs-jvm--reimport-without-apt root))
+            ;; The same failure repeated, from before the second import.
+            ((and apt (member root hellmacs-jvm--reimported)))
+            (t
+             ;; A second import that failed too: that's the verdict.
+             (setq hellmacs-jvm--reimported (delete root hellmacs-jvm--reimported))
+             (hellmacs-lsp-status-fail 'jdtls root (hellmacs-jvm--import-failure-reason message)))))))
+
+(defun hellmacs-jvm-import-settled-p (root)
+  "Non-nil once ROOT's import has an outcome: ready, or failed for good.
+Not while a failed import is being tried again."
+  (pcase (hellmacs-jvm-state root)
+    ('ready t)
+    ('failed (not (member root hellmacs-jvm--reimported)))))
 
 (defun hellmacs-jvm--note-notification (root method params)
   "React to JDTLS's notification METHOD with PARAMS for project ROOT.
@@ -290,6 +346,25 @@ so, rather than an error in the middle of loading lsp-java."
 lsp-java or lsp-mode may have changed" (error-message-string err)))
      nil)))
 
+(defconst hellmacs-jvm--spring-lifecycle-commands
+  '("vscode-spring-boot.ls.start" "vscode-spring-boot.ls.stop")
+  "What JDTLS's Spring extension asks VS Code to do with the Spring server.")
+
+(defun hellmacs-jvm--spring-client-command-a (orig workspace params)
+  "Around lsp-java's handler of JDTLS's `workspace/executeClientCommand'.
+JDTLS waits for the answer, with its import on hold, so it always gets
+one. Starting and stopping the Spring server is Hellmacs' own business
+(lsp-java would forward them to it, and fail on their empty arguments);
+anything else is forwarded as before, and a failure is logged instead
+of leaving JDTLS waiting."
+  (let ((command (hellmacs-lsp-status-get params :command)))
+    (unless (member command hellmacs-jvm--spring-lifecycle-commands)
+      (condition-case err
+          (funcall orig workspace params)
+        (error (message "Hellmacs: JDTLS's client command %s failed: %s"
+                        command (error-message-string err))
+               nil)))))
+
 (when (modulep! +spring)
   (after! lsp-java
     ;; Before JDTLS starts: its extensions come with its initialization.
@@ -297,6 +372,8 @@ lsp-java or lsp-mode may have changed" (error-message-string err)))
       (setq lsp-java-bundles (append lsp-java-bundles (hellmacs-jvm-spring-extension-jars))))
     (require 'lsp-java-boot)
     (advice-add 'lsp-java-boot--server-jar :override #'hellmacs-jvm-spring-server-jar)
+    (advice-add 'lsp-java-boot--workspace-execute-client-command
+                :around #'hellmacs-jvm--spring-client-command-a)
     (hellmacs-jvm--spring-client-use-stdio))
   (after! lsp-mode
     ;; First, so they win over the modes' own (yaml, properties).

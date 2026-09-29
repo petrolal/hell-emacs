@@ -39,8 +39,13 @@
 ;; startup screen is chosen), `gcs-done', the resident set size, and
 ;; how many entries *Warnings* holds. Any warning is also written out,
 ;; since a clean start is part of the budget.
+;;
+;; With $HELLMACS_BUDGET_OUT set, the times are also recorded there for
+;; Phase 12.7's budgets (budgets.el).
 
 ;;; Code:
+
+(load (expand-file-name "budgets" (file-name-directory (or load-file-name buffer-file-name))) nil t)
 
 (defun startup-bench--rss-mb ()
   "Resident set size of this Emacs, in MB, from /proc (nil elsewhere)."
@@ -79,6 +84,10 @@
                        (or (startup-bench--rss-mb) -1)
                        (if warnings (length (split-string warnings "\n" t)) 0)))
          (out (getenv "HELLMACS_BENCH_OUT")))
+    ;; Only what was measured: a missing number fails the budget.
+    (when hellmacs-init-time (budgets-record 'startup-init-seconds hellmacs-init-time))
+    (when startup-bench--shown (budgets-record 'startup-shown-seconds startup-bench--shown))
+    (budgets-record 'startup-warnings (if warnings (length (split-string warnings "\n" t)) 0))
     (when warnings
       (setq line (concat line warnings "\n")))
     (if out

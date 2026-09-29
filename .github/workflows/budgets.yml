@@ -1,0 +1,78 @@
+# Phase 12.7: the performance budgets (docs/roadmap.md, "12.7 Scale and
+# performance"), measured every week on the reference monorepo, with
+# IntelliJ IDEA Community on the same runner as the baseline. A broken or
+# unmeasured budget fails the job. The steps are test/integration/budgets.sh,
+# which runs the same way on a workstation.
+
+name: Performance budgets
+
+on:
+  schedule:
+    # Mondays at 04:00 UTC
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  budgets:
+    name: Budgets (Spring Framework, ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      BUDGETS_DIR: ${{ github.workspace }}/../budgets
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        # IntelliJ, the reference project, its builds and two indexes need
+        # more than the runner leaves free.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Set up Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: '30.1'
+
+      - name: Set up Java JDK
+        # JDTLS runs on it, and Spring Framework's Gradle build supports it.
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep fd-find zstd openssl
+          mkdir -p ~/.local/bin
+          ln -sf $(which fdfind) ~/.local/bin/fd
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Restore the pinned downloads
+        # Keyed on the pins: a new reference tag or IntelliJ fetches again.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.BUDGETS_DIR }}/reference
+            ${{ env.BUDGETS_DIR }}/intellij
+          key: budgets-${{ hashFiles('test/integration/reference.el', 'test/integration/budgets.el') }}
+
+      - name: Measure the budgets
+        run: test/integration/budgets.sh "$BUDGETS_DIR"
+
+      - name: Keep the measurements and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: budgets-${{ github.run_number }}
+          path: |
+            ${{ env.BUDGETS_DIR }}/budgets.txt
+            ${{ env.BUDGETS_DIR }}/*.log
+            ${{ env.BUDGETS_DIR }}/startup-*.txt
+          if-no-files-found: warn

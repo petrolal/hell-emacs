@@ -285,5 +285,21 @@ project set: JDTLS goes back to its default."
                         downloads))
         (should (= (length downloads) 2))))))
 
+(ert-deftest test-format/cli-alone ()
+  "`bin/hellmacs sync' loads a module's cli.el without its autoload.el (and,
+on a first sync, without the merged autoloads): the pins must still resolve."
+  (let ((saved (symbol-function 'hellmacs-format-jar-spec)))
+    (unwind-protect
+        (let ((hellmacs-modules (make-hash-table :test #'equal))
+              (warning-minimum-log-level :emergency))
+          (fmakunbound 'hellmacs-format-jar-spec)
+          (hellmacs--enable-modules '(:editor format :lang java))
+          (hellmacs-module--load '(:editor . format) "cli.el")
+          (should (fboundp 'hellmacs-format-jar-spec))
+          (should (member (plist-get (cdr (assq 'google-java-format hellmacs-format-jars)) :file)
+                          (hellmacs-format-bundle-paths))))
+      (unless (fboundp 'hellmacs-format-jar-spec)
+        (fset 'hellmacs-format-jar-spec saved)))))
+
 (provide 'test-format)
 ;;; test-format.el ends here
