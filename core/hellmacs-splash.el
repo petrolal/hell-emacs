@@ -181,21 +181,26 @@ redraws, `q' buries the buffer.
   (with-current-buffer (window-buffer window)
     (hellmacs-splash--render)))
 
-(defun hellmacs-splash-buffer ()
-  "Return the splash buffer, (re)drawn."
+(defun hellmacs-splash--get-buffer ()
+  "Return the splash buffer, in its mode, without drawing it."
   (let ((buffer (get-buffer-create hellmacs-splash-buffer-name)))
     (with-current-buffer buffer
       (unless (derived-mode-p 'hellmacs-splash-mode)
-        (hellmacs-splash-mode))
-      (hellmacs-splash--render))
+        (hellmacs-splash-mode)))
     buffer))
+
+(defun hellmacs-splash-buffer ()
+  "Return the splash buffer, (re)drawn."
+  (with-current-buffer (hellmacs-splash--get-buffer)
+    (hellmacs-splash--render)
+    (current-buffer)))
 
 ;;;###autoload
 (defun hellmacs-splash ()
   "Return to the Altar: show the Hellmacs splash screen."
   (interactive)
-  (switch-to-buffer (hellmacs-splash-buffer))
-  ;; Draw again now that it has a window to center itself in.
+  (switch-to-buffer (hellmacs-splash--get-buffer))
+  ;; Drawn once it's in the window it centers itself in.
   (hellmacs-splash--render))
 
 (defvar hellmacs-splash-buffer-function #'hellmacs-splash-buffer

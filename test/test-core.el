@@ -155,5 +155,21 @@ the GC reset and `hellmacs-finalize' come after `custom-file' is loaded."
   (dolist (data '((error "Boom") (wrong-type-argument stringp 1) (void-function foo)))
     (should-not (hellmacs-ux--routine-error-p data))))
 
+(require 'hellmacs-splash)
+
+(ert-deftest test-core/splash-draws-once ()
+  "`C-c h s' draws the Altar once, after it's in the window it centers in."
+  (let ((draws 0))
+    (cl-letf* ((render (symbol-function 'hellmacs-splash--render))
+               ((symbol-function 'hellmacs-splash--render)
+                (lambda () (cl-incf draws) (funcall render))))
+      (save-window-excursion
+        (hellmacs-splash)
+        (should (eq (current-buffer) (get-buffer hellmacs-splash-buffer-name)))
+        (should (derived-mode-p 'hellmacs-splash-mode))
+        (should (= draws 1))
+        (should (string-match-p "JVM FORGE IGNITED" (buffer-string)))))
+    (kill-buffer hellmacs-splash-buffer-name)))
+
 (provide 'test-core)
 ;;; test-core.el ends here

@@ -288,7 +288,7 @@ Used to tell whether a package is built into Emacs (`package!'s
 
 ;; Emacs 31 warns about every package file lacking a `lexical-binding'
 ;; cookie; users can't act on that for third-party packages.
-(setq warning-inhibit-types '((files missing-lexbind-cookie)))
+(add-to-list 'warning-inhibit-types '(files missing-lexbind-cookie))
 
 ;; DEBUG=1 as an alternative to --debug-init, e.g. for bin/hellmacs:
 ;; more logging (`hellmacs-log') and backtraces on errors.

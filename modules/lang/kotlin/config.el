@@ -136,9 +136,14 @@ above point, backticked names included (`fun `greets by name`()')."
     "t" (cons "run test at point" #'hellmacs-forge-test-at-point)
     "T" (cons "run test class" #'hellmacs-forge-test-class))
 
-  ;; In the Kotlin modes' own maps: lsp-mode's `C-c l' map (a minor-mode
-  ;; map, looked up first) has no `k', so the full key falls through.
-  (with-eval-after-load 'kotlin-mode
-    (keymap-set kotlin-mode-map "C-c l k" (cons "kotlin" hellmacs-kotlin-map)))
-  (with-eval-after-load 'kotlin-ts-mode
-    (keymap-set kotlin-ts-mode-map "C-c l k" (cons "kotlin" hellmacs-kotlin-map))))
+  ;; In Hellmacs' own minor mode, not the Kotlin modes' maps (`C-c' and a
+  ;; letter is the user's). lsp-mode's `C-c l' map has no `k', so the
+  ;; full key reaches this one.
+  (defvar-keymap hellmacs-kotlin-keys-mode-map
+    "C-c l k" (cons "kotlin" hellmacs-kotlin-map))
+
+  (define-minor-mode hellmacs-kotlin-keys-mode
+    "Kotlin commands on `C-c l k' (`hellmacs-kotlin-map')."
+    :keymap hellmacs-kotlin-keys-mode-map)
+
+  (add-hook! (kotlin-mode kotlin-ts-mode) #'hellmacs-kotlin-keys-mode))

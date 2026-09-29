@@ -110,6 +110,20 @@ Caused by: ToolchainProvisioningException: Cannot find a Java installation on yo
           (should (eq (hellmacs-jvm-state root) 'ready)))
       (delete-directory root t))))
 
+(ert-deftest test-java/keys-in-hellmacs-own-mode ()
+  "C-c l j is in a Hellmacs minor mode Java buffers turn on, not in
+cc-mode's or java-ts-mode's map: `C-c letter' is the user's, not a package's."
+  (test-java--load)
+  (require 'cc-mode)
+  (should (memq #'hellmacs-jvm-keys-mode java-mode-hook))
+  (should (memq #'hellmacs-jvm-keys-mode java-ts-mode-hook))
+  ;; Unbound there: nil, or the length of the prefix that is bound.
+  (should (natnump (or (keymap-lookup java-mode-map "C-c l j") 0)))
+  (with-temp-buffer
+    (hellmacs-jvm-keys-mode 1)
+    (should (eq (key-binding (kbd "C-c l j o")) #'lsp-java-organize-imports))
+    (should (eq (key-binding (kbd "C-c l j t")) #'hellmacs-jvm-test-at-point))))
+
 (ert-deftest test-java/test-method ()
   "The nearest void method above point is the test at point."
   (test-java--load)

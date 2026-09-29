@@ -28,24 +28,26 @@
 (require 'ert)
 (require 'hellmacs-modules)
 
+;; Emacs' own undo and redo keys are left alone; only undo-fu-session
+;; is added.
 (ert-deftest test-undo/package-declarations ()
-  "Editor undo module registers undo-fu and vundo."
-  (let ((hellmacs-packages nil))
-    (package! undo-fu)
-    (package! vundo)
-    (should (assq 'undo-fu hellmacs-packages))
-    (should (assq 'vundo hellmacs-packages))))
+  "The module declares undo-fu-session, and nothing that rebinds undo."
+  (let ((hellmacs-packages nil)
+        (hellmacs-modules (make-hash-table :test #'equal)))
+    (hellmacs--enable-modules '(:editor undo))
+    (hellmacs-modules-read-packages)
+    (should (assq 'undo-fu-session hellmacs-packages))
+    (should-not (assq 'undo-fu hellmacs-packages))
+    (should-not (assq 'vundo hellmacs-packages))))
 
-(ert-deftest test-undo/keybindings ()
-  "Verifies keybindings for undo, redo, and visual undo tree."
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-/") 'undo-fu-only-undo)
-    (define-key map (kbd "C-?") 'undo-fu-only-redo)
-    (define-key map (kbd "C-M-_") 'undo-fu-only-redo)
-    (define-key map (kbd "C-x u") 'vundo)
-    (should (eq (lookup-key map (kbd "C-/")) 'undo-fu-only-undo))
-    (should (eq (lookup-key map (kbd "C-?")) 'undo-fu-only-redo))
-    (should (eq (lookup-key map (kbd "C-x u")) 'vundo))))
+(ert-deftest test-undo/stock-keys ()
+  "C-/ undoes and C-? redoes, with Emacs' own commands."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:editor undo))
+    (hellmacs-module--load '(:editor . undo) "config.el")
+    (should (eq (keymap-lookup global-map "C-/") 'undo))
+    (should (eq (keymap-lookup global-map "C-?") 'undo-redo))))
 
 (defvar undo-fu-session-file-limit)
 

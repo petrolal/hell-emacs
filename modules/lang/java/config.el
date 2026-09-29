@@ -320,10 +320,9 @@ A `:filter-return' advice on `dap-java--populate-launch-args'."
 
 ;; Debugging (:tools debugger): dap-java, shipped with lsp-java, loads with it.
 (when (modulep! :tools debugger)
-  (with-eval-after-load 'dap-java
-    (advice-add 'dap-java--populate-launch-args :filter-return #'hellmacs-jvm--launch-on-project-jdk-a))
   (add-hook! (java-mode java-ts-mode) #'hellmacs-jvm--setup-reload-h)
   (with-eval-after-load 'dap-java
+    (advice-add 'dap-java--populate-launch-args :filter-return #'hellmacs-jvm--launch-on-project-jdk-a)
     (setq dap-java-java-command (hellmacs-jvm-java-executable)
           ;; JDTLS already builds on save; don't ask before every launch.
           dap-java-build 'always)
@@ -350,10 +349,14 @@ A `:filter-return' advice on `dap-java--populate-launch-args'."
   "t" (cons "run test at point" #'hellmacs-jvm-test-at-point)
   "T" (cons "run test class" #'hellmacs-jvm-test-class))
 
-;; In the Java modes' own maps. lsp-mode's `C-c l' map (a minor-mode
-;; map, looked up first) has no `j', so the full key falls through to
-;; these.
-(with-eval-after-load 'cc-mode
-  (keymap-set java-mode-map "C-c l j" (cons "java" hellmacs-jvm-map)))
-(with-eval-after-load 'java-ts-mode
-  (keymap-set java-ts-mode-map "C-c l j" (cons "java" hellmacs-jvm-map)))
+;; In Hellmacs' own minor mode, not cc-mode's or java-ts-mode's map:
+;; `C-c' and a letter is the user's, and Hellmacs binds for the user.
+;; lsp-mode's `C-c l' map has no `j', so the full key reaches this one.
+(defvar-keymap hellmacs-jvm-keys-mode-map
+  "C-c l j" (cons "java" hellmacs-jvm-map))
+
+(define-minor-mode hellmacs-jvm-keys-mode
+  "Java commands on `C-c l j' (`hellmacs-jvm-map')."
+  :keymap hellmacs-jvm-keys-mode-map)
+
+(add-hook! (java-mode java-ts-mode) #'hellmacs-jvm-keys-mode)

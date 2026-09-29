@@ -37,15 +37,11 @@
 
 (add-to-list 'custom-theme-load-path (expand-file-name "themes/" hellmacs-dir))
 
-(use-package emacs
-  :ensure nil
-  :init
-  (setq-default cursor-type 'bar)
-  :config
-  (column-number-mode 1)
-  (size-indication-mode 1)
-  ;; Line numbers only where they're actually useful for navigation.
-  (add-hook 'prog-mode-hook #'display-line-numbers-mode))
+(setq-default cursor-type 'bar)
+(column-number-mode 1)
+(size-indication-mode 1)
+;; Line numbers only where they're actually useful for navigation.
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
 
 ;; The current line is highlighted where you edit (`bg-alt' in the
 ;; Hellmacs theme).

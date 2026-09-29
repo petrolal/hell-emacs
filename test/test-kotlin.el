@@ -51,6 +51,18 @@
       (hellmacs-module--load '(:lang . kotlin) "config.el"))
     (setq test-kotlin--loaded t)))
 
+(ert-deftest test-kotlin/keys-in-hellmacs-own-mode ()
+  "C-c l k is in a Hellmacs minor mode Kotlin buffers turn on, not in
+kotlin-mode's own map: `C-c letter' is the user's, not a package's."
+  (test-kotlin--load)
+  (should (memq #'hellmacs-kotlin-keys-mode kotlin-mode-hook))
+  (should (memq #'hellmacs-kotlin-keys-mode kotlin-ts-mode-hook))
+  (with-temp-buffer
+    (hellmacs-kotlin-keys-mode 1)
+    (should (eq (key-binding (kbd "C-c l k t")) #'hellmacs-forge-test-at-point))
+    (hellmacs-kotlin-keys-mode -1)
+    (should-not (eq (key-binding (kbd "C-c l k t")) #'hellmacs-forge-test-at-point))))
+
 (ert-deftest test-kotlin/keys-and-server ()
   (test-kotlin--load)
   (should (eq (keymap-lookup hellmacs-kotlin-map "t") #'hellmacs-forge-test-at-point))
