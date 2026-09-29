@@ -616,7 +616,7 @@ the job it's known for:
 | `C-c l` | `:tools lsp` | lsp-mode's own `lsp-command-map`, via `lsp-keymap-prefix`, so the layout is lsp-mode's documented one: `a a` code action, `r r` rename, `r o` organize imports, `g g`/`g i`/`g r` definition/implementation/references, `= =` format, `w r` restart workspace. which-key names come from `lsp-enable-which-key-integration`. |
 | `C-c l j` | `:lang java` | Java only: `b` build project, `u` update project config (after editing pom.xml/build.gradle), `i` add unimplemented methods, `g` generate getters/setters, `s` generate toString, `e` generate equals/hashCode, `m` extract method, `v` extract local variable, `c` extract constant, `h` type hierarchy, `t` / `T` run test at point / test class |
 | `C-c d` | `:tools debugger` | `d` start (`dap-debug`), `b` toggle breakpoint, `B` conditional breakpoint, `L` log point, `n` next, `i` step in, `o` step out, `c` continue, `e` eval at point, `r` restart, `q` disconnect, `t` / `T` debug test at point / test class. `n`/`i`/`o`/`c` form a `repeat-map`, so `C-c d n n n` steps three times without a hydra |
-| `C-c !` | `:tools lsp` (in `lsp-mode-map` only) | Flymake: `n`/`p` next/previous diagnostic, `l` list. `C-c` + punctuation is the convention for minor-mode keys, as flycheck does |
+| `C-c !` | `:tools lsp` (in `flymake-mode-map`, so in any flymake buffer) | Flymake: `n`/`p` next/previous diagnostic, `l` list. `C-c` + punctuation is the convention for minor-mode keys, as flycheck does |
 | Emacs defaults | (built in) | `M-.`/`M-?`/`M-,` definition/references/back (xref); `C-M-.` workspace symbol search; `C-x p c` compile the project; `C-x g` Magit |
 
 `C-c h r` (+crucible/reload) gains a Java meaning: during a debug session,

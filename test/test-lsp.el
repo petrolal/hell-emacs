@@ -76,6 +76,19 @@
       (should (eq (hellmacs-lsp-mode-used-p) (not disabled)))
       (should (equal lsp-keymap-prefix (if disabled "s-l" "C-c l"))))))
 
+(defvar flymake-mode-map)
+
+(ert-deftest test-lsp/diagnostic-keys-wherever-flymake-runs ()
+  "C-c ! n/p/l are flymake's, in every flymake buffer (elisp too), not only lsp-mode's."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp))
+    (hellmacs-module--load '(:tools . lsp) "config.el")
+    (require 'flymake)
+    (should (eq (keymap-lookup flymake-mode-map "C-c ! n") 'flymake-goto-next-error))
+    (should (eq (keymap-lookup flymake-mode-map "C-c ! p") 'flymake-goto-prev-error))
+    (should (eq (keymap-lookup flymake-mode-map "C-c ! l") 'flymake-show-buffer-diagnostics))))
+
 (ert-deftest test-lsp/language-modules-depend-on-it ()
   "Every module on lsp-mode declares it, and gets its packages first."
   (let ((hellmacs-modules (make-hash-table :test #'equal))

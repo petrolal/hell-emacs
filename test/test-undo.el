@@ -47,5 +47,17 @@
     (should (eq (lookup-key map (kbd "C-?")) 'undo-fu-only-redo))
     (should (eq (lookup-key map (kbd "C-x u")) 'vundo))))
 
+(defvar undo-fu-session-file-limit)
+
+(ert-deftest test-undo/session-files-are-capped ()
+  "Undo history is saved for a bounded number of files, not one per file ever edited."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (undo-fu-session-file-limit nil)
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:editor undo))
+    (hellmacs-module--load '(:editor . undo) "config.el")
+    (should (natnump undo-fu-session-file-limit))
+    (should (> undo-fu-session-file-limit 0))))
+
 (provide 'test-undo)
 ;;; test-undo.el ends here

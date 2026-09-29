@@ -28,6 +28,7 @@
 (declare-function dap-continue "ext:dap-mode")
 (declare-function dap--cur-session "ext:dap-mode")
 (declare-function dap--send-message "ext:dap-mode")
+(declare-function dap--session-running "ext:dap-mode")
 (declare-function dap--make-request "ext:dap-mode")
 (declare-function dap-java-debug-test-method "ext:dap-java")
 (declare-function dap-java-debug-test-class "ext:dap-java")
@@ -108,9 +109,11 @@ for the redefinition itself, once the compile has had a moment."
       (run-with-timer
        1.5 nil
        (lambda ()
-         (dap--send-message
-          (dap--make-request "redefineClasses")
-          (lambda (result)
-            (message "Hot-swapped: %s" (or (gethash "changedClasses" result) "nothing changed")))
-          session)))
+         ;; The session may have ended while JDTLS compiled.
+         (when (dap--session-running session)
+           (dap--send-message
+            (dap--make-request "redefineClasses")
+            (lambda (result)
+              (message "Hot-swapped: %s" (or (gethash "changedClasses" result) "nothing changed")))
+            session))))
       (message "Saved; hot-swapping the changed classes..."))))

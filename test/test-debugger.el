@@ -66,6 +66,7 @@
   "Saves; asks for the redefinition itself unless dap-java does it."
   (let ((sent nil) (saved 0))
     (cl-letf (((symbol-function 'dap--cur-session) (lambda () 'session))
+              ((symbol-function 'dap--session-running) (lambda (_) t))
               ((symbol-function 'save-buffer) (lambda (&rest _) (cl-incf saved)))
               ((symbol-function 'run-with-timer) (lambda (_s _r fn &rest _) (funcall fn)))
               ((symbol-function 'dap--make-request) (lambda (name &rest _) name))
@@ -80,6 +81,21 @@
         (should (equal sent '("redefineClasses"))))))
   (cl-letf (((symbol-function 'dap--cur-session) #'ignore))
     (should-error (hellmacs-debug-hot-swap) :type 'user-error)))
+
+(ert-deftest test-debugger/hot-swap-skips-an-ended-session ()
+  "The delayed redefinition isn't sent to a session that ended meanwhile."
+  (let ((sent nil) (timer nil) (running t))
+    (cl-letf (((symbol-function 'dap--cur-session) (lambda () 'session))
+              ((symbol-function 'dap--session-running) (lambda (_) running))
+              ((symbol-function 'save-buffer) #'ignore)
+              ((symbol-function 'run-with-timer) (lambda (_s _r fn &rest _) (setq timer fn)))
+              ((symbol-function 'dap--make-request) (lambda (name &rest _) name))
+              ((symbol-function 'dap--send-message) (lambda (msg &rest _) (push msg sent))))
+      (let ((dap-java-hot-reload 'never))
+        (hellmacs-debug-hot-swap)
+        (setq running nil)
+        (funcall timer)
+        (should-not sent)))))
 
 (ert-deftest test-debugger/crucible-calls-the-buffer-reload-function ()
   "`C-c h r' does what the buffer's language set, and says so when it set nothing."

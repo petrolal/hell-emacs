@@ -81,12 +81,16 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
     :hook
     (lsp-mode . lsp-enable-which-key-integration)
     (lsp-mode . hellmacs-lsp--tune-process-output-h)
-    (lsp-completion-mode . hellmacs-lsp--setup-completion-h)
-    :bind
-    (:map lsp-mode-map
-          ("C-c ! n" . flymake-goto-next-error)
-          ("C-c ! p" . flymake-goto-prev-error)
-          ("C-c ! l" . flymake-show-buffer-diagnostics))))
+    (lsp-completion-mode . hellmacs-lsp--setup-completion-h)))
+
+;; Diagnostics are flymake's (`lsp-diagnostics-provider' above), so its
+;; keys are in flymake's map: they work wherever flymake runs, elisp too.
+;; `C-c' and punctuation is the minor modes' own range.
+(defvar flymake-mode-map)
+(after! flymake
+  (keymap-set flymake-mode-map "C-c ! n" #'flymake-goto-next-error)
+  (keymap-set flymake-mode-map "C-c ! p" #'flymake-goto-prev-error)
+  (keymap-set flymake-mode-map "C-c ! l" #'flymake-show-buffer-diagnostics))
 
 ;; Cape's recipe for a server's completion: bust its cache as the input
 ;; changes, so candidates are fetched afresh rather than filtered from a

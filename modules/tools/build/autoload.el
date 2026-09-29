@@ -176,6 +176,32 @@ The same line in Java, Kotlin, Groovy and Scala, with or without a `;'."
 (defvar hellmacs-forge--source-indexes (make-hash-table :test #'equal)
   "Build root -> its source index (base name -> paths), kept across builds.")
 
+(defvar hellmacs-forge--source-index-roots nil
+  "The roots in `hellmacs-forge--source-indexes', most recently used first.")
+
+(defvar hellmacs-forge-source-index-limit 8
+  "How many build roots' source indexes are kept across builds.
+Each holds the path of every source file in its project.")
+
+(defun hellmacs-forge--cached-index (root)
+  "ROOT's kept source index, or nil; it becomes the most recently used."
+  (when-let* ((index (gethash root hellmacs-forge--source-indexes)))
+    (setq hellmacs-forge--source-index-roots
+          (cons root (delete root hellmacs-forge--source-index-roots)))
+    index))
+
+(defun hellmacs-forge--remember-index (root index)
+  "Keep INDEX as ROOT's, dropping the least recently used beyond the limit.
+Returns INDEX."
+  (puthash root index hellmacs-forge--source-indexes)
+  (setq hellmacs-forge--source-index-roots
+        (cons root (delete root hellmacs-forge--source-index-roots)))
+  (when-let* ((old (nthcdr hellmacs-forge-source-index-limit hellmacs-forge--source-index-roots)))
+    (dolist (gone old) (remhash gone hellmacs-forge--source-indexes))
+    (setq hellmacs-forge--source-index-roots
+          (seq-take hellmacs-forge--source-index-roots hellmacs-forge-source-index-limit)))
+  index)
+
 (defvar-local hellmacs-forge--source-index nil
   "This compilation's source index: base name -> its paths in the project.")
 
@@ -224,8 +250,8 @@ so a `compile' run in ~ never has all of ~ searched."
       hellmacs-forge--source-index
     (setq hellmacs-forge--source-index
           (if-let* ((root (hellmacs-forge--source-root)))
-              (or (and (not refresh) (gethash root hellmacs-forge--source-indexes))
-                  (puthash root (hellmacs-forge--build-index root) hellmacs-forge--source-indexes))
+              (or (and (not refresh) (hellmacs-forge--cached-index root))
+                  (hellmacs-forge--remember-index root (hellmacs-forge--build-index root)))
             (make-hash-table :test #'equal)))))
 
 (defun hellmacs-forge--lookup (file suffix)

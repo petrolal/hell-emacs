@@ -272,6 +272,41 @@ frames, with its environment and the buffer's (envrc's); C-c r l runs it again."
         (should (string-match-p "STAGE=local" (with-current-buffer buf (buffer-string))))
         (kill-buffer buf)))))
 
+(ert-deftest test-run/debug-attaches-once ()
+  "The debugger attaches once, when the JVM says it listens, however the line
+arrives; asking again replaces the earlier wait rather than adding one."
+  (let (attached)
+    (cl-letf (((symbol-function 'hellmacs-run--attach)
+               (lambda (name port) (push (cons name port) attached))))
+      (with-temp-buffer
+        (hellmacs-run--attach-when-listening (current-buffer) "app" 5005)
+        (hellmacs-run--attach-when-listening (current-buffer) "app" 5005)
+        (should (= 1 (seq-count (lambda (f) (eq f #'hellmacs-run--attach-h))
+                                comint-output-filter-functions)))
+        ;; The line arrives in two chunks, after other output.
+        (insert "> Task :run\nListening for transport dt_")
+        (when (memq #'hellmacs-run--attach-h comint-output-filter-functions) (hellmacs-run--attach-h ""))
+        (should-not attached)
+        (insert "socket at address: 5005\n")
+        (when (memq #'hellmacs-run--attach-h comint-output-filter-functions) (hellmacs-run--attach-h ""))
+        (should (equal attached '(("app" . 5005))))
+        (should-not (memq #'hellmacs-run--attach-h comint-output-filter-functions))
+        (insert "Listening for transport dt_socket at address: 5005\n")
+        (when (memq #'hellmacs-run--attach-h comint-output-filter-functions) (hellmacs-run--attach-h ""))
+        (should (= 1 (length attached)))))))
+
+(ert-deftest test-run/new-run-forgets-a-pending-attach ()
+  "A debug run that died before listening leaves nothing behind for the next run
+in the same buffer."
+  (let ((buf (get-buffer-create "*run: stale*")))
+    (unwind-protect
+        (progn
+          (hellmacs-run--attach-when-listening buf "stale" 5005)
+          (hellmacs-run--start "stale" '("true") temporary-file-directory process-environment)
+          (with-current-buffer buf
+            (should-not (memq #'hellmacs-run--attach-h comint-output-filter-functions))))
+      (let ((kill-buffer-query-functions nil)) (kill-buffer buf)))))
+
 (ert-deftest test-run/main-class-needs-jdtls ()
   "A main class runs on JDTLS's classpath; without it running, it says so."
   (with-temp-buffer

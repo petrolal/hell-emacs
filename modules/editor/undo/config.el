@@ -34,6 +34,9 @@
   :defer 1
   :init
   (setq undo-fu-session-directory (hellmacs-state-file "undo-fu-session/")
-        undo-fu-session-linear t)
+        undo-fu-session-linear t
+        ;; One file per file ever edited otherwise, forever: the oldest
+        ;; are deleted past this many.
+        undo-fu-session-file-limit 200)
   :config
   (global-undo-fu-session-mode 1))

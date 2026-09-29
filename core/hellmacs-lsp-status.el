@@ -211,6 +211,7 @@ It gets WORKSPACE's root, then ARGS."
 
 (defun hellmacs-lsp-status--banished-h (workspace)
   "For `lsp-after-uninitialized-functions'."
+  (hellmacs-lsp-status--forget-workspace workspace)
   (when-let* ((server (hellmacs-lsp-status--server workspace)))
     (hellmacs-lsp-status-banish server (hellmacs-lsp-status--root workspace))))
 
@@ -246,15 +247,25 @@ It gets WORKSPACE's root, then ARGS."
 (defun hellmacs-lsp-status--buffer-key ()
   "The session key of the current buffer's registered server, cached.
 The mode-line asks on nearly every redisplay, and a project's true name
-reads the disk; it's only worked out again for another workspace."
-  (when-let* ((workspace (seq-find #'hellmacs-lsp-status--server
-                                   (bound-and-true-p lsp--buffer-workspaces))))
-    (unless (eq workspace (car hellmacs-lsp-status--buffer-key))
-      (setq hellmacs-lsp-status--buffer-key
-            (cons workspace (hellmacs-lsp-status--key
-                             (hellmacs-lsp-status--server workspace)
-                             (hellmacs-lsp-status--root workspace)))))
-    (cdr hellmacs-lsp-status--buffer-key)))
+reads the disk; it's only worked out again for another workspace.
+Without one it's forgotten, so a stopped server's workspace isn't kept."
+  (if-let* ((workspace (seq-find #'hellmacs-lsp-status--server
+                                 (bound-and-true-p lsp--buffer-workspaces))))
+      (progn
+        (unless (eq workspace (car hellmacs-lsp-status--buffer-key))
+          (setq hellmacs-lsp-status--buffer-key
+                (cons workspace (hellmacs-lsp-status--key
+                                 (hellmacs-lsp-status--server workspace)
+                                 (hellmacs-lsp-status--root workspace)))))
+        (cdr hellmacs-lsp-status--buffer-key))
+    (setq hellmacs-lsp-status--buffer-key nil)))
+
+(defun hellmacs-lsp-status--forget-workspace (workspace)
+  "Drop WORKSPACE from every buffer's cached session key."
+  (dolist (buffer (buffer-list))
+    (when (eq workspace (car (buffer-local-value 'hellmacs-lsp-status--buffer-key buffer)))
+      (with-current-buffer buffer
+        (setq hellmacs-lsp-status--buffer-key nil)))))
 
 (defun hellmacs-lsp-status-mode-line ()
   "Mode-line text for the state of the current buffer's language server, or nil."

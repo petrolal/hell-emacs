@@ -186,7 +186,8 @@ With FULL, the file is its whole resolved path."
   "The project is walked once across builds; again only for a file that may be new."
   (test-build--with-tree '("pom.xml" "src/main/java/dev/x/Greeter.java")
     (let ((walks 0)
-          (hellmacs-forge--source-indexes (make-hash-table :test #'equal)))
+          (hellmacs-forge--source-indexes (make-hash-table :test #'equal))
+          (hellmacs-forge--source-index-roots nil))
       (cl-letf* ((walk (symbol-function 'hellmacs-forge--build-index))
                  ((symbol-function 'hellmacs-forge--build-index)
                   (lambda (root) (cl-incf walks) (funcall walk root))))
@@ -201,6 +202,25 @@ With FULL, the file is its whole resolved path."
         (should (equal (test-build--parse "\tat dev.x.Added.run(Added.java:1)\n\tat dev.x.Nope.run(Nope.java:1)\n")
                        '((2 "Added.java" 1))))
         (should (= walks 2))))))
+
+;; Kept for the last few build roots only: an index holds every source
+;; file's path, and a session visits many projects.
+(ert-deftest test-build/source-indexes-kept-for-recent-roots-only ()
+  (let ((hellmacs-forge--source-indexes (make-hash-table :test #'equal))
+        (hellmacs-forge--source-index-roots nil)
+        (hellmacs-forge-source-index-limit 2))
+    (hellmacs-forge--remember-index "/a/" 'index-a)
+    (hellmacs-forge--remember-index "/b/" 'index-b)
+    (should (eq (hellmacs-forge--cached-index "/a/") 'index-a)) ; /a/ used last now
+    (hellmacs-forge--remember-index "/c/" 'index-c)
+    (should (eq (hellmacs-forge--cached-index "/a/") 'index-a))
+    (should (eq (hellmacs-forge--cached-index "/c/") 'index-c))
+    (should-not (hellmacs-forge--cached-index "/b/"))
+    (should (= (hash-table-count hellmacs-forge--source-indexes) 2))
+    ;; Walking a root again replaces its index, without counting it twice.
+    (hellmacs-forge--remember-index "/c/" 'index-c2)
+    (should (eq (hellmacs-forge--cached-index "/c/") 'index-c2))
+    (should (eq (hellmacs-forge--cached-index "/a/") 'index-a))))
 
 (ert-deftest test-build/no-search-outside-a-project ()
   "Output from a `compile' run outside any build or project searches nothing."

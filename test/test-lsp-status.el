@@ -193,6 +193,29 @@ Messages shown are pushed onto `shown', newest first."
               (should (= lookups 2)))))
       (delete-directory root t))))
 
+(ert-deftest test-lsp-status/mode-line-forgets-dead-workspaces ()
+  "A buffer's cached workspace goes when the workspace does, so the buffer
+doesn't keep a stopped server's workspace (process, diagnostics...) alive."
+  (let ((root (make-temp-file "hellmacs-test-status" t)))
+    (unwind-protect
+        (test-lsp-status--with '((fake-ls))
+          (let ((ws (test-lsp-status--workspace 'test-ws 'fake-ls root)))
+            (with-temp-buffer
+              ;; The buffer leaves its workspace (lsp-disconnect, say).
+              (setq-local lsp--buffer-workspaces (list ws))
+              (hellmacs-lsp-status-mode-line)
+              (should hellmacs-lsp-status--buffer-key)
+              (setq-local lsp--buffer-workspaces nil)
+              (should-not (hellmacs-lsp-status-mode-line))
+              (should-not hellmacs-lsp-status--buffer-key))
+            (with-temp-buffer
+              ;; The server stops, in a buffer that's not redrawn meanwhile.
+              (setq-local lsp--buffer-workspaces (list ws))
+              (hellmacs-lsp-status-mode-line)
+              (hellmacs-lsp-status--banished-h ws)
+              (should-not hellmacs-lsp-status--buffer-key))))
+      (delete-directory root t))))
+
 (ert-deftest test-lsp-status/mode-line-entry-is-installed-once ()
   (should (= 1 (seq-count (lambda (entry) (equal entry '(:eval (hellmacs-lsp-status-mode-line))))
                           mode-line-misc-info))))

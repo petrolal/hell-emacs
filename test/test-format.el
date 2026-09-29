@@ -215,6 +215,18 @@
   (test-format--with-tree '(("pom.xml" . "<project/>\n") ("formatter.xml" . "<beans/>"))
     (should-not (hellmacs-format-eclipse-profile-file root))))
 
+(ert-deftest test-format/no-profile-forgets-another-projects ()
+  "A Java buffer in a project without a profile doesn't keep the one another
+project set: JDTLS goes back to its default."
+  (test-format--with-tree '(("pom.xml" . "<project/>\n"))
+    (let ((lsp-java-format-settings-url "file:///other/eclipse-formatter.xml")
+          (lsp-java-format-settings-profile "OtherStyle"))
+      (with-temp-buffer
+        (setq default-directory root)
+        (hellmacs-format--java-profile-h)
+        (should-not lsp-java-format-settings-url)
+        (should-not lsp-java-format-settings-profile)))))
+
 (ert-deftest test-format/sync-installs-the-jars-its-languages-need ()
   (let (downloads)
     (cl-letf (((symbol-function 'hellmacs-sync-download-verified)

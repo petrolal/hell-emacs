@@ -386,6 +386,8 @@ A run still going there is stopped first. Returns the buffer."
     (with-current-buffer buffer
       (let ((inhibit-read-only t)) (erase-buffer))
       (unless (derived-mode-p 'comint-mode) (comint-mode))
+      ;; A debug run that died before listening mustn't attach to this one.
+      (hellmacs-run--forget-attach)
       (setq default-directory (file-name-as-directory dir))
       ;; comint starts the process from here: the environment must be here
       ;; too, not just in the buffer the run was asked from (envrc's).
@@ -401,19 +403,43 @@ A run still going there is stopped first. Returns the buffer."
   (append (mapcar (lambda (e) (concat (car e) "=" (cdr e))) (plist-get config :env))
           process-environment))
 
+(defvar-local hellmacs-run--pending-attach nil
+  "(NAME PORT . SEARCHED): attach the debugger to PORT once this run listens.
+SEARCHED marks how far the output has been looked through.")
+
+(defun hellmacs-run--attach (name port)
+  "Attach the debugger to the JVM run NAME listening on PORT."
+  (require 'dap-java)
+  (dap-debug (list :type "java" :request "attach" :name (concat name " (attach)")
+                   :hostName "localhost" :port port)))
+
+(defun hellmacs-run--forget-attach ()
+  "Stop waiting to attach the debugger in this buffer."
+  (remove-hook 'comint-output-filter-functions #'hellmacs-run--attach-h t)
+  (when-let* ((searched (cddr hellmacs-run--pending-attach)))
+    (set-marker searched nil))
+  (setq hellmacs-run--pending-attach nil))
+
+(defun hellmacs-run--attach-h (_output)
+  "Attach the debugger once the output says the JVM listens (`hellmacs-run--pending-attach').
+Only the output not yet looked through is searched, plus a line's worth
+before it, in case the line came in two pieces."
+  (pcase-let* ((`(,name ,port . ,searched) hellmacs-run--pending-attach)
+               (line (format "Listening for transport dt_socket at address: %d" port)))
+    (when (save-excursion
+            (goto-char (max (point-min) (- searched (length line))))
+            (set-marker searched (point-max))
+            (search-forward line nil t))
+      (hellmacs-run--forget-attach)
+      (hellmacs-run--attach name port))))
+
 (defun hellmacs-run--attach-when-listening (buffer name port)
-  "Attach the debugger to PORT once BUFFER's output says the JVM listens on it."
+  "Attach the debugger to PORT once BUFFER's output says the JVM listens on it.
+Replaces any earlier wait in BUFFER."
   (with-current-buffer buffer
-    (let (hook)
-      (setq hook (lambda (_output)
-                   (when (save-excursion
-                           (goto-char (point-min))
-                           (re-search-forward (format "Listening for transport dt_socket at address: %d" port) nil t))
-                     (remove-hook 'comint-output-filter-functions hook t)
-                     (require 'dap-java)
-                     (dap-debug (list :type "java" :request "attach" :name (concat name " (attach)")
-                                      :hostName "localhost" :port port)))))
-      (add-hook 'comint-output-filter-functions hook nil t))))
+    (hellmacs-run--forget-attach)
+    (setq hellmacs-run--pending-attach (cons name (cons port (copy-marker (point-min)))))
+    (add-hook 'comint-output-filter-functions #'hellmacs-run--attach-h nil t)))
 
 ;;;###autoload
 (defun hellmacs-run-config (config &optional debug)

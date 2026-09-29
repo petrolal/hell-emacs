@@ -179,9 +179,11 @@ Returns (FILE . PROFILE-NAME)."
 ;;;###autoload
 (defun hellmacs-format--java-profile-h ()
   "Have JDTLS format with the project's Eclipse profile, if it commits one.
-For Java buffers, before JDTLS starts (it reads the setting then)."
-  (when-let* ((profile (hellmacs-format--eclipse-profile)))
-    (setq lsp-java-format-settings-url (concat "file://" (car profile))
+For Java buffers, before JDTLS starts (it reads the setting then). A
+project without one clears the setting, so another project's profile
+isn't used for it."
+  (let ((profile (hellmacs-format--eclipse-profile)))
+    (setq lsp-java-format-settings-url (and profile (concat "file://" (car profile)))
           lsp-java-format-settings-profile (cdr profile))))
 
 ;;; Commands ---------------------------------------------------------------------
