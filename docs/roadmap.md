@@ -2362,18 +2362,20 @@ each server really ships, what it needs) written here before the code.
 - [x] `:ui hl-todo`: highlight TODO, FIXME, HACK, NOTE. No keys:
       `M-x hl-todo-next`, and `M-x hl-todo-occur`.
       *Done 2026-09-29:* `modules/ui/hl-todo/`, hl-todo 3.9.4 on the first file; TODO, FIXME, BUG, XXX, HACK, KLUDGE, NOTE, REVIEW, DEPRECATED in the theme's own faces; no keys; commented out in `static/init.example.el`; `test/test-hl-todo.el`. Live: a throwaway profile synced and booted; in a Java file the comment keywords took `warning`, `error` and `success`, an identifier `TODOs` didn't, and `hl-todo-next` and `hl-todo-occur` worked.
-- [ ] `:tools editorconfig`: the built-in `editorconfig-mode` (Emacs 30+),
+- [x] `:tools editorconfig`: the built-in `editorconfig-mode` (Emacs 30+),
       on by default in this module.
+      *Done 2026-09-29:* `modules/tools/editorconfig/`, Emacs' own `editorconfig-mode` (the package only on Emacs 29, `:built-in 'prefer`), on by default in `static/init.example.el`; lazy, yet the first file gets its settings and charset; `test/test-editorconfig.el` reads real .editorconfig files. Live on the default profile: not loaded after startup, the first Java file got indent 3, tabs and a final newline; startup 0.029s (shown 0.084s). Not yet: the Emacs 29 path live (no Emacs 29 here).
 - *Verify:* a unit test per rule (which buffer lands where), the keymaps
   against the vanilla list, and a live run: a Java build and a CIDER REPL
   open at the bottom and `q` restores the layout; a terminal run shows the
   gutter in the margin.
 
 **10.4 `:editor snippets` and `:editor file-templates`**
-- [ ] `:editor snippets`: tempel, with Hellmacs snippets for the JVM
+- [x] `:editor snippets`: tempel, with Hellmacs snippets for the JVM
       languages (a JUnit 5 test, a Spring controller, a Kotlin data class, a
       Clojure `deftest`, a Scala munit suite) in the module, and your own in
       `$HELLMACSDIR/templates/`. Offered by `C-M-i` and the corfu popup.
+      *Done 2026-09-29:* `modules/editor/snippets/`, tempel 1.14; junit and controller (Java), dataclass (Kotlin), deftest (Clojure), munit (Scala) in the module's `templates/`, yours in `$HELLMACSDIR/templates/`; the package comes from the path; the exact name completes ahead of the server's candidates; tempel's own keys stripped, only remaps; commented out in `static/init.example.el`; `test/test-snippets.el`. Live: a throwaway profile synced; every snippet but munit expanded through `completion-at-point` with the real tempel (the JUnit class got `package com.acme;` and `CartTest`), `M-}`/`M-{`/`ESC ESC ESC` moved and aborted, `M-RET` and `M-<down>` stayed unbound and TAB still indented. Not yet: munit live (no Scala mode before 8.5).
 - [ ] `:editor file-templates`: the built-in `auto-insert-mode` fills a new,
       empty file from a tempel template: `FooTest.java` gets its package
       (from the path under `src/test/java`), imports and class. It asks

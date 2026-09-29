@@ -50,7 +50,7 @@
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys
            ;;parinfer         ; [idea] indentation-driven Lisp editing
            ;;smartparens      ; [idea] structural editing for Lisps and brackets
-           ;;snippets         ; [planned] code snippets (yasnippet, tempel)
+           ;;snippets         ; snippets (tempel): junit, controller, dataclass, deftest, munit; complete a name with C-M-i
            ;;word-wrap        ; [idea] soft wrap that respects indentation
 
            :completion
@@ -88,7 +88,7 @@
            ;;biblio           ; [idea] citations and bibliographies
            ;;db               ; databases over JDBC: sql-mode + sqlline, .hellmacs/db.eld, passwords in auth-source
            ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
-           ;;editorconfig     ; [planned] honour .editorconfig files
+           editorconfig       ; the project's .editorconfig: indentation, charset, line endings (built in)
            ;;eval             ; [idea] run code in a REPL or inline, per language
            ;;forge            ; [idea] GitHub/GitLab pull requests from Magit
            ;;kubernetes       ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context

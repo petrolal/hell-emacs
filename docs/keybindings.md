@@ -120,6 +120,19 @@ Inside their buffers the keys are docker.el's and kubel's own (`?` lists them).
 
 ---
 
+## Snippets (`:editor snippets`)
+
+Type a snippet's name (`junit`, `controller`, `dataclass`, `deftest`, `munit`) and complete it.
+
+| Key | Command | Description |
+|---|---|---|
+| `C-M-i` | `completion-at-point` | Expand the snippet named at point (the corfu popup offers it too) |
+| `M-x tempel-insert` | `tempel-insert` | Pick any snippet for the buffer from a list |
+| `M-}` / `M-{` | `tempel-next` / `tempel-previous` | Next / previous field, inside a snippet (remaps of the paragraph keys) |
+| `ESC ESC ESC` | `tempel-abort` | Take the snippet back out, inside a snippet |
+
+---
+
 ## Language Server & Refactoring (`C-c l`)
 
 | Key | Command | Description |
