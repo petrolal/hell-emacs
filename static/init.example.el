@@ -95,7 +95,7 @@
            ;;make             ; [idea] run Makefile targets
            ;;pass             ; [idea] the pass password store
            ;;pdf              ; [idea] read PDFs (pdf-tools)
-           ;;rest             ; [idea] HTTP requests from a buffer (verb, restclient)
+           ;;http             ; IntelliJ .http files: restclient, env files (+httpyac: JS handlers, needs Node)
            ;;rgb              ; [idea] show colours in code (rainbow-mode)
            ;;taskrunner       ; [idea] run npm, just, make and Gradle tasks
            ;;tmux             ; [idea] send commands to tmux

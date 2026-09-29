@@ -3315,12 +3315,56 @@ JDTLS's installer uses.
 Each tool is its own module, off by default, and is picked in a findings
 pass against what enterprise developers already use.
 
-- [ ] **`:tools http`: an HTTP client that reads IntelliJ's `.http` files**
+- [x] **`:tools http`: an HTTP client that reads IntelliJ's `.http` files**
       (the HTTP Client format shared with VS Code's REST Client).
   - Findings: how much of the format restclient.el, verb and others
     support. The criterion is running a team's existing `.http` files
     unchanged, including environments from `http-client.env.json`.
   - The best fit is adopted, extended where it falls short, and pinned.
+  - *Found (2026-09-28):*
+    - **restclient.el** (moved to emacsorphanage and maintained, MELPA
+      2026-06) reads much of the format: `###` separators (any `#` line
+      separates requests), `@var = value`, `{{var}}`, `< file` bodies,
+      environment JSON files with `$shared`, and REST Client's
+      `rest-client.environmentVariables`. It falls short in four ways:
+      - IntelliJ's two env files (`http-client.env.json` and
+        `http-client.private.env.json`) aren't found or merged;
+      - no `{{$uuid}}`-style dynamic variables;
+      - JavaScript response handlers (`> {% ... %}`) and `>> file` lines
+        are sent as part of the body;
+      - no named-request references.
+      Its own mode keys include `C-c n n` (narrow), a `C-c <letter>` key; as
+      with markdown-mode, a package's own mode keys stay as shipped.
+    - **verb** and **walkman** are maintained, but they use their own Org
+      formats, not `.http` files. ob-http is Org Babel.
+    - **httpyac** (npm, MIT, `6.16.7`, 213 packages locked with integrity
+      hashes; only protobufjs has an install script) runs IntelliJ and REST
+      Client files unchanged. Checked against a local echo server with a
+      real IntelliJ file: `http-client.env.json` plus
+      `http-client.private.env.json`, `{{$uuid}}`, and a `> {% %}` handler
+      whose `client.global.set` token reached the next request. It runs one
+      request by line (`-l`) or all of them (`--all`).
+    - **Adopted:** restclient for interactive requests, extended with
+      IntelliJ's environments, dynamic variables, and handler lines
+      stripped (with a note). With `+httpyac`, httpyac is pinned by lockfile
+      like 10.1's servers and runs a request or the whole file with
+      handlers, for full fidelity. That needs Node, which is why it's a
+      flag.
+  - *Done (2026-09-28):* `modules/tools/http/`, off by default.
+    `hellmacs-http-mode` (derived from restclient-mode) for `.http` and
+    `.rest` files. Its keys are the mode's own `C-c C-<letter>` keys, and it
+    lists the file's requests in imenu.
+  - *Verified so far:*
+    - Unit tests: `test/test-http.el`.
+    - A throwaway profile with `(http +httpyac)` synced for real: restclient
+      from its recipe, and httpyac installed and verified from the lockfile.
+      Doctor was clean.
+    - Against a local echo server, `C-c C-c` sent an IntelliJ file's Login
+      request. The password came from the private env file, `{{$uuid}}` was
+      filled in, and the handler was left out, with a note.
+    - `C-c C-a` ran the whole file with httpyac, and the Login handler's
+      token reached the Me request.
+  - *Not yet:* the container-based end-to-end script (12.6's *Verify*).
 - [ ] **`:tools db`: a database client over JDBC.**
   - JDBC is how enterprises reach Oracle, SQL Server, DB2, PostgreSQL and
     MySQL, and there's always a JVM on hand.

@@ -1,4 +1,4 @@
-;;; test-http.el --- Tests for :tools http module (Phase 12.6) -*- lexical-binding: t; -*-
+;;; test-http.el --- Tests for :tools http (Phase 12.6) -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -21,12 +21,63 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Run with `bin/hellmacs test'.
+;; Run with `bin/hellmacs test'. Requests against a real server are
+;; checked by hand (see docs/roadmap.md, 12.6).
 
 ;;; Code:
 
 (require 'ert)
 (require 'cl-lib)
+(require 'hellmacs-modules)
+(require 'hellmacs-sync)
+
+(defvar restclient-var-defaults)
+(defvar restclient-current-env-name)
+
+(let ((hellmacs-modules (make-hash-table :test #'equal))
+      (warning-minimum-log-level :emergency))
+  (hellmacs--enable-modules '(:tools (http +httpyac)))
+  (hellmacs-module--load '(:tools . http) "autoload.el")
+  (hellmacs-module--load '(:tools . http) "config.el")
+  (hellmacs-module--load '(:tools . http) "cli.el"))
+
+(defmacro test-http--with-tree (files &rest body)
+  "Run BODY in a temporary directory ROOT holding FILES (alist of path . content)."
+  (declare (indent 1))
+  `(let* ((root (file-name-as-directory (make-temp-file "hellmacs-test-http" t)))
+          (default-directory root))
+     (unwind-protect
+         (progn
+           (dolist (f ,files)
+             (let ((path (expand-file-name (car f) root)))
+               (make-directory (file-name-directory path) t)
+               (with-temp-file path (insert (cdr f)))))
+           ,@body)
+       (dolist (b (buffer-list))
+         (when (and (buffer-file-name b) (string-prefix-p root (buffer-file-name b)))
+           (kill-buffer b)))
+       (delete-directory root t))))
+
+(defconst test-http--file
+  "@base = /api
+
+### Login
+# @name login
+POST {{host}}{{base}}/login
+Content-Type: application/json
+
+{\"password\": \"{{password}}\"}
+
+> {%
+  client.global.set(\"token\", response.body.token);
+%}
+
+### Me
+GET {{host}}{{base}}/me HTTP/1.1
+Authorization: Bearer {{token}}
+
+>> me.json
+")
 
 (ert-deftest test-http/parse-http-request-block ()
   "Parses standard IntelliJ .http / REST Client request syntax."
@@ -55,11 +106,119 @@ Content-Type: application/json
           (should (equal (plist-get r2 :name) "Create User"))
           (should (equal (plist-get r2 :method) "POST")))))))
 
-(ert-deftest test-http/keymap-execution ()
-  "Verifies key binding for executing HTTP requests under point."
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") 'hellmacs-http-send-request)
-    (should (eq (lookup-key map (kbd "C-c C-c")) 'hellmacs-http-send-request))))
+(ert-deftest test-http/parse-intellij-details ()
+  "`# @name' names a request; the HTTP version isn't part of the URL; handlers are noted."
+  (with-temp-buffer
+    (insert test-http--file)
+    (let ((requests (hellmacs-http-parse-requests (current-buffer))))
+      (should (= (length requests) 2))
+      (should (equal (plist-get (nth 0 requests) :name) "login"))
+      (should (plist-get (nth 0 requests) :handler))
+      (should (equal (plist-get (nth 1 requests) :url) "{{host}}{{base}}/me"))
+      (should (plist-get (nth 1 requests) :handler))
+      (should (= (line-number-at-pos (plist-get (nth 1 requests) :position)) 15)))))
+
+(ert-deftest test-http/environments ()
+  "IntelliJ's env files: found up the tree, private over public, env over $shared."
+  (test-http--with-tree
+      '(("http-client.env.json" . "{\"$shared\": {\"host\": \"http://shared\", \"v\": \"1\"},
+ \"dev\": {\"host\": \"http://localhost:8080\", \"user\": \"ann\"},
+ \"prod\": {\"host\": \"https://api.example.com\"}}")
+        ("http-client.private.env.json" . "{\"dev\": {\"password\": \"s3cret\", \"user\": \"bob\"}}")
+        ("requests/api.http" . "GET {{host}}/x\n"))
+    (let ((dir (expand-file-name "requests/" root)))
+      (should (equal (hellmacs-http-environments dir) '("dev" "prod")))
+      (let ((vars (hellmacs-http-environment-vars dir "dev")))
+        (should (equal (cdr (assoc "host" vars)) "http://localhost:8080"))
+        (should (equal (cdr (assoc "password" vars)) "s3cret"))
+        (should (equal (cdr (assoc "user" vars)) "bob"))
+        (should (equal (cdr (assoc "v" vars)) "1")))
+      (should (equal (cdr (assoc "host" (hellmacs-http-environment-vars dir "prod")))
+                     "https://api.example.com"))))
+  (test-http--with-tree '(("api.http" . "GET http://x\n"))
+    (should-not (hellmacs-http-environments root))))
+
+(ert-deftest test-http/select-environment ()
+  "Choosing an environment hands its variables to restclient."
+  (test-http--with-tree '(("http-client.env.json" . "{\"dev\": {\"host\": \"http://localhost:8080\"}}")
+                          ("api.http" . "GET {{host}}/x\n"))
+    (let ((restclient-var-defaults nil) (restclient-current-env-name nil))
+      (with-current-buffer (find-file-noselect (expand-file-name "api.http" root))
+        (hellmacs-http-select-environment "dev")
+        (should (equal restclient-current-env-name "dev"))
+        (should (equal (cdr (assoc "host" restclient-var-defaults)) "http://localhost:8080"))))))
+
+(ert-deftest test-http/dynamic-variables ()
+  "IntelliJ's and REST Client's dynamic variables, fresh for each request."
+  (let ((vars (hellmacs-http--dynamic-vars)))
+    (should (string-match-p "\\`[0-9a-f]\\{8\\}-[0-9a-f]\\{4\\}-4[0-9a-f]\\{3\\}-[89ab][0-9a-f]\\{3\\}-[0-9a-f]\\{12\\}\\'"
+                            (cdr (assoc "$uuid" vars))))
+    (should (equal (cdr (assoc "$random.uuid" vars)) (cdr (assoc "$uuid" vars))))
+    (should (string-match-p "\\`[0-9]+\\'" (cdr (assoc "$timestamp" vars))))
+    (should (string-match-p "\\`[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}T" (cdr (assoc "$isoTimestamp" vars))))
+    (should (string-match-p "\\`[0-9]+\\'" (cdr (assoc "$randomInt" vars))))
+    (should (assoc "$guid" vars))
+    (should-not (equal (cdr (assoc "$uuid" vars)) (cdr (assoc "$uuid" (hellmacs-http--dynamic-vars)))))))
+
+(ert-deftest test-http/handlers-stripped ()
+  "Response handlers and output redirections never go out as the body."
+  (with-temp-buffer
+    (insert test-http--file)
+    (let ((skipped (hellmacs-http--strip-handlers)))
+      (should (= skipped 2))
+      (should-not (string-search "client.global" (buffer-string)))
+      (should-not (string-search ">> me.json" (buffer-string)))
+      (should (string-search "{\"password\": \"{{password}}\"}" (buffer-string)))
+      ;; Line count is kept, so a request stays on its line.
+      (should (= (count-lines (point-min) (point-max))
+                 (with-temp-buffer (insert test-http--file) (count-lines (point-min) (point-max))))))))
+
+(ert-deftest test-http/send-request ()
+  "C-c C-c sends the request at point through restclient, without its handler."
+  (let (sent)
+    (cl-letf (((symbol-function 'restclient-http-send-current)
+               (lambda (&rest _)
+                 (setq sent (list (buffer-substring-no-properties (line-beginning-position) (line-end-position))
+                                  (buffer-string))))))
+      (with-temp-buffer
+        (insert test-http--file)
+        (goto-char (point-min))
+        (search-forward "GET {{host}}")
+        (forward-line 1)                ; on the header: still the Me request
+        (hellmacs-http-send-request)
+        (should (string-prefix-p "Authorization:" (car sent)))
+        (should-not (string-search "client.global" (cadr sent)))
+        (should (string-search "@base = /api" (cadr sent)))))))
+
+(ert-deftest test-http/keys-and-files ()
+  (should (eq (keymap-lookup hellmacs-http-mode-map "C-c C-c") #'hellmacs-http-send-request))
+  (should (eq (keymap-lookup hellmacs-http-mode-map "C-c C-e") #'hellmacs-http-select-environment))
+  (should (eq (keymap-lookup hellmacs-http-mode-map "C-c C-a") #'hellmacs-http-run-file))
+  (should (eq (keymap-lookup hellmacs-http-mode-map "C-c C-l") #'hellmacs-http-run-request))
+  (dolist (file '("/p/api.http" "/p/requests/users.rest"))
+    (should (eq (assoc-default file auto-mode-alist #'string-match-p) 'hellmacs-http-mode))))
+
+(ert-deftest test-http/httpyac ()
+  "+httpyac: pinned by lockfile; it runs the file or the request at point, in the env chosen."
+  (let ((lock (expand-file-name "modules/tools/http/package-lock.json" hellmacs-dir)))
+    (should (file-exists-p lock))
+    (should (string-search (format "\"version\": \"%s\"" hellmacs-http-httpyac-version)
+                           (with-temp-buffer (insert-file-contents lock) (buffer-string)))))
+  (let ((restclient-current-env-name "dev"))
+    (should (equal (hellmacs-http--httpyac-command "/p/api.http")
+                   (list hellmacs-http-httpyac-executable "send" "/p/api.http" "--all"
+                         "--no-color" "-o" "response" "--env" "dev")))
+    (should (equal (hellmacs-http--httpyac-command "/p/api.http" 15)
+                   (list hellmacs-http-httpyac-executable "send" "/p/api.http" "--line" "15"
+                         "--no-color" "-o" "response" "--env" "dev"))))
+  (let ((restclient-current-env-name nil))
+    (should-not (member "--env" (hellmacs-http--httpyac-command "/p/api.http"))))
+  (let (installs)
+    (cl-letf (((symbol-function 'hellmacs-sync-npm-install) (lambda (&rest args) (push args installs)))
+              ((symbol-function 'hellmacs-sync--log) #'ignore)
+              ((symbol-function 'hellmacs-npm-installed-p) #'ignore))
+      (hellmacs-http-sync-install)
+      (should (equal (car (car installs)) "httpyac")))))
 
 (provide 'test-http)
 ;;; test-http.el ends here

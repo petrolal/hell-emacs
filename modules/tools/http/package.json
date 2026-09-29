@@ -1,0 +1,8 @@
+{
+  "name": "hellmacs-tools-http",
+  "private": true,
+  "description": "httpyac, which :tools http +httpyac pins; bin/hellmacs sync installs it with npm ci.",
+  "dependencies": {
+    "httpyac": "6.16.7"
+  }
+}

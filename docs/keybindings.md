@@ -80,6 +80,19 @@ With `:tools run`. Configurations come from `.hellmacs/run.eld`, IntelliJ's `.ru
 
 ---
 
+## HTTP Requests (`.http` buffers)
+With `:tools http`. These are the mode's own keys, active only in `.http` buffers.
+
+| Key | Command | Description |
+|---|---|---|
+| `C-c C-c` | `hellmacs-http-send-request` | Send the request at point |
+| `C-c C-e` | `hellmacs-http-select-environment` | Choose an environment (`http-client.env.json`) |
+| `C-c M-e` | `hellmacs-http-reload-environment` | Reload the environment |
+| `C-c C-l` | `hellmacs-http-run-request` | Run the request with httpyac (`+httpyac`) |
+| `C-c C-a` | `hellmacs-http-run-file` | Run the file with httpyac (`+httpyac`) |
+
+---
+
 ## Test Results & Coverage (`C-c t`)
 With `:tools test`. Results come from the build's JUnit XML reports, and coverage from JaCoCo's XML report (see the JVM guide).
 

@@ -298,6 +298,38 @@ The keys you already have format with each language's own formatter. lsp-mode's
 
 ---
 
+## HTTP Requests (`:tools http`)
+
+IntelliJ's HTTP Client files (`.http`, also VS Code REST Client's) work as they
+are, so a team's shared request files run unchanged.
+
+```elisp
+(hellmacs! :tools (http +httpyac))   ; +httpyac is optional and needs Node
+```
+
+| Key (in `.http` buffers) | Command | Description |
+|---|---|---|
+| `C-c C-c` | `hellmacs-http-send-request` | Send the request at point (restclient) |
+| `C-c C-e` | `hellmacs-http-select-environment` | Choose an environment from `http-client.env.json` |
+| `C-c M-e` | `hellmacs-http-reload-environment` | Read the environment files again |
+| `C-c C-l` | `hellmacs-http-run-request` | Run the request at point with httpyac, handler and all (`+httpyac`) |
+| `C-c C-a` | `hellmacs-http-run-file` | Run every request in the file with httpyac (`+httpyac`) |
+
+restclient's own keys work too: `C-c C-n`/`C-c C-p` move between requests,
+`C-c C-u` copies the request as curl, and `C-c C-v` sends it without leaving the window.
+
+* **Environments:** `http-client.env.json`, plus your uncommitted
+  `http-client.private.env.json` (which wins), found from the file's directory
+  upward. `$shared` applies to every environment.
+* **Variables:** `@name = value`, `{{name}}`, and the dynamic `{{$uuid}}`,
+  `{{$timestamp}}`, `{{$isoTimestamp}}`, `{{$randomInt}}`, `{{$random.uuid}}` and `{{$guid}}`.
+* **Response handlers** (`> {% ... %}`) and `>> file` lines are JavaScript, which
+  restclient can't run. They're left out of what `C-c C-c` sends. With `+httpyac`,
+  `C-c C-l` and `C-c C-a` run them, so a login handler's token reaches the next request.
+  httpyac is pinned by lockfile and installed by `bin/hellmacs sync`.
+
+---
+
 ## 10. Project File Types (`:lang data`, `yaml`, `json`, `markdown`, `sh`, `docker`)
 
 Every JVM project also carries XML, YAML, JSON, shell scripts, READMEs and
