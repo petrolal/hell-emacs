@@ -46,7 +46,7 @@
            undo               ; persistent undo history (undo-fu-session)
            ;;file-templates   ; [planned] templates for new files (a Java class, a test)
            ;;fold             ; [idea] code folding (hideshow, treesit-fold)
-           ;;format           ; [planned] format on save (apheleia: google-java-format, ktfmt, cljfmt...)
+           ;;format           ; formatters: google-java-format, ktfmt, cljfmt, on C-c l = = (+onsave)
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys
            ;;parinfer         ; [idea] indentation-driven Lisp editing
            ;;smartparens      ; [idea] structural editing for Lisps and brackets

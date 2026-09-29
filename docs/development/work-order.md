@@ -97,10 +97,10 @@ This file only tracks progress. Don't copy specs into it.
 - [x] 10.1 `:lang markdown` (2026-09-28: marksman 2026-02-08, pinned binary)
 - [x] 10.1 `:lang sh` (2026-09-28: bash-language-server 5.8.1, npm lockfile; gradlew/mvnw)
 - [x] 10.1 `:lang docker` (2026-09-28: docker-language-server 0.20.1, pinned binary, own lsp client; Compose files). For all six: unit tests (`test/test-data-langs.el`), a real sync of a throwaway profile, each server answering `initialize`, and files opening in the right modes; the e2e script isn't written yet
-- [ ] 10.2 `:editor format`: apheleia with google-java-format, ktfmt, cljfmt
-- [ ] 10.2 Formatter jars pinned by SHA-256 from Maven Central
-- [ ] 10.2 Keys: remap only, no new bindings
-- [ ] 12.8 Formatting shared with IDE users (Eclipse/IntelliJ style import)
+- [x] 10.2 `:editor format`: apheleia with google-java-format, ktfmt, cljfmt (2026-09-28: `modules/editor/format/`; `test/test-format.el`; the remapped key formatted real Java, Kotlin and Clojure files through apheleia)
+- [x] 10.2 Formatter jars pinned by SHA-256 from Maven Central (2026-09-28: google-java-format 1.36.1, ktfmt 0.64; SHA-1s match Central's)
+- [x] 10.2 Keys: remap only, no new bindings (2026-09-28: `lsp-format-buffer` and `eglot-format-buffer` remapped; unit test checks the map holds remaps only)
+- [x] 12.8 Formatting shared with IDE users (Eclipse/IntelliJ style import) (2026-09-28: a committed Eclipse profile sets JDTLS's formatter and Java formats through it; unit tests only)
 
 ## Step 8: 12.6 Enterprise tool belt, 10.3, 10.4 (roadmap "12.6", "10.3", "10.4")
 

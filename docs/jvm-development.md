@@ -270,6 +270,34 @@ Clojure support combines **CIDER** for interactive REPL-driven development with 
 
 ---
 
+## Formatting (`:editor format`)
+
+```elisp
+(hellmacs! :editor (format +onsave))   ; +onsave is optional
+```
+
+The keys you already have format with each language's own formatter. lsp-mode's
+`C-c l = =` runs the formatter below in these buffers; no key is added.
+
+| Language | Formatter | Installed by `bin/hellmacs sync` |
+|---|---|---|
+| Java | google-java-format 1.36.1 (needs a JDK 21+, found among your JDKs) | jar pinned by SHA-256 from Maven Central, with `:lang java` |
+| Kotlin | ktfmt 0.64, Kotlin conventions style (`hellmacs-format-ktfmt-style`) | jar pinned by SHA-256 from Maven Central, with `:lang kotlin` |
+| Clojure | cljfmt through clojure-lsp, with the project's `.cljfmt.edn` | the clojure-lsp `:lang clojure` pins |
+| XML, YAML, JSON | the language server's formatter | (Phase 10.1 modules) |
+
+* **Shared with IDE users:** a Java project that commits an Eclipse formatter profile
+  is formatted with it, through JDTLS, as Eclipse and IntelliJ format it (IntelliJ
+  imports and exports the same XML). Hellmacs looks for the profile in the project
+  root and in `config/`, `.settings/`, `etc/`, `codestyle/` and `build-config/`. To use
+  JDTLS's formatter everywhere, set `hellmacs-format-java-formatter` to `jdtls`.
+* **`+onsave`** formats every save: with the pinned formatter (asynchronously, after
+  saving), or with the language server where there isn't one. It is off by default,
+  so a first save doesn't reformat a whole legacy file.
+* Groovy has no maintained formatter and is left alone.
+
+---
+
 ## 10. Project File Types (`:lang data`, `yaml`, `json`, `markdown`, `sh`, `docker`)
 
 Every JVM project also carries XML, YAML, JSON, shell scripts, READMEs and

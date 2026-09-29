@@ -160,7 +160,7 @@ them, the principle wins and the feature finds another way.
   - [x] Module dependencies and tree-sitter declared once per module (11.3)
   - [x] Byte-compiled core, modules and autoloads at sync (11.4)
 - [ ] **Planned Daily-Driver Essentials (Phase 10)**
-  - [ ] Format-on-save integration (google-java-format, ktfmt, cljfmt) (10.2)
+  - [x] Format-on-save integration (google-java-format, ktfmt, cljfmt) (10.2)
   - [x] Configuration file support (XML, YAML, JSON, Markdown, shell, Dockerfile) (10.1)
 - [ ] **Planned Enterprise Hardening (Phase 12)**
   - [x] Corporate HTTP proxy & custom internal CA certificate management (12.1)
@@ -2293,20 +2293,59 @@ each server really ships, what it needs) written here before the code.
     e2e scripts hang.
 
 **10.2 `:editor format`**
-- [ ] apheleia runs the language's formatter: google-java-format (Java),
+- *Found (2026-09-28):*
+  - google-java-format `1.36.1`: `google-java-format-1.36.1-all-deps.jar`
+    on Maven Central (3.9MB). Its SHA-1 matches Central's `.sha1`, and it is
+    pinned by SHA-256. It is compiled for Java 21 (class file 65), so it
+    needs a JDK 21+. The manifest's `Add-Exports` means `java -jar` needs no
+    `--add-exports` flags. It formats stdin to stdout (`-`).
+  - ktfmt `0.64`: `ktfmt-0.64-with-dependencies.jar` (71MB: it carries the
+    Kotlin compiler), Java 17+, stdin to stdout. It prints JDK 24+
+    `sun.misc.Unsafe` warnings on stderr, and apheleia keeps stderr out of
+    the buffer. ktfmt's own default is Meta's 2-space style;
+    `--kotlinlang-style` is the Kotlin coding conventions (4 spaces,
+    IntelliJ's default), which Hellmacs uses by default.
+  - cljfmt through clojure-lsp: `clojure-lsp format` can't read stdin (it
+    takes `-` as a file name and then hangs), but it formats a file in place
+    in about 0.04s. With `--project-root`, it formats a temporary file
+    outside the project with that project's `.cljfmt.edn`. That is
+    apheleia's `inplace` mode, and it reuses the clojure-lsp `:lang
+    clojure` already pins (or the PATH's). cljfmt's own native binaries,
+    pinned by SHA-256 in its release, are the fallback if that ever
+    changes.
+  - apheleia evaluates any non-string element of a formatter's command at
+    run time, so the java to use (a JDK new enough, found among the JDKs
+    sync recorded) and the project root are chosen per run.
+    `apheleia-formatter` is buffer-local, so a project can use a different
+    formatter.
+- [x] apheleia runs the language's formatter: google-java-format (Java),
       ktfmt (Kotlin), cljfmt through clojure-lsp (Clojure), scalafmt (Scala,
       after 8.5), and the LSP server's formatter for XML, YAML and JSON.
       Groovy has no maintained formatter and is left alone (said in the
       module's header).
-- [ ] Formatter jars are pinned by SHA-256 from Maven Central and installed
+- [x] Formatter jars are pinned by SHA-256 from Maven Central and installed
       by `sync`. A project's own config wins (`.editorconfig`, `.scalafmt.conf`,
       `.cljfmt.edn`).
-- [ ] Keys: none new. `[remap lsp-format-buffer]` and `[remap
+- [x] Keys: none new. `[remap lsp-format-buffer]` and `[remap
       eglot-format-buffer]` point the existing `C-c l = =` / `C-c l f` at
       the pinned formatter. `+onsave` formats on save (off by default, as in
       Doom, so a first save doesn't reformat a whole legacy file).
 - *Verify:* a badly formatted file per language is formatted as its
   formatter's CLI would; `+onsave` on and off; the remaps.
+  - *Done (2026-09-28):* `modules/editor/format/`, off by default. The jars are
+    installed only for enabled languages (google-java-format with `:lang
+    java`, ktfmt with `:lang kotlin`). Each jar runs on a JDK new enough for
+    it (JAVA_HOME's, one sync found, or the PATH's), and doctor checks that.
+    scalafmt waits for 8.5.
+  - *Verified so far:*
+    - Unit tests: `test/test-format.el` (pins, modes, remap-only keys, the
+      JDK choice, commands, `+onsave`, the Eclipse profile, sync).
+    - In a throwaway profile with the real apheleia, `C-c l = =`'s remap
+      formatted a badly formatted Java, Kotlin and Clojure file. The results
+      matched each formatter's CLI, and Clojure applied the project's
+      `.cljfmt.edn`.
+  - *Not yet:* `+onsave` and JDTLS formatting with an Eclipse profile in a
+    live session (unit-tested only).
 
 **10.3 Window and buffer comforts** (`:ui popup`, `:ui vc-gutter`,
 `:ui hl-todo`, `:tools editorconfig`)
@@ -3342,7 +3381,8 @@ pass against what enterprise developers already use.
   - It builds on the private-module support that already exists
     (`test-modules/private-module-overrides-and-modulep!`).
   - `bin/hellmacs upgrade` updates it with the rest.
-- [ ] **Formatting shared with IDE users.**
+- [x] **Formatting shared with IDE users.** (2026-09-28: a committed Eclipse
+      profile is found and JDTLS formats Java with it; `.editorconfig` waits for 10.3)
   - Phase 10.2's formatters, plus JDTLS's own Eclipse formatter profiles
     (`lsp-java-format-settings-url` and `-profile`). Eclipse exports them,
     and IntelliJ imports and exports the same XML.
