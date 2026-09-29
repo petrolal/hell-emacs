@@ -46,6 +46,10 @@
                     lsp-server-install-dir)
   "The pinned jar, named by its version.")
 
+(hellmacs-component! :name "lemminx" :version hellmacs-xml-lemminx-version :license "EPL-2.0"
+                     :url hellmacs-xml-lemminx-url :sha256 hellmacs-xml-lemminx-sha256
+                     :path hellmacs-xml-lemminx-jar)
+
 (defun hellmacs-xml-lemminx-installed-p ()
   "Non-nil if the pinned jar is installed (its bytes are checked)."
   (hellmacs-file-pinned-p hellmacs-xml-lemminx-jar hellmacs-xml-lemminx-sha256))

@@ -68,6 +68,11 @@
 (defvar hellmacs-clojure-lsp-executable (expand-file-name "clojure-lsp" hellmacs-clojure-lsp-dir)
   "The pinned clojure-lsp binary.")
 
+(hellmacs-component! :name "clojure-lsp" :version hellmacs-clojure-lsp-version :license "MIT"
+                     :url (hellmacs-clojure-lsp-url) :sha256 (hellmacs-clojure-lsp-pin)
+                     :sha256s (mapcar #'cdr hellmacs-clojure-lsp-sha256)
+                     :path hellmacs-clojure-lsp-executable)
+
 (defvar hellmacs-clojure-lsp-marker (expand-file-name ".hellmacs-sha256" hellmacs-clojure-lsp-dir)
   "Records the SHA-256 of the zip whose binary is installed.")
 

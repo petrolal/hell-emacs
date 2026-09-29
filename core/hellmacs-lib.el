@@ -305,6 +305,38 @@ nil on an operating system no pinned download is made for."
   (and (file-exists-p file)
        (equal (hellmacs-file-sha256 file) sha256)))
 
+;;; Components -------------------------------------------------------------
+
+(defvar hellmacs-components nil
+  "Everything a module downloads, as `hellmacs-component!' declared it.
+A list of plists, newest first; read by `bin/hellmacs sbom' and `licenses'.")
+
+(defmacro hellmacs-component! (&rest props)
+  "Declare a pinned download this module installs, for the SBOM and license report.
+Put it in the module's +paths.el, next to the pin. PROPS (evaluated):
+
+  :name     what it is, as its project calls it (required)
+  :version  the pinned release
+  :license  its SPDX license expression, from its release; a
+            LicenseRef-NAME for a license outside SPDX's list
+  :url      where it's downloaded from
+  :sha256   the download's pinned SHA-256
+  :sha256s  every platform's pin, when :sha256 is this platform's
+  :path     the file or directory it's installed as: it's only
+            reported once that exists
+  :npm      non-nil if :path is an npm install, whose package-lock.json
+            lists what else it installed
+
+A later declaration with the same :name replaces the earlier one."
+  `(hellmacs-component-declare (list ,@props)))
+
+(defun hellmacs-component-declare (props)
+  "Record the component PROPS. See `hellmacs-component!'."
+  (let ((name (or (plist-get props :name) (error "hellmacs-component!: no :name"))))
+    (setq hellmacs-components
+          (cons props (seq-remove (lambda (c) (equal (plist-get c :name) name))
+                                  hellmacs-components)))))
+
 ;;; Announcements ----------------------------------------------------------
 
 (defun hellmacs-announce (table event &rest args)

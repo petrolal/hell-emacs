@@ -59,6 +59,12 @@
                     lsp-server-install-dir)
   "The pinned binary.")
 
+(hellmacs-component! :name "docker-language-server" :version hellmacs-docker-ls-version
+                     :license "Apache-2.0"
+                     :url (hellmacs-docker-ls-url) :sha256 (hellmacs-docker-ls-pin)
+                     :sha256s (mapcar (lambda (pin) (nth 2 pin)) hellmacs-docker-ls-pins)
+                     :path hellmacs-docker-ls-executable)
+
 (defun hellmacs-docker-ls--marker ()
   (expand-file-name ".hellmacs-sha256" (file-name-directory hellmacs-docker-ls-executable)))
 

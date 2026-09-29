@@ -32,6 +32,9 @@
 (defvar hellmacs-http-httpyac-dir (expand-file-name "httpyac/" hellmacs-data-dir)
   "Where `npm ci' installs it.")
 
+(hellmacs-component! :name "httpyac" :version hellmacs-http-httpyac-version :license "MIT"
+                     :npm t :path hellmacs-http-httpyac-dir)
+
 (defvar hellmacs-http-httpyac-executable
   (expand-file-name "node_modules/.bin/httpyac" hellmacs-http-httpyac-dir)
   "httpyac's launcher.")

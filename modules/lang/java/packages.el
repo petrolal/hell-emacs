@@ -41,5 +41,5 @@
 (when (modulep! +tree-sitter)
   (hellmacs-treesit!
    :grammars ((java "https://github.com/tree-sitter/tree-sitter-java" "v0.23.5"
-                    "94703d5a6bed02b98e438d7cad1136c01a60ba2c"))
+                    "94703d5a6bed02b98e438d7cad1136c01a60ba2c" :license "MIT"))
    :remap ((java-mode . java-ts-mode))))

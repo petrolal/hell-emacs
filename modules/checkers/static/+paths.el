@@ -44,6 +44,11 @@
 (defvar hellmacs-static-sonarlint-dir (expand-file-name "sonarlint/" lsp-server-install-dir)
   "Where sync installs SonarLint (lsp-sonarlint's `lsp-sonarlint-download-dir').")
 
+(hellmacs-component! :name "sonarlint-vscode" :version hellmacs-static-sonarlint-version
+                     :license "LGPL-3.0-only"
+                     :url hellmacs-static-sonarlint-url :sha256 hellmacs-static-sonarlint-sha256
+                     :path hellmacs-static-sonarlint-dir)
+
 (defvar hellmacs-static-sonarlint-marker (expand-file-name ".hellmacs-pin" hellmacs-static-sonarlint-dir)
   "Records the SHA-256 SonarLint was installed from.")
 

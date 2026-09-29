@@ -50,8 +50,8 @@
 
 (defvar hellmacs-treesit-sources nil
   "Grammar sources you pin yourself, over the modules' own: a list of
-(LANGUAGE URL LABEL COMMIT [DIRECTORY]), as in `hellmacs-treesit!'. Set
-it in your init.el to pin a different release.")
+(LANGUAGE URL LABEL COMMIT [DIRECTORY] :license SPDX), as in
+`hellmacs-treesit!'. Set it in your init.el to pin a different release.")
 
 (defvar hellmacs-treesit-declarations nil
   "Alist: module key -> (:grammars GRAMMARS :remap REMAP), from `hellmacs-treesit!'.
@@ -79,10 +79,11 @@ Use it in the module's packages.el, under its +tree-sitter flag:
                         \"v0.3.8\" \"<the tag's full commit>\"))
      :remap ((kotlin-mode . kotlin-ts-mode))))
 
-Each grammar is (LANGUAGE URL LABEL COMMIT [DIRECTORY]): COMMIT is what
-gets fetched, LABEL only says what it is (a release tag, or a branch and
-date), DIRECTORY is the subdirectory holding src/ when the grammar isn't
-at the top of the repository. `bin/hellmacs sync' builds them and
+Each grammar is (LANGUAGE URL LABEL COMMIT [DIRECTORY] :license SPDX):
+COMMIT is what gets fetched, LABEL only says what it is (a release tag,
+or a branch and date), DIRECTORY is the subdirectory holding src/ when
+the grammar isn't at the top of the repository, and SPDX the grammar's
+license, for the SBOM and license report. `bin/hellmacs sync' builds them and
 `bin/hellmacs doctor' checks them. At startup, each (MODE . TS-MODE) in
 :remap goes into `major-mode-remap-alist' once every grammar is built;
 until then a warning says to sync."
@@ -111,6 +112,10 @@ Yours (`hellmacs-treesit-sources') first, then the modules'."
       (seq-some (lambda (decl) (cdr (assq lang (plist-get (cdr decl) :grammars))))
                 hellmacs-treesit-declarations)
       (error "No tree-sitter grammar source for `%s'; see `hellmacs-treesit!'" lang)))
+
+(defun hellmacs-treesit-source-license (lang)
+  "The license LANG's grammar source declares with :license, or nil."
+  (cadr (memq :license (hellmacs-treesit--source lang))))
 
 (defun hellmacs-treesit-apply ()
   "Remap each module's modes to their tree-sitter ones, if its grammars are built.
@@ -193,6 +198,7 @@ A library left by an older pin (or by Emacs' own installer) isn't current."
 Fetches exactly the pinned commit (refusing anything else), compiles it
 in a temporary directory, and only then puts the library in place."
   (pcase-let* ((`(,url ,_label ,commit ,directory) (hellmacs-treesit--source lang))
+               (directory (and (stringp directory) directory)) ; not :license
                (tmp (make-temp-file "hellmacs-treesit" t)))
     (unless (executable-find "git") (error "git is needed to fetch tree-sitter grammars"))
     (with-hellmacs-network               ; the proxy, CA and mirrors, for git

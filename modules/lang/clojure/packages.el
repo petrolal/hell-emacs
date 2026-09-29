@@ -33,11 +33,12 @@
    ;; clojure-ts-mode 0.6 wants this newer Clojure grammar (not the last
    ;; release, v0.0.13), and two more for docstrings and regex literals.
    :grammars ((clojure "https://github.com/sogaiu/tree-sitter-clojure" "unstable-20250526"
-                       "69070d2e4563f8f58c7f57b0c8e093a08d7a5814")
+                       "69070d2e4563f8f58c7f57b0c8e093a08d7a5814" :license "CC0-1.0")
               (markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.2"
-                               "aca7767daa8bbe3daddafc312c34be88383c828b" "tree-sitter-markdown-inline")
+                               "aca7767daa8bbe3daddafc312c34be88383c828b" "tree-sitter-markdown-inline"
+                               :license "MIT")
               (regex "https://github.com/tree-sitter/tree-sitter-regex" "v0.24.3"
-                     "4470c59041416e8a2a9fa343595ca28ed91f38b8"))
+                     "4470c59041416e8a2a9fa343595ca28ed91f38b8" :license "MIT"))
    :remap ((clojure-mode . clojure-ts-mode)
            (clojurescript-mode . clojure-ts-clojurescript-mode)
            (clojurec-mode . clojure-ts-clojurec-mode))))

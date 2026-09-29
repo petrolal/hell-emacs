@@ -3605,8 +3605,21 @@ pass against what enterprise developers already use.
       `org.gradle.java.home`) is left alone. Live: with `JAVA_HOME` unset
       and JDK 27 on the PATH, `C-x p c` in Spring Framework ran on 25 and
       finished.
-  - *Not yet:* the "quick fix offers an import" check still fails on it
-    (not diagnosed); Kafka or Camel as a second, Maven, reference.
+  - *Fixed 2026-09-29, the "quick fix offers an import" check:* the check
+    was wrong, not Hellmacs. It inserted `ArrayList`, which that file
+    imports, asked for code actions without the diagnostics JDTLS computes
+    quick fixes from, and matched "Import" ignoring case (so "Organize
+    imports" passed it on small projects). It now inserts a JDK type the
+    file doesn't use, asks as `C-c l a` does, and wants the exact
+    `Import 'X'` fix. On the way: an import that failed and recovered
+    before JDTLS answered `initialize` was reset by the start
+    announcement, so JDTLS never read as ready (fixed in
+    `hellmacs-lsp-status-ignite`); and the symbol-search wait's timed-out
+    synchronous requests could end the run. Live: 22 of 22 checks pass;
+    ready in 10.3s, symbol search 64.4s later (74.7s: under the 84s import
+    budget in this run; the weekly job decides), completion p95 65ms,
+    Emacs 320MB + JDTLS 2279MB peak.
+  - *Not yet:* Kafka or Camel as a second, Maven, reference.
 - [/] **Budgets, measured in CI weekly and recorded here:**
 
   | Measurement | Budget | Measured 2026-09-29 (workstation) |
@@ -3737,14 +3750,37 @@ pass against what enterprise developers already use.
 
 #### 12.9 Security and compliance
 
-- [ ] **SBOM.** `bin/hellmacs sbom` writes a CycloneDX (JSON) bill of
+- [x] **SBOM.** `bin/hellmacs sbom` writes a CycloneDX (JSON) bill of
       materials for everything installed: Emacs packages at their locked
       commits, language servers, jars, grammars, with versions, sources and
       SHA-256 sums. It is also produced with every release (12.10).
-- [ ] **License report.** `bin/hellmacs licenses`: each component's license,
+  - *Done 2026-09-29:* `core/hellmacs-compliance.el`. It reads what is
+    installed, not what should be: each package Elpaca built, at its
+    checkout's commit and origin (the lock file can be stale: 18 locked,
+    50 installed, on the workstation); each download a module declares with
+    `hellmacs-component!` (in its `+paths.el`, next to the pin) whose file is
+    in place; every package an npm server's `package-lock.json` installed
+    (SHA-512 from its integrity); each grammar built from its pin. Package
+    URLs (maven, npm, github), CycloneDX 1.5, one component per bom-ref.
+    Nothing is fetched. `test/test-compliance.el`; a test fails on a SHA-256
+    in any `+paths.el` that no component declares. Live: 58 components on the
+    default profile, 156 with every module; both validate against the
+    CycloneDX 1.5 schema (0 errors). CI keeps it as an artifact. *Not yet:*
+    with every release (12.10's releases don't exist yet); grammars were only
+    checked by unit tests (no profile here builds them).
+- [x] **License report.** `bin/hellmacs licenses`: each component's license,
       from its package headers or its release, flagged when unknown. It is
       checked in CI so a new dependency with a problematic license is seen
       before it ships.
+  - *Done 2026-09-29:* from an SPDX line, a `License:` header, a GNU notice
+    (with "or later" when it says so) or a common license text in the
+    package, else its LICENSE file; downloads and grammars declare theirs
+    (`:license`), checked against Maven Central's POMs, GitHub and the
+    license texts. It exits 1 on an unknown license; one outside SPDX's list
+    (`LicenseRef-`: Oracle's and IBM's JDBC drivers, restclient's public
+    domain) is flagged to check. CI runs it on every push (default modules)
+    and weekly with every module (`budgets.yml`). Live, every module: 156
+    components, none unknown; restclient flagged.
 - [ ] **No telemetry, stated and enforced.**
   - Hellmacs sends nothing. Packages that could (lsp-mode's and servers'
     own features, if any) are configured off, and the findings pass lists

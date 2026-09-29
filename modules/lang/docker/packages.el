@@ -33,5 +33,5 @@
 (when (modulep! +tree-sitter)
   (hellmacs-treesit!
    :grammars ((dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "Emacs 31's pin"
-                          "087daa20438a6cc01fa5e6fe6906d77c869d19fe"))
+                          "087daa20438a6cc01fa5e6fe6906d77c869d19fe" :license "MIT"))
    :remap ((dockerfile-mode . dockerfile-ts-mode))))

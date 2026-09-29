@@ -32,6 +32,9 @@
 (defvar hellmacs-sh-ls-dir (expand-file-name "bash/" lsp-server-install-dir)
   "Where `npm ci' installs it.")
 
+(hellmacs-component! :name "bash-language-server" :version hellmacs-sh-ls-version :license "MIT"
+                     :npm t :path hellmacs-sh-ls-dir)
+
 (defvar hellmacs-sh-ls-executable
   (expand-file-name "node_modules/.bin/bash-language-server" hellmacs-sh-ls-dir)
   "The server's launcher.")

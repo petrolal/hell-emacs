@@ -32,6 +32,9 @@
 (defvar hellmacs-yaml-ls-dir (expand-file-name "yaml/" lsp-server-install-dir)
   "Where `npm ci' installs it.")
 
+(hellmacs-component! :name "yaml-language-server" :version hellmacs-yaml-ls-version :license "MIT"
+                     :npm t :path hellmacs-yaml-ls-dir)
+
 (defvar hellmacs-yaml-ls-executable
   (expand-file-name "node_modules/.bin/yaml-language-server" hellmacs-yaml-ls-dir)
   "The server's launcher.")

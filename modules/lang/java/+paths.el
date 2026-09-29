@@ -113,6 +113,10 @@ the one it runs on (`hellmacs-jvm-runtime-jdks', `hellmacs-jdk-lsp-runtimes')."
 (defvar hellmacs-jvm-jdtls-dir (expand-file-name "eclipse.jdt.ls/" lsp-server-install-dir)
   "Where JDTLS is installed (lsp-java's `lsp-java-server-install-dir').")
 
+(hellmacs-component! :name "eclipse.jdt.ls" :version hellmacs-jvm-jdtls-version :license "EPL-2.0"
+                     :url hellmacs-jvm-jdtls-url :sha256 hellmacs-jvm-jdtls-sha256
+                     :path hellmacs-jvm-jdtls-dir)
+
 (defun hellmacs-jvm--jdtls-marker ()
   (expand-file-name ".hellmacs-pin" hellmacs-jvm-jdtls-dir))
 
@@ -142,6 +146,11 @@ marker says it's the pinned release."
           hellmacs-jvm-junit-runner-version hellmacs-jvm-junit-runner-version)
   "Where the pinned JUnit console runner is downloaded from.")
 
+(hellmacs-component! :name "junit-platform-console-standalone" :type "library"
+                     :version hellmacs-jvm-junit-runner-version :license "EPL-2.0"
+                     :url hellmacs-jvm-junit-runner-url :sha256 hellmacs-jvm-junit-runner-sha256
+                     :path dap-java-test-runner)
+
 (defun hellmacs-jvm-junit-runner-valid-p ()
   "Non-nil if dap-java's test runner is the pinned release."
   (hellmacs-file-pinned-p dap-java-test-runner hellmacs-jvm-junit-runner-sha256))
@@ -164,6 +173,10 @@ marker says it's the pinned release."
 (defconst hellmacs-jvm--default-lombok-jar
   (expand-file-name (format "jvm/lombok-%s.jar" hellmacs-jvm-lombok-version) hellmacs-data-dir)
   "Where `bin/hellmacs sync' puts the pinned Lombok jar.")
+
+(hellmacs-component! :name "lombok" :type "library" :version hellmacs-jvm-lombok-version :license "MIT"
+                     :url hellmacs-jvm-lombok-url :sha256 hellmacs-jvm-lombok-sha256
+                     :path hellmacs-jvm--default-lombok-jar)
 
 (defvar hellmacs-jvm-lombok-jar hellmacs-jvm--default-lombok-jar
   "Lombok jar loaded into JDTLS as a javaagent, with the +lombok flag.
@@ -199,6 +212,11 @@ own only has to exist."
   (expand-file-name "eclipse.jdt.ls/bundles/java.debug.plugin.jar" lsp-server-install-dir)
   "Where JDTLS loads the java-debug plugin from (lsp-java's bundle name).")
 
+(hellmacs-component! :name "com.microsoft.java.debug.plugin" :type "library"
+                     :version hellmacs-jvm-java-debug-version :license "EPL-1.0"
+                     :url hellmacs-jvm-java-debug-url :sha256 hellmacs-jvm-java-debug-sha256
+                     :path hellmacs-jvm-java-debug-jar)
+
 (defun hellmacs-jvm-java-debug-jar-valid-p ()
   "Return non-nil if the java-debug jar JDTLS loads is the pinned release."
   (hellmacs-file-pinned-p hellmacs-jvm-java-debug-jar hellmacs-jvm-java-debug-sha256))
@@ -224,6 +242,10 @@ own only has to exist."
 
 (defvar hellmacs-jvm-spring-dir (expand-file-name "spring-boot/" lsp-server-install-dir)
   "Where the Spring Boot language server and its JDTLS extensions are installed.")
+
+(hellmacs-component! :name "vscode-spring-boot" :version hellmacs-jvm-spring-version :license "EPL-1.0"
+                     :url hellmacs-jvm-spring-url :sha256 hellmacs-jvm-spring-sha256
+                     :path hellmacs-jvm-spring-dir)
 
 (defconst hellmacs-jvm-spring-extensions
   '("io.projectreactor.reactor-core.jar" "org.reactivestreams.reactive-streams.jar"

@@ -47,6 +47,10 @@
 (defvar hellmacs-kotlin-ls-dir (expand-file-name "kotlin/" lsp-server-install-dir)
   "Where the server is unpacked; lsp-mode looks in its server/bin/ first.")
 
+(hellmacs-component! :name "kotlin-language-server" :version hellmacs-kotlin-ls-version :license "MIT"
+                     :url hellmacs-kotlin-ls-url :sha256 hellmacs-kotlin-ls-sha256
+                     :path hellmacs-kotlin-ls-dir)
+
 (defvar hellmacs-kotlin-ls-executable
   (expand-file-name "server/bin/kotlin-language-server" hellmacs-kotlin-ls-dir)
   "The server's launcher script.")

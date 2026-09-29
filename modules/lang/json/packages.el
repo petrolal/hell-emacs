@@ -32,5 +32,5 @@
 (when (modulep! +tree-sitter)
   (hellmacs-treesit!
    :grammars ((json "https://github.com/tree-sitter/tree-sitter-json" "Emacs 31's pin"
-                    "4d770d31f732d50d3ec373865822fbe659e47c75"))
+                    "4d770d31f732d50d3ec373865822fbe659e47c75" :license "MIT"))
    :remap ((js-json-mode . json-ts-mode))))

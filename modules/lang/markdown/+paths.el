@@ -54,6 +54,11 @@
                     lsp-server-install-dir)
   "The pinned marksman binary.")
 
+(hellmacs-component! :name "marksman" :version hellmacs-markdown-marksman-version :license "MIT"
+                     :url (hellmacs-markdown-marksman-url) :sha256 (hellmacs-markdown-marksman-pin)
+                     :sha256s (mapcar (lambda (pin) (nth 2 pin)) hellmacs-markdown-marksman-pins)
+                     :path hellmacs-markdown-marksman-executable)
+
 (defun hellmacs-markdown-marksman--marker ()
   (expand-file-name ".hellmacs-sha256" (file-name-directory hellmacs-markdown-marksman-executable)))
 

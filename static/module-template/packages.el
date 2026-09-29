@@ -15,8 +15,9 @@
   (package! example-extra))
 
 ;; Tree-sitter grammars (pinned) and the modes they enable; see
-;; `hellmacs-treesit!'. Sync builds them, doctor checks them.
+;; `hellmacs-treesit!'. Sync builds them, doctor checks them; the SBOM and
+;; license report (`bin/hellmacs sbom', `licenses') take the :license.
 ;; (when (modulep! +tree-sitter)
 ;;   (hellmacs-treesit!
-;;    :grammars ((example "https://github.com/..." "v1.0" "<full commit>"))
+;;    :grammars ((example "https://github.com/..." "v1.0" "<full commit>" :license "MIT"))
 ;;    :remap ((example-mode . example-ts-mode))))

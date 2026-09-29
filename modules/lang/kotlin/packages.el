@@ -33,5 +33,5 @@
    ;; the grammar's main branch, and 0.3.8 makes it drop string and constant
    ;; highlighting. This is main on 2026-08-02.
    :grammars ((kotlin "https://github.com/fwcd/tree-sitter-kotlin" "main 2026-08-02"
-                      "1852ea17b7f60fb3f9d84e0b1555d56b46b39fb1"))
+                      "1852ea17b7f60fb3f9d84e0b1555d56b46b39fb1" :license "MIT"))
    :remap ((kotlin-mode . kotlin-ts-mode))))

@@ -94,6 +94,20 @@ jobs:
       - name: Run Doctor Check
         run: bin/hellmacs doctor
 
+      # 12.9: a dependency whose license isn't known fails here, before it
+      # ships; the bill of materials is kept with the run.
+      - name: License report
+        run: bin/hellmacs licenses
+
+      - name: Bill of materials (CycloneDX)
+        run: bin/hellmacs sbom sbom.json
+
+      - name: Keep the bill of materials
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.run_number }}
+          path: sbom.json
+
       - name: Run Network & Bundle E2E Test
         run: emacs --batch -l early-init.el -l init.el -l test/integration/net-e2e.el
 

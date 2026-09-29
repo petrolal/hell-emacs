@@ -66,6 +66,17 @@ jobs:
       - name: Measure the budgets
         run: test/integration/budgets.sh "$BUDGETS_DIR"
 
+      # 12.9: the license report and bill of materials for every module
+      # Hellmacs ships, on the profile the budgets synced.
+      - name: License report and SBOM, every module
+        if: always()
+        run: |
+          export XDG_CONFIG_HOME="$BUDGETS_DIR/config" XDG_DATA_HOME="$BUDGETS_DIR/data"
+          export XDG_CACHE_HOME="$BUDGETS_DIR/cache" XDG_STATE_HOME="$BUDGETS_DIR/state"
+          export HELLMACSDIR="$BUDGETS_DIR/user"
+          bin/hellmacs sbom "$BUDGETS_DIR/sbom.json"
+          bin/hellmacs licenses | tee "$BUDGETS_DIR/licenses.txt"
+
       - name: Keep the measurements and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -75,4 +86,6 @@ jobs:
             ${{ env.BUDGETS_DIR }}/budgets.txt
             ${{ env.BUDGETS_DIR }}/*.log
             ${{ env.BUDGETS_DIR }}/startup-*.txt
+            ${{ env.BUDGETS_DIR }}/licenses.txt
+            ${{ env.BUDGETS_DIR }}/sbom.json
           if-no-files-found: warn

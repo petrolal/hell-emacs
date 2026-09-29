@@ -32,5 +32,5 @@
 (when (modulep! +tree-sitter)
   (hellmacs-treesit!
    :grammars ((yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"
-                    "b733d3f5f5005890f324333dd57e1f0badec5c87"))
+                    "b733d3f5f5005890f324333dd57e1f0badec5c87" :license "MIT"))
    :remap ((yaml-mode . yaml-ts-mode))))

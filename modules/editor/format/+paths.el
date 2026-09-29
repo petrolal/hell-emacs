@@ -34,15 +34,23 @@
        :sha256 "25b400f003089d23cc5320cdaf1a16cabee19b8aa3434d0ff021b3d9f42154b4"
        :file ,(expand-file-name "google-java-format-1.36.1-all-deps.jar" dir)
        :jdk 21                          ; compiled for Java 21
-       :size "4MB")
+       :size "4MB"
+       :license "Apache-2.0")
       (ktfmt
        :version "0.64"
        :url "https://repo1.maven.org/maven2/com/facebook/ktfmt/0.64/ktfmt-0.64-with-dependencies.jar"
        :sha256 "5b3d5286fd2defcc7dc8e28c21ddf156cc6b2d8682bdcd929ce4333e7a6201f2"
        :file ,(expand-file-name "ktfmt-0.64-with-dependencies.jar" dir)
        :jdk 17
-       :size "71MB")))
-  "The pinned formatter jars: (NAME :version :url :sha256 :file :jdk :size).")
+       :size "71MB"
+       :license "Apache-2.0")))
+  "The pinned formatter jars: (NAME :version :url :sha256 :file :jdk :size :license).")
+
+(pcase-dolist (`(,name . ,spec) hellmacs-format-jars)
+  (hellmacs-component! :name (symbol-name name) :type "library"
+                       :version (plist-get spec :version) :license (plist-get spec :license)
+                       :url (plist-get spec :url) :sha256 (plist-get spec :sha256)
+                       :path (plist-get spec :file)))
 
 ;; Here, not in autoload.el: cli.el needs it in `bin/hellmacs sync', which
 ;; loads no module's autoload.el.

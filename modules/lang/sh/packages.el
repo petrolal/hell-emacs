@@ -33,5 +33,5 @@
 (when (modulep! +tree-sitter)
   (hellmacs-treesit!
    :grammars ((bash "https://github.com/tree-sitter/tree-sitter-bash" "v0.23.3"
-                    "487734f87fd87118028a65a4599352fa99c9cde8"))
+                    "487734f87fd87118028a65a4599352fa99c9cde8" :license "MIT"))
    :remap ((sh-mode . bash-ts-mode))))

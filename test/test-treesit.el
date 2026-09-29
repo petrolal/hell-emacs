@@ -127,13 +127,14 @@ Returns (URL TAG COMMIT)."
     (should (seq-set-equal-p (hellmacs-treesit-wanted) '(java kotlin clojure markdown-inline regex)))
     (should (equal (hellmacs-treesit-module-languages '(:lang . clojure))
                    '(clojure markdown-inline regex)))
-    ;; Every shipped grammar names a label and a full commit.
+    ;; Every shipped grammar names a label, a full commit and its license.
     (dolist (lang (hellmacs-treesit-wanted))
       (pcase-let ((`(,url ,label ,commit ,dir) (hellmacs-treesit--source lang)))
         (should (string-prefix-p "https://" url))
         (should (stringp label))
         (should (string-match-p "\\`[0-9a-f]\\{40\\}\\'" commit))
-        (should (or (null dir) (stringp dir)))))
+        (should (or (null dir) (stringp dir) (eq dir :license)))
+        (should (stringp (hellmacs-treesit-source-license lang)))))
     (let ((hellmacs-treesit-sources '((kotlin "https://example.invalid/k" "mine" "c0ffee"))))
       (should (equal (hellmacs-treesit--source 'kotlin) '("https://example.invalid/k" "mine" "c0ffee"))))
     ;; Without the flag, nothing is declared.

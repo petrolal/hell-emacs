@@ -32,6 +32,7 @@
 (require 'hellmacs-sync)
 (require 'hellmacs-bundle)
 (require 'hellmacs-config)
+(require 'hellmacs-compliance)
 
 ;;; Output ---------------------------------------------------------------------
 
@@ -224,6 +225,60 @@ With --clear in ARGS, delete the saved environment instead."
   "Sync, then record the exact commit of every installed package."
   (hellmacs-sync)
   (hellmacs-cli--write-lock))
+
+;;; sbom and licenses -----------------------------------------------------------
+
+(defun hellmacs-cli-sbom (&rest args)
+  "Write a CycloneDX bill of materials of everything installed.
+ARGS: the file to write it to; without one, it goes to stdout."
+  (let ((files (seq-remove (lambda (a) (string-prefix-p "-" a)) args)))
+    (when (cdr files)
+      (error "Usage: bin/hellmacs sbom [OUT.json]"))
+    (let* ((components (hellmacs-compliance-components))
+           (json (let ((json-encoding-pretty-print t))
+                   (json-encode (hellmacs-compliance-cyclonedx-sbom components)))))
+      (if-let* ((out (car files)))
+          (progn
+            (with-temp-file out (insert json "\n"))
+            (hellmacs-cli--say "Wrote %d components to %s" (length components)
+                               (abbreviate-file-name (expand-file-name out))))
+        (hellmacs-cli--say "%s" json)))))
+
+(defun hellmacs-cli--component-label (c)
+  "C's name and version, a package's commit shortened, and its kind."
+  (let ((version (or (plist-get c :version) "")))
+    (format "%s %s (%s)" (plist-get c :name)
+            (if (eq (plist-get c :kind) 'package) (truncate-string-to-width version 12) version)
+            (plist-get c :kind))))
+
+(defun hellmacs-cli-licenses (&rest _)
+  "List the license of everything installed; fail if one isn't known."
+  (let* ((components (sort (hellmacs-compliance-components)
+                           (lambda (a b)
+                             (let ((la (or (plist-get a :license) "")) (lb (or (plist-get b :license) "")))
+                               (if (equal la lb)
+                                   (string< (plist-get a :name) (plist-get b :name))
+                                 (string< la lb))))))
+         (known (seq-filter (lambda (c) (plist-get c :license)) components))
+         (width (apply #'max 10 (mapcar (lambda (c) (length (plist-get c :license))) known)))
+         (problems (hellmacs-compliance-license-problems components)))
+    (hellmacs-cli--say "Licenses of what's installed (%d components):" (length components))
+    (dolist (c known)
+      (hellmacs-cli--say "  %s  %s" (string-pad (plist-get c :license) width)
+                         (hellmacs-cli--component-label c)))
+    (hellmacs-cli--say "\nBy license:")
+    (dolist (group (seq-group-by (lambda (c) (or (plist-get c :license) "UNKNOWN")) components))
+      (hellmacs-cli--say "  %s  %d" (string-pad (car group) width) (length (cdr group))))
+    (when problems
+      (hellmacs-cli--say "\nTo look at:")
+      (pcase-dolist (`(,c . ,why) problems)
+        (pcase why
+          ('unknown
+           (hellmacs-cli--check 'error "%s: no license found in its headers, LICENSE file or declaration"
+                                (hellmacs-cli--component-label c)))
+          ('unlisted
+           (hellmacs-cli--check 'warn "%s: %s, not on SPDX's list: check its terms before you ship it"
+                                (hellmacs-cli--component-label c) (plist-get c :license))))))))
 
 ;;; upgrade --------------------------------------------------------------------
 
@@ -698,6 +753,12 @@ Commands:
              without internet. It's for this platform and Emacs version, and
              for your modules, or SPEC's (--modules \":lang java :tools lsp\").
              .tar.gz, .tar.xz and .tar work too.
+  sbom [OUT.json]
+             Write a CycloneDX (JSON) bill of materials of everything installed:
+             packages at their commits, language servers, jars and grammars,
+             with their pins and licenses. Without OUT.json, to stdout.
+  licenses   List the license of everything installed; fails if one isn't
+             known, and flags licenses outside SPDX's list.
   config [--add-defaults]
              List the modules on by default that your hellmacs! block misses
              (made from an older template?); --add-defaults adds them, keeping

@@ -32,6 +32,9 @@
 (defvar hellmacs-json-ls-dir (expand-file-name "json/" lsp-server-install-dir)
   "Where `npm ci' installs it.")
 
+(hellmacs-component! :name "vscode-langservers-extracted" :version hellmacs-json-ls-version :license "MIT"
+                     :npm t :path hellmacs-json-ls-dir)
+
 (defvar hellmacs-json-ls-executable
   (expand-file-name "node_modules/.bin/vscode-json-language-server" hellmacs-json-ls-dir)
   "The server's launcher.")

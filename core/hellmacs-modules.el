@@ -708,5 +708,10 @@ this file for the order."
 (dolist (fn hellmacs-modules--jdk-autoloads)
   (autoload fn "hellmacs-jdk"))
 
+;; The SBOM and license report: `bin/hellmacs sbom' and `licenses'.
+(dolist (fn '(hellmacs-compliance-components hellmacs-compliance-collect-licenses
+              hellmacs-compliance-license-problems hellmacs-compliance-cyclonedx-sbom))
+  (autoload fn "hellmacs-compliance"))
+
 (provide 'hellmacs-modules)
 ;;; hellmacs-modules.el ends here
