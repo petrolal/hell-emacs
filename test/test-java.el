@@ -45,8 +45,9 @@
   (unless test-java--loaded
     (let ((hellmacs-modules (make-hash-table :test #'equal))
           (warning-minimum-log-level :emergency))
-      (hellmacs--enable-modules '(:tools lsp :lang java))
+      (hellmacs--enable-modules '(:tools lsp build :lang java))
       (hellmacs-module--load '(:tools . lsp) "autoload.el") ; `hellmacs-lsp-install-pinned'
+      (hellmacs-module--load '(:tools . build) "autoload.el") ; finding the test at point
       (hellmacs-module--load '(:lang . java) "autoload.el")
       (hellmacs-module--load '(:lang . java) "config.el"))
     (setq test-java--loaded t)))
@@ -125,14 +126,61 @@ cc-mode's or java-ts-mode's map: `C-c letter' is the user's, not a package's."
     (should (eq (key-binding (kbd "C-c l j t")) #'hellmacs-jvm-test-at-point))))
 
 (ert-deftest test-java/test-method ()
-  "The nearest void method above point is the test at point."
+  "The test at point is the test method (JUnit 4 or 5) point is in, or nil:
+not a helper, a setup method, or the test above either."
   (test-java--load)
   (with-temp-buffer
-    (insert "package dev.x;\n\nclass GreeterTest {\n    @Test\n    void greets() {\n        assertTrue(true);\n    }\n}\n")
-    (goto-char (point-min)) (search-forward "assertTrue")
-    (should (equal (hellmacs-jvm-test-method) "greets"))
-    (goto-char (point-min))
-    (should-not (hellmacs-jvm-test-method))))
+    (insert "package dev.x;
+
+class GreeterTest {
+    @BeforeEach
+    void setUp() {
+        greeter = new Greeter(); // SETUP
+    }
+
+    @Test
+    void greets() {
+        assertTrue(true); // GREETS
+    }
+
+    private void helper(String s) {
+        check(s); // HELPER
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void junit4Style() throws Exception {
+        fail(); // JUNIT4
+    }
+
+    @ParameterizedTest
+    @DisplayName(\"with {braces} and (parens)\")
+    @ValueSource(ints = {1, 2})
+    void manyInputs(int n) {
+        if (n > 0) { run(n); } // MANY
+    }
+
+    @Test void oneLiner() { run(); } // ONELINER
+}
+")
+    (dolist (case '(("GREETS" . "greets") ("JUNIT4" . "junit4Style") ("MANY" . "manyInputs")
+                    ("ONELINER" . "oneLiner") ("@ValueSource" . "manyInputs")
+                    ("SETUP") ("HELPER") ("package")))
+      (goto-char (point-min)) (search-forward (car case))
+      (should (equal (cons (car case) (hellmacs-jvm-test-method)) case)))))
+
+(defvar lsp-clients)
+
+(ert-deftest test-java/spring-client-setup-warns-instead-of-failing ()
+  "+spring: if lsp-java-boot's client isn't there as expected, a warning says so,
+rather than an error in the middle of loading lsp-java."
+  (test-java--load)
+  (let ((lsp-clients (make-hash-table)) warnings)
+    (cl-letf (((symbol-function 'display-warning) (lambda (_ msg &rest _) (push msg warnings))))
+      (should-not (hellmacs-jvm--spring-client-use-stdio)) ; no boot-ls client
+      (puthash 'boot-ls (make-vector 3 nil) lsp-clients)
+      (should-not (hellmacs-jvm--spring-client-use-stdio)) ; no such slots
+      (should (= 2 (length warnings)))
+      (should (string-match-p "+spring" (car warnings))))))
 
 (ert-deftest test-java/reload-hot-swaps-debug-sessions ()
   "`C-c h r' in Java hot-swaps into a debug session, and only then."

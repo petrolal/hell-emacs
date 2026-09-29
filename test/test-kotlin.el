@@ -51,6 +51,28 @@
       (hellmacs-module--load '(:lang . kotlin) "config.el"))
     (setq test-kotlin--loaded t)))
 
+(ert-deftest test-kotlin/test-function-at-point ()
+  "The test at point is the @Test function point is in, backticked names too;
+nil in a helper."
+  (test-kotlin--load)
+  (with-temp-buffer
+    (insert "class GreeterTest {
+    @Test
+    fun `greets by name`() {
+        assertTrue(true) // BACKTICKED
+    }
+
+    private fun helper() {
+        check() // HELPER
+    }
+
+    @Test fun plain() { run() } // PLAIN
+}
+")
+    (dolist (case '(("BACKTICKED" . "greets by name") ("PLAIN" . "plain") ("HELPER")))
+      (goto-char (point-min)) (search-forward (car case))
+      (should (equal (cons (car case) (hellmacs-kotlin-test-method)) case)))))
+
 (ert-deftest test-kotlin/keys-in-hellmacs-own-mode ()
   "C-c l k is in a Hellmacs minor mode Kotlin buffers turn on, not in
 kotlin-mode's own map: `C-c letter' is the user's, not a package's."

@@ -81,16 +81,14 @@ A Kotlin file may hold several classes, or none named after it."
          (match-string-no-properties 1)
        (file-name-base (or buffer-file-name (user-error "Not visiting a file")))))))
 
+(declare-function hellmacs-forge-annotated-test-at-point "../../tools/build/autoload")
+
 (defun hellmacs-kotlin-test-method ()
-  "The name of the test function around point, or nil: the nearest `fun'
-above point, backticked names included (`fun `greets by name`()')."
-  (save-excursion
-    (end-of-line)
-    (when (re-search-backward
-           (concat "^[ \t]*\\(?:\\(?:public\\|internal\\|private\\|override\\)[ \t]+\\)*"
-                   "fun[ \t]+\\(?:`\\([^`\n]+\\)`\\|\\([a-zA-Z_][a-zA-Z0-9_]*\\)\\)[ \t]*(")
-           nil t)
-      (or (match-string-no-properties 1) (match-string-no-properties 2)))))
+  "The name of the @Test function point is in, or nil; backticked names
+included (`fun `greets by name`()'). Not a helper: see
+`hellmacs-forge-annotated-test-at-point'."
+  (hellmacs-forge-annotated-test-at-point
+   "fun[ \t]+\\(?:`\\([^`\n]+\\)`\\|\\([[:alpha:]_][[:alnum:]_]*\\)\\)[ \t]*("))
 
 (defun hellmacs-kotlin--setup-build-h ()
   "Use the project's build, and Kotlin's test classes and functions, in this buffer."

@@ -191,16 +191,12 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
 
 ;; `C-x p c' proposes the project's own Gradle/Maven build, and tests run
 ;; through it (:tools build).
+(declare-function hellmacs-forge-annotated-test-at-point "../../tools/build/autoload")
+
 (defun hellmacs-jvm-test-method ()
-  "The name of the JUnit test method around point, or nil.
-JUnit test methods return void: the nearest void method above point."
-  (save-excursion
-    (end-of-line)
-    (when (re-search-backward
-           (concat "^[ \t]*\\(?:\\(?:public\\|protected\\|private\\|static\\|final\\)[ \t]+\\)*"
-                   "void[ \t]+\\([a-zA-Z_$][a-zA-Z0-9_$]*\\)[ \t]*(")
-           nil t)
-      (match-string-no-properties 1))))
+  "The name of the JUnit test method point is in, or nil.
+Not a helper or a setup method: see `hellmacs-forge-annotated-test-at-point'."
+  (hellmacs-forge-annotated-test-at-point "\\_<\\([[:alpha:]_$][[:alnum:]_$]*\\)[ \t\n]*("))
 
 (defun hellmacs-jvm--setup-build-h ()
   "Use the project's build, and Java's test methods, in this buffer."
@@ -269,6 +265,29 @@ As VS Code sends it; without it, the server fails on a JSON null."
   (when (and buffer-file-name (hellmacs-spring-config-file-p buffer-file-name))
     (lsp-deferred)))
 
+(defun hellmacs-jvm--spring-client-use-stdio ()
+  "Have lsp-java-boot's client, with its handlers, talk over stdio instead of TCP.
+Returns non-nil if it could. Each slot is stored at its position, looked
+up by name now: no `setf' of it can be expanded where this file is read,
+before lsp-mode (or cl-lib's setters) are loaded. Should lsp-java-boot
+no longer register the client, or lsp-mode rename a slot, a warning says
+so, rather than an error in the middle of loading lsp-java."
+  (condition-case err
+      (let ((client (or (gethash 'boot-ls lsp-clients)
+                        (error "lsp-java-boot registered no `boot-ls' client")))
+            (connection (cl-struct-slot-offset 'lsp--client 'new-connection))
+            (options (cl-struct-slot-offset 'lsp--client 'initialization-options)))
+        (aset client connection (lsp-stdio-connection #'hellmacs-jvm-spring-ls-command
+                                                      #'hellmacs-jvm-spring-server-jar))
+        (aset client options (lambda () (hellmacs-jvm-spring-initialization-options
+                                         (lsp-session-folders (lsp-session)))))
+        t)
+    (error
+     (display-warning
+      'hellmacs (format "+spring: the Spring Boot server can't be set up (%s); \
+lsp-java or lsp-mode may have changed" (error-message-string err)))
+     nil)))
+
 (when (modulep! +spring)
   (after! lsp-java
     ;; Before JDTLS starts: its extensions come with its initialization.
@@ -276,17 +295,7 @@ As VS Code sends it; without it, the server fails on a JSON null."
       (setq lsp-java-bundles (append lsp-java-bundles (hellmacs-jvm-spring-extension-jars))))
     (require 'lsp-java-boot)
     (advice-add 'lsp-java-boot--server-jar :override #'hellmacs-jvm-spring-server-jar)
-    ;; Its client, with its handlers, over stdio instead of lsp-java-boot's TCP.
-    ;; Stored by the slot's position, looked up now: no `setf' of it can be
-    ;; expanded where this file is read, before lsp-mode (or cl-lib's
-    ;; setters) are loaded.
-    (let ((client (gethash 'boot-ls lsp-clients)))
-      (aset client (cl-struct-slot-offset 'lsp--client 'new-connection)
-            (lsp-stdio-connection #'hellmacs-jvm-spring-ls-command
-                                  #'hellmacs-jvm-spring-server-jar))
-      (aset client (cl-struct-slot-offset 'lsp--client 'initialization-options)
-            (lambda () (hellmacs-jvm-spring-initialization-options
-                        (lsp-session-folders (lsp-session)))))))
+    (hellmacs-jvm--spring-client-use-stdio))
   (after! lsp-mode
     ;; First, so they win over the modes' own (yaml, properties).
     (dolist (entry (reverse hellmacs-spring-language-ids))

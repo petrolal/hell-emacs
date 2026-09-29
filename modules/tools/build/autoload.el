@@ -117,6 +117,45 @@ Languages whose files don't follow the file-name rule set their own.")
 Set by each language (it knows what a test method looks like); without
 one, `hellmacs-forge-test-at-point' runs the whole class.")
 
+(defconst hellmacs-forge-test-annotation-regexp
+  (concat "@\\(?:[[:alnum:]_]+\\.\\)*"
+          (regexp-opt '("Test" "ParameterizedTest" "RepeatedTest" "TestFactory" "TestTemplate") t)
+          "\\_>")
+  "JUnit's (4 and 5) annotations of a test method, qualified or not.")
+
+;;;###autoload
+(defun hellmacs-forge-annotated-test-at-point (name-regexp)
+  "The name of the JUnit test method point is in, or nil.
+Point is in it from its annotations to its body's closing brace; in a
+helper or setup method, or between methods, there is none. NAME-REGEXP
+finds the method's name after its annotations, in group 1 or 2."
+  (let ((pos (point)))
+    (save-excursion
+      (end-of-line)
+      (when (re-search-backward hellmacs-forge-test-annotation-regexp nil t)
+        (let ((start (line-beginning-position)) name)
+          ;; Past its annotations, and their arguments.
+          (while (looking-at "@[[:alnum:]_$.]+")
+            (goto-char (match-end 0))
+            (skip-chars-forward " \t\n")
+            (when (eq (char-after) ?\()
+              (forward-sexp)
+              (skip-chars-forward " \t\n")))
+          (when (re-search-forward name-regexp
+                                   (save-excursion (and (re-search-forward "[{;]" nil t) (point)))
+                                   t)
+            (setq name (or (match-string-no-properties 1) (match-string-no-properties 2)))
+            (goto-char (1- (match-end 0)))  ; its parameters' `('
+            (let ((end (condition-case nil
+                           (progn (forward-sexp)
+                                  (skip-chars-forward "^{;")
+                                  (if (eq (char-after) ?{)
+                                      (progn (forward-sexp) (point))
+                                    (line-end-position)))
+                         ;; Unbalanced: still being written, around point.
+                         (scan-error (point-max)))))
+              (and (<= start pos end) name))))))))
+
 ;;;###autoload
 (defun hellmacs-forge-package ()
   "The package the current buffer's file declares (\"dev.x\"), or nil.
