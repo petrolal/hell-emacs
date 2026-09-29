@@ -140,6 +140,11 @@ Inside their buffers the keys are docker.el's and kubel's own (`?` lists them).
 | `C-x g` | `magit-status` | Open Magit status buffer |
 | `C-x M-g` | `magit-dispatch` | Open Magit command popup |
 | `C-c M-g` | `magit-file-dispatch` | File actions (blame, history, diff) |
+| `C-x v [` / `C-x v ]` | `diff-hl-previous-hunk` / `diff-hl-next-hunk` | Previous / next changed hunk (`:ui vc-gutter`) |
+| `C-x v *` | `diff-hl-show-hunk` | Show the hunk at point (`:ui vc-gutter`) |
+| `C-x v n` | `diff-hl-revert-hunk` | Revert the hunk at point (`:ui vc-gutter`) |
+| `C-x v S` | `diff-hl-stage-dwim` | Stage the hunk at point, or the region (`:ui vc-gutter`) |
+| `C-x v =` | `diff-hl-diff-goto-hunk` | With `:ui vc-gutter`, `vc-diff` jumps to the hunk at point |
 
 ---
 
@@ -151,4 +156,5 @@ Inside their buffers the keys are docker.el's and kubel's own (`?` lists them).
 | `C-c w -` / `C-x 2` | `split-window-below` | Split window horizontally |
 | `C-c w d` / `C-x 0` | `delete-window` | Close current window |
 | `C-c w o` / `C-x 1` | `delete-other-windows` | Maximize current window |
+| `C-c w t` | `window-toggle-side-windows` | Hide or bring back the bottom popup (`:ui popup`) |
 | `C-c q q` / `C-x C-c` | `save-buffers-kill-terminal` | Prompt to save and quit Emacs |

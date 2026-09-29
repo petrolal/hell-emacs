@@ -85,7 +85,7 @@
   "Missing: on by default, but neither enabled nor commented out in your block."
   (test-config--with-init test-config--early-init
     (let ((missing (test-config--keys (hellmacs-config-missing-defaults init))))
-      (should (equal missing '((:tools . build) (:tools . debugger) (:tools . direnv)
+      (should (equal missing '((:ui . popup) (:tools . build) (:tools . debugger) (:tools . direnv)
                                (:tools . lsp) (:tools . magit) (:tools . run) (:tools . test)
                                (:lang . java) (:lang . kotlin) (:lang . clojure))))
       (should-not (member '(:ui . modeline) missing))))   ; commented out: a choice
@@ -99,7 +99,7 @@
   "The report names each missing module with its line, and what to do."
   (test-config--with-init test-config--early-init
     (let ((out (with-output-to-string (hellmacs-config-report init))))
-      (should (string-match-p "10 modules on by default aren't in your hellmacs! block" out))
+      (should (string-match-p "11 modules on by default aren't in your hellmacs! block" out))
       (should (string-match-p ":tools magit +magit +; Git via Magit" out))
       (should (string-match-p "bin/hellmacs config --add-defaults" out))))
   (test-config--with-init "(hellmacs! :ui theme)\n"
@@ -114,7 +114,7 @@
   (test-config--with-init test-config--early-init
     (let ((added (hellmacs-config-add-defaults init)))
       (should (equal (test-config--keys added)
-                     '((:tools . build) (:tools . debugger) (:tools . direnv) (:tools . lsp)
+                     '((:ui . popup) (:tools . build) (:tools . debugger) (:tools . direnv) (:tools . lsp)
                        (:tools . magit) (:tools . run) (:tools . test) (:lang . java) (:lang . kotlin) (:lang . clojure)))))
     (should (equal (with-temp-buffer (insert-file-contents (concat init ".bak")) (buffer-string))
                    test-config--early-init))
@@ -128,6 +128,8 @@
       (should (< (string-match "^ +:tools$" text) (string-match "^ +:lang$" text)
                  (string-match "^ +:config$" text)))
       (should (string-match-p "^ +magit +; Git via Magit" text))
+      ;; A default in a group you have goes into that group.
+      (should (< (string-match "^ +popup +; " text) (string-match "^ +:editor$" text)))
       ;; It still reads as one block.
       (let ((spec (hellmacs-config--block-spec init)))
         (should (equal (car spec) :ui))
@@ -161,7 +163,7 @@
     (should (file-exists-p init))
     (should-not (file-exists-p (concat init ".bak")))
     (let ((out (with-output-to-string (hellmacs-cli-config "--add-defaults"))))
-      (should (string-match-p "Added 10 modules to .*init\\.el" out))
+      (should (string-match-p "Added 11 modules to .*init\\.el" out))
       (should (string-match-p "bin/hellmacs sync" out)))
     (should (string-match-p "Nothing to add"
                             (with-output-to-string (hellmacs-cli-config "--add-defaults"))))))

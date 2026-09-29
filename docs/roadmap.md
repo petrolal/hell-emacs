@@ -2350,13 +2350,15 @@ each server really ships, what it needs) written here before the code.
 
 **10.3 Window and buffer comforts** (`:ui popup`, `:ui vc-gutter`,
 `:ui hl-todo`, `:tools editorconfig`)
-- [ ] `:ui popup`: `display-buffer-alist` rules so compilation, test
+- [x] `:ui popup`: `display-buffer-alist` rules so compilation, test
       results, REPLs, help, xref and diagnostics open in a bottom side
       window instead of replacing your layout. Closed with their own `q`
       (`quit-window`) or stock `C-x 0`; `C-c w t` toggles the last one
       (`window-toggle-side-windows`).
-- [ ] `:ui vc-gutter`: diff-hl in the fringe (the margin in a terminal),
+      *Done 2026-09-29:* `modules/ui/popup/`, built-in side windows, no packages; on by default in `static/init.example.el`; `test/test-popup.el`; in batch Emacs a real `compile`, `describe-function` and a Flymake diagnostics buffer each took the bottom window, one `q` closed it, and `C-c w t` hid and restored it. Not yet: a Java build and a CIDER REPL in a synced interactive session. Each new popup replaces the last in a fresh window, so one `q` always closes it.
+- [x] `:ui vc-gutter`: diff-hl in the fringe (the margin in a terminal),
       updated after Magit refreshes. Keys as shipped (see above).
+      *Done 2026-09-29:* `modules/ui/vc-gutter/`, diff-hl 1.11.2 on the first file, the margin when there's no graphical display, `diff-hl-update-async` and off over TRAMP; commented out in `static/init.example.el`; `test/test-vc-gutter.el`. Live: a throwaway profile synced, booted, and a saved edit was marked in the margin; with the real Magit a commit cleared the marks, and without the module's hook they went stale. Not yet: the fringe in a graphical frame.
 - [ ] `:ui hl-todo`: highlight TODO, FIXME, HACK, NOTE. No keys:
       `M-x hl-todo-next`, and `M-x hl-todo-occur`.
 - [ ] `:tools editorconfig`: the built-in `editorconfig-mode` (Emacs 30+),

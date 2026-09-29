@@ -108,8 +108,8 @@ This file only tracks progress. Don't copy specs into it.
 - [x] 12.6 `:tools db`: database client over JDBC (2026-09-28: sql.el + sqlline, pinned drivers, `.hellmacs/db.eld`, auth-source; `test/test-db.el`; checked live on H2)
 - [x] 12.6 `:tools docker` and `:tools kubernetes` (2026-09-29: docker.el and kubel, `C-c o d` / `C-c o k`, podman fallback; `test/test-docker.el`, `test/test-kubernetes.el`; synced for real and opened against the real CLIs; not yet against a running daemon or a kind cluster, none on this machine)
 - [x] 12.6 `:checkers static` (2026-09-29: Checkstyle, PMD and SpotBugs from the build's reports as flymake diagnostics; `+sonarlint`: SonarLint 4.6.0 pinned, with JDTLS's classpath; `test/test-static.el` and `test/integration/static-e2e.el`, ALL PASSED live. Not yet: connected mode, which lsp-sonarlint lacks)
-- [ ] 10.3 `:ui popup`
-- [ ] 10.3 `:ui vc-gutter`
+- [x] 10.3 `:ui popup` (2026-09-29: `modules/ui/popup/`, built-in side windows, no packages; on by default in `static/init.example.el`; `test/test-popup.el`; in batch Emacs a real `compile`, `describe-function` and a Flymake diagnostics buffer each took the bottom window, one `q` closed it, and `C-c w t` hid and restored it. Not yet: a Java build and a CIDER REPL in a synced interactive session)
+- [x] 10.3 `:ui vc-gutter` (2026-09-29: `modules/ui/vc-gutter/`, diff-hl 1.11.2 on the first file, the margin when there's no graphical display, `diff-hl-update-async` and off over TRAMP; commented out in `static/init.example.el`; `test/test-vc-gutter.el`. Live: a throwaway profile synced, booted, and a saved edit was marked in the margin; with the real Magit a commit cleared the marks, and without the module's hook they went stale. Not yet: the fringe in a graphical frame)
 - [ ] 10.3 `:ui hl-todo`
 - [ ] 10.3 `:tools editorconfig`
 - [ ] 10.4 `:editor snippets` (tempel)

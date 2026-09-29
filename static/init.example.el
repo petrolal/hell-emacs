@@ -33,11 +33,11 @@
            ;;ligatures        ; [idea] font ligatures in graphical frames
            ;;minimap          ; [idea] a code minimap
            ;;nav-flash        ; [idea] flash the line after a big jump
-           ;;popup            ; [planned] tame temporary windows (help, compilation, REPLs)
+           popup              ; help, builds, tests, REPLs, xref at the bottom; q closes, C-c w t toggles
            ;;tabs             ; [idea] tab-line tabs per window
            ;;treemacs         ; [idea] a project file tree
            ;;unicode          ; [idea] fallback fonts for every script
-           ;;vc-gutter        ; [planned] changed lines in the fringe (diff-hl)
+           ;;vc-gutter        ; changed lines in the fringe or terminal margin (diff-hl), C-x v [ ] * n S
            ;;window-select    ; [idea] pick a window by number (ace-window)
            ;;workspaces       ; [planned] tab-bar workspaces, one per project
            ;;zen              ; [idea] distraction-free writing (olivetti)
