@@ -172,6 +172,24 @@ those in `hellmacs-jdk-roots'."
                            (hellmacs-jdk--path-home)))
            (mapcan #'hellmacs-jdk--homes (or hellmacs-jdk-roots (hellmacs-jdk-default-roots))))))
 
+;;; A java new enough ------------------------------------------------------------
+
+;;;###autoload
+(defun hellmacs-jdk-java-executable (min)
+  "A java of release MIN or later: JAVA_HOME's, one sync found, or the PATH's.
+For the JVM tools Hellmacs runs (formatters, sqlline...). \"java\" if
+there is none, so the error names it."
+  (let* ((path-java (executable-find "java"))
+         (homes (delq nil (append (list (let ((home (getenv "JAVA_HOME")))
+                                          (and home (not (string-empty-p home)) home)))
+                                  (mapcar #'cdr (hellmacs-jdk-read))
+                                  (list (and path-java (hellmacs-jdk--path-home))))))
+         (home (seq-find (lambda (home)
+                           (let ((major (hellmacs-jdk-home-major home)))
+                             (and major (>= major min))))
+                         homes)))
+    (if home (expand-file-name "bin/java" home) "java")))
+
 ;;; What sync found ------------------------------------------------------------
 
 ;;;###autoload

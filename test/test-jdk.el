@@ -354,5 +354,28 @@
   "IntelliJ's downloaded JDKs (~/.jdks), which Gradle finds too."
   (should (member (expand-file-name "~/.jdks") (hellmacs-jdk-default-roots))))
 
+(ert-deftest test-jdk/java-executable-new-enough ()
+  "A java of at least a release: JAVA_HOME's, then those sync found, then the PATH's."
+  (require 'hellmacs-jdk)
+  (let ((root (file-name-as-directory (make-temp-file "hellmacs-test-jdk-java" t))))
+    (unwind-protect
+        (cl-flet ((jdk (name major)
+                    (let ((home (expand-file-name name root)))
+                      (make-directory (expand-file-name "bin" home) t)
+                      (with-temp-file (expand-file-name "release" home)
+                        (insert (format "JAVA_VERSION=\"%d.0.2\"\n" major)))
+                      home)))
+          (let ((jdk11 (jdk "jdk11" 11)) (jdk17 (jdk "jdk17" 17)) (jdk25 (jdk "jdk25" 25)))
+            (cl-letf (((symbol-function 'hellmacs-jdk-read)
+                       (lambda () (list (cons "JavaSE-17" jdk17) (cons "JavaSE-25" jdk25))))
+                      ((symbol-function 'executable-find) #'ignore))
+              (let ((process-environment (cons (concat "JAVA_HOME=" jdk11) process-environment)))
+                (should (equal (hellmacs-jdk-java-executable 11) (expand-file-name "bin/java" jdk11)))
+                (should (equal (hellmacs-jdk-java-executable 17) (expand-file-name "bin/java" jdk17)))
+                (should (equal (hellmacs-jdk-java-executable 21) (expand-file-name "bin/java" jdk25)))
+                ;; None new enough: plain "java", for the error to name.
+                (should (equal (hellmacs-jdk-java-executable 99) "java"))))))
+      (delete-directory root t))))
+
 (provide 'test-jdk)
 ;;; test-jdk.el ends here

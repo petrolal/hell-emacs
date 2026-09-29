@@ -85,6 +85,7 @@
            test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c t (+watch)
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
+           ;;db               ; databases over JDBC: sql-mode + sqlline, .hellmacs/db.eld, passwords in auth-source
            ;;docker           ; [idea] Docker containers and images
            ;;editorconfig     ; [planned] honour .editorconfig files
            ;;eval             ; [idea] run code in a REPL or inline, per language

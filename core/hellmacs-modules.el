@@ -696,7 +696,7 @@ this file for the order."
 ;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.
 (dolist (fn '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
               hellmacs-jdk-home-release hellmacs-jdk-home-major hellmacs-jdk-pick hellmacs-jdk-default-roots hellmacs-jdk-scan-roots hellmacs-jdk-detect
-              hellmacs-jdk-write hellmacs-jdk-read hellmacs-jdk-lsp-runtimes
+              hellmacs-jdk-write hellmacs-jdk-read hellmacs-jdk-lsp-runtimes hellmacs-jdk-java-executable
               hellmacs-jdk-parse-toolchains-xml hellmacs-jdk-parse-gradle-toolchain
               hellmacs-jdk-toolchains-xml-jdks hellmacs-jdk-build-request
               hellmacs-jdk-gradle-installation-paths hellmacs-jdk-gradle-provisions-p))

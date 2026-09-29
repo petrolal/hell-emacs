@@ -3365,7 +3365,7 @@ pass against what enterprise developers already use.
     - `C-c C-a` ran the whole file with httpyac, and the Login handler's
       token reached the Me request.
   - *Not yet:* the container-based end-to-end script (12.6's *Verify*).
-- [ ] **`:tools db`: a database client over JDBC.**
+- [x] **`:tools db`: a database client over JDBC.**
   - JDBC is how enterprises reach Oracle, SQL Server, DB2, PostgreSQL and
     MySQL, and there's always a JVM on hand.
   - Findings: ejc-sql (JDBC through Clojure), versus built-in `sql.el` with
@@ -3373,6 +3373,53 @@ pass against what enterprise developers already use.
   - Connections are defined per project in `.hellmacs/db.eld`, with
     passwords from `auth-source` (never in the file).
   - Results go in a table buffer; queries run from `sql-mode` buffers.
+  - *Found (2026-09-28):*
+    - **ejc-sql** is maintained (2026-09), but it needs Leiningen and
+      resolves JDBC drivers at runtime through Aether, from any repository.
+      That's the unpinned fetching Hellmacs rules out.
+    - **sql.el with each database's CLI** needs psql, mysql, sqlplus,
+      sqlcmd and db2 installed. Enterprise laptops rarely have Oracle's or
+      DB2's, and each behaves differently.
+    - **sql.el with sqlline** (Apache's JDBC shell, `sqlline:sqlline:1.12.0`,
+      BSD, one 3MB jar with its dependencies) keeps sql.el's `sql-mode` and
+      SQLi buffers and reaches every database over JDBC.
+      - Checked over a pipe, as comint drives it, on H2: `!connect URL USER
+        PASSWORD` sent on stdin connects without echoing the password, and
+        nothing shows in `ps`.
+      - `--outputformat=table` draws result tables. It needs `--maxWidth`:
+        under a dumb terminal the width is 0 and rows come out empty.
+      - Multi-line statements end at `;`, and errors print their SQL state.
+      - JLine's and JDK 24+'s native-access warnings are silenced with
+        `-Dorg.jline.terminal.dumb=true` and
+        `--enable-native-access=ALL-UNNAMED`.
+    - **Drivers**, pinned by SHA-256 from Maven Central (each SHA-1 matches
+      Central's): PostgreSQL 42.7.13, MySQL Connector/J 26.7.0, MariaDB
+      3.5.10, SQL Server 13.6.0.jre11, Oracle ojdbc11 23.26.3.0.0, DB2 jcc
+      12.1.5.0 (not the newer `_special_` build), H2 2.5.252, SQLite
+      3.53.4.0. H2 and ojdbc11 need Java 11+.
+    - **Adopted:** sql.el and sqlline. Sync installs sqlline and the drivers
+      in `hellmacs-db-drivers`; others are installed, pinned, on first
+      connect.
+  - *Done (2026-09-28):* `modules/tools/db/`, off by default. sqlline is an
+    sql.el product (`sqlline`). `hellmacs-db-mode` in `sql-mode` buffers
+    remaps `sql-send-paragraph` and `sql-send-buffer`, so no key is added.
+    The "java of at least release N" choice moved to core
+    (`hellmacs-jdk-java-executable`), shared with `:editor format`.
+  - *Verified so far:*
+    - Unit tests: `test/test-db.el`. The connect test uses a fake sqlline
+      that records its stdin: the login arrives there, and the password is
+      never in the buffer.
+    - A throwaway profile synced sqlline and PostgreSQL's driver for real.
+      A project's H2 connection installed H2's driver on first use, and
+      `C-c C-c` in a `sql-mode` buffer ran a create, an insert and a
+      multi-line select, with the result as a table.
+    - That live run found two bugs, now fixed and tested:
+      - the SQL product helper lacked an autoload cookie, so a synced
+        profile failed when opening a `.sql` file;
+      - an empty password made sqlline take the next statement as the
+        password.
+  - *Not yet:* PostgreSQL in a container (no Docker daemon on this machine),
+    and 12.6's end-to-end script.
 - [ ] **`:tools docker` and `:tools kubernetes`.**
   - Phase 10.1's `:lang docker` handles the files.
   - These add containers, images and logs (docker.el), and pods, logs, port

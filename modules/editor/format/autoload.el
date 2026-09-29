@@ -46,7 +46,7 @@
 (declare-function lsp-feature? "lsp-mode")
 (declare-function project-root "project")
 (declare-function hellmacs-jdk-home-major "hellmacs-jdk")
-(declare-function hellmacs-jdk-read "hellmacs-jdk")
+(declare-function hellmacs-jdk-java-executable "hellmacs-jdk")
 (declare-function xml-parse-region "xml")
 (declare-function xml-get-children "xml")
 (declare-function xml-get-attribute-or-nil "xml")
@@ -80,26 +80,10 @@ these too: `clojurescript-mode' is a `clojure-mode').")
 
 ;;; Running them -----------------------------------------------------------------
 
-(defun hellmacs-format--java (min)
-  "A java of release MIN or later: JAVA_HOME's, one sync found, or the PATH's."
-  (let* ((path-java (executable-find "java"))
-         (homes (delq nil (append (list (let ((home (getenv "JAVA_HOME")))
-                                          (and home (not (string-empty-p home)) home)))
-                                  (mapcar #'cdr (hellmacs-jdk-read))
-                                  (list (and path-java
-                                             (file-name-directory
-                                              (directory-file-name
-                                               (file-name-directory (file-truename path-java)))))))))
-         (home (seq-find (lambda (home)
-                           (let ((major (hellmacs-jdk-home-major home)))
-                             (and major (>= major min))))
-                         homes)))
-    (if home (expand-file-name "bin/java" home) (or path-java "java"))))
-
 (defun hellmacs-format--jar-command (name)
   "The command running formatter NAME's pinned jar, on a JDK new enough for it."
   (let ((spec (hellmacs-format-jar-spec name)))
-    (list (hellmacs-format--java (plist-get spec :jdk)) "-jar" (plist-get spec :file))))
+    (list (hellmacs-jdk-java-executable (plist-get spec :jdk)) "-jar" (plist-get spec :file))))
 
 (defun hellmacs-format--clojure-lsp ()
   "clojure-lsp: the PATH's, else the one :lang clojure pins."

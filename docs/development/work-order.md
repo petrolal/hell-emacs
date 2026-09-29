@@ -105,7 +105,7 @@ This file only tracks progress. Don't copy specs into it.
 ## Step 8: 12.6 Enterprise tool belt, 10.3, 10.4 (roadmap "12.6", "10.3", "10.4")
 
 - [x] 12.6 `:tools http`: IntelliJ `.http` files (2026-09-28: restclient extended with IntelliJ env files, dynamic variables and handler stripping; `+httpyac` runs JS handlers; `test/test-http.el`; checked live against a local echo server)
-- [ ] 12.6 `:tools db`: database client over JDBC
+- [x] 12.6 `:tools db`: database client over JDBC (2026-09-28: sql.el + sqlline, pinned drivers, `.hellmacs/db.eld`, auth-source; `test/test-db.el`; checked live on H2)
 - [ ] 12.6 `:tools docker` and `:tools kubernetes`
 - [ ] 12.6 `:checkers static`
 - [ ] 10.3 `:ui popup`

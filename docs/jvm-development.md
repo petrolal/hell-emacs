@@ -330,6 +330,40 @@ restclient's own keys work too: `C-c C-n`/`C-c C-p` move between requests,
 
 ---
 
+## Databases (`:tools db`)
+
+A database client over JDBC, so every database works the same way: Oracle, SQL
+Server, DB2, PostgreSQL, MySQL, MariaDB, H2 and SQLite. It uses built-in `sql-mode`
+with sqlline (Apache's JDBC shell) as the interpreter. The drivers are pinned jars
+from Maven Central, run on your JDK (11+).
+
+Connections are defined per project in `.hellmacs/db.eld`:
+
+```elisp
+((:name "dev" :driver postgresql :host "localhost" :database "app" :user "ann")
+ (:name "reports" :driver oracle :host "db.corp" :database "ORCLPDB1" :user "rep")
+ (:name "legacy" :driver sqlserver :url "jdbc:sqlserver://h:1433;databaseName=x" :user "u"))
+```
+
+* **Passwords** never go in that file (it's refused). They come from auth-source
+  (`machine localhost port 5432 login ann password ...` in `~/.authinfo.gpg`), or
+  you're asked each time. The password reaches sqlline on its standard input,
+  never on its command line.
+* **In `sql-mode` buffers**, sql-mode's own keys connect when needed, choosing
+  among the project's connections:
+  * `C-c C-c` runs the statement at point (the lines between blank lines; the one
+    above when point is on a blank line);
+  * `C-c C-b` runs the whole buffer.
+
+  A missing `;` is added.
+* **Results** show as tables in the connection's `*SQL: NAME*` buffer
+  (`M-x hellmacs-db-connect` opens one directly).
+* **Drivers:** `bin/hellmacs sync` installs sqlline and the drivers in
+  `hellmacs-db-drivers` (PostgreSQL by default). Any other driver is installed,
+  pinned, the first time a connection uses it.
+
+---
+
 ## 10. Project File Types (`:lang data`, `yaml`, `json`, `markdown`, `sh`, `docker`)
 
 Every JVM project also carries XML, YAML, JSON, shell scripts, READMEs and
