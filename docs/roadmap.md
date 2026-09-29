@@ -193,7 +193,7 @@ them, the principle wins and the feature finds another way.
   * [ ] Groovy language support (`:lang groovy`) for Gradle scripts and Jenkinsfiles.
   * [ ] Scala language support (`:lang scala`) via Metals.
   * [ ] Quarkus & Micronaut project templates and diagnostics.
-  * [ ] Kubernetes cluster manager (`kubel`) and Docker container interface.
+  * [x] Kubernetes cluster manager (`kubel`) and Docker container interface (12.6: `:tools kubernetes`, `:tools docker`).
 * **Team Collaboration & Governance**:
   * [ ] Shared Eclipse / IntelliJ code style formatter XML importer.
   * [ ] One-click corporate onboarding script (`curl ... | sh`).
@@ -616,6 +616,7 @@ the job it's known for:
 | `C-c l` | `:tools lsp` | lsp-mode's own `lsp-command-map`, via `lsp-keymap-prefix`, so the layout is lsp-mode's documented one: `a a` code action, `r r` rename, `r o` organize imports, `g g`/`g i`/`g r` definition/implementation/references, `= =` format, `w r` restart workspace. which-key names come from `lsp-enable-which-key-integration`. |
 | `C-c l j` | `:lang java` | Java only: `b` build project, `u` update project config (after editing pom.xml/build.gradle), `i` add unimplemented methods, `g` generate getters/setters, `s` generate toString, `e` generate equals/hashCode, `m` extract method, `v` extract local variable, `c` extract constant, `h` type hierarchy, `t` / `T` run test at point / test class |
 | `C-c d` | `:tools debugger` | `d` start (`dap-debug`), `b` toggle breakpoint, `B` conditional breakpoint, `L` log point, `n` next, `i` step in, `o` step out, `c` continue, `e` eval at point, `r` restart, `q` disconnect, `t` / `T` debug test at point / test class. `n`/`i`/`o`/`c` form a `repeat-map`, so `C-c d n n n` steps three times without a hydra |
+| `C-c o` | `:tools docker`, `:tools kubernetes` | "open": `d` docker.el's menu, `k` kubel. Not `C-c d`, which docker.el's README suggests: that is the debugger's |
 | `C-c !` | `:tools lsp` (in `flymake-mode-map`, so in any flymake buffer) | Flymake: `n`/`p` next/previous diagnostic, `l` list. `C-c` + punctuation is the convention for minor-mode keys, as flycheck does |
 | Emacs defaults | (built in) | `M-.`/`M-?`/`M-,` definition/references/back (xref); `C-M-.` workspace symbol search; `C-x p c` compile the project; `C-x g` Magit |
 
@@ -3420,19 +3421,114 @@ pass against what enterprise developers already use.
         password.
   - *Not yet:* PostgreSQL in a container (no Docker daemon on this machine),
     and 12.6's end-to-end script.
-- [ ] **`:tools docker` and `:tools kubernetes`.**
+- [x] **`:tools docker` and `:tools kubernetes`.**
   - Phase 10.1's `:lang docker` handles the files.
   - These add containers, images and logs (docker.el), and pods, logs, port
     forwards and exec (kubel or kubernetes-el).
   - Both work through the developer's own `docker` / `kubectl` and their
     context.
-- [ ] **`:checkers static`.**
+  - *Findings (2026-09-29):*
+    - **docker.el 2.5.0** (Silex; aio, dash, s, tablist, transient):
+      containers, images, volumes, networks, Compose and contexts through
+      the `docker` CLI (`docker-command`). No timers. Container shells and
+      files go through Emacs 29's own TRAMP methods (`/docker:`,
+      `/podman:`), so docker-tramp isn't needed.
+    - **kubel** (transient, dash, s, yaml-mode): one file; runs kubectl
+      only when a view is opened or refreshed; logs, port forwards
+      (`kubel-port-forward-pod`), shells in pods through its own TRAMP
+      method, describe/edit/apply. Its apply writes to `/tmp/kubel/`, not
+      `$HOME`.
+    - **kubernetes-el 0.19.0**: polls the cluster every 5 seconds
+      (`kubernetes-poll-frequency`) and needs magit-popup (deprecated) and
+      request.
+    - **Adopted:** docker.el and kubel. Nothing is downloaded but the
+      packages: the CLIs are the developer's.
+  - *Done (2026-09-29):* `modules/tools/docker/` and
+    `modules/tools/kubernetes/`, off by default. `C-c o d` and `C-c o k`
+    (a new `C-c o` "open" group). With only podman installed, docker.el
+    uses it for its commands, Compose and container shells
+    (`hellmacs-docker-use-installed-cli`); a `docker-command` of your own is
+    kept. Doctor names each CLI and its current context, reading only local
+    configuration.
+  - *Verified so far:*
+    - Unit tests: `test/test-docker.el`, `test/test-kubernetes.el` (doctor
+      against fake CLIs on `exec-path`: found, podman only, no context,
+      missing).
+    - A throwaway profile with only these modules synced docker.el, kubel
+      and their dependencies for real (9 packages, byte-compiled). Doctor
+      read the real docker 29.8.1 (context `default`) and kubectl 1.37.0
+      (no context). Both packages loaded from the profile, `C-c o d/k` were
+      bound and autoloaded, and TRAMP knew the `docker` method.
+    - `docker-containers` and `kubel` opened and ran the real CLIs; with no
+      daemon and no cluster, each showed the CLI's own error, not a Lisp
+      error.
+  - *Not yet:* against a running daemon and a kind cluster (neither on this
+    machine): listing, logs, a shell in a container and a pod, a port
+    forward. The 12.6 end-to-end script.
+- [x] **`:checkers static`.**
   - SonarLint through its language server (lsp-sonarlint), pinned, as
     flymake diagnostics, with connected mode to a company SonarQube or
     SonarCloud where one exists.
   - Checkstyle, PMD and SpotBugs results from the build tool's own reports,
     as compilation errors and flymake diagnostics, using the rules
     configured in the build. Nothing is duplicated in Emacs.
+  - *Done, build reports (2026-09-29):* `modules/checkers/static/`, off by
+    default; no packages (flymake, project.el, compile).
+    - Reads Maven's `target/{checkstyle-result,pmd,spotbugsXml}.xml` and
+      Gradle's `build/reports/{checkstyle,pmd,spotbugs}/*.xml` in every
+      module (SpotBugs' Gradle plugin needs its XML report on).
+    - Findings are flymake diagnostics in Java and Kotlin buffers, beside
+      the language server's, only while the file is as the build saw it
+      (unedited, not saved since the report). `M-x hellmacs-static-findings`
+      lists the project's in a compilation buffer (`M-g n`). A finished
+      build reads the reports again. Severities: Checkstyle's own; PMD
+      priority 1-2 error, 3-4 warning, 5 note; SpotBugs 1 error, 2 warning,
+      3 note.
+    - SpotBugs gives no line for a field (class files have none): the
+      declaration is looked up in the class's span, as its IDE plugins do.
+  - *Verified so far (build reports):* unit tests in `test/test-static.el`
+    (each format with libxml and xml.el, report discovery, flymake, stale
+    findings, the list, refresh after a build). Checkstyle 10.24.0, PMD
+    7.24.0 and SpotBugs (Gradle plugin 6.5.12) run for real on a copy of
+    `test/fixtures/java/gradle-demo` with a smelly class: 12 findings from
+    the three reports, each on the right line, and in a synced profile
+    opening the file turned on flymake with 8 diagnostics.
+  - *Findings, SonarLint (2026-09-29):* lsp-sonarlint targets SonarLint
+    for VS Code 4.6.0 (2024-06; current is 5.10). Its smallest VSIX is
+    227 MB (no bundled JRE), 267-292 MB per platform with one. It downloads
+    unpinned into its own package directory (`lsp-sonarlint-download-dir`),
+    answers `sonarlint/getJavaConfig` with nothing (the Java analyzer gets
+    no classpath), and has no connected mode ("not currently implemented").
+    Telemetry is off by default.
+    - **Adopted (2026-09-29):** lsp-sonarlint with 4.6.0, behind `+sonarlint`.
+  - *Done, +sonarlint (2026-09-29):*
+    - The 4.6.0 VSIX pinned by SHA-256 (`7c7a2cd4...c76ccc7`), installed by
+      `bin/hellmacs sync` into the data dir (only the server and analyzers,
+      177 MB unpacked); lsp-sonarlint's own download is replaced. Not
+      installed, SonarLint doesn't start and one warning names sync: no
+      227 MB download when a file opens.
+    - Runs on a JDK 17+ Hellmacs picks, for `java-mode`, `java-ts-mode`
+      and `nxml-mode`, with the java, xml, text (secrets) and iac analyzers.
+    - `sonarlint/getJavaConfig` answered from JDTLS as VS Code's extension
+      does (`java.project.isTestFile`, `getSettings`, `getClasspaths`), as
+      an async handler, always answered (nil while JDTLS starts). When
+      JDTLS finishes importing, SonarLint is sent
+      `sonarlint/didClasspathUpdate`, through the new
+      `hellmacs-lsp-status-ready-functions`.
+  - *Verified (2026-09-29):* `test/integration/static-e2e.el`, in a
+    throwaway profile synced for real (SonarLint and JDTLS downloaded and
+    verified): Gradle ran Checkstyle, PMD and SpotBugs, and their findings
+    showed on their lines in flymake; JDTLS imported the project, SonarLint
+    started beside it, got the project's classpath and source level from
+    JDTLS, and reported the unused field, the null dereference (line 9) and
+    the `==` string comparison. ALL PASSED, no errors in lsp-mode's message
+    handling. The live runs found three bugs, now fixed and unit-tested:
+    SonarLint sends the URI in an array; a request made while JDTLS starts
+    was never answered; and `with-lsp-workspace` (an lsp-mode macro) in a
+    file sync compiles.
+  - *Not yet:* connected mode (SonarQube/SonarCloud rules), which
+    lsp-sonarlint doesn't implement; the check against a SonarQube
+    community edition waits for it. SonarLint newer than 4.6.0.
 - *Verify:* per module, one end-to-end script against a local service in a
   container: an HTTP echo server, PostgreSQL, a kind cluster, a SonarQube
   community edition.

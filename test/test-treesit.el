@@ -1,4 +1,4 @@
-;;; test-debugger.el --- Tests for the :tools debugger module -*- lexical-binding: t; -*-
+;;; test-treesit.el --- Tests for tree-sitter support (core/hellmacs-treesit.el) -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -19,6 +19,7 @@
 ;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 ;; Run with `bin/hellmacs test'. The pin and build logic runs against a

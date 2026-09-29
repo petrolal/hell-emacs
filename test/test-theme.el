@@ -136,6 +136,17 @@ fringes and inactive line numbers: 2.89:1, just below the 3:1 for borders.")
 `forge-gray' faces are the specified exception (2.89:1)."
   (should (equal (test-theme--failures) nil)))
 
+(ert-deftest test-theme/stock-cursor ()
+  "`:ui theme' keeps Emacs' own block cursor."
+  (let ((cursor (default-value 'cursor-type)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'load-theme) #'ignore)
+                  ((symbol-function 'disable-theme) #'ignore))
+          (setq-default cursor-type t)
+          (load (expand-file-name "modules/ui/theme/config.el" hellmacs-dir) nil t)
+          (should (eq (default-value 'cursor-type) t)))
+      (setq-default cursor-type cursor))))
+
 (ert-deftest test-theme/default-is-inferno ()
   "`:ui theme' loads hellmacs-inferno by default, and for the old name."
   (dolist (case '((unset . hellmacs-inferno) (hellmacs . hellmacs-inferno)

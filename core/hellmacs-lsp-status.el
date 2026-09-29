@@ -157,6 +157,11 @@ Returns the text."
   (hellmacs-lsp-status-announce 'ignited (hellmacs-lsp-status--label server)
                                 (abbreviate-file-name root)))
 
+(defvar hellmacs-lsp-status-ready-functions nil
+  "Functions called with SERVER and ROOT when a project becomes ready.
+When its server finishes importing it, and again when it recovers from a
+failed import: when what the server knows of the project is new.")
+
 (defun hellmacs-lsp-status-ready (server root &optional recovered)
   "SERVER finished indexing project ROOT. Only counts right after it started;
 with RECOVERED, only after its import failed (and the cause was fixed)."
@@ -165,7 +170,11 @@ with RECOVERED, only after its import failed (and the cause was fixed)."
     (when (eq (car session) (if recovered 'failed 'igniting))
       (hellmacs-lsp-status--set key 'ready)
       (hellmacs-lsp-status-announce 'ready (abbreviate-file-name root)
-                                    (- (float-time) (nth 1 session))))))
+                                    (- (float-time) (nth 1 session)))
+      ;; Isolated: a broken function mustn't break lsp-mode's handling.
+      (dolist (fn hellmacs-lsp-status-ready-functions)
+        (with-demoted-errors "Hellmacs status: %S"
+          (funcall fn server root))))))
 
 (defun hellmacs-lsp-status-fail (server root reason)
   "SERVER couldn't import project ROOT, for REASON. Announced once per start."

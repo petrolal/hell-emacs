@@ -130,8 +130,10 @@ error\" / \"Syntax error ... compiling\", and Gradle/Maven build failures.")
    'append))
 
 (defvar hellmacs-ux-jvm-output-hooks
-  '(compilation-mode-hook comint-mode-hook)
+  '(compilation-mode-hook compilation-shell-minor-mode-hook)
   "Hooks of modes whose output may contain JVM stack traces.
+Builds, and comint buffers running one (:tools run's, with
+`compilation-shell-minor-mode'); not every shell or SQLi buffer.
 Language modules add their REPLs' (`:lang clojure' adds CIDER's).")
 
 ;;; Activation -----------------------------------------------------------------

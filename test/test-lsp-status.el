@@ -216,6 +216,24 @@ doesn't keep a stopped server's workspace (process, diagnostics...) alive."
               (should-not hellmacs-lsp-status--buffer-key))))
       (delete-directory root t))))
 
+(ert-deftest test-lsp-status/ready-functions ()
+  "`hellmacs-lsp-status-ready-functions' run with the server and root when a
+project becomes ready (again, after a recovery), not on every signal."
+  (let ((root (make-temp-file "hellmacs-test-status" t))
+        (called nil))
+    (unwind-protect
+        (test-lsp-status--with '((fake-ls))
+          (let ((hellmacs-lsp-status-ready-functions
+                 (list (lambda (server r) (push (cons server r) called)))))
+            (hellmacs-lsp-status-ignite 'fake-ls root)
+            (hellmacs-lsp-status-ready 'fake-ls root)
+            (hellmacs-lsp-status-ready 'fake-ls root)      ; already ready: nothing
+            (should (equal called (list (cons 'fake-ls root))))
+            (hellmacs-lsp-status-fail 'fake-ls root "broken")
+            (hellmacs-lsp-status-ready 'fake-ls root 'recovered)
+            (should (= (length called) 2))))
+      (delete-directory root t))))
+
 (ert-deftest test-lsp-status/mode-line-entry-is-installed-once ()
   (should (= 1 (seq-count (lambda (entry) (equal entry '(:eval (hellmacs-lsp-status-mode-line))))
                           mode-line-misc-info))))

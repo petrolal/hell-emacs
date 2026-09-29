@@ -71,6 +71,7 @@
            ;;vterm            ; [idea] a real terminal (needs a C toolchain)
 
            :checkers
+           ;;static           ; Checkstyle, PMD, SpotBugs results from your build, as flymake diagnostics (+sonarlint: SonarLint, 227 MB)
            ;;syntax           ; [idea] flycheck instead of flymake (lsp diagnostics use flymake)
            ;;spell            ; [idea] spell checking (jinx)
            ;;grammar          ; [idea] grammar checking (LanguageTool, harper-ls)
@@ -86,11 +87,11 @@
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
            ;;db               ; databases over JDBC: sql-mode + sqlline, .hellmacs/db.eld, passwords in auth-source
-           ;;docker           ; [idea] Docker containers and images
+           ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
            ;;editorconfig     ; [planned] honour .editorconfig files
            ;;eval             ; [idea] run code in a REPL or inline, per language
            ;;forge            ; [idea] GitHub/GitLab pull requests from Magit
-           ;;kubernetes       ; [idea] Kubernetes clusters (kubel)
+           ;;kubernetes       ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
            ;;llm              ; [idea] LLM chat and code actions (gptel)
            ;;lookup           ; [idea] documentation and definition lookup beyond LSP (devdocs, dash)
            ;;make             ; [idea] run Makefile targets

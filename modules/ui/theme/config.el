@@ -21,7 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Visual defaults only: theme, cursor, mode-line, line numbers.
+;; Visual defaults only: theme, mode-line, line numbers. The cursor is
+;; Emacs' own block.
 ;;
 ;; The theme is Hellmacs' own (themes/hellmacs-inferno-theme.el):
 ;; a charcoal altar, crimson flame, amber and gold, with no
@@ -37,7 +38,6 @@
 
 (add-to-list 'custom-theme-load-path (expand-file-name "themes/" hellmacs-dir))
 
-(setq-default cursor-type 'bar)
 (column-number-mode 1)
 (size-indication-mode 1)
 ;; Line numbers only where they're actually useful for navigation.

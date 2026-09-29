@@ -108,6 +108,18 @@ In `*hellmacs-tests*`: `RET` jump to the test, `r` rerun it, `f` rerun failures,
 
 ---
 
+## Containers & Clusters (`C-c o`)
+With `:tools docker` and `:tools kubernetes`, through your own `docker` (or `podman`) and `kubectl`, in their current context.
+
+| Key | Command | Description |
+|---|---|---|
+| `C-c o d` | `docker` | docker.el's menu: containers, images, volumes, networks, Compose, contexts |
+| `C-c o k` | `kubel` | kubel: pods and other resources, logs, port forwards, shells; `C` context, `n` namespace |
+
+Inside their buffers the keys are docker.el's and kubel's own (`?` lists them).
+
+---
+
 ## Language Server & Refactoring (`C-c l`)
 
 | Key | Command | Description |

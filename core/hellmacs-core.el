@@ -344,7 +344,6 @@ Existing files are never overwritten."
 (setq-default indent-tabs-mode nil
               tab-width 4
               fill-column 80
-              truncate-lines t
               cursor-in-non-selected-windows nil)
 
 (setq ring-bell-function #'ignore

@@ -155,6 +155,10 @@ the GC reset and `hellmacs-finalize' come after `custom-file' is loaded."
   (dolist (data '((error "Boom") (wrong-type-argument stringp 1) (void-function foo)))
     (should-not (hellmacs-ux--routine-error-p data))))
 
+(ert-deftest test-core/lines-wrap-as-in-emacs ()
+  "Long lines wrap by default, as in stock Emacs; modes that want otherwise say so."
+  (should-not (default-value 'truncate-lines)))
+
 (require 'hellmacs-splash)
 
 (ert-deftest test-core/splash-draws-once ()

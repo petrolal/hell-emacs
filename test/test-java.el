@@ -168,6 +168,14 @@ class GreeterTest {
       (goto-char (point-min)) (search-forward (car case))
       (should (equal (cons (car case) (hellmacs-jvm-test-method)) case)))))
 
+(ert-deftest test-java/imports-left-alone-on-save ()
+  "Saving doesn't reorganize imports (lsp-java's default); `C-c l j o' does it.
+The module's lsp-java settings are recorded, for when it loads, in the
+`use-package' theme."
+  (test-java--load)
+  (should (assq 'use-package (get 'lsp-java-content-provider-preferred 'theme-value)))
+  (should-not (assq 'use-package (get 'lsp-java-save-actions-organize-imports 'theme-value))))
+
 (defvar lsp-clients)
 
 (ert-deftest test-java/spring-client-setup-warns-instead-of-failing ()

@@ -106,8 +106,8 @@ This file only tracks progress. Don't copy specs into it.
 
 - [x] 12.6 `:tools http`: IntelliJ `.http` files (2026-09-28: restclient extended with IntelliJ env files, dynamic variables and handler stripping; `+httpyac` runs JS handlers; `test/test-http.el`; checked live against a local echo server)
 - [x] 12.6 `:tools db`: database client over JDBC (2026-09-28: sql.el + sqlline, pinned drivers, `.hellmacs/db.eld`, auth-source; `test/test-db.el`; checked live on H2)
-- [ ] 12.6 `:tools docker` and `:tools kubernetes`
-- [ ] 12.6 `:checkers static`
+- [x] 12.6 `:tools docker` and `:tools kubernetes` (2026-09-29: docker.el and kubel, `C-c o d` / `C-c o k`, podman fallback; `test/test-docker.el`, `test/test-kubernetes.el`; synced for real and opened against the real CLIs; not yet against a running daemon or a kind cluster, none on this machine)
+- [x] 12.6 `:checkers static` (2026-09-29: Checkstyle, PMD and SpotBugs from the build's reports as flymake diagnostics; `+sonarlint`: SonarLint 4.6.0 pinned, with JDTLS's classpath; `test/test-static.el` and `test/integration/static-e2e.el`, ALL PASSED live. Not yet: connected mode, which lsp-sonarlint lacks)
 - [ ] 10.3 `:ui popup`
 - [ ] 10.3 `:ui vc-gutter`
 - [ ] 10.3 `:ui hl-todo`

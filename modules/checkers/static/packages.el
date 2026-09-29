@@ -1,0 +1,29 @@
+;;; checkers/static/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; The build reports need no package (flymake, project.el and compile are
+;; built in). +sonarlint runs SonarLint's language server through
+;; lsp-mode (dash and ht, which it needs, come with :tools lsp).
+(when (modulep! +sonarlint)
+  (depends-on! :tools lsp)
+  (package! lsp-sonarlint))

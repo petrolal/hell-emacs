@@ -132,6 +132,29 @@ class AppTest {
     (should-not (hellmacs-test-results-parse-junit-xml
                  (expand-file-name "target/surefire-reports/TEST-bad.xml" root)))))
 
+(ert-deftest test-results/parse-cdata-traces ()
+  "A trace written as CDATA (and a suite's own output) reads as text."
+  (test-results--with-tree
+      '(("build/test-results/test/TEST-dev.x.CdataTest.xml" .
+         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<testsuite name=\"dev.x.CdataTest\" tests=\"1\" time=\"0.1\">
+  <testcase name=\"fails\" classname=\"dev.x.CdataTest\" time=\"0.1\">
+    <failure message=\"a &lt; b\"><![CDATA[java.lang.AssertionError: a < b
+\tat dev.x.CdataTest.fails(CdataTest.java:9)]]></failure>
+  </testcase>
+  <system-out><![CDATA[log <line>]]></system-out>
+</testsuite>"))
+    ;; With libxml, and with xml.el where Emacs has no libxml.
+    (dolist (libxml '(t nil))
+      (cl-letf (((symbol-function 'libxml-available-p) (lambda () libxml)))
+        (let* ((suite (hellmacs-test-results-parse-junit-xml
+                       (expand-file-name "build/test-results/test/TEST-dev.x.CdataTest.xml" root)))
+               (case (car (plist-get suite :cases))))
+          (should (= (plist-get suite :total) 1))
+          (should (equal (plist-get case :failure) "a < b"))
+          (should (string-match-p "\\`java.lang.AssertionError: a < b\n\tat dev.x.CdataTest.fails(CdataTest.java:9)\\'"
+                                  (plist-get case :trace))))))))
+
 (ert-deftest test-results/locate-report-files ()
   "Finds test report XMLs across Maven target and Gradle build directories."
   (test-results--with-tree

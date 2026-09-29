@@ -1,4 +1,4 @@
-;;; test-debugger.el --- Tests for the :tools debugger module -*- lexical-binding: t; -*-
+;;; test-magit.el --- Tests for the :tools magit module -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -19,6 +19,7 @@
 ;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 ;; Run with `bin/hellmacs test'. Magit itself isn't installed in the test

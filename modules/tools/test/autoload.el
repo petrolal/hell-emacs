@@ -40,11 +40,7 @@
 (declare-function hellmacs-forge--run "../build/autoload")
 (declare-function hellmacs-forge--find-source "../build/autoload")
 (declare-function project-root "project")
-(declare-function xml-parse-file "xml")
-(declare-function xml-get-children "xml")
-(declare-function xml-get-attribute-or-nil "xml")
-(declare-function xml-node-name "xml")
-(declare-function xml-node-children "xml")
+(declare-function xml-parse-region "xml")
 (declare-function dom-by-tag "dom")
 (declare-function dom-attr "dom")
 (declare-function dom-children "dom")
@@ -85,21 +81,39 @@
   "The JUnit XML reports under ROOT, Gradle's and Maven's, of every module."
   (hellmacs-test--report-files root hellmacs-test-results--report-regexp))
 
+;; Both kinds of report are read into the same `dom' shape, with libxml
+;; when Emacs has it (JaCoCo's reports are big), else xml.el.
+(defun hellmacs-test--xml (file)
+  "The root element of the XML FILE, as a dom.
+Loads dom.el, which reading the result needs, only when a report is read."
+  (require 'dom)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (if (libxml-available-p)
+        (libxml-parse-xml-region (point-min) (point-max))
+      (require 'xml)
+      (car (xml-parse-region (point-min) (point-max))))))
+
+(defun hellmacs-test--children (node tag)
+  "NODE's own child elements named TAG (`dom-by-tag' looks at every descendant)."
+  (seq-filter (lambda (child) (and (consp child) (eq (dom-tag child) tag)))
+              (dom-children node)))
+
 (defun hellmacs-test-results--text (node)
   "The text inside NODE, trimmed."
-  (string-trim (apply #'concat (seq-filter #'stringp (xml-node-children node)))))
+  (string-trim (apply #'concat (seq-filter #'stringp (dom-children node)))))
 
 (defun hellmacs-test-results--case (node file)
   "The test case in NODE, a <testcase> element of FILE's report."
-  (let* ((problem (or (car (xml-get-children node 'failure)) (car (xml-get-children node 'error))))
+  (let* ((problem (or (car (hellmacs-test--children node 'failure)) (car (hellmacs-test--children node 'error))))
          (trace (and problem (hellmacs-test-results--text problem)))
-         (message (and problem (or (xml-get-attribute-or-nil problem 'message)
+         (message (and problem (or (dom-attr problem 'message)
                                    (car (split-string trace "\n")) ""))))
-    (list :name (or (xml-get-attribute-or-nil node 'name) "")
-          :class (or (xml-get-attribute-or-nil node 'classname) "")
-          :time (string-to-number (or (xml-get-attribute-or-nil node 'time) "0"))
+    (list :name (or (dom-attr node 'name) "")
+          :class (or (dom-attr node 'classname) "")
+          :time (string-to-number (or (dom-attr node 'time) "0"))
           :status (cond (problem 'fail)
-                        ((xml-get-children node 'skipped) 'skip)
+                        ((hellmacs-test--children node 'skipped) 'skip)
                         (t 'pass))
           :failure message
           :trace trace
@@ -111,19 +125,18 @@
 A plist: :suite (its name), :total, :failures (failed or in error),
 :skipped, :time and :cases, each a plist of :name, :class, :time,
 :status (`pass', `fail' or `skip'), :failure (the message) and :trace."
-  (require 'xml)
-  (let ((root (ignore-errors (car (xml-parse-file file)))))
-    (when (and (consp root) (memq (xml-node-name root) '(testsuite testsuites)))
-      (let* ((suites (if (eq (xml-node-name root) 'testsuite) (list root)
-                       (xml-get-children root 'testsuite)))
+  (let ((root (ignore-errors (hellmacs-test--xml file))))
+    (when (and (consp root) (memq (dom-tag root) '(testsuite testsuites)))
+      (let* ((suites (if (eq (dom-tag root) 'testsuite) (list root)
+                       (hellmacs-test--children root 'testsuite)))
              (cases (cl-loop for suite in suites
                              append (mapcar (lambda (node) (hellmacs-test-results--case node file))
-                                            (xml-get-children suite 'testcase)))))
-        (list :suite (or (xml-get-attribute-or-nil root 'name) (file-name-base file))
+                                            (hellmacs-test--children suite 'testcase)))))
+        (list :suite (or (dom-attr root 'name) (file-name-base file))
               :total (length cases)
               :failures (seq-count (lambda (c) (eq (plist-get c :status) 'fail)) cases)
               :skipped (seq-count (lambda (c) (eq (plist-get c :status) 'skip)) cases)
-              :time (string-to-number (or (xml-get-attribute-or-nil root 'time) "0"))
+              :time (string-to-number (or (dom-attr root 'time) "0"))
               :file file
               :cases cases)))))
 
@@ -377,15 +390,6 @@ Group 1 ends the module's directory.")
   (string-match hellmacs-coverage--report-regexp report)
   (substring report 0 (match-end 1)))
 
-(defun hellmacs-coverage--xml (file)
-  "The root element of the XML FILE, as a dom (libxml's when there is one: reports are big)."
-  (with-temp-buffer
-    (insert-file-contents file)
-    (if (libxml-available-p)
-        (libxml-parse-xml-region (point-min) (point-max))
-      (require 'xml)
-      (car (xml-parse-region (point-min) (point-max))))))
-
 (defun hellmacs-coverage--line-status (line)
   "The status of a JaCoCo <line>: `covered', `partial', `missed', or nil (no code)."
   (let ((mi (string-to-number (or (dom-attr line 'mi) "0")))
@@ -401,8 +405,7 @@ Group 1 ends the module's directory.")
   "The line coverage in JaCoCo's XML report FILE.
 An alist: (\"pkg/dir/File.java\" . ((LINE . STATUS) ...)), STATUS being
 `covered', `partial' (some branch or instruction missed) or `missed'."
-  (require 'dom)
-  (when-let* ((dom (ignore-errors (hellmacs-coverage--xml file))))
+  (when-let* ((dom (ignore-errors (hellmacs-test--xml file))))
     (cl-loop for package in (dom-by-tag dom 'package)
              for dir = (dom-attr package 'name)
              append (cl-loop for source in (dom-children package)

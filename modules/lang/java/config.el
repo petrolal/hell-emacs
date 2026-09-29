@@ -181,7 +181,6 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
   (lsp-java-import-gradle-jvm-arguments (and (hellmacs-net-jvm-options)
                                              (vconcat (hellmacs-net-jvm-options))))
   (lsp-java-content-provider-preferred "fernflower") ; decompile library classes for M-.
-  (lsp-java-save-actions-organize-imports t)
   (lsp-java-maven-download-sources t)
   (lsp-java-references-code-lens-enabled t)
   (lsp-java-implementations-code-lens-enabled t)
