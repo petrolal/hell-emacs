@@ -122,6 +122,31 @@ Messages shown are pushed onto `shown', newest first."
           (should (eq (hellmacs-lsp-status-state 'fake-ls (file-name-as-directory root)) 'ready)))
       (delete-directory root t))))
 
+(ert-deftest test-lsp-status/outcome-before-initialize-is-kept ()
+  "An import that fails and recovers before `initialize' returns stays ready.
+lsp-mode runs `lsp-after-initialize-hook' (ignite) only once the server
+answers `initialize'; JDTLS can report its import, failed and reimported,
+before that (Spring Framework, Gradle 9). Ignite then mustn't reset it,
+or the project waits for a ready that already came."
+  (let ((root (make-temp-file "hellmacs-test-status" t)))
+    (unwind-protect
+        (test-lsp-status--with '((fake-ls :label "Fake"))
+          (hellmacs-lsp-status-fail 'fake-ls root "Gradle 9 refused it; importing again")
+          (hellmacs-lsp-status-ready 'fake-ls root 'recovered)
+          (hellmacs-lsp-status-ignite 'fake-ls root)
+          (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'ready))
+          (should (string-match-p "FORGE IGNITED" (car shown)))
+          ;; A failure reported early is kept too.
+          (hellmacs-lsp-status-banish 'fake-ls root)
+          (hellmacs-lsp-status-fail 'fake-ls root "broken")
+          (hellmacs-lsp-status-ignite 'fake-ls root)
+          (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'failed))
+          ;; Once the process exited, a new start begins afresh.
+          (hellmacs-lsp-status-banish 'fake-ls root)
+          (hellmacs-lsp-status-ignite 'fake-ls root)
+          (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'igniting)))
+      (delete-directory root t))))
+
 (ert-deftest test-lsp-status/build-result ()
   "A failed build shows every server in that project as failed until a good one."
   (let ((root (make-temp-file "hellmacs-test-status" t))

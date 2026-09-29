@@ -120,6 +120,26 @@ that fails or times out counts with the time it took."
                 (and (cdr times) (format "%.0f" (apply #'max (cdr times)))))
       (when p95 (budgets-record 'completion-p95-ms p95)))))
 
+(defun parity--wait-for-symbol (query secs)
+  "Wait up to SECS for a workspace symbol search for QUERY to find something.
+Asked asynchronously, one request at a time: while JDTLS imports, a
+synchronous `lsp-request' times out, and its late answer then throws to
+a catch that's gone (\"No catch for tag: lsp-done\"), ending the run."
+  (let ((state 'idle) answered)
+    (e2e--wait (lambda ()
+                 (when (eq state 'idle)
+                   (setq state 'pending)
+                   (lsp-request-async "workspace/symbol" (list :query query)
+                                      (lambda (result)
+                                        (if (> (length result) 0)
+                                            (setq answered t)
+                                          ;; Not indexed yet: ask again shortly.
+                                          (run-at-time 2 nil (lambda () (setq state 'idle)))))
+                                      :error-handler (lambda (_) (run-at-time 2 nil (lambda () (setq state 'idle))))
+                                      :mode 'detached))
+                 answered)
+               secs)))
+
 (defun parity--lsp-checks (proj file)
   (let ((buf (find-file-noselect file)) ready-secs)
     (switch-to-buffer buf)
@@ -142,9 +162,7 @@ that fails or times out counts with the time it took."
       ;; also time how long until a symbol query is answered.
       (let* ((class (file-name-sans-extension (file-name-nondirectory file)))
              (t1 (float-time))
-             (answered (e2e--wait (lambda ()
-                                    (append (lsp-request "workspace/symbol" (list :query class)) nil))
-                                  e2e-parity-timeout)))
+             (answered (parity--wait-for-symbol class e2e-parity-timeout)))
         (e2e--say "     METRIC time from ready until symbol search answers: %s"
                   (if answered (format "%.1fs" (- (float-time) t1)) "never"))
         ;; The first import: from starting JDTLS until the project answers.
@@ -249,18 +267,30 @@ that fails or times out counts with the time it took."
     (e2e-check "quick fix offers an import for an unresolved type"
       (goto-char (point-min))
       (when (re-search-forward "^\\(?:public \\)?\\(?:final \\)?\\(?:class\\|record\\|enum\\|interface\\)[^{]*{[ \t]*$" nil t)
-        (end-of-line) (insert "\n    java.util.List<String> parityOk; ArrayList<String> parityList;\n")
-        (let* ((line (line-number-at-pos (1- (point)))) titles)
+        ;; A JDK class the file doesn't already resolve: Spring Framework's
+        ;; file imports ArrayList, so inserting that offered nothing.
+        (let* ((type (or (e2e-unimported-jdk-type) (error "Every candidate type is already in the file")))
+               (wanted (concat "Import '" type "'"))
+               (line (progn (end-of-line)
+                            (insert (format "\n    java.util.List<String> parityOk; %s parityUnresolved;\n" type))
+                            (line-number-at-pos (1- (point)))))
+               titles)
+          (e2e--say "     unresolved type: %s" type)
+          ;; Asked as C-c l a asks (`lsp-code-actions-at-point'): with the
+          ;; diagnostics at point, which JDTLS computes its quick fixes from.
           (e2e--wait (lambda ()
                        (setq titles nil)
                        (dolist (d (flymake-diagnostics))
                          (when (eq (flymake-diagnostic-type d) :error)
-                           (let* ((beg (flymake-diagnostic-beg d))
-                                  (range (lsp--region-to-range beg (flymake-diagnostic-end d))))
-                             (setq titles (append titles (e2e-code-action-titles range))))))
-                       (cl-some (lambda (title) (string-match-p "Import" title)) titles))
+                           (save-excursion
+                             (goto-char (flymake-diagnostic-beg d))
+                             (setq titles (append titles (mapcar (lambda (a) (lsp-get a :title))
+                                                                 (lsp-code-actions-at-point)))))))
+                       (cl-some (lambda (title) (string-prefix-p wanted title)) titles))
                      60)
-          (prog1 (cl-some (lambda (title) (string-match-p "Import" title)) titles)
+          (unless (cl-some (lambda (title) (string-prefix-p wanted title)) titles)
+            (e2e--say "     code actions on the errors: %S" titles))
+          (prog1 (cl-some (lambda (title) (string-prefix-p wanted title)) titles)
             (ignore line)
             (set-buffer-modified-p nil)))))
     (revert-buffer t t t)

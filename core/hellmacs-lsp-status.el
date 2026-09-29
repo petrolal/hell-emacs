@@ -150,9 +150,14 @@ Returns the text."
   (apply #'hellmacs-announce hellmacs-lsp-status-messages event args))
 
 (defun hellmacs-lsp-status-ignite (server root)
-  "SERVER just started for project ROOT."
-  (puthash (hellmacs-lsp-status--key server root) (list 'igniting (float-time) nil)
-           hellmacs-lsp-status--sessions)
+  "SERVER just started for project ROOT.
+An outcome it already reported is kept: this runs once the server has
+answered `initialize', and it may have imported (or failed to) before
+that. A session is removed when its process exits
+\(`hellmacs-lsp-status-banish'), so none is left from an earlier one."
+  (let ((key (hellmacs-lsp-status--key server root)))
+    (unless (memq (car (gethash key hellmacs-lsp-status--sessions)) '(ready failed))
+      (puthash key (list 'igniting (float-time) nil) hellmacs-lsp-status--sessions)))
   (force-mode-line-update t)
   (hellmacs-lsp-status-announce 'ignited (hellmacs-lsp-status--label server)
                                 (abbreviate-file-name root)))

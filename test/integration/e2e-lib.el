@@ -156,6 +156,30 @@ behind (`e2e--build-output-dirs'), so JDTLS and the build tool start clean."
                                                       (when only (list :only (vconcat only))))))
                   nil)))
 
+(defconst e2e-jdk-import-types
+  '(("ConcurrentSkipListSet" . "java.util.concurrent")
+    ("LinkedHashSet" . "java.util")
+    ("ArrayDeque" . "java.util")
+    ("BitSet" . "java.util")
+    ("ArrayList" . "java.util")
+    ("LongAdder" . "java.util.concurrent.atomic")
+    ("ByteArrayOutputStream" . "java.io"))
+  "(NAME . PACKAGE): JDK classes a quick fix can offer to import.")
+
+(defun e2e-unimported-jdk-type ()
+  "A class of `e2e-jdk-import-types' the current buffer doesn't resolve.
+One whose name the buffer doesn't use and whose package it doesn't
+import with a wildcard, so inserting it leaves it unresolved; or nil."
+  (save-excursion
+    (car (cl-find-if (lambda (type)
+                       (goto-char (point-min))
+                       (not (or (re-search-forward (concat "\\_<" (car type) "\\_>") nil t)
+                                (progn (goto-char (point-min))
+                                       (re-search-forward
+                                        (concat "^import[ \t]+" (regexp-quote (cdr type)) "\\.\\*;")
+                                        nil t)))))
+                     e2e-jdk-import-types))))
+
 (defun e2e-completion-items (res)
   "The items of completion response RES, a CompletionList or a plain array, as a list."
   (append (if (lsp-get res :items) (lsp-get res :items) res) nil))
