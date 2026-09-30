@@ -100,13 +100,13 @@ them, the principle wins and the feature finds another way.
 | **Phase 8.1-8.3** | Kotlin, Clojure & Tree-sitter | **DONE [x]** | `kotlin-language-server`, `clojure-lsp`, CIDER REPL, pinned grammars |
 | **Phase 8.4-8.5** | Groovy & Scala | **IN PROGRESS [/]** (8.4 built, live check left) | Gradle scripts and Jenkinsfiles (Groovy), Metals (Scala) |
 | **Phase 9** | UI, Modeline & Inferno Theme | **DONE [x]** | `hellmacs-inferno`, The Altar dashboard, doom-modeline (9.0-9.4 complete) |
-| **Phase 10** | Daily-Driver Essentials | **PLANNED [ ]** | XML/YAML/JSON, formatters, popups, snippets (nothing started) |
+| **Phase 10** | Daily-Driver Essentials | **IN PROGRESS [/]** (10.1-10.4 done; 10.5 workspaces, 10.6 left) | XML/YAML/JSON, formatters, popups, snippets |
 | **Phase 11** | Consolidation & Tooling | **DONE [x]** | Unified server status, declarations, compiled startup, shared test helpers |
 | **Phase 12.1** | Corporate Networks & Proxies | **DONE [x]** | Corporate CA bundles, HTTP proxies, Artifactory/Nexus, doctor probes, offline bundles & E2E verification |
 | **Phase 12.2** | Platforms & CI | **DONE [x]** | GitHub Actions multi-OS matrix (Linux x86_64/arm64, macOS Apple Silicon/Intel), WSL2 support & platform checks |
 | **Phase 12.3** | Multi-JDKs & Build Environments | **DONE [x]** | Side-by-side JDK auto-discovery, per-project toolchains and direnv |
-| **Phase 12.4-12.6** | Spring Boot & Toolbelt | **PLANNED [ ]** | Spring profiles, JUnit XML, database clients, `.http` REST files |
-| **Phase 12.7-12.11** | Enterprise Scale & 1.0 Pilot | **PLANNED [ ]** | SBOM generator, license compliance, migration guides, real pilot |
+| **Phase 12.4-12.6** | Spring Boot & Toolbelt | **DONE [x]** | Run configurations, Spring profiles, JUnit XML, coverage, database clients, `.http` REST files, containers, static analysis |
+| **Phase 12.7-12.11** | Enterprise Scale & 1.0 Pilot | **IN PROGRESS [/]** (12.7, 12.9 mostly done; 12.10, 12.11 not started) | Reference monorepo, SBOM, license report, `verify`, releases, docs, real pilot |
 | **Phase 13** | Hellmacs Manual & Purist Onboarding | **PLANNED [ ]** | GNU Info manual, Vanilla startup actions on The Altar, C-h help suite |
 
 ---
@@ -159,18 +159,18 @@ them, the principle wins and the feature finds another way.
   - [x] Shared language server status and daemon lifecycle orchestrator (11.2)
   - [x] Module dependencies and tree-sitter declared once per module (11.3)
   - [x] Byte-compiled core, modules and autoloads at sync (11.4)
-- [ ] **Planned Daily-Driver Essentials (Phase 10)**
+- [/] **Daily-Driver Essentials (Phase 10)**
   - [x] Format-on-save integration (google-java-format, ktfmt, cljfmt) (10.2)
   - [x] Configuration file support (XML, YAML, JSON, Markdown, shell, Dockerfile) (10.1)
-- [ ] **Planned Enterprise Hardening (Phase 12)**
+- [/] **Enterprise Hardening (Phase 12)**
   - [x] Corporate HTTP proxy & custom internal CA certificate management (12.1)
   - [x] Standalone offline bundle builder for zero-internet environments (12.1)
-  - [ ] Multi-platform CI (macOS arm64/x86_64, Windows WSL/native) (12.2)
+  - [x] Multi-platform CI (macOS arm64/x86_64, Windows WSL2) (12.2)
   - [x] Dynamic multi-JDK switching and directory-based toolchains (12.3)
-  - [ ] Spring Boot dashboard & active profile launcher (`application-*.yml`) (12.4)
-  - [ ] JUnit XML test reports and code coverage visualization (12.5)
-  - [ ] Database client and `.http` REST execution tooling (12.6)
-  - [ ] Automated SBOM generator and license compliance auditor (12.9)
+  - [x] Run configurations & Spring profile launcher (`application-*.yml`) (12.4)
+  - [x] JUnit XML test reports and code coverage visualization (12.5)
+  - [x] Database client and `.http` REST execution tooling (12.6)
+  - [x] Automated SBOM generator and license compliance auditor (12.9)
   - [ ] Enterprise team onboarding migration guide (12.10)
   - [ ] Real-world enterprise codebase pilot (12.11)
 - [ ] **Planned Hellmacs Manual & Purist Onboarding (Phase 13)**
@@ -2171,7 +2171,7 @@ the measurement.
   dropped requirement.
 - **The PNG is large.** See the 9.2 measurement.
 
-### Phase 10: Daily-driver essentials (planned)
+### Phase 10: Daily-driver essentials (in progress)
 
 **Goal:** the Doom modules a JVM developer misses on day one, rebuilt the
 Hellmacs way: the file types every JVM project carries (`pom.xml`,
@@ -3840,7 +3840,7 @@ pass against what enterprise developers already use.
     domain) is flagged to check. CI runs it on every push (default modules)
     and weekly with every module (`budgets.yml`). Live, every module: 156
     components, none unknown; restclient flagged.
-- [/] **No telemetry, stated and enforced.**
+- [x] **No telemetry, stated and enforced.**
   - Hellmacs sends nothing. Packages that could (lsp-mode's and servers'
     own features, if any) are configured off, and the findings pass lists
     each one.
@@ -3870,8 +3870,24 @@ pass against what enterprise developers already use.
   - *Enforced:* `test-compliance/network-only-through-hellmacs-net` fails if
     any code outside `core/hellmacs-net.el` calls a network function; the
     settings above have unit tests. Stated in the README ("Privacy: No
-    Telemetry"). Left: the live check that a normal session contacts only
-    the configured hosts.
+    Telemetry").
+  - *Live (2026-09-30):* `test/integration/telemetry-check.sh` runs an
+    editing session (a file of each enabled language, its server started,
+    a hover, a save, a pause) in a network namespace whose only nameserver
+    is `dns-log.el`: every name looked up is logged and answered "no such
+    host", so nothing is reached, and anything outside the build
+    repositories, your mirrors and the machine's own name fails the check.
+    The session runs as your own uid (a nested namespace), so builds use
+    your `~/.m2` and `~/.gradle`. On the default modules: ALL PASSED; JDTLS,
+    the Spring Boot server, kotlin-language-server and clojure-lsp started,
+    and only plugins.gradle.org and the machine's own name were looked up.
+    Found on the way: lsp-java's `java.format.tabSize` reads
+    `c-basic-offset` in whichever buffer is current when a server asks for
+    its settings; from a Kotlin buffer that's `set-from-style`, and the
+    reply failed to encode and was never sent. `:lang java` now answers
+    with a Java buffer's indent (`hellmacs-jvm-format-tab-size`). *Not yet
+    live:* the other language modules (docker, yaml, json, markdown, sh,
+    data, groovy); their settings have unit tests.
 - [/] **Supply chain.**
   - All downloads are pinned by SHA-256, and packages by commit
     (`bin/hellmacs lock`). Release tags are signed.
