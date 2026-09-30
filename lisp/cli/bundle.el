@@ -255,7 +255,7 @@ Written to a temporary name first, so OUT is never left half-written."
 
 (defun hellmacs-bundle--module-string (key flags)
   "KEY, a module, and FLAGS as the `hellmacs!' block writes them."
-  (format "%s %s%s" (car key) (cdr key)
+  (format "%s%s" (hellmacs-module-key-string key)
           (mapconcat (lambda (flag) (format " %s" flag)) flags "")))
 
 (defun hellmacs-bundle-check (manifest)

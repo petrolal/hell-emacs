@@ -780,7 +780,7 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
           (missing (hellmacs-module-missing-dependencies key))
           (grammars (hellmacs-treesit-module-languages key)))
       (when (or missing grammars (file-exists-p file))
-        (hellmacs-cli--say "\nModule %s %s" (car key) (cdr key))
+        (hellmacs-cli--say "\nModule %s" (hellmacs-module-key-string key))
         (dolist (dep missing)
           (hellmacs-cli--check 'error "Needs %s; add it to your hellmacs! block"
                                (hellmacs-module-dependency-string dep)))
@@ -796,8 +796,7 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
     (hellmacs-cli--check 'info "No user config yet (%s); using the defaults. `bin/hellmacs install' creates one"
                          (abbreviate-file-name hellmacs-user-dir)))
   (hellmacs-cli--check 'info "Modules: %s"
-                       (mapconcat (lambda (k) (format "%s %s" (car k) (cdr k)))
-                                  (hellmacs-module-list) ", "))
+                       (mapconcat #'hellmacs-module-key-string (hellmacs-module-list) ", "))
   (dolist (line (hellmacs-config-report-lines))
     (hellmacs-cli--check 'info "%s" (string-trim line)))
   (let* ((profile (hellmacs-profile-read))

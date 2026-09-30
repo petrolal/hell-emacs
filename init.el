@@ -34,8 +34,6 @@
 ;;   3. lisp/hellmacs-packages.el  -- use-package settings (Elpaca itself loads on demand)
 ;;   4. lisp/hellmacs-keybinds.el  -- the C-c leader (`hellmacs-leader-def')
 ;;   5. lisp/hellmacs-modules.el   -- module system: `hellmacs!', `modulep!', `package!'
-;;      lisp/hellmacs-splash.el    -- the Altar splash screen (`initial-buffer-choice')
-;;      lisp/hellmacs-ux.el        -- themed quit prompt and error reporting
 ;;      lisp/hellmacs-treesit.el   -- pinned tree-sitter grammars (built by sync)
 ;;   (lisp/lib/ and lisp/cli/ load on demand: `hellmacs-require')
 ;;   6. $HELLMACSDIR/init.el       -- user: `hellmacs!' block choosing modules
@@ -43,7 +41,8 @@
 ;;   7. packages: activated from the profile `bin/hellmacs sync' wrote --
 ;;      or, if it's missing or out of date, every packages.el is read and
 ;;      Elpaca installs/activates the packages before going on
-;;   8. every enabled module's autoload.el + init.el, in `hellmacs!' order
+;;   8. every enabled module's autoload.el + init.el, in `hellmacs!' order,
+;;      core's own module first (modules/hellmacs/: the Altar, themed UX, gcmh)
 ;;   9. every enabled module's config.el, in `hellmacs!' order
 ;;  10. $HELLMACSDIR/config.el     -- user: everything else
 ;;  11. `custom-file', once every package is activated
@@ -74,8 +73,6 @@
 
 (require 'hellmacs-keybinds)
 (require 'hellmacs-modules)
-(require 'hellmacs-splash)
-(require 'hellmacs-ux)
 (require 'hellmacs-treesit)   ; only points Emacs at the grammars `hellmacs sync' builds
 
 ;; Your init.el chooses modules with `hellmacs!'. Without one (or if it

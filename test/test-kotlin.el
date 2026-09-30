@@ -31,7 +31,7 @@
 (require 'ert)
 (require 'cl-lib)
 (require 'hellmacs-modules)
-(require 'hellmacs-ux)
+(require 'hellmacs-ux (expand-file-name "hellmacs/+ux" hellmacs-modules-dir))
 
 (defvar hellmacs-lsp-status--sessions)
 (defvar hellmacs-kotlin-ls-executable)

@@ -127,8 +127,8 @@ grammar, a tree-sitter mode fails on every file. Run at startup."
       (if missing
           (display-warning
            'hellmacs
-           (format "Module %s %s +tree-sitter: the %s grammar%s built yet; run `bin/hellmacs sync'"
-                   (car key) (cdr key) (mapconcat #'symbol-name missing ", ")
+           (format "Module %s +tree-sitter: the %s grammar%s built yet; run `bin/hellmacs sync'"
+                   (hellmacs-module-key-string key) (mapconcat #'symbol-name missing ", ")
                    (if (cdr missing) "s aren't" " isn't")))
         (dolist (remap (plist-get decl :remap))
           (add-to-list 'major-mode-remap-alist remap))))))

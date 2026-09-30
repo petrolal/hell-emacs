@@ -95,9 +95,20 @@ Used by `modulep!' and `package!' to know which module they're in.")
 
 ;;; Enabling modules: hellmacs! ------------------------------------------
 
+(defun hellmacs-module-key-string (key)
+  "KEY, a (GROUP . NAME) module key, as written in `hellmacs!': \":ui theme\".
+A group's own module (NAME nil, like core's `:hellmacs') is the group alone."
+  (if (cdr key) (format "%s %s" (car key) (cdr key)) (symbol-name (car key))))
+
+(defun hellmacs-module--rel-dir (group name)
+  "Module GROUP NAME's directory, relative to a module tree: \"ui/theme/\".
+A group's own module (NAME nil) is the group's directory: \"hellmacs/\"."
+  (file-name-as-directory
+   (concat (substring (symbol-name group) 1) (if name (format "/%s" name) ""))))
+
 (defun hellmacs-module-locate-path (group name)
   "Return the directory of module GROUP NAME, or nil if it doesn't exist."
-  (let ((rel (format "%s/%s/" (substring (symbol-name group) 1) name)))
+  (let ((rel (hellmacs-module--rel-dir group name)))
     (seq-some (lambda (dir)
                 (let ((path (expand-file-name rel dir)))
                   (and (file-directory-p path) path)))
@@ -114,7 +125,8 @@ were enabled. Returns nil (and warns) if the module doesn't exist."
                      :depth (or depth 0)
                      :index (hash-table-count hellmacs-modules))
                hellmacs-modules)
-    (display-warning 'hellmacs (format "Unknown module %s %s, skipped" group name))
+    (display-warning 'hellmacs (format "Unknown module %s, skipped"
+                                       (hellmacs-module-key-string (cons group name))))
     nil))
 
 (defmacro hellmacs! (&rest modules)
@@ -249,8 +261,8 @@ declares (lsp-mode, say) comes before what this module builds on it."
     (dolist (dep (hellmacs-module-missing-dependencies key))
       (display-warning
        'hellmacs
-       (format "Module %s %s needs %s; add it to your hellmacs! block"
-               (car key) (cdr key) (hellmacs-module-dependency-string dep))))))
+       (format "Module %s needs %s; add it to your hellmacs! block"
+               (hellmacs-module-key-string key) (hellmacs-module-dependency-string dep))))))
 
 ;;; Declaring packages: package! -------------------------------------------
 
@@ -363,7 +375,7 @@ Set at startup: only with an up-to-date profile, and core compiled too.")
 
 (defun hellmacs-module-compiled-file (key file)
   "Where `bin/hellmacs sync' puts module KEY's FILE compiled."
-  (expand-file-name (format "modules/%s/%s/%sc" (substring (symbol-name (car key)) 1) (cdr key) file)
+  (expand-file-name (concat "modules/" (hellmacs-module--rel-dir (car key) (cdr key)) file "c")
                     hellmacs-compiled-dir))
 
 (defun hellmacs-module--load (key file)
@@ -387,8 +399,8 @@ startup: one broken module should degrade Hellmacs, not brick it."
               (load path nil 'nomessage 'nosuffix)
             (error
              (display-warning
-              'hellmacs (format "Module %s %s: error in %s: %s"
-                                (car key) (cdr key) file (error-message-string err))
+              'hellmacs (format "Module %s: error in %s: %s"
+                                (hellmacs-module-key-string key) file (error-message-string err))
               :error))))))))
 
 (defun hellmacs-module-load (name)
@@ -416,8 +428,18 @@ wins over both."
          (hellmacs--enable-modules hellmacs-modules-override))
         ((zerop (hash-table-count hellmacs-modules))
          (load (expand-file-name "static/init.example.el" hellmacs-dir) nil 'nomessage 'nosuffix)))
+  (hellmacs-modules-enable-core)
   ;; The proxy and CA you set there, for all of Emacs.
   (hellmacs-net-setup))
+
+(defconst hellmacs-module-core-depth -100
+  "Where core's own module loads: before any other (Doom's `:doom' is at -110).")
+
+(defun hellmacs-modules-enable-core ()
+  "Enable core's own module, `:hellmacs' (modules/hellmacs/), always, first.
+Like Doom v3's (:doom . nil): Hellmacs' own features and packages, which
+every configuration gets, whatever its `hellmacs!' block says."
+  (hellmacs-module-enable :hellmacs nil nil hellmacs-module-core-depth))
 
 (defvar hellmacs--loaded-cli-files nil
   "cli.el files `hellmacs-modules-load-cli-files' has loaded this session.")

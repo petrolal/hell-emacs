@@ -30,7 +30,7 @@
 (require 'hellmacs-emacs)
 (require 'hellmacs-packages)
 (require 'hellmacs-modules)
-(require 'hellmacs-ux)
+(require 'hellmacs-ux (expand-file-name "hellmacs/+ux" hellmacs-modules-dir))
 
 (defmacro test-core--with-features (features &rest body)
   "Run BODY with each of FEATURES loadable from a temporary directory."
@@ -160,7 +160,7 @@ the GC reset and `hellmacs-finalize' come after `custom-file' is loaded."
   "Long lines wrap by default, as in stock Emacs; modes that want otherwise say so."
   (should-not (default-value 'truncate-lines)))
 
-(require 'hellmacs-splash)
+(require 'hellmacs-splash (expand-file-name "hellmacs/+splash" hellmacs-modules-dir))
 
 (ert-deftest test-core/splash-draws-once ()
   "`C-c h s' draws the Altar once, after it's in the window it centers in."

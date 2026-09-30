@@ -1,4 +1,4 @@
-;;; hellmacs-ux.el --- Thematic prompts and error reporting -*- lexical-binding: t; -*-
+;;; hellmacs/+ux.el --- Thematic prompts and error reporting -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -152,4 +152,4 @@ Language modules add their REPLs' (`:lang clojure' adds CIDER's).")
 (add-hook 'hellmacs-after-init-hook #'hellmacs-ux-activate)
 
 (provide 'hellmacs-ux)
-;;; hellmacs-ux.el ends here
+;;; +ux.el ends here

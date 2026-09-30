@@ -28,7 +28,7 @@
 
 (require 'ert)
 (require 'cl-lib)
-(require 'hellmacs-ux)                  ; `hellmacs-ux-enable', bound below
+(require 'hellmacs-ux (expand-file-name "hellmacs/+ux" hellmacs-modules-dir))                  ; `hellmacs-ux-enable', bound below
 (hellmacs-require 'hellmacs-lib 'lsp-status)
 
 (defvar lsp--cur-workspace)             ; lsp-mode's; bound below

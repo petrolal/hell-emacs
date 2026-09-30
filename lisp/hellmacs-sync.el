@@ -407,7 +407,7 @@ module's autoload.el. Signals an error if a package fails to install."
   (hellmacs-packages-bootstrap)
   (hellmacs-sync--check-elpaca)
   (hellmacs-sync--log "Modules: %s"
-                      (mapconcat (lambda (m) (format "%s %s" (car (car m)) (cdr (car m))))
+                      (mapconcat (lambda (m) (hellmacs-module-key-string (car m)))
                                  (hellmacs-profile--modules) ", "))
   (hellmacs-sync--log "Installing and building packages (this can take a while)...")
   (hellmacs-modules-install-packages)

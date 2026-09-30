@@ -118,7 +118,7 @@ opening a file."
 ;; without collection pauses. Left unbounded, pauses get *worse* later:
 ;; one huge collection lands mid-keystroke. So once startup finishes a
 ;; bounded value is restored, and then `gcmh' (the "GC magic hack",
-;; declared in lisp/packages.el) takes over at the first real buffer.
+;; core's module's: modules/hellmacs/) takes over at the first real buffer.
 ;; It keeps the threshold high while you work and collects when Emacs
 ;; goes idle, so pauses stay invisible to typing. Its idle delay adapts
 ;; to how long collections take (`gcmh-idle-delay' `auto').
@@ -132,16 +132,6 @@ opening a file."
         gc-cons-percentage hellmacs--gc-cons-percentage))
 
 (add-hook 'hellmacs--packages-ready-hook #'hellmacs--restore-gc-h)
-
-(unless (fboundp 'igc-info)
-  (setq gcmh-idle-delay 'auto              ; scale the delay with GC time...
-        gcmh-auto-idle-delay-factor 10     ; ...collect after 10x the last GC's duration idle
-        gcmh-high-cons-threshold (* 64 1024 1024))
-  (add-hook 'hellmacs-first-buffer-hook
-            (defun hellmacs--start-gcmh-h ()
-              ;; Unless the user disabled it with (package! gcmh :disable t).
-              (when (fboundp 'gcmh-mode)
-                (gcmh-mode 1)))))
 
 ;;; Incremental loading ------------------------------------------------------
 ;;

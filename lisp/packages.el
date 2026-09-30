@@ -21,18 +21,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Packages Hellmacs' core declares for every configuration, read before
-;; any module's packages.el (as Doom's lisp/packages.el is).
-;;
-;; `compat' is a dependency of most modern packages (vertico, consult,
-;; corfu, marginalia, orderless, ...). Declaring it here, up front,
-;; makes Elpaca build it once as a top-level package. Left to be
-;; discovered as a dependency, several packages queue it at the same
-;; moment on a fresh install, Elpaca starts building it twice, the
-;; second build fails, and the packages waiting on it never finish.
-(package! compat)
+;; Packages the engine itself would need, read before any module's
+;; packages.el. None: like Doom v3's lisp/packages.el, it's empty, and the
+;; packages every configuration gets are core's own module's
+;; (modules/hellmacs/packages.el).
 
-;; Collects garbage while idle instead of mid-keystroke; see "GC
-;; lifecycle" in hellmacs.el. Not needed with Emacs' incremental GC.
-(unless (fboundp 'igc-info)
-  (package! gcmh))
+;;; packages.el ends here

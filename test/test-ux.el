@@ -26,7 +26,7 @@
 ;;; Code:
 
 (require 'ert)
-(require 'hellmacs-ux)
+(require 'hellmacs-ux (expand-file-name "hellmacs/+ux" hellmacs-modules-dir))
 
 (ert-deftest test-ux/routine-error-classification ()
   "Distinguishes routine user signals from unexpected fatal errors."

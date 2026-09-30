@@ -56,6 +56,41 @@ SPEC is a list of (\"group/name/file.el\" . CONTENTS)."
     (should (modulep! :completion vertico -tab))
     (should-not (modulep! :lang java))))
 
+;; Phase 16.2: core's own features are the `:hellmacs' module group, as
+;; Doom v3's are `:doom' (modules/doom/): always on, loaded first.
+
+(ert-deftest test-modules/core-module-like-doom ()
+  "(:hellmacs . nil) is registered after your `hellmacs!' block, at depth -100,
+so it's first; it's in modules/hellmacs/, and written `:hellmacs'."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (hellmacs-user-dir (make-temp-file "test-modules-user" t)))
+    (unwind-protect
+        (progn
+          (hellmacs-modules-read-config)  ; no init.el: the defaults
+          (should (hellmacs-module-p :hellmacs nil))
+          (should (equal (car (hellmacs-module-list)) '(:hellmacs)))
+          (should (= (hellmacs-module-get '(:hellmacs) :depth) -100))
+          (should (file-equal-p (hellmacs-module-get '(:hellmacs) :path)
+                                (expand-file-name "hellmacs/" hellmacs-modules-dir)))
+          (should (equal (hellmacs-module-key-string '(:hellmacs)) ":hellmacs"))
+          (should (equal (hellmacs-module-key-string '(:ui . theme)) ":ui theme"))
+          (should (string-suffix-p "compiled/modules/hellmacs/init.elc"
+                                   (hellmacs-module-compiled-file '(:hellmacs) "init.el"))))
+      (delete-directory hellmacs-user-dir t))))
+
+(ert-deftest test-modules/core-module-files ()
+  "Core's packages (compat, gcmh), the Altar splash and the themed UX live in
+the core module, as Doom's gcmh and nerd-icons live in modules/doom/; lisp/
+keeps the engine."
+  (let ((dir (expand-file-name "hellmacs/" hellmacs-modules-dir)))
+    (dolist (file '("packages.el" "init.el" "+splash.el" "+ux.el"))
+      (should (file-exists-p (expand-file-name file dir)))))
+  (dolist (file '("hellmacs-splash.el" "hellmacs-ux.el"))
+    (should-not (file-exists-p (expand-file-name file hellmacs-core-dir))))
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name "packages.el" hellmacs-core-dir))
+    (should-not (re-search-forward "^[^;\n]*(package! " nil t))))
+
 (defvar test-modules--loaded nil)
 
 (ert-deftest test-modules/compiled-file-needs-its-source ()

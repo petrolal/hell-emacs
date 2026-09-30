@@ -30,7 +30,7 @@
 
 (require 'ert)
 (require 'hellmacs-modules)
-(require 'hellmacs-ux)                  ; `hellmacs-ux-enable', bound below
+(require 'hellmacs-ux (expand-file-name "hellmacs/+ux" hellmacs-modules-dir))                  ; `hellmacs-ux-enable', bound below
 
 (defvar hellmacs-lsp-status--sessions)  ; defined by core; bound below
 (defvar hellmacs-lsp-status--servers)

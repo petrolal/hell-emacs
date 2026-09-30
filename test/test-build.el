@@ -31,7 +31,7 @@
 (require 'compile)
 (require 'cl-lib)
 (require 'hellmacs-modules)
-(require 'hellmacs-ux)                  ; `hellmacs-ux-enable', bound below
+(require 'hellmacs-ux (expand-file-name "hellmacs/+ux" hellmacs-modules-dir))                  ; `hellmacs-ux-enable', bound below
 
 (let ((hellmacs-modules (make-hash-table :test #'equal)))
   (hellmacs--enable-modules '(:tools build))

@@ -44,7 +44,7 @@
 
 ;;; Code:
 
-(require 'hellmacs-splash)
+(require 'hellmacs-splash (expand-file-name "hellmacs/+splash" hellmacs-modules-dir))
 
 (defvar dashboard-mode-map)
 (defvar dashboard-buffer-name)

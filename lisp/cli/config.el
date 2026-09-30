@@ -134,7 +134,7 @@ defaults apply, so nothing is missing."
                     (hellmacs-config-default-modules))))))
 
 (defun hellmacs-config--key-string (key)
-  (format "%s %s" (car key) (cdr key)))
+  (hellmacs-module-key-string key))
 
 (defun hellmacs-config-report-lines (&optional init)
   "What `hellmacs-config-report' says about INIT, as lines.

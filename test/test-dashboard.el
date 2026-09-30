@@ -33,7 +33,7 @@
 
 ;; Loading the module sets the startup screen and a remap; keep both
 ;; out of the other suites.
-(require 'hellmacs-splash)
+(require 'hellmacs-splash (expand-file-name "hellmacs/+splash" hellmacs-modules-dir))
 (let ((hellmacs-splash-buffer-function hellmacs-splash-buffer-function)
       (hellmacs-modules (make-hash-table :test #'equal))
       (warning-minimum-log-level :emergency))

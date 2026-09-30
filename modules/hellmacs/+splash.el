@@ -1,4 +1,4 @@
-;;; hellmacs-splash.el --- The Altar: Hellmacs' startup screen -*- lexical-binding: t; -*-
+;;; hellmacs/+splash.el --- The Altar: Hellmacs' startup screen -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -232,4 +232,4 @@ to show the splash screen next to it."
                 (hellmacs-splash--render)))))
 
 (provide 'hellmacs-splash)
-;;; hellmacs-splash.el ends here
+;;; +splash.el ends here

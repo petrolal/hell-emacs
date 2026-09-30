@@ -259,13 +259,14 @@ Roots already there are replaced whole; everything else is left alone."
   (should-error (hellmacs-cli--option '("--from-bundle" "--env") "--from-bundle")))
 
 (ert-deftest test-bundle/modules-override ()
-  "The override replaces the user's module set (and the defaults)."
+  "The override replaces the user's module set (and the defaults); core's own
+module (:hellmacs) is on either way."
   (let ((hellmacs-modules-override '(:tools lsp))
         (hellmacs-user-dir (make-temp-file "test-bundle-user" t)))
     (unwind-protect
         (progn
           (hellmacs-modules-read-config)
-          (should (equal (hellmacs-module-list) '((:tools . lsp)))))
+          (should (equal (hellmacs-module-list) '((:hellmacs) (:tools . lsp)))))
       (let ((hellmacs-modules-override nil))
         (hellmacs-modules-read-config))
       (delete-directory hellmacs-user-dir t))))

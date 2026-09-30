@@ -4289,7 +4289,7 @@ end of each step; one commit per step.
       net, jdk, ...), `lisp/cli/` the CLI's parts (sync's CLI side, bundle,
       verify, compliance, config); `lisp/packages.el` core's packages.
       Compiled core, its stamp and `test-compliance`'s file lists follow.
-- [ ] **16.2 `modules/hellmacs/`.** Core's own features become the
+- [x] **16.2 `modules/hellmacs/`.** (2026-09-30: the leader, tree-sitter declarations and server status stay in lisp/, as engine APIs every module calls; the Altar, the themed UX and gcmh moved.) Core's own features become the
       `:hellmacs` group, always on, loaded first (depth -100, as `:doom`'s
       -110): its `init.el` (splash, UX, the `C-c` leader, tree-sitter
       grammars, server status), `packages.el`, and `modules/hellmacs/cli/`.
