@@ -69,6 +69,11 @@ The first tagged release will be 0.9.0. Since the project started
   yasnippet used only as lsp-mode's engine; candidates you pick rank first
   next time (`corfu-history-mode`); documentation shows after 0.5s; and in
   a terminal on Emacs 29 and 30 the popup is drawn by `corfu-terminal`.
+- An import that never finishes is no longer silent: after 90s the echo
+  area says the server is still importing and that completion waits for
+  it; a Gradle cache-lock timeout (another daemon holding `~/.gradle`) is
+  named as the reason for a failed import; and after an import JDTLS's
+  unresolved dependencies are listed.
 - Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
   budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
   `licenses` and `sbom`.

@@ -246,13 +246,22 @@ Spring server.
 ## When a project won't import
 
 The mode-line says `JVM:purgatory` and the echo area `[BYTECODE PURGATORY]`
-when a project fails to import or build.
+when a project fails to import or build. Until a project is imported
+there's **no completion** in it, not even with `C-M-i`: when an import is
+still running after 90 seconds (`hellmacs-lsp-status-slow-seconds`), the
+echo area says so. After an import, it names the dependencies the build
+couldn't resolve: their classes won't complete.
 
 1. **A JDK is missing:** run `hellmacs doctor` in the project; it lists
    the JDKs the build asks for and which exist.
 2. **Import again:** `C-c l u` makes JDTLS re-read the build.
-3. **GUI Emacs can't find your tools:** run `hellmacs env` in a terminal,
+3. **Gradle waits for its cache lock** ("another Gradle process holds
+   Gradle's cache lock"): a Gradle daemon of another version, from another
+   project, holds `~/.gradle`'s lock and every import times out. Stop it
+   (`gradle --stop` with that Gradle, or kill the old `GradleDaemon`),
+   then `M-x lsp-workspace-restart`.
+4. **GUI Emacs can't find your tools:** run `hellmacs env` in a terminal,
    then restart Emacs.
-4. **Behind a proxy or with internal repositories:** see the guide's
+5. **Behind a proxy or with internal repositories:** see the guide's
    [Companies](guide.md#6-companies-networks-offline-machines-compliance)
    section; Maven's `settings.xml` is used as is.

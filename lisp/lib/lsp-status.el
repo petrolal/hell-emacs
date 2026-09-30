@@ -68,12 +68,14 @@
 
 (defcustom hellmacs-lsp-status-messages
   '((ignited  hellmacs-jvm-busy   "[FORGE IGNITED] %s bound to %s"          "%s started for %s")
+    (slow     hellmacs-jvm-busy   "[FORGE IGNITED] %s still importing %s after %ds: no completion until it's done (progress in *lsp-log*)"
+              "%s still importing %s after %ds: no completion until it's done (progress in *lsp-log*)")
     (ready    hellmacs-jvm-ready  "[DAEMON READY] %s indexed in %.1fs"      "%s indexed in %.1fs")
     (failed   hellmacs-jvm-failed "[BYTECODE PURGATORY] %s failed to import: %s" "%s failed to import: %s")
     (banished hellmacs-jvm-failed "[DAEMON BANISHED] %s for %s exited"      "%s for %s exited"))
   "Status messages: (EVENT FACE THEMED PLAIN). `ignited' and `banished'
-take the server's label and the project; `ready' the project and
-seconds; `failed' the project and the reason."
+take the server's label and the project; `slow' those and seconds;
+`ready' the project and seconds; `failed' the project and the reason."
   :type '(repeat (list symbol face string string))
   :group 'hellmacs)
 
@@ -121,6 +123,13 @@ and hash tables otherwise; this reads either."
 
 ;;; Sessions -----------------------------------------------------------------------
 
+(defcustom hellmacs-lsp-status-slow-seconds 90
+  "Seconds a project may take to import before Hellmacs says it's still at it.
+An import that never ends (a build tool waiting on a lock, a download that
+hangs) is otherwise silent, and completion stays empty. nil never says."
+  :type '(choice (const :tag "Never" nil) natnum)
+  :group 'hellmacs)
+
 (defvar hellmacs-lsp-status--sessions (make-hash-table :test #'equal)
   "(SERVER . PROJECT-ROOT) -> (STATE SINCE BUILD-FAILED WORKSPACE).
 STATE is igniting, ready or failed; SINCE when the server started;
@@ -164,10 +173,21 @@ server may not have exited yet (`hellmacs-lsp-status-banish')."
              (memq (nth 3 session) (list nil workspace)))
         (puthash key (list (nth 0 session) (nth 1 session) (nth 2 session) workspace)
                  hellmacs-lsp-status--sessions)
-      (puthash key (list 'igniting (float-time) nil workspace) hellmacs-lsp-status--sessions)))
+      (puthash key (list 'igniting (float-time) nil workspace) hellmacs-lsp-status--sessions)
+      (when hellmacs-lsp-status-slow-seconds
+        (run-with-timer hellmacs-lsp-status-slow-seconds nil
+                        #'hellmacs-lsp-status--still-igniting key workspace))))
   (force-mode-line-update t)
   (hellmacs-lsp-status-announce 'ignited (hellmacs-lsp-status--label server)
                                 (abbreviate-file-name root)))
+
+(defun hellmacs-lsp-status--still-igniting (key workspace)
+  "Say so if session KEY, started as WORKSPACE, is still importing."
+  (let ((session (gethash key hellmacs-lsp-status--sessions)))
+    (when (and (eq (car session) 'igniting) (eq (nth 3 session) workspace))
+      (hellmacs-lsp-status-announce 'slow (hellmacs-lsp-status--label (car key))
+                                    (abbreviate-file-name (cdr key))
+                                    (round (- (float-time) (nth 1 session)))))))
 
 (defvar hellmacs-lsp-status-ready-functions nil
   "Functions called with SERVER and ROOT when a project becomes ready.

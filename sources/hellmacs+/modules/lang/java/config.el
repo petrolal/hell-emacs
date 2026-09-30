@@ -103,7 +103,11 @@ Runtimes you set yourself are left alone."
 
 (defun hellmacs-jvm--import-failure-reason (message)
   "A short reason for the import failure described by log MESSAGE."
-  (cond ((string-match "Cannot find a Java installation[^\n]*languageVersion=\\([0-9]+\\)" message)
+  (cond ((string-match-p "Timeout waiting to lock\\|currently in use by another process" message)
+         ;; Another Gradle daemon (often another version, from another
+         ;; project) holds ~/.gradle's cache lock and doesn't let go.
+         "another Gradle process holds Gradle's cache lock (stop it: `gradle --stop', or kill the old daemon), then M-x lsp-workspace-restart")
+        ((string-match "Cannot find a Java installation[^\n]*languageVersion=\\([0-9]+\\)" message)
          (format "the build needs a JDK %s that Gradle can't find (install it, then C-c l u)"
                  (match-string 1 message)))
         ((string-match-p "Gradle" message) "the Gradle sync failed (see the *lsp-log* buffer)")
@@ -146,13 +150,47 @@ afterwards is the recovery `hellmacs-jvm--note-notification' knows."
                                         (list :command "java.project.import")
                                         #'ignore))))))
 
+(defvar hellmacs-jvm--unresolved (make-hash-table :test #'equal)
+  "Project root -> the dependencies its import couldn't resolve.")
+
+(defun hellmacs-jvm--note-unresolved (root message)
+  "Remember the dependency in JDTLS log MESSAGE that ROOT's import couldn't resolve."
+  (when (string-match "Unresolved dependency: \\([^ \n]+\\)" message)
+    (let ((dep (match-string 1 message))
+          (deps (gethash root hellmacs-jvm--unresolved)))
+      (unless (member dep deps)
+        (puthash root (cons dep deps) hellmacs-jvm--unresolved)))))
+
+(defun hellmacs-jvm--warn-unresolved-h (server root)
+  "Once ROOT is imported, say which dependencies it couldn't resolve.
+Their classes neither complete nor compile until the build can fetch
+them. For `hellmacs-lsp-status-ready-functions'."
+  (when-let* (((eq server 'jdtls))
+              (deps (gethash root hellmacs-jvm--unresolved)))
+    (remhash root hellmacs-jvm--unresolved)
+    ;; After the ready message has had its moment in the echo area.
+    (run-with-timer
+     2 nil
+     (lambda ()
+       (message "%s" (propertize
+                      (format "%s: %d unresolved %s, whose classes won't complete: %s (is its repository reachable, or mavenLocal published?)"
+                              (abbreviate-file-name root) (length deps)
+                              (if (cdr deps) "dependencies" "dependency")
+                              (string-join (reverse deps) ", "))
+                      'face 'warning))))))
+
+(add-hook 'hellmacs-lsp-status-ready-functions #'hellmacs-jvm--warn-unresolved-h)
+
 (defun hellmacs-jvm--note-log (root message)
   "React to JDTLS log MESSAGE for project ROOT: a failed import is announced.
 JDTLS goes on to say ServiceReady even then, but nothing works. Gradle 9
 refusing annotation processing is worked around: imported again without it."
+  (hellmacs-jvm--note-unresolved root message)
   (when (or (string-match-p "\\`[^\n]*Synchronize project .* failed" message)
             ;; While importing, a Gradle model the tooling API couldn't build.
-            (string-match-p "\\`[^\n]*Could not fetch model of type" message))
+            (string-match-p "\\`[^\n]*Could not fetch model of type" message)
+            ;; Gradle waiting for its cache lock, which another process holds.
+            (string-match-p "Timeout waiting to lock" message))
     (let ((apt (hellmacs-jvm--gradle9-apt-failure-p message)))
       (cond ((and apt lsp-java-import-gradle-annotation-processing-enabled)
              (hellmacs-lsp-status-fail
