@@ -34,7 +34,7 @@
 ;; run, and network access on the first run:
 ;;
 ;;   HELLMACS_E2E_FIXTURE=maven-demo \
-;;     emacs --batch -l early-init.el -l init.el -l test/integration/run-e2e.el
+;;     emacs --batch -l early-init.el -f hellmacs-start -l test/integration/run-e2e.el
 ;;
 ;; HELLMACS_E2E_FIXTURE is maven-demo (default) or gradle-demo. The copy
 ;; is deleted at exit (HELLMACS_E2E_KEEP=1 keeps it). Exits 1 if any

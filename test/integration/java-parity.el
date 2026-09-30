@@ -29,14 +29,14 @@
 ;; directory first, because JDTLS and the build tool write into it.
 ;;
 ;;   HELLMACS_PARITY_PROJECT=/path/to/project \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/java-parity.el
 ;;
 ;; Or, instead of a project of your own, a pinned reference project
 ;; (Phase 12.7; see reference.el), cloned on the first run:
 ;;
 ;;   HELLMACS_PARITY_REFERENCE=spring-framework HELLMACS_PARITY_TIMEOUT=1800 \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/java-parity.el
 ;;
 ;; Its pin supplies the file to work in and the build command, unless

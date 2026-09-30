@@ -28,7 +28,7 @@
   "Reload Hellmacs' init file, and with it your init.el and config.el."
   (interactive)
   (with-hellmacs-context 'reload
-    (load-file (expand-file-name "init.el" hellmacs-dir))))
+    (hellmacs-start)))
 
 ;;;###autoload
 (defun hellmacs-visit-dir ()

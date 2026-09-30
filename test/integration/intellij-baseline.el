@@ -28,7 +28,7 @@
 ;; and the IDE process's peak memory (from /proc) to $HELLMACS_BUDGET_OUT:
 ;;
 ;;   HELLMACS_BUDGET_OUT=/tmp/budgets.txt \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/intellij-baseline.el
 ;;
 ;; IntelliJ is pinned in budgets.el (`budgets-intellij') and downloaded

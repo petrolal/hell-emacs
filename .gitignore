@@ -3,6 +3,12 @@
 /var/
 /etc/
 
+# As in Doom v3, Hellmacs has no init.el of its own (sync generates the
+# profile's): a root .el other than early-init.el is your config, when
+# $HELLMACSDIR is this checkout.
+/*.el
+!/early-init.el
+
 # Byte-compiled / native-compiled artifacts, wherever they land.
 *.elc
 *.eln

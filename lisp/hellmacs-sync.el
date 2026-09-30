@@ -45,6 +45,7 @@
 (require 'hellmacs-keybinds)
 (require 'hellmacs-modules)
 (require 'hellmacs-treesit)
+(require 'hellmacs-profiles)
 
 (defvar hellmacs-sync-functions nil
   "Functions run, in order, at the end of every `hellmacs-sync'.
@@ -255,6 +256,7 @@ modules are compiled only with it. Whatever fails loads from source."
         failed)
     (when (file-directory-p hellmacs-compiled-dir)
       (delete-directory hellmacs-compiled-dir t))
+    (hellmacs-profile-delete-init)
     ;; Every core file loaded first: their macros must expand, and their
     ;; special variables bind dynamically, in whichever file uses them.
     (dolist (src sources)
@@ -272,6 +274,10 @@ modules are compiled only with it. Whatever fails loads from source."
         (delete-directory core-dir t)
       ;; Written last: without it, startup ignores the compiled core.
       (with-temp-file (expand-file-name "stamp" core-dir) (insert emacs-version))
+      ;; The profile's init file, which runs on that compiled core.
+      (if (hellmacs-profile-generate-init)
+          (cl-incf count)
+        (push (hellmacs-profile-init-file) failed))
       (dolist (key (hellmacs-module-list))
         (dolist (file hellmacs-module--compiled-files)
           (let ((src (expand-file-name file (hellmacs-module-get key :path))))

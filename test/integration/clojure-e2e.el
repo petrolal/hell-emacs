@@ -26,7 +26,7 @@
 ;; clojure, the Clojure CLI on the PATH (`clojure'), a JDK, and network
 ;; access on the first run (the REPL fetches nrepl and cider-nrepl).
 ;;
-;;   emacs --batch -l early-init.el -l init.el \
+;;   emacs --batch -l early-init.el -f hellmacs-start \
 ;;         -l test/integration/clojure-e2e.el
 ;;
 ;; The fixture (test/fixtures/clojure/deps-demo) is copied to a temporary

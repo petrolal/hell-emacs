@@ -109,7 +109,7 @@ jobs:
           path: sbom.json
 
       - name: Run Network & Bundle E2E Test
-        run: emacs --batch -l early-init.el -l init.el -l test/integration/net-e2e.el
+        run: emacs --batch -l early-init.el -f hellmacs-start -l test/integration/net-e2e.el
 
   integration-e2e:
     name: Nightly E2E Integration (${{ matrix.os }})
@@ -156,10 +156,10 @@ jobs:
           bin/hellmacs sync
 
       - name: Java E2E (Maven)
-        run: HELLMACS_E2E_FIXTURE=maven-demo emacs --batch -l early-init.el -l init.el -l test/integration/java-e2e.el
+        run: HELLMACS_E2E_FIXTURE=maven-demo emacs --batch -l early-init.el -f hellmacs-start -l test/integration/java-e2e.el
 
       - name: Java E2E (Gradle)
-        run: HELLMACS_E2E_FIXTURE=gradle-demo emacs --batch -l early-init.el -l init.el -l test/integration/java-e2e.el
+        run: HELLMACS_E2E_FIXTURE=gradle-demo emacs --batch -l early-init.el -f hellmacs-start -l test/integration/java-e2e.el
 
       - name: Modeline E2E
-        run: emacs --batch -l early-init.el -l init.el -l test/integration/modeline-e2e.el
+        run: emacs --batch -l early-init.el -f hellmacs-start -l test/integration/modeline-e2e.el

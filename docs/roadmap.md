@@ -4330,7 +4330,7 @@ end of each step; one commit per step.
       profile (Hellmacs' core, no modules, for bisecting a broken config);
       implicit profiles from `profiles/NAME/` in the repo and in your
       config directory.
-- [ ] **16.7 The generated init file.** `sync` writes the profile's
+- [x] **16.7 The generated init file.** (2026-09-30: done as below. Part 10 is hellmacs-start's own forms rather than Doom's precomputed module loader: the synced profile already carries the package state, and reading your `hellmacs!` block at startup keeps an edited block working before the next sync.) `sync` writes the profile's
       `init.el` (numbered parts, as Doom's `doom-profile-generate`: the
       variables, the autoloads, the package activation, the modules in
       order, your config) and compiles it; `early-init.el` loads

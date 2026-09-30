@@ -30,7 +30,7 @@
 ;;   bin/hellmacs sync        # with :tools lsp build, :lang java and
 ;;                            # (:checkers static +sonarlint) in your init.el
 ;;   JAVA_HOME=/path/to/jdk-21 \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/static-e2e.el
 ;;
 ;; test/fixtures/java/gradle-demo is copied to a temporary directory and

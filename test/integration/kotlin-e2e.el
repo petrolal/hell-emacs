@@ -25,7 +25,7 @@
 ;; the Phase 8.2 checks. Needs a synced profile with :tools build, :tools
 ;; lsp and :lang kotlin, a JDK 21+, and network access on the first run.
 ;;
-;;   emacs --batch -l early-init.el -l init.el \
+;;   emacs --batch -l early-init.el -f hellmacs-start \
 ;;         -l test/integration/kotlin-e2e.el
 ;;
 ;; The fixture (test/fixtures/kotlin/gradle-demo) is copied to a temporary

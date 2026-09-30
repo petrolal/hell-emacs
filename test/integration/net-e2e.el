@@ -29,7 +29,7 @@
 ;;  4. Offline installation from bundle with SHA-256 verification and offline startup.
 ;;
 ;; Invocation:
-;;   emacs --batch -l early-init.el -l init.el -l test/integration/net-e2e.el
+;;   emacs --batch -l early-init.el -f hellmacs-start -l test/integration/net-e2e.el
 
 ;;; Code:
 

@@ -53,5 +53,5 @@ exec unshare --user --map-root-user --net --mount sh -c '
   mount --bind "$1/nsswitch.conf" /etc/nsswitch.conf &&
   cd "$2" &&
   exec unshare --user --map-user="$4" --map-group="$5" \
-    "$3" --batch -l early-init.el -l init.el -l test/integration/telemetry-e2e.el
+    "$3" --batch -l early-init.el -f hellmacs-start -l test/integration/telemetry-e2e.el
 ' telemetry-check "$TMP" "$ROOT" "$EMACS" "$(id -u)" "$(id -g)"

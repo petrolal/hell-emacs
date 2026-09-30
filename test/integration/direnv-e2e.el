@@ -31,7 +31,7 @@
 ;; build and :tools direnv, a JDK 8 among the JDKs sync found, and network
 ;; access on the first run (the Maven wrapper fetches Maven):
 ;;
-;;   emacs --batch -l early-init.el -l init.el -l test/integration/direnv-e2e.el
+;;   emacs --batch -l early-init.el -f hellmacs-start -l test/integration/direnv-e2e.el
 ;;
 ;; Run it inside a throwaway XDG_*_HOME, so `direnv allow' records the
 ;; fixture there. The fixtures are copied to temporary directories, deleted
@@ -57,7 +57,7 @@
   "The \"Java version\" `mvn -v' printed in OUTPUT, or nil."
   (and output (string-match "^Java version: \\([^,\n]+\\)" output) (match-string 1 output)))
 
-;; `emacs --batch -l init.el' never runs `after-init-hook', so Hellmacs'
+;; `emacs --batch -f hellmacs-start' never runs `after-init-hook', so Hellmacs'
 ;; startup never ends and the first-file hooks (envrc's among them) never
 ;; arm. End it as a real session does.
 (unless hellmacs-init-time

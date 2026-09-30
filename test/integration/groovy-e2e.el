@@ -27,7 +27,7 @@
 ;; a synced profile with :tools build, :tools lsp and :lang groovy, a
 ;; JDK 17+, and network access on the first run.
 ;;
-;;   emacs --batch -l early-init.el -l init.el \
+;;   emacs --batch -l early-init.el -f hellmacs-start \
 ;;         -l test/integration/groovy-e2e.el
 ;;
 ;; The fixture (test/fixtures/groovy/gradle-demo) is copied to a temporary

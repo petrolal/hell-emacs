@@ -83,12 +83,12 @@ bench measured "$HELLMACS_BUDGET_OUT"
 cat "$work/startup-measured.txt"
 
 step "JDTLS on $HELLMACS_PARITY_REFERENCE (java-parity.el)"
-HELLMACS_E2E_OUT="$work/parity.log" "$emacs" --batch -l "$root/early-init.el" -l "$root/init.el" \
+HELLMACS_E2E_OUT="$work/parity.log" "$emacs" --batch -l "$root/early-init.el" -f hellmacs-start \
   -l "$root/test/integration/java-parity.el" > /dev/null 2>&1
 grep -E 'METRIC|FAIL|PASSED|FAILED' "$work/parity.log"
 
 step "IntelliJ on $HELLMACS_PARITY_REFERENCE (intellij-baseline.el)"
-HELLMACS_E2E_OUT="$work/intellij.log" "$emacs" --batch -l "$root/early-init.el" -l "$root/init.el" \
+HELLMACS_E2E_OUT="$work/intellij.log" "$emacs" --batch -l "$root/early-init.el" -f hellmacs-start \
   -l "$root/test/integration/intellij-baseline.el" > /dev/null 2>&1
 cat "$work/intellij.log"
 

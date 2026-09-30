@@ -29,7 +29,7 @@
 ;;   bin/hellmacs install     # with :tools build debugger lsp magit and
 ;;                            # (:lang java +lombok) in your init.el
 ;;   HELLMACS_E2E_FIXTURE=maven-demo \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/java-e2e.el
 ;;
 ;; HELLMACS_E2E_FIXTURE is maven-demo (default) or gradle-demo. The
@@ -213,7 +213,7 @@
         (with-current-buffer (magit-get-mode-buffer 'magit-log-mode)
           (> (count-lines (point-min) (point-max)) 1))))
     (e2e-check "blame marks chunks"
-      (with-current-buffer (find-file-noselect (expand-file-name "init.el" repo))
+      (with-current-buffer (find-file-noselect (expand-file-name "early-init.el" repo))
         (magit-blame-addition nil)
         (e2e--wait (lambda () (cl-some (lambda (o) (overlay-get o 'magit-blame-chunk))
                                        (overlays-in (point-min) (point-max))))

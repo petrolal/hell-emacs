@@ -1,4 +1,4 @@
-;;; init.el --- Hellmacs bootstrap -*- lexical-binding: t; -*-
+;;; hellmacs-start.el --- Start Hellmacs: the init file, from source -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -21,11 +21,21 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; This file only orchestrates: it wires `load-path', brings up the
-;; package manager, and loads modules and the user's config in a fixed
-;; order. It holds no configuration of its own -- that lives in
-;; `lisp/' (engine internals), `modules/<group>/<name>/' (user-facing
-;; features) and `hellmacs-user-dir' (your config, outside this repo).
+;; What an init file does for Hellmacs. As in Doom v3, Hellmacs has no
+;; init.el of its own: `bin/hellmacs sync' generates the profile's
+;; (`hellmacs-profile-generate-init': part 05, the compiled core on
+;; `load-path', then this file's forms), and early-init.el hands Emacs that
+;; one, or this file while the generated one is missing or out of date
+;; (`hellmacs-init-file'). Batch sessions start the same way:
+;;
+;;   emacs --batch -l early-init.el -f hellmacs-start -l SCRIPT.el
+;;
+;; It only orchestrates: it wires `load-path', brings up the package
+;; manager, and loads modules and the user's config in a fixed order. It
+;; holds no configuration of its own -- that lives in `lisp/' (engine
+;; internals), the modules (`modules/hellmacs/' and
+;; `sources/hellmacs+/modules/') and `hellmacs-user-dir' (your config,
+;; outside this repo).
 ;;
 ;; Load order matters and is intentional:
 ;;   1. lisp/hellmacs-lib.el       -- macros/helpers (after!, add-hook!, ...), session context
@@ -90,5 +100,5 @@
                      (if hellmacs-profile (format " [%s]" hellmacs-profile) "")
                      hellmacs-init-time gcs-done)))
 
-(provide 'init)
-;;; init.el ends here
+(provide 'hellmacs-start)
+;;; hellmacs-start.el ends here

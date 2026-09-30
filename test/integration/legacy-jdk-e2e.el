@@ -32,11 +32,11 @@
 ;; dependencies.
 ;;
 ;;   HELLMACS_E2E_FIXTURE=legacy-8 JAVA_HOME=/path/to/jdk8 \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/legacy-jdk-e2e.el
 ;;
 ;;   HELLMACS_E2E_FIXTURE=legacy-11-gradle \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/legacy-jdk-e2e.el
 ;;
 ;; The command-line build runs on the JDK your shell gives it, as in a

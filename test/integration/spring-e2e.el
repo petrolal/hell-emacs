@@ -29,7 +29,7 @@
 ;; It needs a synced profile with (java +spring), and network access on the
 ;; first run (Maven fetches Spring Boot):
 ;;
-;;   emacs --batch -l early-init.el -l init.el -l test/integration/spring-e2e.el
+;;   emacs --batch -l early-init.el -f hellmacs-start -l test/integration/spring-e2e.el
 ;;
 ;; The fixture is copied to a temporary directory, deleted at exit
 ;; (HELLMACS_E2E_KEEP=1 keeps it). Exits 1 if any check fails.

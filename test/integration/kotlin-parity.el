@@ -26,7 +26,7 @@
 ;; takes to be ready, and how much memory it uses.
 ;;
 ;;   HELLMACS_PARITY_PROJECT=/path/to/project \
-;;     emacs --batch -l early-init.el -l init.el \
+;;     emacs --batch -l early-init.el -f hellmacs-start \
 ;;           -l test/integration/kotlin-parity.el
 ;;
 ;; Optional: HELLMACS_PARITY_FILE (a .kt file relative to the project;
