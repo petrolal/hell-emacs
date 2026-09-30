@@ -25,7 +25,7 @@
 ;;     it). Never load a package just by mentioning it.
 ;;   - Test flags with `(modulep! +flag)'; other modules with
 ;;     `(modulep! :group name)'.
-;;   - Keybindings follow Emacs conventions (see "Keybinding policy"
+;;   - Keybindings follow Emacs conventions (see "Rules"
 ;;     in docs/roadmap.md): never rebind a default key to something
 ;;     else. Improve a default command with `[remap ...]' in `:bind',
 ;;     or add a `C-c' leader binding with `hellmacs-leader-def'.

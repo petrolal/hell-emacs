@@ -5,7 +5,7 @@ What changed in each Hellmacs release, newest first. Hellmacs follows
 `vMAJOR.MINOR.PATCH`, and `hellmacs-version` (in `lisp/hellmacs-lib.el`)
 carries its number. Which Emacs versions and platforms each release
 supports, and how long it gets security fixes, is in
-[docs/releases.md](docs/releases.md).
+[the guide](docs/guide.md#3-staying-up-to-date).
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
@@ -38,6 +38,16 @@ The first tagged release will be 0.9.0. Since the project started
   (the latest release) by default.
 
 ### Changed
+
+- The documentation is six files: docs/guide.md (from getting-started,
+  configuration, releases and profiles), docs/jvm.md, docs/keybindings.md
+  (now from the real bindings), docs/cli.md, docs/development.md (from
+  architecture, contributing and vision-and-rules) and docs/roadmap.md,
+  which absorbs the work order: the rules, IntelliJ and Doom parity, and
+  every open item, including the Doom follow-ups (16.11 to 16.19).
+- Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
+  budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
+  `licenses` and `sbom`.
 
 - Startup, packages, the CLI and installing now work as Doom Emacs v3's.
   Core loads from early-init.el (`hellmacs-initialize`), and the entry point

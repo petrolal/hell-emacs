@@ -1,183 +1,141 @@
-# Keybindings Reference
+# Keybindings
 
-Hellmacs adheres to **stock Emacs keybindings** (no modal Vim emulation by default). All Hellmacs commands and sub-menus are grouped logically under the **`C-c`** leader prefix.
+Hellmacs keeps **every stock GNU Emacs key** with its usual meaning, and
+adds nothing modal: no Evil, no `SPC` leader. Its own commands live under
+`C-c`, the prefix Emacs reserves for users, and packages improve the
+default commands in place (`C-x b` switches buffers with previews). `C-h`
+is untouched, and which-key shows what follows any prefix.
 
----
-
-## Hellmacs Leader (`C-c h`)
-
-| Key | Command | Description |
-|---|---|---|
-| `C-c h s` | `hellmacs-splash` | Return to The Altar (dashboard screen) |
-| `C-c h f` | `hellmacs-find-file-in-project` | Forge: Find file in current project (or pick project) |
-| `C-c h c` | `hellmacs-gc` | Reap: Run Garbage Collector immediately and report memory |
-| `C-c h r` | `hellmacs-crucible` | Crucible: Hot-swap modified classes to JVM or reload CIDER REPL |
-| `C-c h S` | `hellmacs-sync` | Synchronize packages and rewrite the static profile |
-| `C-c h R` | `hellmacs-reload` | Reload user configuration |
-| `C-c h u` | `hellmacs-find-user-dir` | Open user configuration directory (`~/.config/hellmacs/`) |
-| `C-c h v` | `hellmacs-find-core-dir` | Open Hellmacs installation directory |
-| `C-c h m` | `hellmacs-list-modules` | List all active and declared modules |
+`TAB` indents, as in stock Emacs; `C-M-i` completes (`(corfu +tab)` makes
+`TAB` complete too).
 
 ---
 
-## File Operations (`C-c f`) & Buffer Operations (`C-c b`)
+## Stock keys, improved
 
-| Key | Command | Description |
+| Key | Command | With |
 |---|---|---|
-| `C-c f f` / `C-x C-f` | `find-file` | Open or create a file |
-| `C-c f r` | `consult-recent-file` | Open a recent file |
-| `C-c f s` / `C-x C-s` | `save-buffer` | Save current buffer |
-| `C-c f S` / `C-x s` | `save-some-buffers` | Save all modified buffers |
-| `C-c b b` / `C-x b` | `consult-buffer` | Switch active buffer with preview |
-| `C-c b k` / `C-x k` | `kill-current-buffer` | Kill the current buffer |
-| `C-c b r` | `revert-buffer` | Reload current buffer from disk |
+| `C-x b` / `C-x 4 b` | `consult-buffer` (with previews) | `:completion vertico` |
+| `C-x p b` | `consult-project-buffer` | vertico |
+| `M-y` | `consult-yank-pop` | vertico |
+| `M-g g` | `consult-goto-line` | vertico |
+| `M-g i` | `consult-imenu` | vertico |
+| `C-x r b` | `consult-bookmark` | vertico |
+| `M-s l` / `M-s r` / `M-s f` | Search lines / ripgrep the project / find files by name | vertico |
+| `M-.` / `M-?` / `M-,` | Definition / references / back, through the language server | `:tools lsp` |
+| `C-M-.` | Workspace symbols | lsp |
+| `C-x p c` | Build the project with its wrapper; errors clickable with `M-g n` / `M-g p` | `:tools build` |
+| `C-x g` / `C-x M-g` / `C-c M-g` | Magit status / dispatch / file actions | `:tools magit` |
+| `C-x v [` `]` / `*` / `n` / `S` | Previous, next changed hunk / show / revert / stage it | `:ui vc-gutter` |
 
 ---
 
-## Search & Navigation (`C-c s`)
+## `C-c` groups
 
-| Key | Command | Description |
+### `C-c h`: Hellmacs
+
+| Key | Command |
+|---|---|
+| `C-c h s` | The Altar (the startup dashboard) |
+| `C-c h f` | The Forge: find a file in the project (or pick a project first) |
+| `C-c h r` | The Crucible: hot-swap changed classes into the debugged JVM, or reload into the Clojure REPL |
+| `C-c h c` | The Reaper: collect garbage now, and say how much memory is in use |
+| `C-c h S` | Sync (install what your config declares) |
+| `C-c h R` | Sync in a child Emacs, then reload your config |
+| `C-c h u` / `C-c h v` | Open your config directory / Hellmacs' directory |
+| `C-c h m` | List the enabled modules |
+
+### `C-c f` file, `C-c b` buffer, `C-c s` search
+
+| Key | Command |
+|---|---|
+| `C-c f f` / `C-c f s` / `C-c f R` | Find a file / save / rename the visited file |
+| `C-c f r` | A recent file |
+| `C-c b b` / `C-c b d` / `C-c b r` | Switch buffer / kill it / revert it |
+| `C-c s s` / `C-c s o` | isearch / occur |
+| `C-c s l` / `C-c s g` / `C-c s f` / `C-c s i` | Search lines / ripgrep / find by name / jump to a symbol |
+
+### `C-c w` window, `C-c q` quit
+
+| Key | Command |
+|---|---|
+| `C-c w s` / `C-c w v` | Split below / right |
+| `C-c w d` / `C-c w m` / `C-c w o` / `C-c w =` | Delete / maximize / other window / balance |
+| `C-c w b` `f` `p` `n` | Move to the window left, right, up, down |
+| `C-c w u` / `C-c w r` | Undo / redo the window layout |
+| `C-c w t` | Hide or bring back the bottom popup (`:ui popup`) |
+| `C-c q q` / `C-c q r` | Quit / restart Emacs |
+
+The stock window keys (`C-x 2`, `C-x 3`, `C-x 0`, `C-x 1`, `C-x o`) work as
+always.
+
+### `C-c l`: the language server (`:tools lsp`)
+
+lsp-mode's own map, in any buffer with a server: `C-c l a a` code actions,
+`C-c l r r` rename, `C-c l r o` organize imports, `C-c l = =` format,
+`C-c l g t` / `g i` type definition / implementations, and the rest (which-key
+lists them). Each JVM language adds its own group:
+
+| Group | In | Keys |
 |---|---|---|
-| `C-c s s` | `consult-line` | Interactive buffer line search |
-| `C-c s p` | `consult-ripgrep` | Ripgrep search across current project |
-| `C-c s i` | `consult-imenu` | Jump to classes, methods, and functions in current buffer |
-| `M-.` | `xref-find-definitions` | Jump to definition |
-| `M-?` | `xref-find-references` | Find all references across project |
-| `M-,` | `xref-go-back` | Go back to previous location |
-| `C-M-.` | `lsp-workspace-symbol` | Search workspace symbols |
+| `C-c l j` | Java | `b` build, `u` update project, `o` imports, `g` getters/setters, `s` toString, `e` equals/hashCode, `i` unimplemented methods, `m` / `v` / `c` extract method / variable / constant, `h` type hierarchy, `t` / `T` test at point / class |
+| `C-c l k` | Kotlin | `b` build, `t` / `T` test at point / class |
+| `C-c l g` | Groovy | `b` build, `t` / `T` test at point / class, `c` refresh the classpath |
+
+Diagnostics: `C-c ! n` / `C-c ! p` next / previous, `C-c ! l` the list.
+
+### `C-c d`: debugging (`:tools debugger`)
+
+| Key | Command |
+|---|---|
+| `C-c d d` / `C-c d D` | Start a session / start the last one again |
+| `C-c d r` / `C-c d q` | Restart / disconnect |
+| `C-c d b` / `B` / `L` / `x` | Toggle a breakpoint / its condition / log message / delete all |
+| `C-c d n` / `i` / `o` / `c` | Next / step in / step out / continue; then `n`, `i`, `o`, `c` alone keep stepping |
+| `C-c d e` / `C-c d E` | Evaluate at point / an expression |
+| `C-c d t` / `C-c d T` | Debug the test at point / the test class |
+
+### `C-c r` run, `C-c t` test, `C-c o` open
+
+| Key | Command |
+|---|---|
+| `C-c r r` / `C-c r d` / `C-c r l` | Run a configuration / debug one / run the last again (`:tools run`) |
+| `C-c t t` / `C-c t f` | Test results / rerun the failures (`:tools test`) |
+| `C-c t c` / `C-c t s` / `C-c t h` | Run with coverage / show / hide coverage marks |
+| `C-c o d` / `C-c o k` | Docker / Kubernetes (`:tools docker`, `:tools kubernetes`) |
 
 ---
 
-## Debugging (`C-c d`)
+## Keys inside modes
 
-| Key | Command | Description |
-|---|---|---|
-| `C-c d d` | `dap-debug` | Start a new debug session |
-| `C-c d D` | `dap-debug-last` | Restart the last debug session |
-| `C-c d b` | `dap-breakpoint-toggle` | Toggle breakpoint on current line |
-| `C-c d B` | `dap-breakpoint-condition` | Set a conditional breakpoint |
-| `C-c d L` | `dap-breakpoint-log-message` | Set a log point |
-| `C-c d n` | `hellmacs-debug-next` | Step over (repeatable with `n`) |
-| `C-c d i` | `hellmacs-debug-step-in` | Step in (repeatable with `i`) |
-| `C-c d o` | `hellmacs-debug-step-out` | Step out (repeatable with `o`) |
-| `C-c d c` | `hellmacs-debug-continue` | Continue execution (repeatable with `c`) |
-| `C-c d e` | `dap-eval` | Evaluate expression at point |
-| `C-c d E` | `dap-eval-expression` | Prompt to evaluate an expression |
-| `C-c d t` | `hellmacs-debug-test-at-point` | Debug the unit test at point |
-| `C-c d T` | `hellmacs-debug-test-class` | Debug the whole test class |
-| `C-c d q` | `dap-disconnect` | Disconnect debug session |
+These are the modes' own keys, only in their buffers.
 
----
-
-## Run Configurations (`C-c r`)
-With `:tools run`. Configurations come from `.hellmacs/run.eld`, IntelliJ's `.run/*.run.xml` and Eclipse `.launch` files (see the JVM guide).
-
-| Key | Command | Description |
-|---|---|---|
-| `C-c r r` | `hellmacs-run` | Run a configuration (with completion) |
-| `C-c r d` | `hellmacs-run-debug` | Debug a configuration |
-| `C-c r l` | `hellmacs-run-last` | Run the last one again, the same way |
+- **Clojure (CIDER):** `C-c M-j` jack in, `C-c M-c` connect, `C-c C-k` load
+  the buffer, `C-M-x` evaluate the form, `C-c C-z` REPL, `C-c C-t t` the
+  test at point.
+- **`.http` files (`:tools http`):** `C-c C-c` send the request at point,
+  `C-c C-e` / `C-c M-e` choose / reload the environment, `C-c C-l` /
+  `C-c C-a` run the request / file with httpyac (`+httpyac`).
+- **SQL (`:tools db`):** `C-c C-c` run the statement at point, `C-c C-b`
+  the buffer.
+- **Snippets (`:editor snippets`):** complete a snippet's name with `C-M-i`;
+  inside one, `M-}` / `M-{` next / previous field, `ESC ESC ESC` abort.
+- **The Altar:** `TAB` / `S-TAB` move, `RET` opens, `g` redraws, `q` buries.
+- **Test results:** `RET` go to the test, `r` rerun it, `f` rerun the
+  failures, `g` refresh, `c` coverage per file.
 
 ---
 
-## HTTP Requests (`.http` buffers)
-With `:tools http`. These are the mode's own keys, active only in `.http` buffers.
+## Your own keys
 
-| Key | Command | Description |
-|---|---|---|
-| `C-c C-c` | `hellmacs-http-send-request` | Send the request at point |
-| `C-c C-e` | `hellmacs-http-select-environment` | Choose an environment (`http-client.env.json`) |
-| `C-c M-e` | `hellmacs-http-reload-environment` | Reload the environment |
-| `C-c C-l` | `hellmacs-http-run-request` | Run the request with httpyac (`+httpyac`) |
-| `C-c C-a` | `hellmacs-http-run-file` | Run the file with httpyac (`+httpyac`) |
+In `config.el`, under `C-c` (one letter after `C-c` is yours by Emacs'
+convention):
 
----
+```elisp
+(keymap-global-set "C-c y g" #'my-command)
+(hellmacs-leader-def            ; with a which-key label
+  "y g" '("my command" . my-command))
+```
 
-## Test Results & Coverage (`C-c t`)
-With `:tools test`. Results come from the build's JUnit XML reports, and coverage from JaCoCo's XML report (see the JVM guide).
-
-| Key | Command | Description |
-|---|---|---|
-| `C-c t t` | `hellmacs-test-results` | Show the test results (`*hellmacs-tests*`) |
-| `C-c t f` | `hellmacs-test-results-rerun-failures` | Rerun the failing tests |
-| `C-c t c` | `hellmacs-coverage-run` | Run the tests with coverage, then mark it |
-| `C-c t s` | `hellmacs-coverage-show` | Show coverage marks |
-| `C-c t h` | `hellmacs-coverage-hide` | Hide coverage marks |
-
-In `*hellmacs-tests*`: `RET` jump to the test, `r` rerun it, `f` rerun failures, `g` refresh, `c` coverage per file.
-
----
-
-## Containers & Clusters (`C-c o`)
-With `:tools docker` and `:tools kubernetes`, through your own `docker` (or `podman`) and `kubectl`, in their current context.
-
-| Key | Command | Description |
-|---|---|---|
-| `C-c o d` | `docker` | docker.el's menu: containers, images, volumes, networks, Compose, contexts |
-| `C-c o k` | `kubel` | kubel: pods and other resources, logs, port forwards, shells; `C` context, `n` namespace |
-
-Inside their buffers the keys are docker.el's and kubel's own (`?` lists them).
-
----
-
-## Snippets (`:editor snippets`)
-
-Type a snippet's name (`junit`, `controller`, `dataclass`, `deftest`, `munit`) and complete it.
-
-| Key | Command | Description |
-|---|---|---|
-| `C-M-i` | `completion-at-point` | Expand the snippet named at point (the corfu popup offers it too) |
-| `M-x tempel-insert` | `tempel-insert` | Pick any snippet for the buffer from a list |
-| `M-}` / `M-{` | `tempel-next` / `tempel-previous` | Next / previous field, inside a snippet (remaps of the paragraph keys) |
-| `ESC ESC ESC` | `tempel-abort` | Take the snippet back out, inside a snippet |
-
----
-
-## File templates (`:editor file-templates`)
-
-No keys: opening a new, empty `FooTest.java`, `Foo.java`, `Foo.kt`, `FooTest.kt` or Clojure file asks whether to fill it from its template (package or namespace from the path). The snippet keys above then move between its fields.
-
-| Key | Command | Description |
-|---|---|---|
-| `M-x auto-insert` | `auto-insert` | Fill the current empty buffer from its file's template |
-
----
-
-## Language Server & Refactoring (`C-c l`)
-
-| Key | Command | Description |
-|---|---|---|
-| `C-c l a a` | `lsp-execute-code-action` | Open code action menu (quick fixes) |
-| `C-c l r r` | `lsp-rename` | Semantic rename symbol across project |
-| `C-c l r o` | `lsp-organize-imports` | Organize and clean imports |
-| `C-c l = =` | `lsp-format-buffer` | Format buffer |
-| `C-c l j ...` | — | Java specific helpers (build, generate methods, extract) |
-| `C-c l k ...` | — | Kotlin specific helpers (build, test) |
-
----
-
-## Git & Version Control (`magit`)
-
-| Key | Command | Description |
-|---|---|---|
-| `C-x g` | `magit-status` | Open Magit status buffer |
-| `C-x M-g` | `magit-dispatch` | Open Magit command popup |
-| `C-c M-g` | `magit-file-dispatch` | File actions (blame, history, diff) |
-| `C-x v [` / `C-x v ]` | `diff-hl-previous-hunk` / `diff-hl-next-hunk` | Previous / next changed hunk (`:ui vc-gutter`) |
-| `C-x v *` | `diff-hl-show-hunk` | Show the hunk at point (`:ui vc-gutter`) |
-| `C-x v n` | `diff-hl-revert-hunk` | Revert the hunk at point (`:ui vc-gutter`) |
-| `C-x v S` | `diff-hl-stage-dwim` | Stage the hunk at point, or the region (`:ui vc-gutter`) |
-| `C-x v =` | `diff-hl-diff-goto-hunk` | With `:ui vc-gutter`, `vc-diff` jumps to the hunk at point |
-
----
-
-## Window Management (`C-c w`) & Quit (`C-c q`)
-
-| Key | Command | Description |
-|---|---|---|
-| `C-c w /` / `C-x 3` | `split-window-right` | Split window vertically |
-| `C-c w -` / `C-x 2` | `split-window-below` | Split window horizontally |
-| `C-c w d` / `C-x 0` | `delete-window` | Close current window |
-| `C-c w o` / `C-x 1` | `delete-other-windows` | Maximize current window |
-| `C-c w t` | `window-toggle-side-windows` | Hide or bring back the bottom popup (`:ui popup`) |
-| `C-c q q` / `C-x C-c` | `save-buffers-kill-terminal` | Prompt to save and quit Emacs |
+`hellmacs-prefix-map` is the `C-c h` map, if you want it on another key:
+`(keymap-global-set "<f12>" hellmacs-prefix-map)`.

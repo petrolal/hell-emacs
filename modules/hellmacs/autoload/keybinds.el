@@ -22,7 +22,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; Hellmacs uses Emacs' default keybindings -- no evil, no modal
-;; editing (see "Keybinding policy" in docs/roadmap.md). Its own
+;; editing (see "Rules" in docs/roadmap.md). Its own
 ;; commands live under `C-c', the prefix Emacs reserves for users,
 ;; laid out like Doom's non-evil leader: `C-c h' Hellmacs, `C-c f'
 ;; file, `C-c b' buffer, `C-c s' search, `C-c w' window, `C-c q' quit.

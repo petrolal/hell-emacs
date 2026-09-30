@@ -1,216 +1,141 @@
-# CLI Reference (`bin/hellmacs`)
+# CLI Reference
 
-Hellmacs includes a command-line tool (`bin/hellmacs`) to install, synchronize, upgrade, lock, and troubleshoot your installation without launching interactive Emacs.
+`bin/hellmacs` installs, syncs, updates and checks Hellmacs without
+starting Emacs, as Doom's `bin/doom`. Put `~/.config/emacs/bin` on your
+`PATH` to type `hellmacs` from anywhere.
 
-As in Doom Emacs v3, each command is its own file: `bin/hellmacs` dispatches `bin/hellmacs sync` to `bin/hellmacs-sync`, loaded only when it runs. With `bin/` on your `PATH`, a command also runs on its own (`hellmacs-sync`, `hellmacs-doctor`), through `bin/hellmacsscript`; it goes through `bin/hellmacs` either way, so `--profile` and the rest apply. Where `/usr/bin/env` is missing (Android's Termux), use `bin/hellmacs.sh`, as Doom's `doom.sh`.
+```
+hellmacs [OPTIONS] COMMAND [ARGS]
+```
 
-More commands come from:
-* enabled modules' `cli.el`;
-* a `hellmacs-NAME` file in your config's `bin/` (`~/.config/hellmacs/bin/`), or in a directory on `$HELLMACSPATH` (colon-separated), as Doom's `$DOOMPATH`: it's `bin/hellmacs NAME`.
+Each command is its own file, `bin/hellmacs-COMMAND`; with `bin/` on your
+`PATH` it also runs alone (`hellmacs-sync`, `hellmacs-doctor`). Where
+`/usr/bin/env` is missing (Termux), use `bin/hellmacs.sh`. More commands
+come from enabled modules, from `hellmacs-NAME` files in your config's
+`bin/`, and from directories on `$HELLMACSPATH`.
 
-Short names, as Doom's: `s` (sync), `up` (upgrade), `doc` (doctor), `pf` (profile), `h` (help), `v` (version).
+## Options
 
-### Options
-
-Before the command, as `doom`'s:
+Before the command:
 
 | Option | Environment | Does |
 |---|---|---|
-| `-p NAME`, `--profile NAME` | `HELLMACS_PROFILE` | Act on a named profile (below) |
+| `-p NAME`, `--profile NAME` | `HELLMACS_PROFILE` | Act on a profile |
 | `--hellmacsdir DIR` | `HELLMACSDIR` | Use the config in `DIR` |
-| `-D`, `--debug` | `DEBUG=1` | Debug output, and backtraces on errors |
-| `-!`, `--force` | `HELLMACS_FORCE=1` | Don't ask: accept every prompt |
+| `-D`, `--debug` | `DEBUG=1` | Debug output and backtraces |
+| `-!`, `--force` | `HELLMACS_FORCE=1` | Answer yes to every prompt |
 
-### Exit codes
+Also read: `EMACS` (the Emacs to run), `XDG_CONFIG_HOME`, `XDG_DATA_HOME`,
+`XDG_CACHE_HOME`, `XDG_STATE_HOME`.
 
-As `doom`'s: `0` success; `1` the command couldn't complete (a check failed); `2` an error; `3` Emacs couldn't be run; `5` no such command; `6` a wrong, missing or extra option.
-
----
+**Exit codes**, as Doom's: `0` success, `1` the command couldn't complete
+(a check failed), `2` an error, `3` Emacs couldn't be run, `5` no such
+command, `6` a wrong or missing option.
 
 ## Commands
 
-### `install`
-```sh
-bin/hellmacs install [--[no-]config] [--[no-]env] [--[no-]install] [--from-bundle FILE]
-```
-Performs initial setup, as `doom install` (safe to run again):
-* Warns about what would make Emacs skip Hellmacs: a `~/.emacs` (or `~/.emacs.el`, `~/_emacs`), or a `~/.emacs.d` when Hellmacs is in `~/.config/emacs`.
-* Copies starter templates from `static/` to `~/.config/hellmacs/` (unless `--no-config` is provided or files already exist).
-* Executes `sync` to download and compile all packages (unless `--no-install`: then run `sync` yourself before starting Emacs).
-* Offers to export your shell environment into `~/.local/share/hellmacs/env` (as `bin/hellmacs env`). `--env` says yes, `--no-env` no; without a terminal, and with neither, it doesn't; `-!` says yes.
-* Executes `doctor` to ensure everything is operational.
-* With `--from-bundle FILE`, installs from an offline bundle (see [`bundle`](#bundle)) with no network access at all:
-  * The bundle must be for this platform and Emacs major version, and carry every module (and flag) your config enables. Otherwise nothing is installed.
-  * Every file is checked against the SHA-256 in the bundle's manifest before anything is put in place. A damaged, missing or extra file stops the install.
-  * The bundle's lock file becomes yours. A different lock file already there is kept as `packages.lock.eld.before-bundle`.
-  * The `sync` that follows refuses the network: url.el fetches and git's network transports fail. Anything the bundle lacks stops the install with its name, instead of being downloaded.
+Short names in brackets.
 
----
+### Setting up and syncing
 
-### `bundle`
-```sh
-bin/hellmacs bundle OUT.tar.zst [--modules SPEC]
-```
-Run on a connected machine. It syncs, then packs everything the sync installed into one archive, for machines without internet:
-* Elpaca's repositories, builds and recipe caches.
-* Every pinned language server and jar (JDTLS with java-debug and the JUnit runner, Lombok, kotlin-language-server, clojure-lsp) and the tree-sitter grammars.
-* A lock file with the exact commit of every package, and a manifest with the SHA-256 of every file.
+**`install [--[no-]config] [--[no-]env] [--[no-]install] [--from-bundle FILE]`**
+First-time setup, safe to repeat: warns about a `~/.emacs` or `~/.emacs.d`
+that would win over Hellmacs, creates your config from `static/`, syncs,
+offers to save your environment, runs `doctor`. `--no-config`,
+`--no-install` and `--env`/`--no-env` skip or answer those steps.
+`--from-bundle` installs from an offline bundle (see `bundle`), checking
+every file's SHA-256, with no network at all.
 
-Details:
-* Compression follows the file name: `.tar.zst` (needs `zstd`), `.tar.gz`, `.tar.xz`, or `.tar`.
-* It prints the bundle's own SHA-256, so you can publish it next to the bundle. The manifest's sums catch a damaged or altered file, but they travel inside the bundle, so get the bundle itself from a place you trust.
-* A bundle is for one platform (grammars and clojure-lsp are native code) and one Emacs major version (packages are byte-compiled). Make one per platform your team uses.
-* It carries what your enabled modules install. `--modules` packs another set, written like a `hellmacs!` block: `--modules ":lang (java +lombok) kotlin :tools lsp build"`. That also syncs this machine for those modules, so run it under its own profile (`bin/hellmacs --profile bundle bundle ...`) to leave yours alone.
-* A server you use from your `PATH` (clojure-lsp, for example) isn't installed by sync, so the bundle doesn't carry it either. The installing machine then needs it on its `PATH` too.
+**`sync`** [`s`]
+Installs every package and language server your modules and `packages.el`
+declare, builds the pinned tree-sitter grammars, byte-compiles core and
+the modules, and generates the file Emacs starts from
+(`init.MAJOR.MINOR.el`, one per Emacs version). Run it after every change
+to your `hellmacs!` block, a `packages.el` or a module's autoloads: Emacs
+starts from what the last sync decided.
 
-Then, on the offline machine: `bin/hellmacs install --from-bundle hellmacs.tar.zst`.
+**`upgrade [--packages] [--channel stable|main]`** [`up`]
+Updates Hellmacs to its channel's latest (`stable`: the newest release
+tag, the default; `main`: the development branch), then every unpinned
+package, then syncs. `--packages` updates only the packages. It also lists
+default modules your config lacks.
 
----
+**`env [--clear]`**
+Saves your shell's environment (`PATH`, `JAVA_HOME`, proxies...) for Emacs
+started from a desktop launcher. Run it again after changing your shell's
+setup; `--clear` removes it.
 
-### `sync`
-```sh
-bin/hellmacs sync
-```
-* Analyzes all active modules declared in your `init.el` and `packages.el`.
-* Uses Elpaca to fetch missing packages and compile Tree-sitter grammars.
-* Merges every package's autoloads into one compiled file, and byte-compiles core plus each enabled module's `init.el` and `config.el` into the profile's `compiled/` directory. Startup uses the compiled files only while they match their sources; edit a file and it loads from source until the next `sync`.
-* Generates the profile's init file, `init.MAJOR.MINOR.el` (one per Emacs version), from numbered parts in `init.d/`, as `doom sync` does, and compiles it. Emacs starts from it: Hellmacs has no `init.el` in its checkout, as Doom v3 hasn't. The file holds everything startup needs, decided now: the enabled modules, where every package is, what to autoload. So **run `sync` after every change to your `hellmacs!` block, a `packages.el` or a module's autoloads**; until you do, Emacs keeps starting as the last sync left it (`doctor` says when your config changed since). Without any sync, Emacs starts plain and says to run it.
+**`config [--add-defaults]`**
+Lists the modules on by default that your `hellmacs!` block misses;
+`--add-defaults` adds them (keeping `init.el.bak`). Then sync.
 
----
+**`gc [-n|--dry-run]`**
+Deletes installed packages nothing declares any more; `-n` only lists them.
 
-### `upgrade`
-```sh
-bin/hellmacs upgrade [--packages] [--channel stable|main]
-```
-* Moves Hellmacs itself to its channel's latest: `stable` (the default, `hellmacs-upgrade-channel`) checks out the latest release tag, `main` pulls the development branch. See [Releases and Support](releases.md).
-* Updates all installed packages that do not have a fixed `:pin`.
-* Runs `sync` to generate a fresh profile.
-* With `--packages`, upgrades only installed packages, leaving Hellmacs itself as it is.
+### Running and checking
 
----
+**`emacs [--vanilla] [-- ARGS]`**
+Starts Emacs on this Hellmacs (and `--profile`), wherever it's installed.
+`--vanilla` starts `emacs -Q`, to tell a Hellmacs problem from an Emacs one.
 
-### `version`
-```sh
-bin/hellmacs version
-```
-* Shows Hellmacs' version and commit, the update channel `upgrade` follows, and the Emacs it runs on.
+**`doctor [--network]`** [`doc`]
+Checks Emacs, required tools, your config (including whether it changed
+since the last sync), and every enabled module's needs: JDKs, language
+servers, fonts, `direnv`... `--network` also checks every host Hellmacs
+fetches from (always, when a proxy, CA or mirror is set).
 
----
+**`info`**
+What a bug report needs: Hellmacs' version and commit, Emacs and its build
+features, the system, the profile, your modules.
 
-### `verify`
-```sh
-bin/hellmacs verify
-```
-* Checks that everything `sync` installed is as it left it: every installed file (language servers, jars, grammars, the packages' compiled files) against the SHA-256 sync recorded, and every package's checkout at the commit it installed, with no local changes, and at the commit your lock file pins.
-* Exits 1 and names each difference. To repair one, delete what changed and run `sync`, which reinstalls what's missing; undo a package's local changes with git.
-* Each sync records what it installed in the profile's `installed.eld`.
+**`version`** [`v`]
+Hellmacs' version and commit, its update channel, and the Emacs it runs on.
 
----
+**`profile list`**, **`profile sync --all`** [`pf`]
+Lists every profile and whether it's synced; or syncs all of them.
 
-### `sbom`
-```sh
-bin/hellmacs sbom [FILE]
-```
-* Writes a CycloneDX (JSON) software bill of materials of everything installed: every package at its commit, each pinned download (language servers, jars) with its SHA-256, npm dependencies from their lock files, and the tree-sitter grammars. To FILE, or to standard output.
+### Reproducibility and compliance
 
----
+**`lock`**
+Records the exact commit of every package in
+`~/.config/hellmacs/packages.lock.eld`; later syncs install those. Commit it
+with your config to reproduce it elsewhere.
 
-### `licenses`
-```sh
-bin/hellmacs licenses
-```
-* Lists each installed component's license, from its package headers, its LICENSE file, or its pin's declaration. Exits 1 on a license it can't tell, and flags one outside the SPDX list, so a new dependency's license is seen before it ships.
+**`verify`**
+Checks that every file sync installed still has its SHA-256, and every
+package is at the commit sync installed (and your lock file pins). Fails
+on any difference, naming it.
 
----
+**`sbom [OUT.json]`**
+A CycloneDX (JSON) bill of materials of everything installed: packages at
+their commits, language servers, jars and grammars, with pins and licenses.
+To stdout without a file name.
 
-### `lock`
-```sh
-bin/hellmacs lock
-```
-* Generates a lockfile (`~/.config/hellmacs/packages.lock.eld`) pinning the exact Git commit SHA of every installed package.
-* Commit this lockfile into your dotfiles repo to achieve 100% reproducible environments across team laptops and CI.
+**`licenses`**
+The license of everything installed; fails if one is unknown, and flags
+licenses outside SPDX's list.
 
----
+**`bundle OUT.tar.zst [--modules SPEC]`**
+Syncs, then packs everything a sync installs (packages, servers, grammars,
+the lock file) into one archive for machines without internet
+(`.tar.gz`, `.tar.xz` and `.tar` work too). A bundle is for one platform
+and one Emacs major version. It carries your modules, or SPEC's:
+`--modules ":lang (java +lombok) kotlin :tools lsp build"`; that also
+syncs this machine for those modules, so use its own profile:
+`hellmacs -p bundle bundle ...`. Install it with
+`hellmacs install --from-bundle FILE`.
 
-### `doctor`
-```sh
-bin/hellmacs doctor [--network]
-```
-Runs a health check on your system, reporting:
-* Emacs version and native-compilation status.
-* External CLI tools (`git`, `rg`, `fd`, `mvn`, `gradle`, `unzip`, JDKs).
-* The network: the proxy, CA bundle and mirrors in use, the JVM truststore, and whether each host Hellmacs fetches from (package sources, language-server downloads) can be reached through them. A host whose certificate isn't trusted is reported as a CA missing from `hellmacs-ca-bundle`. Hosts are checked whenever a proxy, CA or mirror is set, and otherwise only with `--network`.
-* The Maven `settings.xml` and Gradle home JDTLS imports with (`:lang java`).
-* Module-specific assets (fonts, icons, language server binaries).
-* Configuration and profile validity.
+**`help`** [`h`]
+All of the above, briefly.
 
----
+## Profiles
 
-### `env`
-```sh
-bin/hellmacs env [--clear]
-```
-* Captures your current shell environment (`PATH`, `JAVA_HOME`, proxy settings, etc.) into `~/.local/share/hellmacs/env.eld`.
-* Allows Emacs launched from GUI desktop launchers (which lack full shell environment) to discover all system tools.
-* `--clear` removes the saved environment file.
-
----
-
-### `config`
-```sh
-bin/hellmacs config [--add-defaults]
-```
-* Lists the modules that are on by default (`static/init.example.el`) but missing from your `hellmacs!` block, each with its line. A config made from an older template misses every module added since, `:tools magit` for one. `doctor` shows the same list, and so does `upgrade` after updating.
-* A module you commented out in your block is your choice, so it isn't listed. Flags are yours too: only missing modules count.
-* With `--add-defaults`, it adds them to your block, each in its group, as the template writes it. A missing group is created, in the template's order. `init.el` is kept as `init.el.bak`, or `init.el.bak.N` if that exists. If the result doesn't read back with the modules in it, the old file is restored.
-* Then run `sync` to install them.
-
----
-
-### `gc`
-```sh
-bin/hellmacs gc [-n]
-```
-* Removes old and orphaned package installations that are no longer referenced by any enabled module.
-* Use `-n` for a dry run.
-
----
-
-### `emacs`
-```sh
-bin/hellmacs [--profile NAME] emacs [--vanilla] [-- EMACS-ARGS]
-```
-* Starts Emacs on this Hellmacs checkout (and profile), wherever the checkout is, as `doom emacs`.
-* `--vanilla` starts Emacs with no config at all (`emacs -Q`), to tell a Hellmacs problem from an Emacs one.
-
----
-
-### `profile`
-```sh
-bin/hellmacs profile [list]
-bin/hellmacs profile sync --all
-```
-* `list`: every profile there is (see below), `*` marking the one `--profile` chose, and whether each is synced for this Emacs.
-* `sync --all`: syncs each of them, as `doom profile sync --all`.
-
----
-
-### `info`
-```sh
-bin/hellmacs info
-```
-* Prints what a bug report needs, as `doom info`: Hellmacs' version and commit, Emacs' version and build features, the system, the profile and whether it's synced, your config's directory and modules.
-
----
-
-## Multi-Profile Flag (`--profile`)
-
-Every command accepts `--profile <NAME>` (or `-p NAME`) before it:
+Every command acts on the default profile unless given `-p NAME`:
 
 ```sh
-bin/hellmacs --profile work sync
-bin/hellmacs --profile work doctor
-bin/hellmacs --profile work upgrade
+hellmacs -p work sync
+hellmacs -p work emacs
+hellmacs -p safe-mode sync     # Hellmacs' core alone, for finding what broke
 ```
 
-A profile's config is `~/.config/hellmacs-NAME/`, else `profiles/NAME/` in your config, else `profiles/NAME/` in Hellmacs; its packages, caches and history are its own. Hellmacs ships `safe-mode`: its core with no other module and none of your config, for finding what broke Emacs (`bin/hellmacs --profile safe-mode sync`, then `bin/hellmacs --profile safe-mode emacs`). See [`profiles/README.md`](../profiles/README.md).
+See the [guide](guide.md#4-profiles).

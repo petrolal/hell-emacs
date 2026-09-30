@@ -4,85 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Hellmacs is an Emacs distribution (Emacs 29.1+, pure Emacs Lisp with `lexical-binding: t`) aimed at JVM development (Java, Kotlin, Clojure, Groovy). Its module system and directory layout follow Doom Emacs v3 (`hellmacs!`, `modulep!`, `package!`; `lisp/`, module sources, `bin/hellmacs-COMMAND`, generated profile init), but it keeps stock GNU Emacs keybindings. Elpaca is the package manager.
+Hellmacs is an Emacs distribution (Emacs 29.1+, pure Elisp, `lexical-binding: t`) for JVM development (Java first; Kotlin, Clojure, Groovy follow). Its layout, module system, CLI and startup mirror **Doom Emacs v3** (`doomemacs/core`): `hellmacs!`/`modulep!`/`package!`, `lisp/`, `bin/hellmacs-COMMAND`, a generated per-profile init file. It keeps **stock GNU Emacs keybindings** and uses Elpaca instead of straight.el. When unsure where something goes or how it should work, do what Doom does, unless a rule below says otherwise.
+
+Read before changing anything:
+- `docs/roadmap.md` → "Rules" (the non-negotiables) and "Open work, in order" (what to do next).
+- `docs/development.md`: architecture table (Doom file ↔ Hellmacs file), startup sequence, module file roles and API, "Where code goes", how to check a change, releasing.
+- `docs/guide.md` (users), `docs/jvm.md` (JVM features), `docs/cli.md`, `docs/keybindings.md`, `profiles/README.md`.
 
 ## Commands
 
-All commands go through `bin/hellmacs`, a thin sh wrapper that runs `emacs --batch` with `early-init.el` and dispatches to `hellmacs-cli-main` in `lisp/hellmacs-cli.el`. Each command is its own Elisp file, `bin/hellmacs-COMMAND` (Doom v3's `bin/doom-COMMAND`), loaded when it runs (`hellmacs-cli-load`); with `bin/` on `PATH` it also runs directly through `bin/hellmacsscript`. A new command goes in a new `bin/hellmacs-NAME` defining `hellmacs-cli-NAME` (or in a module's `cli.el`). Set `$EMACS` to use a different Emacs binary.
+Everything goes through `bin/hellmacs` (sh wrapper → `emacs --batch` → `hellmacs-cli-main` in `lisp/hellmacs-cli.el`). Each command is its own file `bin/hellmacs-COMMAND` defining `hellmacs-cli-COMMAND`. Global options come before the command. `$EMACS` picks the Emacs binary.
 
 ```sh
-bin/hellmacs doctor               # health checks (core + every enabled module's doctor.el)
-bin/hellmacs sync                 # install packages, build tree-sitter grammars, generate the init file
-bin/hellmacs -p dev sync          # global options (-p/--profile, --hellmacsdir, -D, -!) come first
-bin/hellmacs -p safe-mode sync    # profiles/safe-mode: core only, for bisecting a broken config
-bin/hellmacs emacs                # run this checkout interactively (= emacs --init-directory .)
+bin/hellmacs sync                 # install packages, build grammars, byte-compile, generate the profile init file
+bin/hellmacs doctor               # health checks (core + each enabled module's doctor.el)
+bin/hellmacs -p dev sync          # -p/--profile, --hellmacsdir, -D, -! go before the command
+bin/hellmacs -p safe-mode sync    # core only, for bisecting a broken config
+bin/hellmacs emacs                # run this checkout interactively
+bin/hellmacs licenses | sbom      # read every hellmacs-component! / grammar :license pin
 ```
 
-**Hellmacs has no tests.** The user removed `test/` (unit suites, integration scripts, fixtures) and the test command on 2026-09-30: don't write tests or bring them back unless they ask. Check a change by syncing and starting Emacs against throwaway directories, so the real config is never touched:
+**There are no tests, and none should be added** (removed 2026-09-30). A change is checked by syncing and starting Emacs against throwaway XDG directories, never the real config:
 
 ```sh
 T=$(mktemp -d)
-env XDG_CONFIG_HOME=$T/config XDG_DATA_HOME=$T/data XDG_CACHE_HOME=$T/cache \
-    XDG_STATE_HOME=$T/state HELLMACSDIR=$T/config/hellmacs bin/hellmacs sync
-env XDG_CONFIG_HOME=$T/config XDG_DATA_HOME=$T/data XDG_CACHE_HOME=$T/cache \
-    XDG_STATE_HOME=$T/state HELLMACSDIR=$T/config/hellmacs bin/hellmacs emacs
+export XDG_CONFIG_HOME=$T/config XDG_DATA_HOME=$T/data \
+       XDG_CACHE_HOME=$T/cache XDG_STATE_HOME=$T/state HELLMACSDIR=$T/config/hellmacs
+bin/hellmacs install --no-env     # creates the config, syncs, runs doctor
+bin/hellmacs emacs                # *Messages* shows "Hellmacs ready in N.NNs"
 ```
 
-A full sync of the default modules downloads language servers and takes minutes: run it in the background. CI (`.github/workflows/ci.yml`) runs `install`, `doctor`, `licenses` and `sbom` on Emacs 29.1 and 30.1.
+A full sync downloads language servers and takes minutes: run it in the background. CI (`.github/workflows/ci.yml`) runs install, `doctor`, `licenses`, `sbom` on Emacs 29.1 and 30.1.
 
-After any change to the core engine or to modules, sync and run `bin/hellmacs doctor`.
+## Architecture: the parts that bite
 
-## Architecture
+- **Everything startup needs is decided at sync time.** `early-init.el` loads `lisp/hellmacs.el` → `hellmacs-initialize` → `hellmacs-start` loads `<profile>/init.MAJOR.MINOR.elc`, built by `lisp/hellmacs-profiles.el` from numbered parts in `<profile>/init.d/` (05 load-path, 10 core autoloads, 20 user `init.el` + network, 30 `:env`, 60 lib/module autoloads, 70 package autoloads, 80 module `init.el`s then `config.el`s then user `config.el`). Startup never reads `packages.el` or installs anything. After changing a `hellmacs!` block, a `packages.el`, an autoload file, core, or a module: **sync again**, or you are running stale compiled files.
+- **There is no root `init.el`** (gitignored on purpose); `early-init.el` is the only root `.el`.
+- **`lisp/lib/` and `lisp/cli/` are off `load-path`.** Load with `(hellmacs-require 'hellmacs-lib 'net)` / `(hellmacs-require 'hellmacs-cli 'sync)` (inside `eval-and-compile` when you need their macros, e.g. `with-hellmacs-network`); end such files with `(hellmacs-provide 'hellmacs-lib 'NAME)`. Plain `(require 'hellmacs-jdk)` doesn't work.
+- **Module trees**, searched in order: user `modules/`, `modules/hellmacs/` (core's own module `:hellmacs`, always on, depth -100: gcmh, the Altar splash, themed UX, the `C-c` leader API `hellmacs-leader-def` in `autoload/keybinds.el`), then `sources/hellmacs+/modules/<group>/<name>/` (the catalog). Never hard-code a module path: use `hellmacs-module-locate-path` / `hellmacs-module-from-path`.
+- **Default modules** come from `static/init.example.el`, the single source: register new modules there. New modules start from `static/module-template/`.
+- **Code must stay byte-compilable** (sync compiles core and module files into `<profile>/compiled/`): load module siblings with `(hellmacs-module-load "+paths")` and get the module dir with `(hellmacs-module-get hellmacs--current-module :path)`, never `load-file-name`; wrap `load-path` changes needed by a top-level `require` in `eval-and-compile`; `defvar` special variables bound in core; files expanding a not-yet-loaded third-party macro (e.g. `lisp/hellmacs-elpaca.el`) are `no-byte-compile`.
+- **Languages plug in via buffer-local variables** so core and `:tools` never name a language: `hellmacs-reload-function`, `hellmacs-forge-test-class-function` / `-test-method-function`, `hellmacs-lsp-status-register`.
 
-Hellmacs follows Doom Emacs v3's layout (`doomemacs/core`, Phase 16 in `docs/roadmap.md`). Know where things go before adding a file.
+## Rules (from `docs/roadmap.md`)
 
-### Layout
-- `early-init.el`: the only `.el` at the root. There is **no root `init.el`** (`.gitignore` keeps it so).
-- `lisp/`: the engine (Doom's `lisp/`). `hellmacs.el` is the heart (lifecycle, GC, dirs, and the bootstrap: `hellmacs-initialize`, `hellmacs-start`, `hellmacs-startup`), `hellmacs-emacs.el` the stock-Emacs defaults and the entry point (Doom's `doom-emacs.el`), `hellmacs-lib.el` the macros (`after!`, `add-hook!`, `hellmacs-require`, `hellmacs-dotfile`), `hellmacs-modules.el` the module system and `package!`, `hellmacs-packages.el`/`-elpaca.el` packages (Elpaca, which Doom's own `doom-elpaca.el` names as its next package manager), `hellmacs-treesit.el` pinned grammars, `hellmacs-profiles.el` the generated init file, `hellmacs-cli.el` the CLI dispatcher, `packages.el` (empty, as Doom's). There is no `hellmacs-start.el` and no keybinds file: as in Doom, the startup is the generated init file, and the `C-c` leader API (`hellmacs-leader-def`) is core's module's `autoload/keybinds.el`.
-  - `lisp/lib/` (library: `jdk`, `net`, `lsp-status`) and `lisp/cli/` (the CLI's parts: `sync`, `bundle`, `compliance`, `config`, `verify`) are **not** on `load-path`, as in Doom. Load them with `(hellmacs-require 'hellmacs-lib 'net)` / `(hellmacs-require 'hellmacs-cli 'sync)` (Doom's `doom-require`; wrap in `eval-and-compile` when a file needs their macros, e.g. `with-hellmacs-network`), and end each such file with `(hellmacs-provide 'hellmacs-lib 'NAME)`. `(require 'hellmacs-jdk)` and the like don't work. `;;;###autoload` cookies in `lisp/lib/*.el` also go into the profile's autoloads (part 60).
-- `modules/hellmacs/`: core's own module, `(:hellmacs . nil)` (Doom's `:doom`), always on, first (depth -100, from its `.hellmacsmodule`): core's packages (compat, gcmh), gcmh's setup, the Altar (`+splash.el`), themed UX (`+ux.el`), and the `C-c` leader API (`autoload/keybinds.el`). Anything user-facing or package-backed that every config gets goes here, not in `lisp/`.
-- `sources/hellmacs+/modules/<group>/<name>/`: the module catalog, a module source (Doom's `sources/doom+`, in-tree here). Every other module lives here.
-- `bin/`: `hellmacs` (sh dispatcher: global options `-p/--profile`, `--hellmacsdir`, `-D/--debug`, `-!/--force` before the command, the root check, and `emacs`, which execs Emacs), one Elisp file per command `bin/hellmacs-COMMAND` (Doom's `bin/doom-COMMAND`), `hellmacsscript` (Doom's `doomscript`) and `hellmacs.sh` (Doom's `doom.sh`, for systems without `/usr/bin/env`). Commands are also found in your config's `bin/` and `$HELLMACSPATH` (`hellmacs-cli-load-path`); short aliases (`s`, `up`, `doc`, `pf`, `h`, `v`) are `hellmacs-cli-aliases`.
-- `profiles/`: profiles Hellmacs ships (`safe-mode`). A directory is a profile (implicit profiles).
-- `.hellmacs` (the project) and each module's `.hellmacsmodule` (`name`, optional `depth`): Doom's dotfile format, a version string then an alist, read with `hellmacs-dotfile`.
-- `static/` (starter templates, `module-template/`), `docs/`. The theme lives in its module: `sources/hellmacs+/modules/ui/theme/themes/`. As Doom's `.gitignore` has it, root `themes/`, `snippets/`, `user-lisp/`, `modules/*/` (but `modules/hellmacs/`) and `sources/*/` (but `sources/hellmacs+/`) are the user's, for when `$HELLMACSDIR` is the checkout.
+- **Stock Emacs keys.** No Evil, no `SPC` leader, no modal or single-key hijacks, no IntelliJ keymap. Hellmacs keys live under `C-c` (`C-c h` is Hellmacs' own); packages improve default commands instead of adding keys; `TAB` indents; `C-h` untouched.
+- **The identity is fixed:** `hellmacs-inferno` theme and palette, banner/logos, the Altar, themed messages (`[FORGE IGNITED]` …). `hellmacs-ux-enable nil` is the neutral opt-out.
+- **Built-ins first** (`project.el`, flymake, treesit, `compile`, …); third-party only where the JVM workflow needs it.
+- **Pinned and reproducible.** Packages only via `package!` in a `packages.el` (never `package-install`). Every download goes through `hellmacs-sync-download-verified` (SHA-256) inside `with-hellmacs-network`, is declared with `hellmacs-component!` in the module's `+paths.el`, and grammars carry a `:license`. Language servers get a pinned installer in the module's `cli.el` registered with `hellmacs-lsp-pin-installer`. Nothing installs mid-session.
+- **XDG only**: never `~/.emacs.d` or `$HOME`; use `hellmacs-data-dir`, `hellmacs-cache-dir`, `hellmacs-state-file`, etc. No telemetry.
+- **Startup under 0.12s** for a synced profile; keep work lazy (autoloads, `after!`, `hellmacs-first-*-hook`).
+- Every source file carries the GPL-3.0-or-later header with the `petrolal` copyright.
+- Commits use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
 
-### Boot sequence
-- `early-init.el`: GC tuning, XDG directory remapping (defines `hellmacs-dir`, `hellmacs-core-dir` = `lisp/`, `hellmacs-modules-dir`, `hellmacs-sources-dir`, and the data/cache/state dirs; a profile's config dir via `hellmacs--user-dir`), suppression of UI chrome, and Doom's startup hacks (mode-line and messages hidden, tool bar and tty setup deferred, undone by an advice once the init file has loaded). Last, as Doom's loads `lisp/doom.el`, it loads core (`lisp/hellmacs.el`, byte-compiled when the last sync compiled it and no `lisp/**/*.el` changed since) and calls `hellmacs-initialize`, in every session, the CLI's too.
-- `hellmacs-initialize` loads `hellmacs-packages`, `hellmacs-modules` and `hellmacs-treesit`; interactively also `hellmacs-emacs`, whose entry point (an `:override` advice on `startup--load-user-init-file`, as in Doom's `doom-emacs.el`) replaces Emacs' init file loading with `hellmacs-start`. Batch sessions call it themselves: `emacs --batch -l early-init.el -f hellmacs-start`.
-- `hellmacs-start` loads the profile's generated init file, `<profile>/init.MAJOR.MINOR.el(c)` (`hellmacs-init-file`, one per Emacs version, as Doom's), then `hellmacs-startup` runs `hellmacs-startup-functions`. With no init file it signals `hellmacs-nosync-error` (interactively: a warning, and plain Emacs), as Doom does: **startup never installs packages or reads `packages.el`**; nothing works until `bin/hellmacs sync`.
-- `sync` generates that file (`lisp/hellmacs-profiles.el`, Doom's `doom-profiles.el`) from numbered parts in `<profile>/init.d/`, written by `hellmacs-profile-generate-functions`; most add a function to `hellmacs-startup-functions` at the depth of their number: 05 profile data and packages' `load-path`, 10 core's autoloads, 20 the user's `init.el` (for its settings) and the network setup, 30 packages' `:env`, 60 `lisp/lib/` and enabled modules' autoloads (`autoload.el` and `autoload/*.el`), 70 packages' autoloads (one compiled file) and Info dirs, 80 the enabled modules (as sync saw them: `hellmacs-modules` is baked in) — every `init.el`, then every `config.el`, with `hellmacs-{before,after}-modules-{init,config}-hook` — then the user's `config.el`. So the module list, packages and autoloads are fixed at sync time: after changing a `hellmacs!` block, a `packages.el` or an autoload file, sync again. `bin/hellmacs doctor` says when the config changed since (`hellmacs-profile--stale-reason`).
-- `sync` also byte-compiles core (all of `lisp/`, subdirectories included) and each enabled module's `init.el`/`config.el` into `<profile>/compiled/` (`hellmacs-compiled-dir`), and the init file when core compiled. Startup uses compiled core only if no `lisp/**/*.el` is newer than its stamp (all or nothing), and a compiled module file only if it's newer than its source. So code must stay compilable: in module files load siblings with `(hellmacs-module-load "+paths")`, never via `load-file-name` (it points into the profile when compiled), and find the module's own directory with `(hellmacs-module-get hellmacs--current-module :path)`; wrap `load-path` changes that a top-level `require` needs in `eval-and-compile`; and in core, `defvar` any special variable a file binds. A file that expands a third-party macro that may not be loaded yet (like `lisp/hellmacs-elpaca.el`'s `elpaca`) must be `no-byte-compile`: compiled, the macro's expansion calls that package's internals before it's loaded. After changing core or a module, run `bin/hellmacs sync` before measuring startup or trying it, or you're running a stale profile.
+## Work tracking
 
-### Modules (`lisp/hellmacs-modules.el`)
-A module is `<group>/<name>/` in a module tree, written `:group name`. Trees are searched in order (`hellmacs-module-load-path`, Doom v3's `doom-module-load-path`): your `$HELLMACS_USER_DIR/modules/`, then Hellmacs' `modules/` (core's own), then `sources/hellmacs+/modules/` (the catalog). Find a module with `hellmacs-module-locate-path`, a file's module with `hellmacs-module-from-path`; never hard-code a module's path. Every file in a module is optional:
-- `.hellmacsmodule`: `"0.9.0"` then `((name :group name))`, plus `(depth . N)` to load before (negative) or after other modules. Every module Hellmacs ships has one.
-- `packages.el`: declarations only, read at sync time (and by `doctor`); the synced profile keeps what startup needs from them. That means `(package! ...)` (`:recipe`, `:pin`, `:built-in`, `:disable`, `:ignore`, `:type`, `:env`, as Doom's), `(unpin! ...)` and `(disable-packages! ...)` (in the user's `packages.el`), `(depends-on! :tools lsp)` for modules this one needs, and `(hellmacs-treesit! :grammars ... :remap ...)` under `+tree-sitter` for pinned grammars and mode remaps. Don't hand-write "needs module X" warnings or tree-sitter remap/doctor code in other files.
-- `autoload.el` or `autoload/*.el`: commands and helpers that other files may call (`;;;###autoload`).
-- `init.el`: runs before any module's `config.el`.
-- `config.el`: the actual configuration, usually `use-package` forms.
-- `cli.el`: extends `bin/hellmacs`, for example by adding to `hellmacs-sync-functions` or adding commands.
-- `doctor.el`: checks run by `bin/hellmacs doctor`.
-- `+paths.el` (lang modules): language-server and workspace locations. Both `config.el` and `cli.el` load it, so batch and interactive sessions agree on paths.
-
-User modules in `$HELLMACS_USER_DIR/modules/` fully override Hellmacs' modules with the same name. The user directory is resolved in this order: `$HELLMACSDIR` → `~/.config/hellmacs/` → `~/.hellmacs.d/`; for `--profile NAME`: `~/.config/hellmacs-NAME/` → `~/.config/hellmacs/profiles/NAME/` → Hellmacs' `profiles/NAME/`. Use `(modulep! +flag)` and `(modulep! :group name +flag)` to gate code on module flags. When the user `init.el` has no `hellmacs!` block, the default module set comes from `static/init.example.el` (an empty `(hellmacs!)` means no modules, as in `safe-mode`). That makes it the single source of defaults: register new modules there.
-
-Larger UI implementations live inside their module's directory, as Doom keeps a module's files: `sources/hellmacs+/modules/ui/modeline/hellmacs-modeline.el`, `sources/hellmacs+/modules/ui/dashboard/hellmacs-dashboard.el` (their `config.el` puts the module directory on `load-path` and requires them). New modules start from `static/module-template/` (copied into `sources/hellmacs+/modules/<group>/<name>/`, with its `.hellmacsmodule` renamed).
-
-## Project rules
-
-- **Stock Emacs keybindings only.** Never add Evil/modal bindings or single-key hijacks. Hellmacs bindings go under `C-c`, mainly the `C-c h` leader via `hellmacs-leader-def`. Leave built-in help (`C-h …`) untouched.
-- **XDG isolation.** Never hardcode `~/.emacs.d` or write state to `$HOME`. Use `hellmacs-data-dir`, `hellmacs-cache-dir`, `hellmacs-state-file`, and related helpers.
-- **Packages** are declared only with `package!` in a `packages.el`. Never call `package-install` or `straight-use-package`.
-- **Network:** anything Hellmacs downloads goes through `hellmacs-sync-download-verified` (pinned by SHA-256), and any fetching code runs inside `with-hellmacs-network` (`lisp/lib/net.el`), so the user's proxy, CA and mirrors apply. A module's language server gets a pinned installer in its `cli.el`, registered with `hellmacs-lsp-pin-installer` so lsp-mode never falls back to its own. Declare every pinned download with `hellmacs-component!` in the module's `+paths.el`, next to its pin (name, version, SPDX license, URL, SHA-256, install path), and give every grammar a `:license`: `bin/hellmacs sbom` and `licenses` read them, and must see every pin.
-- **Built-ins first.** Prefer `project.el`, `treesit`, `compile`, and similar built-ins. Add a third-party package only when it's needed.
-- **Startup budget is under 0.12s.** Keep work lazy (autoloads, `after!`, hooks). `Hellmacs ready in N.NNs` in `*Messages*` (`hellmacs-init-time`) is the measure; sync first.
-- **No tests** (see Commands): check a change with a throwaway sync and start, and `bin/hellmacs doctor`.
-- Every source file carries the GPL-3.0-or-later header with the `petrolal` copyright. Preserve it and add it to new files.
-
-## Docs
-
-`docs/development/` contains the engineering specifications: `vision-and-rules.md`, `architecture.md`, and `contributing.md`. `docs/roadmap.md` tracks phases; code comments often refer to them ("Phase 6.2", "Phase 9 spec"). Finished roadmap items before Phase 16 keep the paths they were written with (`core/`, `modules/<group>/`, root `init.el`): map them to `lisp/`, `sources/hellmacs+/modules/<group>/` and the generated init file (`lisp/hellmacs-profiles.el`). Some docs describe planned features, so check the code before relying on them. `profiles/README.md` explains profiles.
-
-`docs/development/work-order.md` is the ordered checklist of remaining roadmap work. Take the next unchecked item from it. When an item is done and verified, tick it there and in `docs/roadmap.md`, with the date and a short note.
-
+Take the next unchecked item in `docs/roadmap.md` → "Open work, in order". When done and verified (throwaway sync, `doctor` passes, startup within budget if touched), tick it as `- [x] Thing (YYYY-MM-DD: what was done, how it was checked)`; partial work is `- [/]`. Add new work to the roadmap before starting it. Code comments cite roadmap item numbers ("12.7", "Phase 16").
