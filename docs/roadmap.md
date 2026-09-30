@@ -287,10 +287,12 @@ announced instead of leaving completion silently empty.
 
 ### 3. Groovy (8.4)
 
-- [/] `:lang groovy`: groovy-mode (Gradle scripts, Jenkinsfiles),
+- [x] `:lang groovy`: groovy-mode (Gradle scripts, Jenkinsfiles),
       groovy-language-server built pinned by sync, status messages,
-      `C-c l c` key. Left: one full check by hand (the last run passed 14
-      of 16 checks, before a fix).
+      `C-c l c` key (2026-09-30: verified build with pinned Gradle and
+      verification-metadata.xml, jar installation, doctor checks, file
+      associations for .gradle and Jenkinsfiles, Spock/JUnit test detection,
+      and localleader refresh).
 
 ### 4. Every language IntelliJ IDEA bundles, on by default (Phase 14)
 
