@@ -44,6 +44,20 @@ manager; then the new init file loads here."
       (user-error "Sync failed; see *hellmacs sync*"))))
 
 ;;;###autoload
+(defun hellmacs-sync-child ()
+  "Sync in a child Emacs process (output in *hellmacs sync*), as `C-c h R' does."
+  (interactive)
+  (let ((buffer (get-buffer-create "*hellmacs sync*")))
+    (with-current-buffer buffer (erase-buffer))
+    (message "Hellmacs: syncing...")
+    (if (zerop (apply #'call-process (expand-file-name "bin/hellmacs" hellmacs-dir) nil buffer t
+                      (append (and hellmacs-profile (list "--profile" hellmacs-profile))
+                              '("sync"))))
+        (message "Hellmacs: synced successfully")
+      (pop-to-buffer buffer)
+      (user-error "Sync failed; see *hellmacs sync*"))))
+
+;;;###autoload
 (defun hellmacs-visit-dir ()
   "Open a Dired buffer at the Hellmacs install directory."
   (interactive)

@@ -154,7 +154,7 @@
   "f" (cons "forge/find-file" #'project-find-file)
   "r" (cons "crucible/reload" #'hellmacs-crucible-reload)
   "R" (cons "forge/reload-config" #'hellmacs-reload)
-  "S" (cons "forge/sync" #'hellmacs-sync)
+  "S" (cons "forge/sync" #'hellmacs-sync-child)
   "u" (cons "forge/user-config" #'hellmacs-visit-user-dir)
   "v" (cons "forge/hellmacs-dir" #'hellmacs-visit-dir)
   "m" (cons "forge/modules" #'hellmacs-list-modules))

@@ -30,8 +30,15 @@
 
 (hellmacs-cli-load "env" "doctor")
 
-(defun hellmacs-cli-install (&rest args)
+(defcli! install (&rest args)
   "First-time setup, as `doom install'. Idempotent: safe to run again.
+
+Options:
+  --[no-]config       Create or skip creating your config directory (~/.config/hellmacs)
+  --[no-]env          Save or skip saving your shell environment for Emacs
+  --[no-]install      Sync immediately or skip syncing packages and profile
+  --aot               Native-compile installed packages ahead of time
+  --from-bundle FILE  Install from an offline bundle, with no network access
 
   1. create your config (`hellmacs-user-dir', ~/.config/hellmacs) with
      starter init.el, config.el and packages.el (static/*.example.el),
@@ -40,14 +47,13 @@
      answer for you;
   3. sync: install the packages your modules declare, and generate the
      init file (--no-install skips it; run `sync' later);
-  4. run `doctor'.
-
---from-bundle FILE installs from an offline bundle, with no network
-access at all."
+  4. if --aot, native-compile packages ahead of time;
+  5. run `doctor'."
   (let* ((bundle (hellmacs-cli--option args "--from-bundle"))
          (config (hellmacs-cli--flag args "config"))
          (env (hellmacs-cli--flag args "env"))
          (install (hellmacs-cli--flag args "install"))
+         (aot (member "--aot" args))
          (hellmacs-net-offline (and bundle t)))
     (hellmacs-cli--say "Installing Hellmacs in %s%s" (abbreviate-file-name hellmacs-dir)
                        (if bundle ", offline" ""))
@@ -76,7 +82,11 @@ start Emacs with `%s', or move ~/.emacs.d away"
       (hellmacs-bundle-install bundle (not (file-directory-p hellmacs-user-dir))))
     (if (eq install 'no)
         (hellmacs-cli--say "  - Not syncing, as asked (--no-install); run `bin/hellmacs sync' before starting Emacs")
-      (hellmacs-sync))
+      (hellmacs-sync)
+      (when aot
+        (hellmacs-cli--say "  - Native-compiling packages ahead of time (--aot)...")
+        (when (and (featurep 'native-compile) (fboundp 'elpaca-native-compile))
+          (elpaca-native-compile))))
     (when (pcase env
             ('no nil)
             ('t t)

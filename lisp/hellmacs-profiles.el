@@ -242,7 +242,8 @@ and their Info manuals."
 
 (defun hellmacs-profile--generate-module-loader (_data)
   "Part 80: the enabled modules, as sync saw them, then your config.el."
-  (let ((modules (hellmacs-module-list)))
+  (let ((init-modules (hellmacs-module-list :init))
+        (config-modules (hellmacs-module-list :config)))
     (hellmacs-profile--write-part
      "80-hellmacs-modules.init.el"
      `((setq hellmacs-modules ,hellmacs-modules)
@@ -252,13 +253,15 @@ and their Info manuals."
          (hellmacs-treesit-apply)
          (with-hellmacs-context 'module
            (hellmacs-run-hooks 'hellmacs-before-modules-init-hook)
-           ,@(cl-loop for key in modules
-                      if (file-exists-p (expand-file-name "init.el" (hellmacs-module-get key :path)))
+           ,@(cl-loop for key in init-modules
+                      for path = (expand-file-name "init.el" (hellmacs-module-get key :path))
+                      if (and (file-exists-p path) (hellmacs-file-active-p path))
                       collect `(hellmacs-module--load ',key "init.el"))
            (hellmacs-run-hooks 'hellmacs-after-modules-init-hook)
            (hellmacs-run-hooks 'hellmacs-before-modules-config-hook)
-           ,@(cl-loop for key in modules
-                      if (file-exists-p (expand-file-name "config.el" (hellmacs-module-get key :path)))
+           ,@(cl-loop for key in config-modules
+                      for path = (expand-file-name "config.el" (hellmacs-module-get key :path))
+                      if (and (file-exists-p path) (hellmacs-file-active-p path))
                       collect `(hellmacs-module--load ',key "config.el"))
            (hellmacs-run-hooks 'hellmacs-after-modules-config-hook))
          (hellmacs-load-user-file "config.el"))
@@ -267,9 +270,13 @@ and their Info manuals."
 ;;; Generating ---------------------------------------------------------------
 
 (defun hellmacs-profile-delete-init ()
-  "Delete the generated init files (every Emacs version's) and their parts."
+  "Delete the generated init files (every Emacs version's), legacy pre-16.8 init files, and their parts."
   (dolist (file (file-expand-wildcards (hellmacs-profile-file "init.*.el*")))
     (delete-file file))
+  (dolist (file (list (hellmacs-profile-file "init.el")
+                      (hellmacs-profile-file "init.elc")))
+    (when (file-exists-p file)
+      (delete-file file)))
   (let ((parts (hellmacs-profile-file hellmacs-profile-init-dir-name)))
     (when (file-directory-p parts)
       (delete-directory parts t))))

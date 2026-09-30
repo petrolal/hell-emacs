@@ -130,7 +130,7 @@ on a detached HEAD, which has no upstream to update from."
         (hellmacs-cli--say "  ! couldn't find the branch of %s; leaving it at its current commit"
                            (elpaca<-id e))))))
 
-(defun hellmacs-cli-upgrade (&rest _)
+(defcli! upgrade (&rest _)
   "Update every unpinned package, then re-sync.
 `bin/hellmacs upgrade' runs `upgrade-self' before this, unless given
 --packages. Rewrites the lock file if you have one."

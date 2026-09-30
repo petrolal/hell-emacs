@@ -91,9 +91,26 @@ case "$1" in
   emacs)
     # Emacs itself, on this checkout (and profile). --vanilla: Emacs with
     # no config at all (emacs -Q), to tell Hellmacs' problems from Emacs'.
+    # --sandbox: start Emacs in a throwaway isolated temporary directory.
     shift
     case "$1" in
       --vanilla) shift; exec "$EMACS" -Q "$@" ;;
+      --sandbox)
+        shift
+        SANDBOX_DIR=$(mktemp -d -t hellmacs-sandbox.XXXXXX 2>/dev/null || mktemp -d "/tmp/hellmacs-sandbox.XXXXXX")
+        export XDG_CONFIG_HOME="$SANDBOX_DIR/config"
+        export XDG_DATA_HOME="$SANDBOX_DIR/data"
+        export XDG_CACHE_HOME="$SANDBOX_DIR/cache"
+        export XDG_STATE_HOME="$SANDBOX_DIR/state"
+        export HELLMACSDIR="$SANDBOX_DIR/config/hellmacs"
+        mkdir -p "$HELLMACSDIR" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
+        echo "Starting Hellmacs sandbox in $SANDBOX_DIR" >&2
+        [ "$1" = "--" ] && shift
+        "$EMACS" --init-directory "$HELLMACS_ROOT" "$@"
+        ret=$?
+        rm -rf "$SANDBOX_DIR"
+        exit $ret
+        ;;
     esac
     [ "$1" = "--" ] && shift
     exec "$EMACS" --init-directory "$HELLMACS_ROOT" \

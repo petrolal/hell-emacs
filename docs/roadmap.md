@@ -249,22 +249,41 @@ announced instead of leaving completion silently empty.
 - [x] 16.10 CLI and install as Doom's (2026-09-30: global options, aliases,
       exit codes, root check, `$HELLMACSPATH`, `emacs`, `info`, `profile`,
       `hellmacs.sh`, `install --[no-]config/env/install`).
-- [ ] 16.11 Commands declare their options, and `hellmacs help COMMAND`
-      prints each one's usage, as Doom's `defcli!`.
-- [ ] 16.12 `C-c h S` syncs in a child Emacs, as `C-c h R` does.
-- [ ] 16.13 `sync` removes a profile's pre-16.8 `init.el`/`init.elc`.
-- [ ] 16.14 Profiles defined in a `profiles.el` file (with their own
-      settings), as Doom's explicit profiles, beside directory profiles.
-- [ ] 16.15 `hellmacs emacs --sandbox`: try code in a throwaway Hellmacs or
-      vanilla Emacs, as Doom's.
-- [ ] 16.16 `install --aot`: native-compile packages ahead of time.
-- [ ] 16.17 Module files that load only when a condition holds
-      (`;;;###if`), and separate init and config depths, as Doom's.
+- [x] 16.11 Commands declare their options, and `hellmacs help COMMAND`
+      prints each one's usage, as Doom's `defcli!` (2026-09-30: added `defcli!`
+      macro and command registry in `lisp/hellmacs-cli.el`, command-specific
+      help on `help COMMAND` and `COMMAND --help`/`-h`; checked with
+      `bin/hellmacs help install`, `bin/hellmacs sync --help`, `bin/hellmacs help profile`).
+- [x] 16.12 `C-c h S` syncs in a child Emacs, as `C-c h R` does (2026-09-30:
+      added `hellmacs-sync-child` in `autoload.el` and bound `C-c h S` in
+      `config.el` to run `bin/hellmacs sync` in a subprocess with output
+      in `*hellmacs sync*`).
+- [x] 16.13 `sync` removes a profile's pre-16.8 `init.el`/`init.elc` (2026-09-30:
+      added removal of legacy `init.el` and `init.elc` in
+      `hellmacs-profile-delete-init`).
+- [x] 16.14 Profiles defined in a `profiles.el` file (with their own
+      settings), as Doom's explicit profiles, beside directory profiles
+      (2026-09-30: added `hellmacs--read-profiles-el` in `early-init.el`,
+      custom `:user-dir` resolution in `hellmacs--user-dir`, and explicit
+      profile discovery in `bin/hellmacs-profile`; tested in batch).
+- [x] 16.15 `hellmacs emacs --sandbox`: try code in a throwaway Hellmacs or
+      vanilla Emacs, as Doom's (2026-09-30: added `--sandbox` flag in
+      `bin/hellmacs` and `bin/hellmacs.ps1` with temporary isolated XDG
+      directories).
+- [x] 16.16 `install --aot`: native-compile packages ahead of time (2026-09-30:
+      added `--aot` option to `bin/hellmacs install`).
+- [x] 16.17 Module files that load only when a condition holds
+      (`;;;###if`), and separate init and config depths, as Doom's
+      (2026-09-30: added `hellmacs-file-active-p` condition evaluator,
+      filtered autoloads and module loaders, added `:init-depth` and
+      `:config-depth` support in `hellmacs!`, `.hellmacsmodule`, and
+      `hellmacs-module-list`; tested with conditional fixtures).
 - [ ] 16.18 The module catalog in its own repository, as a git submodule,
       as Doom's `sources/doom+` (needs a new repository: the maintainer's
       decision).
-- [ ] 16.19 `bin/hellmacs.ps1` for native Windows, if Hellmacs ever
-      supports Windows outside WSL2.
+- [x] 16.19 `bin/hellmacs.ps1` for native Windows, if Hellmacs ever
+      supports Windows outside WSL2 (2026-09-30: added PowerShell CLI
+      wrapper script `bin/hellmacs.ps1`).
 
 ### 3. Groovy (8.4)
 

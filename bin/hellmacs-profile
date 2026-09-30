@@ -41,8 +41,11 @@
 (defun hellmacs-cli-profile--names ()
   "The names of every profile there is, the default one (nil) first."
   (let* ((config (or (getenv "XDG_CONFIG_HOME") "~/.config"))
+         (default-user-dir (hellmacs--user-dir nil))
+         (explicit (mapcar #'car (hellmacs--read-profiles-el default-user-dir)))
          (names
           (append
+           explicit
            (mapcar (lambda (dir) (substring (file-name-nondirectory (directory-file-name dir))
                                             (length "hellmacs-")))
                    (seq-filter #'file-directory-p
@@ -51,11 +54,11 @@
                    (seq-filter #'file-directory-p
                                (append
                                 (file-expand-wildcards
-                                 (expand-file-name "profiles/*" (hellmacs--user-dir nil)))
+                                 (expand-file-name "profiles/*" default-user-dir))
                                 (file-expand-wildcards (expand-file-name "profiles/*" hellmacs-dir))))))))
     (cons nil (sort (delete-dups (seq-filter (lambda (name)
-                                               (string-match-p "\\`[A-Za-z0-9_-]+\\'" name))
-                                             names))
+                                               (and name (string-match-p "\\`[A-Za-z0-9_-]+\\'" (if (symbolp name) (symbol-name name) name))))
+                                             (mapcar (lambda (x) (if (symbolp x) (symbol-name x) x)) names)))
                     #'string<))))
 
 (defun hellmacs-cli-profile--init-file (name)
@@ -77,7 +80,7 @@
       (accept-process-output proc 0.1))
     (process-exit-status proc)))
 
-(defun hellmacs-cli-profile (&rest args)
+(defcli! profile (&rest args)
   "`list' the profiles, or `sync --all' of them."
   (pcase (car args)
     ((or 'nil "list" "ls")

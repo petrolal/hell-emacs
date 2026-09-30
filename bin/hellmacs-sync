@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hellmacs-cli-sync (&rest _)
+(defcli! sync (&rest _)
   "Install/build every declared package and write the profile."
   (hellmacs-sync))
 

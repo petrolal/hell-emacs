@@ -68,7 +68,7 @@ matches the Hellmacs that printed it, and works offline."
   "Print a check result. LEVEL is `ok', `warn', `error' or `info'.
 FORMAT-STRING may be preceded by `:topic' and a symbol: a warning or an
 error then points to that troubleshooting entry in docs/guide.md
-\("What doctor's messages mean"), once for a run of lines on the same
+\(\"What doctor's messages mean\"), once for a run of lines on the same
 topic."
   (let ((topic nil))
     (when (eq format-string :topic)
@@ -170,6 +170,30 @@ release (the tag vMAJOR.MINOR.PATCH), or `main', the development branch.
 
 ;;; Commands: bin/hellmacs-COMMAND ------------------------------------------
 
+(defvar hellmacs-cli-commands (make-hash-table :test #'equal)
+  "Table of registered CLI commands: NAME -> plist of (:name :fn :doc :args).")
+
+(defmacro defcli! (name arglist &optional docstring &rest body)
+  "Define a Hellmacs CLI command NAME with ARGLIST, DOCSTRING, and BODY.
+NAME is a symbol or list of symbols (for subcommands, e.g. `(profile list)')."
+  (declare (doc-string 3) (indent defun))
+  (let* ((doc (if (stringp docstring) docstring ""))
+         (actual-body (if (stringp docstring) body (cons docstring body)))
+         (cmd-name (if (consp name)
+                       (mapconcat #'symbol-name name " ")
+                     (symbol-name name)))
+         (fn-name (intern (concat "hellmacs-cli-" (replace-regexp-in-string " " "-" cmd-name)))))
+    `(progn
+       (defun ,fn-name ,arglist
+         ,doc
+         ,@actual-body)
+       (puthash ,cmd-name
+                (list :name ',name
+                      :fn ',fn-name
+                      :doc ,doc
+                      :arglist ',arglist)
+                hellmacs-cli-commands))))
+
 (defvar hellmacs-cli-load-path
   (append (list (expand-file-name "bin/" hellmacs-dir)
                 (expand-file-name "bin/" hellmacs-user-dir))
@@ -211,9 +235,24 @@ in the first of `hellmacs-cli-load-path' that has it. Nil if there's none."
 
 ;;; help & dispatch ------------------------------------------------------------
 
-(defun hellmacs-cli-help (&rest _)
-  "Print usage."
-  (hellmacs-cli--say "\
+(defun hellmacs-cli-help (&optional command &rest _)
+  "Print usage for COMMAND or overall usage if COMMAND is nil."
+  (if (and command (not (string-empty-p command)))
+      (let* ((cmd (or (cdr (assoc command hellmacs-cli-aliases)) command))
+             (fn (intern-soft (concat "hellmacs-cli-" cmd))))
+        (unless (and fn (fboundp fn))
+          (hellmacs-cli-load cmd)
+          (setq fn (intern-soft (concat "hellmacs-cli-" cmd))))
+        (if (and fn (fboundp fn))
+            (let ((doc (documentation fn t))
+                  (entry (gethash cmd hellmacs-cli-commands)))
+              (hellmacs-cli--say "Usage: bin/hellmacs %s [OPTIONS] [ARGS]\n" cmd)
+              (if (and doc (not (string-empty-p doc)))
+                  (hellmacs-cli--say "%s" doc)
+                (hellmacs-cli--say "No detailed help available for `%s'." cmd)))
+          (hellmacs-cli--say "bin/hellmacs: unknown command `%s'\n" command)
+          (hellmacs-cli-help)))
+    (hellmacs-cli--say "\
 Usage: bin/hellmacs [OPTIONS] COMMAND [ARGS]
 
 Options (before the command):
@@ -225,10 +264,11 @@ Options (before the command):
   -!, --force          Don't ask: accept every prompt.
 
 Commands (short names in brackets):
-  install [--[no-]config] [--[no-]env] [--[no-]install] [--from-bundle FILE]
+  install [--[no-]config] [--[no-]env] [--[no-]install] [--aot] [--from-bundle FILE]
              First-time setup: create your config (~/.config/hellmacs), sync,
              save your shell environment (it asks, unless --env or --no-env),
              then run doctor. --no-install: don't sync yet.
+             --aot: native-compile packages ahead of time.
              --from-bundle: install from an offline bundle (see `bundle'),
              checking every file's SHA-256, with no network access at all.
   sync [s]   Install/build every package your modules and packages.el declare,
@@ -240,10 +280,10 @@ Commands (short names in brackets):
              moves to its channel's latest: stable, the latest release (the
              default; `hellmacs-upgrade-channel'), or main, the development
              branch. --packages: only update packages.
-  emacs [--vanilla] [-- EMACS-ARGS]
+  emacs [--vanilla] [--sandbox] [-- EMACS-ARGS]
              Start Emacs on this Hellmacs (and --profile). --vanilla: Emacs
              with no config at all (emacs -Q), to tell Hellmacs' problems
-             from Emacs'.
+             from Emacs'. --sandbox: start in an isolated temporary profile.
   profile [pf] list | sync --all
              List the profiles there are, and whether each is synced; or sync
              all of them.
@@ -280,14 +320,15 @@ Commands (short names in brackets):
              List the modules on by default that your hellmacs! block misses
              (made from an older template?); --add-defaults adds them, keeping
              a backup of init.el. Then run sync.
-  help [h]   Show this help.
+  help [h] [COMMAND]
+             Show this help, or detailed help and options for COMMAND.
 
 More commands: a hellmacs-NAME file in your config's bin/, or in a directory
 on $HELLMACSPATH, is `bin/hellmacs NAME'; and enabled modules add theirs.
 
 Environment: EMACS (Emacs binary), HELLMACSDIR (your config dir),
 HELLMACS_PROFILE, HELLMACSPATH, DEBUG, XDG_DATA_HOME, XDG_CACHE_HOME,
-XDG_STATE_HOME."))
+XDG_STATE_HOME.")))
 
 (defun hellmacs-cli-main ()
   "Run the bin/hellmacs command in `command-line-args-left', then exit."
@@ -303,6 +344,14 @@ XDG_STATE_HOME."))
           gc-cons-threshold (* 128 1024 1024)
           gc-cons-percentage 0.1)
     (hellmacs-context-push 'cli)
+    ;; If help for a specific command is requested via `help COMMAND' or `COMMAND --help' / `-h':
+    (if (equal command "help")
+        (let ((subcmd (cadr args)))
+          (hellmacs-cli-help subcmd)
+          (kill-emacs 0))
+      (when (or (member "-h" (cdr args)) (member "--help" (cdr args)))
+        (hellmacs-cli-help command)
+        (kill-emacs 0)))
     ;; Before the config is read: the modules decide which cli.el files load.
     (when (equal command "bundle")
       (condition-case err

@@ -151,18 +151,37 @@ Doom v3's .doommodule: `name' (GROUP NAME), and optionally `depth'."
               (name (hellmacs-module-metadata dir 'name)))
     (cons (car name) (cadr name))))
 
-(defun hellmacs-module-enable (group name &optional flags depth)
+(defun hellmacs-file-active-p (file)
+  "Return non-nil if FILE should be loaded.
+If FILE begins with `;;;###if FORM', evaluate FORM; if nil, return nil."
+  (if (and file (file-exists-p file))
+      (with-temp-buffer
+        (insert-file-contents file nil 0 512)
+        (goto-char (point-min))
+        (if (re-search-forward "^;;;###if[ \t]+\\(.+\\)$" nil t)
+            (let ((form (condition-case nil (read (match-string 1)) (error nil))))
+              (condition-case nil (eval form t) (error nil)))
+          t))
+    nil))
+
+(defun hellmacs-module-enable (group name &optional flags depth init-depth config-depth)
   "Enable module GROUP NAME with FLAGS (a list of +symbols) at DEPTH.
-Modules load in ascending DEPTH (by default the `depth' in the module's
-.hellmacsmodule, else 0), then in the order they were enabled. Returns
-nil (and warns) if the module doesn't exist."
+Supports separate INIT-DEPTH and CONFIG-DEPTH (by default DEPTH, then
+the values in .hellmacsmodule, else 0). Returns nil (and warns) if the
+module doesn't exist."
   (if-let* ((path (hellmacs-module-locate-path group name)))
-      (puthash (cons group name)
-               (list :path path
-                     :flags flags
-                     :depth (or depth (hellmacs-module-metadata path 'depth) 0)
-                     :index (hash-table-count hellmacs-modules))
-               hellmacs-modules)
+      (let* ((meta-depth (hellmacs-module-metadata path 'depth))
+             (base-depth (or depth meta-depth 0))
+             (i-depth (or init-depth depth (hellmacs-module-metadata path 'init-depth) meta-depth 0))
+             (c-depth (or config-depth depth (hellmacs-module-metadata path 'config-depth) meta-depth 0)))
+        (puthash (cons group name)
+                 (list :path path
+                       :flags flags
+                       :depth base-depth
+                       :init-depth i-depth
+                       :config-depth c-depth
+                       :index (hash-table-count hellmacs-modules))
+                 hellmacs-modules))
     (display-warning 'hellmacs (format "Unknown module %s, skipped"
                                        (hellmacs-module-key-string (cons group name))))
     nil))
@@ -172,7 +191,8 @@ nil (and warns) if the module doesn't exist."
 
 MODULES is a list of groups (keywords), each followed by the modules
 in that group. A module is a symbol, or a list whose first element is
-the module name, followed by +flags and an optional `:depth N':
+the module name, followed by +flags and an optional `:depth N',
+`:init-depth N', or `:config-depth N':
 
   (hellmacs! :ui theme
              :editor undo
@@ -201,24 +221,33 @@ See `modulep!' for testing modules and flags from code."
             ((symbolp item)
              (hellmacs-module-enable group item))
             ((consp item)
-             (let ((name (car item)) flags depth (rest (cdr item)))
+             (let ((name (car item)) flags depth init-depth config-depth (rest (cdr item)))
                (while rest
                  (let ((x (pop rest)))
-                   (if (eq x :depth)
-                       (setq depth (pop rest))
-                     (push x flags))))
-               (hellmacs-module-enable group name (nreverse flags) depth)))))))
+                   (cond ((eq x :depth) (setq depth (pop rest)))
+                         ((eq x :init-depth) (setq init-depth (pop rest)))
+                         ((eq x :config-depth) (setq config-depth (pop rest)))
+                         (t (push x flags)))))
+               (hellmacs-module-enable group name (nreverse flags) depth init-depth config-depth)))))))
 
-(defun hellmacs-module-list ()
-  "Return the keys of enabled modules, in load order."
-  (let (keys)
+(defun hellmacs-module-list (&optional type)
+  "Return the keys of enabled modules, in load order.
+TYPE can be `:init' to sort by :init-depth, `:config' to sort by
+:config-depth, or nil to sort by :depth."
+  (let ((depth-key (pcase type
+                     (:init :init-depth)
+                     (:config :config-depth)
+                     (_ :depth)))
+        keys)
     (maphash (lambda (k _) (push k keys)) hellmacs-modules)
     (sort keys (lambda (a b)
-                 (let ((pa (gethash a hellmacs-modules))
-                       (pb (gethash b hellmacs-modules)))
-                   (if (= (plist-get pa :depth) (plist-get pb :depth))
+                 (let* ((pa (gethash a hellmacs-modules))
+                        (pb (gethash b hellmacs-modules))
+                        (da (or (plist-get pa depth-key) (plist-get pa :depth) 0))
+                        (db (or (plist-get pb depth-key) (plist-get pb :depth) 0)))
+                   (if (= da db)
                        (< (plist-get pa :index) (plist-get pb :index))
-                     (< (plist-get pa :depth) (plist-get pb :depth))))))))
+                     (< da db)))))))
 
 (defun hellmacs-module-get (key prop)
   "Return PROP of the enabled module KEY, a (GROUP . NAME) cons."
@@ -463,20 +492,20 @@ in your config leaves you with a working editor to fix it in."
                     hellmacs-compiled-dir))
 
 (defun hellmacs-module--load (key file)
-  "Load FILE from module KEY's directory, if it exists.
+  "Load FILE from module KEY's directory, if it exists and is active.
 The compiled FILE from the last sync is loaded instead when it may be
 \(`hellmacs--use-compiled') and is newer than FILE, so an edited file
 loads from source until the next sync. Errors warn instead of aborting
 startup: one broken module should degrade Hellmacs, not brick it."
-  (let* ((path (expand-file-name file (hellmacs-module-get key :path)))
+  (let* ((src (expand-file-name file (hellmacs-module-get key :path)))
+         (path src)
          (compiled (and hellmacs--use-compiled
                         (member file hellmacs-module--compiled-files)
                         (hellmacs-module-compiled-file key file))))
-    ;; Only while the source exists: a deleted file stays deleted, though
-    ;; the last sync compiled it.
-    (when (and compiled (file-exists-p path) (file-newer-than-file-p compiled path))
-      (setq path compiled))
-    (when (file-exists-p path)
+    ;; Only while the source exists and its ;;;###if condition holds
+    (when (and (file-exists-p src) (hellmacs-file-active-p src))
+      (when (and compiled (file-exists-p compiled) (file-newer-than-file-p compiled src))
+        (setq path compiled))
       (let ((hellmacs--current-module key))
         (with-hellmacs-context 'module
           (condition-case-unless-debug err
@@ -489,10 +518,11 @@ startup: one broken module should degrade Hellmacs, not brick it."
 
 (defun hellmacs-module-autoload-files (key)
   "Module KEY's autoload files: its autoload.el and autoload/*.el, as in Doom."
-  (let ((dir (hellmacs-module-get key :path)))
-    (append (and (file-exists-p (expand-file-name "autoload.el" dir))
-                 (list (expand-file-name "autoload.el" dir)))
-            (file-expand-wildcards (expand-file-name "autoload/*.el" dir)))))
+  (let* ((dir (hellmacs-module-get key :path))
+         (files (append (and (file-exists-p (expand-file-name "autoload.el" dir))
+                             (list (expand-file-name "autoload.el" dir)))
+                        (file-expand-wildcards (expand-file-name "autoload/*.el" dir)))))
+    (seq-filter #'hellmacs-file-active-p files)))
 
 (defun hellmacs-module-load (name)
   "Load NAME (like \"+paths\") from the directory of the module being loaded.

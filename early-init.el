@@ -101,14 +101,39 @@ its own config, packages, caches and history.")
   "Return Hellmacs' subdirectory of $ENVVAR, or of FALLBACK if unset."
   (expand-file-name (concat hellmacs--dir-name "/") (or (getenv-internal envvar) fallback)))
 
+(defun hellmacs--read-profiles-el (dir)
+  "Read explicit profile definitions from profiles.el in DIR, if present.
+Returns an alist of (NAME . PLIST)."
+  (let ((file (expand-file-name "profiles.el" dir))
+        profiles)
+    (when (file-exists-p file)
+      (with-temp-buffer
+        (insert-file-contents file)
+        (goto-char (point-min))
+        (condition-case nil
+            (while (not (eobp))
+              (let ((form (read (current-buffer))))
+                (pcase form
+                  (`(profile! ,name . ,plist)
+                   (push (cons (if (symbolp name) (symbol-name name) name) plist) profiles))
+                  (`(setq hellmacs-profiles ',list)
+                   (dolist (item list)
+                     (push (cons (if (symbolp (car item)) (symbol-name (car item)) (car item))
+                                 (cdr item))
+                           profiles)))
+                  ((and (pred consp) (guard (symbolp (car form))))
+                   (push (cons (symbol-name (car form)) (cdr form)) profiles)))))
+          (error nil))))
+    (nreverse profiles)))
+
 (defun hellmacs--user-dir (profile)
   "The config directory of PROFILE (nil for the default one).
 $HELLMACSDIR if set. Else, for the default profile, the first of
 ~/.config/hellmacs/ (under $XDG_CONFIG_HOME) and ~/.hellmacs.d/ that
-exists, ~/.config/hellmacs/ if neither. For a named one, the first of
-~/.config/hellmacs-NAME/, your config's profiles/NAME/ and Hellmacs'
-profiles/NAME/ that exists (Doom v3's implicit profiles), else
-~/.config/hellmacs-NAME/."
+exists, ~/.config/hellmacs/ if neither. For a named one, checks explicit
+profiles in profiles.el, then the first of ~/.config/hellmacs-NAME/, your
+config's profiles/NAME/ and Hellmacs' profiles/NAME/ that exists (Doom v3's
+implicit profiles), else ~/.config/hellmacs-NAME/."
   (let ((config (or (getenv-internal "XDG_CONFIG_HOME") "~/.config")))
     (if-let* ((dir (getenv-internal "HELLMACSDIR")))
         (file-name-as-directory (expand-file-name dir))
@@ -117,14 +142,20 @@ profiles/NAME/ that exists (Doom v3's implicit profiles), else
             (if (or (file-directory-p xdg) (not (file-directory-p "~/.hellmacs.d/")))
                 xdg
               (expand-file-name "~/.hellmacs.d/"))
-          (let ((own (expand-file-name (format "hellmacs-%s/" profile) config)))
-            (catch 'found
-              (dolist (dir (list own
-                                 (expand-file-name (format "profiles/%s/" profile)
-                                                   (hellmacs--user-dir nil))
-                                 (expand-file-name (format "profiles/%s/" profile) hellmacs-dir)))
-                (when (file-directory-p dir) (throw 'found dir)))
-              own)))))))
+          (let* ((default-dir (if (or (file-directory-p xdg) (not (file-directory-p "~/.hellmacs.d/")))
+                                  xdg
+                                (expand-file-name "~/.hellmacs.d/")))
+                 (explicit (hellmacs--read-profiles-el default-dir))
+                 (entry (cdr (assoc (if (symbolp profile) (symbol-name profile) profile) explicit))))
+            (if-let* ((custom-dir (or (plist-get entry :user-dir) (plist-get entry :config-dir))))
+                (file-name-as-directory (expand-file-name custom-dir))
+              (let ((own (expand-file-name (format "hellmacs-%s/" profile) config)))
+                (catch 'found
+                  (dolist (dir (list own
+                                     (expand-file-name (format "profiles/%s/" profile) default-dir)
+                                     (expand-file-name (format "profiles/%s/" profile) hellmacs-dir)))
+                    (when (file-directory-p dir) (throw 'found dir)))
+                  own)))))))))
 
 (defvar hellmacs-user-dir (hellmacs--user-dir hellmacs-profile)
   "Your private configuration: init.el, config.el and custom.el.
