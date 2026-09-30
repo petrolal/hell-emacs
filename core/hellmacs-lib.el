@@ -38,6 +38,12 @@
 (require 'seq)
 (eval-when-compile (require 'subr-x))
 
+(defconst hellmacs-version "0.9.0"
+  "Hellmacs' version, MAJOR.MINOR.PATCH (Semantic Versioning).
+A release is the git tag vMAJOR.MINOR.PATCH; CHANGELOG.md says what each
+one changed, and docs/releases.md which Emacs versions and platforms it
+supports. Between releases, main carries the next version's number.")
+
 (defvar hellmacs-init-time nil
   "Seconds (a float) Hellmacs took to start; nil while still starting.
 Set by `hellmacs-finalize' in `hellmacs-core'.")

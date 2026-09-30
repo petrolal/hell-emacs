@@ -129,7 +129,7 @@ This file only tracks progress. Don't copy specs into it.
 - [x] 12.9 License report: `bin/hellmacs licenses` (2026-09-29: headers, GNU notices, LICENSE files, declared licenses checked against Maven Central, GitHub and the texts; exits 1 on an unknown one, flags LicenseRef-; in CI on every push and weekly with every module. Live, every module: none unknown, restclient's public domain flagged)
 - [/] 12.9 No telemetry, stated and enforced (2026-09-30: findings pass over every pinned component; docker-language-server's telemetry, on by default, turned off; clojure-lsp's ClojureDocs download off; a test fails on network calls outside `core/hellmacs-net.el`; stated in the README. Left: the live check that a session contacts only the configured hosts)
 - [ ] 12.9 Supply chain
-- [ ] 12.9 Releases and support window
+- [/] 12.9 Releases and support window (2026-09-30: version 0.9.0, `bin/hellmacs version`, CHANGELOG.md, `upgrade --channel stable|main` with stable the default and optional tag verification, docs/releases.md; unit tests against real git repositories. Left: tagging v0.9.0, signed)
 - [ ] 12.10 Developer docs
 - [ ] 12.10 Administrator guide (`docs/admin-guide.md`)
 - [ ] 12.10 Evaluator feature matrix (`docs/feature-matrix.md`)

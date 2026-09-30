@@ -29,6 +29,9 @@
 (require 'cl-lib)
 (require 'hellmacs-cli)
 
+(defvar hellmacs-upgrade-channel)
+(defvar hellmacs-upgrade-verify-tags)
+
 (ert-deftest test-cli/run-all ()
   "Commands run concurrently; exit codes come back in order."
   (let ((hellmacs-cli-jobs 2))
@@ -60,7 +63,7 @@ that aborts the command."
                    (_ '(0 . "")))))
               ((symbol-function 'hellmacs-cli--say)
                (lambda (fmt &rest args) (push (apply #'format fmt args) said))))
-      (hellmacs-cli-upgrade-self)
+      (hellmacs-cli-upgrade-self "--channel" "main")
       (should (equal (car said) "Updated Hellmacs abc -> def")))))
 
 (ert-deftest test-cli/env-keeps-secrets-out ()
@@ -77,6 +80,127 @@ that aborts the command."
                          '("JAVA_HOME=/opt/jdk" "PATH=/usr/bin")))
           (should (= (file-modes hellmacs-env-file) #o600)))
       (delete-directory dir t))))
+
+;;; Releases and channels ----------------------------------------------------------
+
+(ert-deftest test-cli/version ()
+  "Hellmacs has a semantic version; `bin/hellmacs version' says it, with the
+channel `upgrade' follows and the Emacs it runs on."
+  (should (string-match-p "\\`[0-9]+\\.[0-9]+\\.[0-9]+\\(?:-[0-9A-Za-z.]+\\)?\\'" hellmacs-version))
+  (let (said)
+    (cl-letf (((symbol-function 'hellmacs-cli--say)
+               (lambda (fmt &rest args) (push (apply #'format fmt args) said))))
+      (let ((hellmacs-upgrade-channel 'stable))
+        (hellmacs-cli-version)))
+    (let ((text (string-join (reverse said) "\n")))
+      (should (string-search (concat "Hellmacs " hellmacs-version) text))
+      (should (string-search "channel: stable" text))
+      (should (string-search emacs-version text)))))
+
+(ert-deftest test-cli/latest-release ()
+  "The stable channel's release: the highest vMAJOR.MINOR.PATCH tag, by
+version, not by name; pre-releases and other tags don't count."
+  (should (equal (hellmacs-cli--latest-release
+                  '("v0.9.0" "v0.10.0" "v0.9.12" "v1.0.0-rc.1" "nightly" "0.11.0"))
+                 "v0.10.0"))
+  (should-not (hellmacs-cli--latest-release '("nightly" "v1.0.0-rc.1"))))
+
+(defun test-cli--git (dir &rest args)
+  (with-temp-buffer
+    (unless (zerop (apply #'call-process "git" nil t nil "-C" dir
+                          "-c" "user.name=t" "-c" "user.email=t@t" "-c" "commit.gpgsign=false"
+                          "-c" "tag.gpgsign=false" args))
+      (error "git %s: %s" (string-join args " ") (buffer-string)))
+    (string-trim (buffer-string))))
+
+(defmacro test-cli--with-checkout (&rest body)
+  "Run BODY with `upstream', a repository with releases v0.1.0 and v0.2.0 and a
+later commit on main, and `hellmacs-dir' bound to a clone of it."
+  (declare (indent 0))
+  `(let* ((root (make-temp-file "hellmacs-test-upgrade" t))
+          (upstream (expand-file-name "upstream" root))
+          (clone (expand-file-name "clone" root)))
+     (unwind-protect
+         (progn
+           (make-directory upstream)
+           (test-cli--git upstream "init" "-q" "-b" "main")
+           (dolist (step '(("one" "v0.1.0") ("two" "v0.2.0") ("three" nil)))
+             (with-temp-file (expand-file-name "file" upstream) (insert (car step)))
+             (test-cli--git upstream "add" "file")
+             (test-cli--git upstream "commit" "-q" "-m" (car step))
+             (when (cadr step) (test-cli--git upstream "tag" "-a" (cadr step) "-m" (cadr step))))
+           (test-cli--git root "clone" "-q" upstream clone)
+           (let ((hellmacs-dir (file-name-as-directory clone)))
+             (cl-letf (((symbol-function 'hellmacs-cli--say) #'ignore))
+               ,@body)))
+       (delete-directory root t))))
+
+(defun test-cli--content ()
+  (with-temp-buffer (insert-file-contents (expand-file-name "file" hellmacs-dir)) (buffer-string)))
+
+(ert-deftest test-cli/upgrade-self-channels ()
+  "The stable channel checks out the latest release; main follows the branch,
+as before; back on stable, the release again. Nothing moves with local
+changes."
+  (skip-unless (executable-find "git"))
+  (test-cli--with-checkout
+    (should (equal (test-cli--content) "three"))          ; a fresh clone is on main
+    (hellmacs-cli-upgrade-self "--channel" "stable")
+    (should (equal (test-cli--content) "two"))
+    (should (equal (test-cli--git hellmacs-dir "describe" "--tags" "--exact-match") "v0.2.0"))
+    ;; A new release upstream: the next stable upgrade takes it.
+    (with-temp-file (expand-file-name "file" upstream) (insert "four"))
+    (test-cli--git upstream "commit" "-q" "-am" "four")
+    (test-cli--git upstream "tag" "-a" "v0.3.0" "-m" "v0.3.0")
+    (hellmacs-cli-upgrade-self "--channel" "stable")
+    (should (equal (test-cli--content) "four"))
+    ;; Main, from a release: back on the branch, at its tip.
+    (with-temp-file (expand-file-name "file" upstream) (insert "five"))
+    (test-cli--git upstream "commit" "-q" "-am" "five")
+    (hellmacs-cli-upgrade-self "--channel" "main")
+    (should (equal (test-cli--content) "five"))
+    (should (equal (test-cli--git hellmacs-dir "rev-parse" "--abbrev-ref" "HEAD") "main"))
+    ;; Local changes: nothing moves.
+    (with-temp-file (expand-file-name "file" hellmacs-dir) (insert "mine"))
+    (hellmacs-cli-upgrade-self "--channel" "stable")
+    (should (equal (test-cli--content) "mine"))))
+
+(ert-deftest test-cli/upgrade-self-default-channel ()
+  "Without --channel, `hellmacs-upgrade-channel' decides: stable by default."
+  (skip-unless (executable-find "git"))
+  (should (eq (default-value 'hellmacs-upgrade-channel) 'stable))
+  (test-cli--with-checkout
+    (let ((hellmacs-upgrade-channel 'stable))
+      (hellmacs-cli-upgrade-self)
+      (should (equal (test-cli--content) "two")))
+    (let ((hellmacs-upgrade-channel 'main))
+      (hellmacs-cli-upgrade-self)
+      (should (equal (test-cli--content) "three"))))
+  ;; A channel that isn't one is an error, before anything moves.
+  (should-error (hellmacs-cli-upgrade-self "--channel" "nightly")))
+
+(ert-deftest test-cli/upgrade-self-no-release-yet ()
+  "The stable channel with no release to go to stays where it is and says so."
+  (skip-unless (executable-find "git"))
+  (test-cli--with-checkout
+    (dolist (tag '("v0.1.0" "v0.2.0"))
+      (test-cli--git upstream "tag" "-d" tag)
+      (test-cli--git hellmacs-dir "tag" "-d" tag))
+    (let (said)
+      (cl-letf (((symbol-function 'hellmacs-cli--say)
+                 (lambda (fmt &rest args) (push (apply #'format fmt args) said))))
+        (hellmacs-cli-upgrade-self "--channel" "stable"))
+      (should (equal (test-cli--content) "three"))
+      (should (string-match-p "no release" (car said))))))
+
+(ert-deftest test-cli/upgrade-self-verifies-tags ()
+  "With `hellmacs-upgrade-verify-tags', an unsigned (or badly signed) release
+isn't checked out."
+  (skip-unless (executable-find "git"))
+  (test-cli--with-checkout
+    (let ((hellmacs-upgrade-verify-tags t))
+      (should-error (hellmacs-cli-upgrade-self "--channel" "stable"))
+      (should (equal (test-cli--content) "three")))))
 
 (ert-deftest test-cli/doctor-reachable ()
   "Each way a host can't be reached gets its own advice; nothing is probed unless asked."

@@ -243,6 +243,7 @@ Comprehensive guides, module references, and architectural specifications are lo
 | ⌨️ **[Keybindings Reference](docs/keybindings.md)** | Complete keyboard cheatsheet for standard GNU and `C-c` leader commands |
 | 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `bundle`, `sync`, `upgrade`, `doctor`, `lock`, `test`) |
 | 🗺️ **[Enterprise Roadmap](docs/roadmap.md)** | Multi-phase roadmap and IntelliJ/Eclipse feature parity matrix |
+| 🏷️ **[Releases and Support](docs/releases.md)** | Versions, update channels (`stable`, `main`), supported Emacs and platforms, security fixes; see also the [Changelog](CHANGELOG.md) |
 
 
 ---

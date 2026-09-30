@@ -63,9 +63,9 @@ case "$1" in
     shift
     case " $* " in
       *" --packages "*) ;;
-      # Update Hellmacs first, then update packages in a fresh Emacs, so
-      # that step runs the new code.
-      *) hellmacs upgrade-self ;;
+      # Update Hellmacs first (to its channel: --channel stable|main), then
+      # update packages in a fresh Emacs, so that step runs the new code.
+      *) hellmacs upgrade-self "$@" ;;
     esac
     hellmacs upgrade "$@"
     ;;

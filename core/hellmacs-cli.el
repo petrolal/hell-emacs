@@ -295,28 +295,98 @@ ARGS: the file to write it to; without one, it goes to stdout."
 
 ;;; upgrade --------------------------------------------------------------------
 
-(defun hellmacs-cli-upgrade-self (&rest _)
-  "Pull Hellmacs itself with git, when that's safe. Run by `bin/hellmacs
-upgrade' first, so the package update that follows runs the new code."
-  (let ((git (lambda (&rest args) (apply #'hellmacs-cli--run "git" "-C" hellmacs-dir args))))
+(defvar hellmacs-upgrade-channel 'stable
+  "What `bin/hellmacs upgrade' moves Hellmacs itself to: `stable', the latest
+release (the tag vMAJOR.MINOR.PATCH), or `main', the development branch.
+`upgrade --channel NAME' overrides it for one run. Set it in your init.el.")
+
+(defvar hellmacs-upgrade-verify-tags nil
+  "Non-nil: the stable channel only checks out a release whose tag's signature
+`git verify-tag' accepts (the signer's key must be in your keyring).")
+
+(defun hellmacs-cli--latest-release (tags)
+  "The highest release among TAGS, vMAJOR.MINOR.PATCH by version; nil if none.
+Pre-releases (v1.0.0-rc.1) and other tags don't count."
+  (car (sort (seq-filter (lambda (tag) (string-match-p "\\`v[0-9]+\\.[0-9]+\\.[0-9]+\\'" tag)) tags)
+             (lambda (a b) (version-list-< (version-to-list (substring b 1))
+                                           (version-to-list (substring a 1)))))))
+
+(defun hellmacs-cli--upgrade-to-release (git)
+  "Check out the latest release (stable channel), GIT running git in `hellmacs-dir'."
+  (let ((fetch (with-hellmacs-network (funcall git "fetch" "--quiet" "--tags" "origin"))))
+    (unless (zerop (car fetch))
+      (error "git fetch failed in %s:\n%s" hellmacs-dir (cdr fetch))))
+  (let* ((tags (split-string (cdr (funcall git "tag" "--list" "v*")) "\n" t))
+         (release (hellmacs-cli--latest-release tags))
+         (current (let ((exact (funcall git "describe" "--tags" "--exact-match")))
+                    (and (zerop (car exact)) (cdr exact))))
+         (before (truncate-string-to-width (cdr (funcall git "rev-parse" "HEAD")) 7)))
+    (cond
+     ((null release)
+      (hellmacs-cli--say "Hellmacs has no release yet on the stable channel; staying at %s. \
+`upgrade --channel main' follows the development branch." before)
+      nil)
+     ((equal current release)
+      (hellmacs-cli--say "Hellmacs is already on its latest release, %s." release))
+     (t
+      (when hellmacs-upgrade-verify-tags
+        (let ((verify (funcall git "verify-tag" release)))
+          (unless (zerop (car verify))
+            (error "Release %s isn't signed by a key you trust (`hellmacs-upgrade-verify-tags'); not checked out:\n%s"
+                   release (cdr verify)))))
+      (let ((checkout (funcall git "checkout" "--quiet" release)))
+        (unless (zerop (car checkout))
+          (error "git checkout %s failed in %s:\n%s" release hellmacs-dir (cdr checkout))))
+      (hellmacs-cli--say "Hellmacs is on release %s (it was at %s)." release (or current before))))))
+
+(defun hellmacs-cli--upgrade-to-main (git)
+  "Pull the development branch (main channel), GIT running git in `hellmacs-dir'.
+From a release (a detached HEAD), the branch is checked out first."
+  (unless (zerop (car (funcall git "symbolic-ref" "-q" "HEAD")))
+    (let* ((head (funcall git "symbolic-ref" "--short" "refs/remotes/origin/HEAD"))
+           (branch (if (zerop (car head)) (string-remove-prefix "origin/" (cdr head)) "main"))
+           (checkout (funcall git "checkout" "--quiet" branch)))
+      (unless (zerop (car checkout))
+        (error "git checkout %s failed in %s:\n%s" branch hellmacs-dir (cdr checkout)))))
+  (if (not (zerop (car (funcall git "rev-parse" "--abbrev-ref" "@{upstream}"))))
+      (progn (hellmacs-cli--say "Hellmacs' branch has no upstream to pull from; skipping its update.") nil)
+    (let ((before (cdr (funcall git "rev-parse" "HEAD")))
+          (pull (with-hellmacs-network (funcall git "pull" "--ff-only"))))
+      (unless (zerop (car pull))
+        (error "git pull failed in %s:\n%s" hellmacs-dir (cdr pull)))
+      (let ((after (cdr (funcall git "rev-parse" "HEAD"))))
+        (hellmacs-cli--say (if (equal before after)
+                               "Hellmacs is already up to date."
+                             (format "Updated Hellmacs %s -> %s"
+                                     (truncate-string-to-width before 7)
+                                     (truncate-string-to-width after 7))))))))
+
+(defun hellmacs-cli-upgrade-self (&rest args)
+  "Move Hellmacs itself to its channel's latest, with git, when that's safe.
+ARGS may hold --channel stable|main (default `hellmacs-upgrade-channel').
+Run by `bin/hellmacs upgrade' first, so the package update that follows
+runs the new code."
+  (let ((channel (if-let* ((name (hellmacs-cli--option args "--channel"))) (intern name) hellmacs-upgrade-channel))
+        (git (lambda (&rest args) (apply #'hellmacs-cli--run "git" "-C" hellmacs-dir args))))
+    (unless (memq channel '(stable main))
+      (error "No channel `%s': it's stable (the latest release) or main" channel))
     (cond
      ((not (zerop (car (funcall git "rev-parse" "--git-dir"))))
       (hellmacs-cli--say "Hellmacs isn't a git checkout; skipping its update.") nil)
      ((not (string-empty-p (cdr (funcall git "status" "--porcelain" "--untracked-files=no"))))
       (hellmacs-cli--say "Hellmacs has uncommitted changes; skipping its update.") nil)
-     ((not (zerop (car (funcall git "rev-parse" "--abbrev-ref" "@{upstream}"))))
-      (hellmacs-cli--say "Hellmacs' branch has no upstream to pull from; skipping its update.") nil)
-     (t
-      (let ((before (cdr (funcall git "rev-parse" "HEAD")))
-            (pull (with-hellmacs-network (funcall git "pull" "--ff-only"))))
-        (unless (zerop (car pull))
-          (error "git pull failed in %s:\n%s" hellmacs-dir (cdr pull)))
-        (let ((after (cdr (funcall git "rev-parse" "HEAD"))))
-          (hellmacs-cli--say (if (equal before after)
-                                 "Hellmacs is already up to date."
-                               (format "Updated Hellmacs %s -> %s"
-                                       (truncate-string-to-width before 7)
-                                       (truncate-string-to-width after 7))))))))))
+     ((eq channel 'stable) (hellmacs-cli--upgrade-to-release git))
+     (t (hellmacs-cli--upgrade-to-main git)))))
+
+;;; version --------------------------------------------------------------------
+
+(defun hellmacs-cli-version (&rest _)
+  "Say Hellmacs' version (and its commit), its update channel, and the Emacs it runs on."
+  (let ((described (hellmacs-cli--run "git" "-C" hellmacs-dir "describe" "--tags" "--always" "--dirty")))
+    (hellmacs-cli--say "Hellmacs %s%s" hellmacs-version
+                       (if (zerop (car described)) (format " (%s)" (cdr described)) "")))
+  (hellmacs-cli--say "Update channel: %s (`hellmacs-upgrade-channel')" hellmacs-upgrade-channel)
+  (hellmacs-cli--say "Emacs %s on %s" emacs-version system-configuration))
 
 (defun hellmacs-cli--detached (packages)
   "The Elpaca records among PACKAGES whose git checkout is on a detached HEAD.
@@ -758,9 +828,12 @@ Commands:
   sync       Install/build every package your modules and packages.el declare,
              and write the profile Emacs starts from. Run it after changing
              your hellmacs! block, a packages.el or a module's autoload.el.
-  upgrade [--packages]
-             Update Hellmacs (git pull) and every unpinned package, then sync.
-             --packages: only update packages.
+  upgrade [--packages] [--channel stable|main]
+             Update Hellmacs and every unpinned package, then sync. Hellmacs
+             moves to its channel's latest: stable, the latest release (the
+             default; `hellmacs-upgrade-channel'), or main, the development
+             branch. --packages: only update packages.
+  version    Show Hellmacs' version, its update channel and the Emacs it runs on.
   lock       Record the exact commit of every package in
              ~/.config/hellmacs/packages.lock.eld; later syncs install those.
   bundle OUT.tar.zst [--modules SPEC]

@@ -3877,7 +3877,13 @@ pass against what enterprise developers already use.
     (`bin/hellmacs lock`). Release tags are signed.
   - `bin/hellmacs verify` re-checks every installed file against the lock
     and the pins.
-- [ ] **Releases and support window.**
+- [/] **Releases and support window.** (2026-09-30: `hellmacs-version`
+  0.9.0 and `bin/hellmacs version`; CHANGELOG.md; `upgrade --channel
+  stable|main`, stable by default (`hellmacs-upgrade-channel`), which
+  checks out the highest `vX.Y.Z` tag, verifying its signature with
+  `hellmacs-upgrade-verify-tags`; docs/releases.md states versions,
+  channels, supported Emacs and platforms, and a 6-month security-fix
+  window. Left: the first signed tag, v0.9.0, the maintainer's to make.)
   - Semantic versions, a changelog, and a stable channel (tagged releases)
     next to `main`.
   - Each release states the Emacs versions and platforms it supports, and a
