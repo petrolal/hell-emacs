@@ -3872,11 +3872,24 @@ pass against what enterprise developers already use.
     settings above have unit tests. Stated in the README ("Privacy: No
     Telemetry"). Left: the live check that a normal session contacts only
     the configured hosts.
-- [ ] **Supply chain.**
+- [/] **Supply chain.**
   - All downloads are pinned by SHA-256, and packages by commit
     (`bin/hellmacs lock`). Release tags are signed.
   - `bin/hellmacs verify` re-checks every installed file against the lock
     and the pins.
+  - *Done (2026-09-30):* each sync (and `upgrade`) records in the profile's
+    `installed.eld` the SHA-256 of every file it installed (what a bundle
+    carries, less Elpaca's git checkouts) and each package's commit;
+    `bin/hellmacs verify` compares the disk with that record and with the
+    lock file: a changed, missing or added file, a link pointed elsewhere, a
+    package off its commit or edited in place, or one the lock pins
+    elsewhere, each named, exit 1. Also pinned today: Elpaca itself (a
+    commit), and the Groovy server's build dependencies (Gradle
+    verification). Live, on a fresh `:lang groovy` profile: 207 files and 13
+    packages as installed, in 0.13s; the server's jar patched, verify named
+    it and failed; deleted and synced again, it passed. Unit tests in
+    `test-verify`. Left: signing the release tags, with the first one
+    (see the next item).
 - [/] **Releases and support window.** (2026-09-30: `hellmacs-version`
   0.9.0 and `bin/hellmacs version`; CHANGELOG.md; `upgrade --channel
   stable|main`, stable by default (`hellmacs-upgrade-channel`), which

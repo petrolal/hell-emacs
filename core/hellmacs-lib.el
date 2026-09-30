@@ -288,6 +288,32 @@ downloads and bundles run to hundreds of megabytes. Else read into Emacs."
           (insert-file-contents-literally file)
           (secure-hash 'sha256 (current-buffer))))))
 
+(defun hellmacs-files-sha256 (files)
+  "The SHA-256 of each of FILES, as a table: file -> hex string.
+Through sha256sum or shasum, a few hundred files per run, when there's
+one; else each read into Emacs (`hellmacs-file-sha256')."
+  (let ((table (make-hash-table :test #'equal))
+        (command (cond ((executable-find "sha256sum") '("sha256sum"))
+                       ((executable-find "shasum") '("shasum" "-a" "256")))))
+    (when command
+      (let ((files (mapcar #'expand-file-name files)))
+        (while files
+          (let ((batch (seq-take files 500)))
+            (setq files (nthcdr 500 files))
+            (with-temp-buffer
+              (when (eql 0 (ignore-errors (apply #'call-process (car command) nil t nil
+                                                  (append (cdr command) (list "--") batch))))
+                ;; One line each, in order: HASH, two spaces (or " *"), the name.
+                (goto-char (point-min))
+                (dolist (file batch)
+                  (when (looking-at "\\\\?\\([0-9a-f]\\{64\\}\\) ")
+                    (puthash file (match-string 1) table))
+                  (forward-line 1))))))))
+    (dolist (file files)
+      (unless (gethash (expand-file-name file) table)
+        (puthash (expand-file-name file) (hellmacs-file-sha256 file) table)))
+    table))
+
 (defun hellmacs-marker-current-p (marker value)
   "Non-nil if the file MARKER exists and holds VALUE (whitespace aside).
 Pinned installs write the pin they were made from to a marker file."

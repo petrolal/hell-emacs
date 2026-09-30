@@ -55,12 +55,30 @@ bin/hellmacs sync
 
 ### `upgrade`
 ```sh
-bin/hellmacs upgrade [--packages]
+bin/hellmacs upgrade [--packages] [--channel stable|main]
 ```
-* Pulls the latest commits from the Hellmacs git repository.
+* Moves Hellmacs itself to its channel's latest: `stable` (the default, `hellmacs-upgrade-channel`) checks out the latest release tag, `main` pulls the development branch. See [Releases and Support](releases.md).
 * Updates all installed packages that do not have a fixed `:pin`.
 * Runs `sync` to generate a fresh profile.
-* With `--packages`, upgrades only installed packages without running `git pull` on Hellmacs itself.
+* With `--packages`, upgrades only installed packages, leaving Hellmacs itself as it is.
+
+---
+
+### `version`
+```sh
+bin/hellmacs version
+```
+* Shows Hellmacs' version and commit, the update channel `upgrade` follows, and the Emacs it runs on.
+
+---
+
+### `verify`
+```sh
+bin/hellmacs verify
+```
+* Checks that everything `sync` installed is as it left it: every installed file (language servers, jars, grammars, the packages' compiled files) against the SHA-256 sync recorded, and every package's checkout at the commit it installed, with no local changes, and at the commit your lock file pins.
+* Exits 1 and names each difference. To repair one, delete what changed and run `sync`, which reinstalls what's missing; undo a package's local changes with git.
+* Each sync records what it installed in the profile's `installed.eld`.
 
 ---
 

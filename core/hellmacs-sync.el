@@ -413,6 +413,9 @@ module's autoload.el. Signals an error if a package fails to install."
     (hellmacs-sync--log "Synced %d packages; profile written to %s"
                         (length packages) (abbreviate-file-name hellmacs-profile-dir))
     (run-hooks 'hellmacs-sync-functions)
+    ;; Last: what everything above installed, for `bin/hellmacs verify'.
+    (require 'hellmacs-verify)
+    (hellmacs-verify-record-installed)
     (unless noninteractive
       (hellmacs-sync--log "done. Restart Emacs to start from the new profile."))))
 

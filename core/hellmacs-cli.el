@@ -33,6 +33,7 @@
 (require 'hellmacs-bundle)
 (require 'hellmacs-config)
 (require 'hellmacs-compliance)
+(require 'hellmacs-verify)
 
 ;;; Output ---------------------------------------------------------------------
 
@@ -312,7 +313,8 @@ Pre-releases (v1.0.0-rc.1) and other tags don't count."
                                            (version-to-list (substring a 1)))))))
 
 (defun hellmacs-cli--upgrade-to-release (git)
-  "Check out the latest release (stable channel), GIT running git in `hellmacs-dir'."
+  "Check out the latest release: the stable channel.
+GIT runs git in `hellmacs-dir'."
   (let ((fetch (with-hellmacs-network (funcall git "fetch" "--quiet" "--tags" "origin"))))
     (unless (zerop (car fetch))
       (error "git fetch failed in %s:\n%s" hellmacs-dir (cdr fetch))))
@@ -378,10 +380,31 @@ runs the new code."
      ((eq channel 'stable) (hellmacs-cli--upgrade-to-release git))
      (t (hellmacs-cli--upgrade-to-main git)))))
 
+;;; verify -------------------------------------------------------------------
+
+(defun hellmacs-cli-verify (&rest _)
+  "Check that everything sync installed is still as it left it.
+And as the lock file pins it. Every installed file against the SHA-256 sync recorded, every package
+against its commit (and your lock file); fails on any difference."
+  (let* ((manifest (hellmacs-profile-file "installed.eld"))
+         (lock (and (file-exists-p hellmacs-lock-file) hellmacs-lock-file))
+         (problems (hellmacs-verify-problems manifest lock)))
+    (if problems
+        (progn
+          (hellmacs-cli--say "Not as sync installed it:")
+          (dolist (problem problems)
+            (hellmacs-cli--check 'error "%s" problem))
+          (hellmacs-cli--say "Delete what changed (a server's directory, a jar) and run `bin/hellmacs sync': \
+it reinstalls what's missing. Undo a package's local changes with git, in its directory."))
+      (pcase-let ((`(,files . ,packages) (hellmacs-verify-summary manifest)))
+        (hellmacs-cli--check 'ok "%d files and %d package%s are as sync installed them%s"
+                             files packages (if (= packages 1) "" "s")
+                             (if lock ", and as your lock file pins them" ""))))))
+
 ;;; version --------------------------------------------------------------------
 
 (defun hellmacs-cli-version (&rest _)
-  "Say Hellmacs' version (and its commit), its update channel, and the Emacs it runs on."
+  "Say Hellmacs' version (and its commit), its update channel and Emacs'."
   (let ((described (hellmacs-cli--run "git" "-C" hellmacs-dir "describe" "--tags" "--always" "--dirty")))
     (hellmacs-cli--say "Hellmacs %s%s" hellmacs-version
                        (if (zerop (car described)) (format " (%s)" (cdr described)) "")))
@@ -451,7 +474,8 @@ on a detached HEAD, which has no upstream to update from."
     (elpaca-process-queues)
     (hellmacs--elpaca-wait))
   (hellmacs-sync--check-failures)
-  (hellmacs-sync--log "Synced %d packages" (length (hellmacs-sync--write-profile))))
+  (hellmacs-sync--log "Synced %d packages" (length (hellmacs-sync--write-profile)))
+  (hellmacs-verify-record-installed))
 
 ;;; config -------------------------------------------------------------------
 
@@ -834,6 +858,9 @@ Commands:
              default; `hellmacs-upgrade-channel'), or main, the development
              branch. --packages: only update packages.
   version    Show Hellmacs' version, its update channel and the Emacs it runs on.
+  verify     Check that every file sync installed is unchanged (its SHA-256),
+             and every package at the commit sync installed (and your lock
+             file pins). Fails on any difference.
   lock       Record the exact commit of every package in
              ~/.config/hellmacs/packages.lock.eld; later syncs install those.
   bundle OUT.tar.zst [--modules SPEC]
