@@ -127,7 +127,7 @@ This file only tracks progress. Don't copy specs into it.
 - [ ] 12.7 Kotlin's server: track JetBrains' Kotlin LSP (checked 2026-09-30: releases are pinnable by SHA-256 but each is an EAP that expires within weeks, and the binary has a licensing system; waiting for a non-expiring build, see the roadmap item)
 - [x] 12.9 SBOM: `bin/hellmacs sbom` (CycloneDX) (2026-09-29: `core/hellmacs-compliance.el`, `hellmacs-component!` in each module's `+paths.el`, `:license` on grammars; what's installed: packages at their commits, declared downloads, npm lockfiles, built grammars; `test/test-compliance.el`, with a test that every pinned SHA-256 is declared. Live: 58 components (default), 156 (every module), both valid against the CycloneDX 1.5 schema; an artifact in CI. Not yet: produced with each release, which 12.9's releases item makes)
 - [x] 12.9 License report: `bin/hellmacs licenses` (2026-09-29: headers, GNU notices, LICENSE files, declared licenses checked against Maven Central, GitHub and the texts; exits 1 on an unknown one, flags LicenseRef-; in CI on every push and weekly with every module. Live, every module: none unknown, restclient's public domain flagged)
-- [ ] 12.9 No telemetry, stated and enforced
+- [/] 12.9 No telemetry, stated and enforced (2026-09-30: findings pass over every pinned component; docker-language-server's telemetry, on by default, turned off; clojure-lsp's ClojureDocs download off; a test fails on network calls outside `core/hellmacs-net.el`; stated in the README. Left: the live check that a session contacts only the configured hosts)
 - [ ] 12.9 Supply chain
 - [ ] 12.9 Releases and support window
 - [ ] 12.10 Developer docs

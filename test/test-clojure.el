@@ -53,6 +53,21 @@
       (hellmacs-module--load '(:lang . clojure) "config.el"))
     (setq test-clojure--loaded t)))
 
+(defvar hellmacs-clojure-clojuredocs)
+
+(ert-deftest test-clojure/clojuredocs-not-fetched ()
+  "clojure-lsp downloads ClojureDocs' examples at startup, from a host no one
+configured: off unless `hellmacs-clojure-clojuredocs'. lsp-clojure's own
+settings are kept."
+  (test-clojure--load)
+  (let ((ours '(:dependency-scheme "jar" :show-docs-arity-on-same-line? t)))
+    (let ((hellmacs-clojure-clojuredocs nil))
+      (let ((options (hellmacs-clojure-lsp-initialization-options ours)))
+        (should (equal (plist-get options :dependency-scheme) "jar"))
+        (should (eq (plist-get (plist-get options :hover) :clojuredocs) :json-false))))
+    (let ((hellmacs-clojure-clojuredocs t))
+      (should (equal (hellmacs-clojure-lsp-initialization-options ours) ours)))))
+
 (ert-deftest test-clojure/hooks-and-settings ()
   (test-clojure--load)
   (dolist (hook '(clojure-mode-hook clojurec-mode-hook clojurescript-mode-hook))

@@ -136,6 +136,13 @@
   (should (equal lsp-marksman-server-command hellmacs-markdown-marksman-executable))
   (should (equal (hellmacs-docker-ls-command) (list hellmacs-docker-ls-executable "start" "--stdio"))))
 
+(ert-deftest test-data-langs/docker-telemetry-off ()
+  "docker-language-server sends usage data and crash reports to Docker (BugSnag)
+unless told not to: its telemetry is on by default. Hellmacs turns it off
+at initialize, and answers `off' when the server asks for the setting."
+  (should (equal (plist-get (hellmacs-docker-ls-initialization-options) :telemetry) "off"))
+  (should (equal (hellmacs-docker-ls-telemetry-setting) "off")))
+
 (ert-deftest test-data-langs/yaml-schemastore-off ()
   "SchemaStore is fetched at runtime, so it's off unless asked for."
   (should-not hellmacs-yaml-schemastore)

@@ -159,6 +159,34 @@
 
 ;; A missing clojure-lsp is installed with sync's pinned installer, not
 ;; lsp-mode's own.
+;; clojure-lsp downloads ClojureDocs' examples at startup, for hover, from
+;; a host no one configured (Hellmacs' own fetches go through
+;; `with-hellmacs-network'; the server's don't). Off unless you want them.
+(defvar hellmacs-clojure-clojuredocs nil
+  "Non-nil lets clojure-lsp download ClojureDocs' examples, shown on hover.")
+
+(defun hellmacs-clojure-lsp-initialization-options (options)
+  "OPTIONS, lsp-clojure's initialization options, with Hellmacs' settings merged in."
+  (if hellmacs-clojure-clojuredocs
+      options
+    (plist-put (copy-sequence options) :hover
+               (plist-put (copy-sequence (plist-get options :hover)) :clojuredocs :json-false))))
+
+(defvar lsp-clients)
+
+(with-eval-after-load 'lsp-clojure
+  ;; Its slot looked up by name, now: no `setf' of lsp-mode's struct can be
+  ;; expanded where this file is compiled, before lsp-mode loads.
+  (condition-case err
+      (let ((client (or (gethash 'clojure-lsp lsp-clients) (error "lsp-clojure registered no `clojure-lsp' client")))
+            (slot (cl-struct-slot-offset 'lsp--client 'initialization-options)))
+        (let ((theirs (aref client slot)))
+          (aset client slot (lambda ()
+                              (hellmacs-clojure-lsp-initialization-options
+                               (if (functionp theirs) (funcall theirs) theirs))))))
+    (error (display-warning 'hellmacs (format "clojure-lsp settings not set (%s); lsp-mode may have changed"
+                                              (error-message-string err))))))
+
 (hellmacs-lsp-pin-installer 'clojure-lsp '(:lang . clojure)
                             'hellmacs-clojure-sync-install-server)
 

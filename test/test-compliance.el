@@ -283,6 +283,44 @@ being one as soon as the branch moves."
     (should (string-match-p "\\`[0-9a-f]\\{40\\}\\'" (or (plist-get (cdr order) :ref) "")))
     (should-not (plist-get (cdr order) :depth))))
 
+(defconst test-compliance--network-functions
+  '(url-retrieve url-retrieve-synchronously url-copy-file url-insert-file-contents
+    make-network-process open-network-stream network-stream-open)
+  "Functions that reach the network from Emacs itself.")
+
+(defun test-compliance--calls (file functions)
+  "The FUNCTIONS FILE calls, as symbols, read from its code (not its comments)."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let (found)
+      (condition-case nil
+          (while t
+            (let ((form (read (current-buffer))))
+              (named-let walk ((x form))
+                (when (consp x)
+                  (when (memq (car x) functions) (cl-pushnew (car x) found))
+                  (while (consp x) (walk (car x)) (setq x (cdr x)))))))
+        (end-of-file nil))
+      found)))
+
+(ert-deftest test-compliance/network-only-through-hellmacs-net ()
+  "Hellmacs sends nothing of its own: only core/hellmacs-net.el reaches the
+network (pinned downloads, and doctor's reachability probe), through the
+proxy, CA and mirrors you set. A call anywhere else fails this test."
+  (let ((offenders nil))
+    (dolist (file (append (directory-files-recursively (expand-file-name "core" hellmacs-dir) "\\.el\\'")
+                          (directory-files-recursively (expand-file-name "modules" hellmacs-dir) "\\.el\\'")
+                          (list (expand-file-name "init.el" hellmacs-dir)
+                                (expand-file-name "early-init.el" hellmacs-dir))))
+      (unless (equal (file-name-nondirectory file) "hellmacs-net.el")
+        (when-let* ((calls (test-compliance--calls file test-compliance--network-functions)))
+          (push (cons (file-relative-name file hellmacs-dir) calls) offenders))))
+    (should-not offenders)
+    ;; And the check finds one.
+    (should (memq 'url-copy-file
+                  (test-compliance--calls (expand-file-name "core/hellmacs-net.el" hellmacs-dir)
+                                          test-compliance--network-functions)))))
+
 (ert-deftest test-compliance/cli-sbom ()
   "`bin/hellmacs sbom FILE' writes the bill of materials there; without FILE, to stdout."
   (require 'hellmacs-cli)

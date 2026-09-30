@@ -3840,12 +3840,38 @@ pass against what enterprise developers already use.
     domain) is flagged to check. CI runs it on every push (default modules)
     and weekly with every module (`budgets.yml`). Live, every module: 156
     components, none unknown; restclient flagged.
-- [ ] **No telemetry, stated and enforced.**
+- [/] **No telemetry, stated and enforced.**
   - Hellmacs sends nothing. Packages that could (lsp-mode's and servers'
     own features, if any) are configured off, and the findings pass lists
     each one.
   - The 12.1 proxy test doubles as a check: during a normal editing session,
     only the configured hosts are contacted.
+  - *Findings pass (2026-09-30):* every pinned component's artifact searched
+    for telemetry endpoints (BugSnag, Sentry, Segment, Amplitude, Mixpanel,
+    Application Insights, Google Analytics, PostHog) and its docs read.
+    - **docker-language-server 0.20.1: telemetry on by default** (its
+      TELEMETRY.md): usage data, hashes of modified files' git remotes and
+      paths, and crash reports to BugSnag. Hellmacs sent no setting, so it
+      was on. Now `initializationOptions.telemetry` is "off", and so is
+      `docker.lsp.telemetry` when the server asks.
+    - **clojure-lsp: downloads ClojureDocs' export** from GitHub at startup
+      (`refresh-cache!`, unless `[:hover :clojuredocs]` is false), outside
+      Hellmacs' proxy and mirrors. Off (`hover.clojuredocs` false), unless
+      `hellmacs-clojure-clojuredocs`. Its "Fetching Clojuredocs" progress
+      message is sent either way.
+    - SonarLint (`+sonarlint`): off already (`lsp-sonarlint-disable-telemetry`).
+    - JDTLS, the Spring Boot server, kotlin-language-server, lemminx,
+      marksman, groovy-language-server (built: lsp4j, Groovy, Gson,
+      ClassGraph): no endpoint in their code.
+    - yaml-language-server, vscode-langservers-extracted, bash-language-server,
+      httpyac (npm, from their lockfiles): LSP `telemetry/event` only, which
+      goes to the client; lsp-mode drops it.
+    - JetBrains' Kotlin LSP (not adopted): `--data-sharing` none by default.
+  - *Enforced:* `test-compliance/network-only-through-hellmacs-net` fails if
+    any code outside `core/hellmacs-net.el` calls a network function; the
+    settings above have unit tests. Stated in the README ("Privacy: No
+    Telemetry"). Left: the live check that a normal session contacts only
+    the configured hosts.
 - [ ] **Supply chain.**
   - All downloads are pinned by SHA-256, and packages by commit
     (`bin/hellmacs lock`). Release tags are signed.

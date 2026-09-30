@@ -217,6 +217,20 @@ Continuous integration tested across platforms on Emacs 29.1, 29.4, 30.1+:
 
 ---
 
+## 🔒 Privacy: No Telemetry
+
+Hellmacs sends nothing about you or your code, and turns off the telemetry of what it installs:
+
+- **Hellmacs itself** only goes online when you run `bin/hellmacs sync`, `install` or `upgrade` (packages, and pinned downloads checked by SHA-256), or `doctor --network`. Always through your proxy, CA and mirrors. A test fails if any other code reaches the network.
+- **docker-language-server** sends usage data and crash reports to Docker by default; Hellmacs turns that off.
+- **SonarLint** (`+sonarlint`): its telemetry is off.
+- **clojure-lsp** downloads ClojureDocs' examples at startup; Hellmacs turns that off (`hellmacs-clojure-clojuredocs` turns it back on).
+- The other servers (JDTLS, Spring Boot, kotlin-language-server, groovy-language-server, lemminx, marksman, the npm-installed ones) send nothing of their own; their `telemetry/event` messages go to Emacs, which drops them.
+
+Your build tools (Gradle, Maven) and the language servers still fetch your project's dependencies from the repositories your build names.
+
+---
+
 ## 📚 Documentation
 
 Comprehensive guides, module references, and architectural specifications are located in [`docs/`](docs/):

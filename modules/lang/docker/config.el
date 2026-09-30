@@ -48,7 +48,19 @@
   "The command starting the pinned server."
   (list hellmacs-docker-ls-executable "start" "--stdio"))
 
+;; Docker's server sends usage data and crash reports (to BugSnag) unless
+;; told not to: its telemetry is on by default (its TELEMETRY.md). Off at
+;; initialize, and when it asks for `docker.lsp.telemetry' later.
+(defun hellmacs-docker-ls-initialization-options ()
+  "What the server is told at initialize: no telemetry."
+  (list :telemetry (hellmacs-docker-ls-telemetry-setting)))
+
+(defun hellmacs-docker-ls-telemetry-setting ()
+  "The server's telemetry setting: off."
+  "off")
+
 (declare-function lsp-register-client "lsp-mode")
+(declare-function lsp-register-custom-settings "lsp-mode")
 (declare-function make-lsp-client "lsp-mode")
 (declare-function lsp-stdio-connection "lsp-mode")
 (declare-function lsp-activate-on "lsp-mode")
@@ -60,11 +72,13 @@
   (add-to-list 'lsp-language-id-configuration (cons hellmacs-docker-compose-file-regexp "dockercompose"))
   (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile"))
   (add-to-list 'lsp-language-id-configuration '(dockerfile-ts-mode . "dockerfile"))
+  (lsp-register-custom-settings '(("docker.lsp.telemetry" hellmacs-docker-ls-telemetry-setting)))
   (lsp-register-client
    (make-lsp-client
     :new-connection (lsp-stdio-connection #'hellmacs-docker-ls-command
                                           (lambda () (file-executable-p hellmacs-docker-ls-executable)))
     :activation-fn (lsp-activate-on "dockerfile" "dockercompose")
+    :initialization-options #'hellmacs-docker-ls-initialization-options
     :priority 1                         ; over lsp-dockerfile's
     :server-id 'docker-language-server
     :download-server-fn (lambda (_client callback error-callback _update?)
