@@ -44,8 +44,7 @@
 ;;
 ;; The derived shades (the second half of the table) are surfaces only:
 ;; selection, highlights, diff tints. Each is dark enough that the text
-;; drawn on it here stays at 4.5:1 or better (test/test-theme.el checks
-;; every pair).
+;; drawn on it here stays at 4.5:1 or better.
 ;;
 ;; Covers the built-in faces, font-lock (tree-sitter included), the
 ;; completion stack (vertico, orderless, marginalia, consult, corfu,

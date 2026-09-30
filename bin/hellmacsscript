@@ -25,7 +25,7 @@
 # Each bin/hellmacs-COMMAND starts with `#!/usr/bin/env hellmacsscript', so
 # with bin/ on your PATH it runs on its own: `hellmacs-sync' is
 # `bin/hellmacs sync'. It goes through bin/hellmacs, so the same rules apply
-# (--profile, the throwaway directories of `test', `upgrade' in two steps).
+# (the global options, `emacs', `upgrade' in two steps).
 
 set -e
 

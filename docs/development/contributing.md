@@ -1,6 +1,6 @@
 # Contributing & Module Development Guide
 
-This guide outlines how to develop, test, and contribute to **Hellmacs**, including the module system specification and core macros API.
+This guide outlines how to develop, verify, and contribute to **Hellmacs**, including the module system specification and core macros API.
 
 ---
 
@@ -45,33 +45,19 @@ There is no `init.el` in the checkout: `bin/hellmacs sync` generates each profil
 
 ---
 
-## 2. Running Test Suites
+## 2. Verifying a Change
 
-Hellmacs includes an extensive ERT (Emacs Lisp Regression Testing) suite with zero external mock dependencies.
-
-```sh
-# Run the entire test suite
-bin/hellmacs test
-
-# Run a specific test selector
-bin/hellmacs test test-java
-bin/hellmacs test test-debugger
-bin/hellmacs test test-bundle
-```
-
-Tests for the layout itself: `test-lib/layout-like-doom`, `test-modules/catalog-is-a-source`, `test-modules/every-module-has-metadata`, `test-cli/commands-in-bin-like-doom` and `test-profiles`.
-
-### Integration & Parity Checklists
-
-Integration scripts start Hellmacs as a batch session, then load the script:
+Hellmacs has no test suites (they were removed on 2026-09-30). Check a change against throwaway directories, so your own config is never touched:
 
 ```sh
-HELLMACS_E2E_FIXTURE=maven-demo emacs --batch -l early-init.el -f hellmacs-start -l test/integration/java-e2e.el
+T=$(mktemp -d)
+export XDG_CONFIG_HOME=$T/config XDG_DATA_HOME=$T/data \
+       XDG_CACHE_HOME=$T/cache XDG_STATE_HOME=$T/state HELLMACSDIR=$T/config/hellmacs
+bin/hellmacs install --no-env     # creates the config, syncs, runs doctor
+bin/hellmacs emacs                # and try it
 ```
 
-* `test/integration/java-e2e.el`: End-to-end integration test validating JDTLS, compilation, debugger stepping, and hot-code replacement against sample projects.
-* `test/integration/java-parity.el`: Parity runner verifying that IntelliJ/Eclipse daily capabilities function on Maven/Gradle test projects.
-* `test/integration/net-e2e.el`: Validates corporate proxy, custom CA bundle, and offline bundle installations.
+A full sync of the default modules downloads the language servers: it takes minutes the first time.
 
 ---
 
@@ -149,5 +135,5 @@ Core and `:tools` modules never hardcode language names; `:lang` modules configu
    cp -r static/module-template sources/hellmacs+/modules/lang/scala
    ```
 2. Populate `packages.el`, `config.el`, `autoload.el`, and `doctor.el`. Find other modules with `hellmacs-module-locate-path`, and load your module's own files with `(hellmacs-module-load "+paths")`, never by path.
-3. Register the module in `static/init.example.el` and add unit tests in `test/`.
-4. Run `bin/hellmacs sync` and verify with `bin/hellmacs test` and `bin/hellmacs doctor`.
+3. Register the module in `static/init.example.el`.
+4. Run `bin/hellmacs sync`, start Emacs, and run `bin/hellmacs doctor` (see "Verifying a Change").

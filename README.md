@@ -75,7 +75,7 @@
   - All custom Hellmacs leader shortcuts live cleanly under `C-c h`.
 
 - **Enterprise-Grade Reproducibility & CLI**:
-  - Dedicated CLI tool (`bin/hellmacs`) handling `install`, `sync`, `upgrade`, `doctor`, `lock`, `bundle`, `verify`, `sbom`, `licenses`, `config`, `env`, `gc`, `version` and `test`, one file per command (`bin/hellmacs-COMMAND`).
+  - Dedicated CLI tool (`bin/hellmacs`) handling `install`, `sync`, `upgrade`, `doctor`, `lock`, `bundle`, `verify`, `sbom`, `licenses`, `config`, `env`, `gc`, `emacs`, `info`, `profile` and `version`, one file per command (`bin/hellmacs-COMMAND`).
   - Doom Emacs v3's architecture and layout: the engine in `lisp/`, the module catalog as a source (`sources/hellmacs+/`), module metadata (`.hellmacsmodule`), implicit profiles (with `safe-mode` for when something breaks), and an `init.el` generated per profile by `sync`.
   - Clean XDG directory isolation (`~/.config/emacs`, `~/.config/hellmacs`) and pinned package locks.
   - Offline bundles: `bin/hellmacs bundle` packs packages, language servers and grammars into one archive, and `bin/hellmacs install --from-bundle` installs it with no network access at all, checking every file's SHA-256.
@@ -105,7 +105,7 @@ The palette:
 | `venom-green` | `#98be65` | Success, strings, added lines |
 | `forge-gray-hi` | `#868f96` | Comments, doc strings, dimmed text |
 
-Every text colour is at least 4.5:1 against the background it's drawn on (`test/test-theme.el` checks each pair).
+Every text colour is at least 4.5:1 against the background it's drawn on.
 
 **Icons and fonts.** The dashboard and the mode-line draw [nerd-icons](https://github.com/rainstormstudio/nerd-icons.el) when the frame has a [Nerd Font](https://www.nerdfonts.com/font-downloads). Without one they fall back to plain text. `bin/hellmacs doctor` says whether one is installed, and `M-x nerd-icons-install-fonts` installs one into `~/.local/share/fonts`.
 
@@ -221,14 +221,14 @@ docker run -w /root --net=host -it --rm alpine:edge sh -c '
 
 ## 🖥️ Platform Support Matrix
 
-Continuous integration tested across platforms on Emacs 29.1, 29.4, 30.1+:
+Continuous integration installs Hellmacs and runs `doctor` on Linux x86_64, with Emacs 29.1 and 30.1:
 
 | Platform | Architecture | Tier / Status | Notes |
 |---|---|:---:|---|
 | **Linux** | `x86_64` | **Tier 1 (Full)** | Native Linux, primary development target |
-| **Linux** | `arm64` | **Tier 1 (Full)** | Tested in automated CI |
+| **Linux** | `arm64` | **Tier 1 (Full)** | Pinned downloads for arm64 |
 | **macOS** | Apple Silicon (`arm64`) | **Tier 1 (Full)** | Homebrew / `emacs-plus` / `emacs-mac` supported |
-| **macOS** | Intel (`x86_64`) | **Tier 1 (Full)** | Tested in automated CI |
+| **macOS** | Intel (`x86_64`) | **Tier 1 (Full)** | Pinned downloads for Intel Macs |
 | **Windows** | `WSL2` | **Tier 1 (Supported)** | Full Linux emulation with WSLg GUI support |
 
 ---
@@ -257,7 +257,7 @@ Comprehensive guides, module references, and architectural specifications are lo
 | ⚙️ **[Configuration Guide](docs/configuration.md)** | Module system (`hellmacs!`), flags, custom packages, and user profiles |
 | ☕ **[JVM Development](docs/jvm-development.md)** | Java, Kotlin, Clojure, autocompletion, semantic navigation, DAP debugging, and HCR |
 | ⌨️ **[Keybindings Reference](docs/keybindings.md)** | Complete keyboard cheatsheet for standard GNU and `C-c` leader commands |
-| 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `bundle`, `sync`, `upgrade`, `doctor`, `verify`, `sbom`, `licenses`, `lock`, `test`, ...) and profiles |
+| 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `bundle`, `sync`, `upgrade`, `doctor`, `verify`, `sbom`, `licenses`, `lock`, `emacs`, `info`, ...) and profiles |
 | 🧭 **[Profiles](profiles/README.md)** | Separate configurations, implicit profiles, and the `safe-mode` profile |
 | 🗺️ **[Enterprise Roadmap](docs/roadmap.md)** | Multi-phase roadmap and IntelliJ/Eclipse feature parity matrix |
 | 🏷️ **[Releases and Support](docs/releases.md)** | Versions, update channels (`stable`, `main`), supported Emacs and platforms, security fixes; see also the [Changelog](CHANGELOG.md) |
@@ -313,7 +313,7 @@ Contributions are warmly welcomed! Please check our development guides before co
 - [Roadmap Work Order](docs/development/work-order.md)
 
 
-Pull requests are verified through unit and integration suites run via `bin/hellmacs test`. The [File Structure](#-file-structure) below says where each kind of code goes.
+Pull requests are checked by CI: it installs Hellmacs, runs `doctor`, and checks every license. The [File Structure](#-file-structure) below says where each kind of code goes.
 
 ---
 
@@ -349,8 +349,7 @@ Hellmacs follows Doom Emacs v3's layout (`doomemacs/core`): the engine in
 │       └── ui/              # Dashboard, modeline, theme (with hellmacs-inferno), popups
 ├── profiles/                # Profiles Hellmacs ships (safe-mode); see profiles/README.md
 ├── docs/                    # User, developer and AI context documentation
-├── static/                  # Starter templates (init.example.el, config.example.el, packages.example.el, module-template/)
-└── test/                    # ERT unit and integration test suites
+└── static/                  # Starter templates (init.example.el, config.example.el, packages.example.el, module-template/)
 </pre>
 
 Each module has a `.hellmacsmodule` (Doom's `.doommodule`) naming it. Your own

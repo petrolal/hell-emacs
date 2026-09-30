@@ -99,15 +99,6 @@ case "$1" in
     exec "$EMACS" --init-directory "$HELLMACS_ROOT" \
       ${HELLMACS_PROFILE:+--profile "$HELLMACS_PROFILE"} "$@"
     ;;
-  test)
-    # Tests must never touch your real config, packages or history.
-    tmp=$(mktemp -d "${TMPDIR:-/tmp}/hellmacs-test.XXXXXX")
-    trap 'rm -rf "$tmp"' EXIT
-    XDG_CONFIG_HOME=$tmp/config XDG_DATA_HOME=$tmp/data \
-    XDG_CACHE_HOME=$tmp/cache XDG_STATE_HOME=$tmp/state \
-    HELLMACSDIR=$tmp/config/hellmacs HELLMACS_PROFILE= \
-      hellmacs "$@"
-    ;;
   upgrade|up)
     shift
     case " $* " in

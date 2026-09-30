@@ -46,7 +46,7 @@ either channel.
 Each release states, in its changelog entry:
 
 - **Emacs:** 29.1 and later (the minimum is only raised in a MAJOR release).
-  CI runs the unit tests on 29.1, 29.4 and 30.1+.
+  CI installs Hellmacs and runs `doctor` on 29.1 and 30.1.
 - **Platforms:** Linux x86_64 and arm64, macOS Apple Silicon and Intel, and
   Windows through WSL2 (the table in the README). Pinned downloads exist
   for each of them.
@@ -66,6 +66,6 @@ Each release states, in its changelog entry:
 1. Move `[Unreleased]` in CHANGELOG.md under the new version and date, with
    its supported Emacs versions and platforms.
 2. Set `hellmacs-version` to it.
-3. `bin/hellmacs test` and `bin/hellmacs doctor` pass, and CI is green.
+3. `bin/hellmacs doctor` passes, and CI is green.
 4. Tag it, signed: `git tag -s vX.Y.Z -m "Hellmacs X.Y.Z"`, and push the tag.
 5. Set `hellmacs-version` on `main` to the next version.

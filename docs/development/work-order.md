@@ -14,17 +14,16 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Rules for agents
 
-0. **Strict Test-Driven Development (TDD)**:
-   * Always write the failing unit and integration tests *before* writing the implementation (RED).
-   * Tests must call the actual functions and test the actual behavior directly without mocking the implementation inside the test itself.
-   * Then implement the minimal code to make tests pass (GREEN), refactor, and verify.
+0. **No tests.** Hellmacs' test suites, integration scripts and fixtures
+   were removed on 2026-09-30. Finished items below still name them: that's
+   how they were verified at the time. Don't add tests to new work.
 1. **Tick an item only when it's done and verified.** Done means:
-   * the roadmap's *Verify* step for it passed;
-   * `bin/hellmacs test` and `bin/hellmacs doctor` pass;
+   * it works when tried by hand after a sync (the roadmap's *Verify* step, done by hand);
+   * `bin/hellmacs doctor` passes;
    * startup stays under the 0.12s budget if the item touches startup.
 
    Change `- [ ]` to `- [x]` and add the date and a short note, for example
-   `- [x] Offline bundle builder (2026-10-02: bundle + install --from-bundle, unit tests)`.
+   `- [x] Offline bundle builder (2026-10-02: bundle + install --from-bundle, tried offline)`.
 2. **Partial work stays unchecked.** Mark it `- [/]` and say what's left, for
    example `- [/] macOS CI (arm64 job green; x86_64 not added)`.
 3. **Keep the roadmap in step.** Tick the matching checkbox in
@@ -130,7 +129,7 @@ This file only tracks progress. Don't copy specs into it.
 ## Step 9: 12.7 Scale, 12.9 Security and compliance, 12.10 Documentation (roadmap "12.7", "12.9", "12.10")
 
 - [x] 12.7 Reference monorepo for measurements (2026-09-29: Spring Framework v7.0.9, pinned by tag and commit in `test/integration/reference.el`, `HELLMACS_PARITY_REFERENCE=spring-framework` for java-parity; `test/test-reference.el`. Live: 21 of 22 checks pass once the three settings below are off; symbol search answered 72s after JDTLS started cold, 2197MB peak, `compileJava` 71.1s. With the defaults, navigation doesn't work on it; see the roadmap)
-- [/] 12.7 Budgets measured weekly in CI (weekly workflow `budgets.yml` + `test/integration/budgets.sh`, budgets and verdicts in `budgets.el`, `test/test-budgets.el`; full chain run live 2026-09-29, IntelliJ IDEA Community 2025.3 on the same checkout: startup 0.101s, completion p95 89ms and memory 3398MB vs IntelliJ's 4263MB pass; import 192s vs IntelliJ's 56s FAILS (budget 84s), for Tuning to fix. Left: the workflow's first CI run, once pushed)
+- [/] 12.7 Budgets measured weekly in CI (weekly workflow `budgets.yml` + `test/integration/budgets.sh`, budgets and verdicts in `budgets.el`, `test/test-budgets.el`; full chain run live 2026-09-29, IntelliJ IDEA Community 2025.3 on the same checkout: startup 0.101s, completion p95 89ms and memory 3398MB vs IntelliJ's 4263MB pass; import 192s vs IntelliJ's 56s FAILS (budget 84s), for Tuning to fix. Dropped 2026-09-30 with test/ and the workflow: budgets are measured by hand now)
 - [x] 12.7 Tuning justified by the measurements (2026-09-29: java-parity runs on Spring Framework, each candidate against the defaults (import 70.5s to 73.6s, under the 84s budget). Generated directories: Gradle's build/ and JDTLS's bin/ no longer watched outside src/ (`hellmacs-jvm-build-output-regexp`, `test-java/build-output-not-watched`); after an import and build they took the watched tree from 2725 to 5998 directories, past the 5000 threshold, so the next session asked; live with the real lsp-mode, 2725 again. Not adopted, measured: a 4G heap (no faster, 1.4GB more), `--configuration-cache` (no faster; the build cache Spring already has doesn't apply to imports), 4 concurrent builds (slower, 2 checks failed), autobuild off (11s faster, left to the user). Compiled startup is 11.4's)
 - [x] 12.7 Tuning, found by the reference runs: Gradle 9 import fails with JDTLS's annotation-processing init script (Spring Framework). Roadmap "12.7", *A reference monorepo* (2026-09-29: on that exact error, annotation processing off and an in-place reimport; plus the `+spring` deadlock that kept JDTLS from ever saying ready; `test/test-java.el`. Live: Spring Framework imports with the defaults, 21 of 22 parity checks)
 - [x] 12.7 Tuning, found by the reference runs: references/implementations code lenses starve JDTLS's request threads on big classes (off in VS Code). Roadmap "12.7", *A reference monorepo* (2026-09-29: both off by default in `:lang java`, as in VS Code, from the reference runs' 183s vs 63s to symbol search; `test-java/reference-code-lenses-off`; your config.el can turn them back on)
@@ -149,12 +148,12 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Step 10: Phase 8.4 Groovy (roadmap "Phase 8", Groovy)
 
-- [/] `groovy-mode` for Groovy sources, Gradle scripts and Jenkinsfiles (2026-09-30: groovy-mode's own mappings plus `*.jenkinsfile` and `Jenkinsfile.NAME`; unit tests. Left: the full live e2e)
-- [/] groovy-language-server through lsp-mode, installed pinned by `bin/hellmacs sync` (2026-09-30: no releases, so sync builds commit `347d098` with a pinned Gradle 9.1.0 (SHA-256) and Gradle dependency verification (`verification-metadata.xml`); the project's classpath is asked of its build and sent to the server. Live: built from a fresh sync in 46s. Left: the full live e2e)
-- [/] Status messages through `hellmacs-lsp-status` (2026-09-30: the server sends no progress; igniting at start, ready once it has the build's classpath, failed with the build's own reason. Live: JVM:ready. Left: the full live e2e)
-- [/] `C-c l g` keys (with `:tools build`) (2026-09-30: b/t/T with :tools build, c asks for the classpath again; JUnit and Spock test at point. Left: the full live e2e)
+- [/] `groovy-mode` for Groovy sources, Gradle scripts and Jenkinsfiles (2026-09-30: groovy-mode's own mappings plus `*.jenkinsfile` and `Jenkinsfile.NAME`; unit tests. Left: a full check by hand)
+- [/] groovy-language-server through lsp-mode, installed pinned by `bin/hellmacs sync` (2026-09-30: no releases, so sync builds commit `347d098` with a pinned Gradle 9.1.0 (SHA-256) and Gradle dependency verification (`verification-metadata.xml`); the project's classpath is asked of its build and sent to the server. Live: built from a fresh sync in 46s. Left: a full check by hand)
+- [/] Status messages through `hellmacs-lsp-status` (2026-09-30: the server sends no progress; igniting at start, ready once it has the build's classpath, failed with the build's own reason. Live: JVM:ready. Left: a full check by hand)
+- [/] `C-c l g` keys (with `:tools build`) (2026-09-30: b/t/T with :tools build, c asks for the classpath again; JUnit and Spock test at point. Left: a full check by hand)
 - [x] Fixture `test/fixtures/groovy/gradle-demo` (2026-09-30: Groovy 5.0.8, JUnit 5, `BrokenTest` behind `-Dhellmacs.fail=true`; builds and tests on JDK 21 and 25)
-- [/] Verified live (`test/integration/groovy-e2e.el`) and unit tests (2026-09-30: 11 unit tests in `test-groovy`; last live run 14 of 16, references and the syntax-error check failing after the completion check edited a file; that check now runs last. Left: one full live run passing)
+- [/] Verified live (`test/integration/groovy-e2e.el`) and unit tests (2026-09-30: 11 unit tests in `test-groovy`; last live run 14 of 16, references and the syntax-error check failing after the completion check edited a file; that check now runs last. Left: one full check by hand; the e2e script and unit tests were removed with test/)
 
 ## Step 10a: Phase 14, every language IntelliJ IDEA bundles, on by default (roadmap "Phase 14"; added 2026-09-30 at the user's request)
 
@@ -163,9 +162,9 @@ This file only tracks progress. Don't copy specs into it.
 - [ ] 14.2 `:lang javascript`: JavaScript, TypeScript, JSX/TSX, ESLint, Prettier
 - [ ] 14.3 `:lang sql`: a SQL server on `:tools db`'s connections
 - [ ] 14.4 `:lang data`: XSLT and XPath; `.properties`
-- [ ] 14.5 Scala (8.5's items: scala-mode/sbt-mode, Metals pinned, `metals/status`, `C-c l s`, `test/fixtures/scala/sbt-demo` and e2e)
+- [ ] 14.5 Scala (8.5's items: scala-mode/sbt-mode, Metals pinned, `metals/status`, `C-c l s`)
 - [ ] 14.6 Kubernetes schemas, `:lang openapi`, `:lang terraform`, `:lang protobuf`
-- [ ] 14.7 Integration: all on by default (with 10.1's six and Groovy), Node a `doctor` warning, an e2e script for the non-JVM languages, the telemetry check with every module, docs, a fresh install
+- [ ] 14.7 Integration: all on by default (with 10.1's six and Groovy), Node a `doctor` warning, the non-JVM languages checked by hand, docs, a fresh install
 
 ## Step 10b: Phase 15, plugins (roadmap "Phase 15"; added 2026-09-30 at the user's request)
 

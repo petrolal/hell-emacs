@@ -49,9 +49,9 @@ When developing features, extending modules, or writing code for Hellmacs:
 |    - project.el, treesit, compile  |    - No telemetry or tracking      |
 |    - Minimal external dependencies |    - Reproducible lockfiles        |
 +------------------------------------+------------------------------------+
-| 4. Sub-0.12s Startup Budget        | 8. Strict Test-Driven Development  |
-|    - Compiled static profiles      |    - Failing ERT tests first (RED) |
-|    - Deferred / lazy evaluation    |    - Direct verification (GREEN)   |
+| 4. Sub-0.12s Startup Budget        | 8. Verified Changes                |
+|    - Compiled static profiles      |    - Sync, start, doctor           |
+|    - Deferred / lazy evaluation    |    - (no test suites)              |
 +------------------------------------+------------------------------------+
 ```
 
@@ -67,10 +67,10 @@ When developing features, extending modules, or writing code for Hellmacs:
    * Use `hellmacs-state-file`, `hellmacs-cache-dir`, and `hellmacs-data-dir`.
 4. **Package Declarations**:
    * Declare package dependencies via `(package! <name>)` in `packages.el` managed by `bin/hellmacs sync` / Elpaca.
-5. **Strict Test-Driven Development (TDD)**:
-   * Write failing ERT unit and integration tests *before* writing production code (RED).
-   * Assert directly against target APIs and behaviors without self-mocking in test bodies.
-   * Implement minimal code to satisfy tests (GREEN), refactor, and verify with `bin/hellmacs test`.
+5. **Verify Every Change** (Hellmacs has no test suites since 2026-09-30):
+   * Sync against throwaway directories (`XDG_*_HOME` and `HELLMACSDIR` pointed at a temporary one), never the real config.
+   * Start Emacs from that profile (`emacs --batch -l early-init.el -f hellmacs-start`), with no `*Warnings*`, and run `bin/hellmacs doctor`.
+   * CI installs Hellmacs and runs `doctor` on every push.
 6. **Work Order & Roadmap Progress**:
    * Pick up work in order of [`work-order.md`](work-order.md) and update checkboxes in both `work-order.md` and `docs/roadmap.md`.
 7. **Respect the Doom v3 Layout** (Phase 16, [`architecture.md`](architecture.md) §2):

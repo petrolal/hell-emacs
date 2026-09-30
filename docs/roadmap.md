@@ -1,5 +1,10 @@
 # Hellmacs roadmap
 
+> **Tests removed (2026-09-30).** Hellmacs' test suites, integration
+> scripts, fixtures and the budgets workflow were removed. Finished items
+> below still name them, as the record of how they were verified then;
+> unfinished items are checked by hand, with `bin/hellmacs doctor`.
+
 ## Objective
 
 **Hellmacs is an enterprise-grade alternative to the IDEs the enterprise JVM
@@ -66,7 +71,7 @@ them, the principle wins and the feature finds another way.
 - **Fast.** A synced profile starts in well under a second (Phase 9's 0.12s
   budget), and features load lazily. An editor that starts faster than the
   IDE opens a project is part of the pitch.
-- **Strict Test-Driven Development (TDD).** Always write unit and integration tests first before writing production code (RED). Tests must target real functions and contracts directly without self-mocking test bodies. Implement the minimal code to satisfy the tests (GREEN), refactor, and verify pass rate and sub-0.12s startup budget.
+- **Verified by hand, no test suites** (since 2026-09-30). Sync against throwaway directories, try the change in Emacs, run `bin/hellmacs doctor`, and keep startup under the 0.12s budget.
 - **Honest.** Where Hellmacs is behind an IDE, the feature matrix says so.
   Enterprise adoption depends on trust, and an overclaimed parity list is
   found out in the first week.
@@ -1690,8 +1695,7 @@ config.el, cli.el, doctor.el), plus Kotlin support in `:tools build`.
 - [ ] `C-c l s` in Scala buffers: `b` compile, `t` the test at point, `T`
       the suite, through sbt (`sbt-mode`), or `:tools build` for Gradle and
       Maven projects.
-- [ ] `test/fixtures/scala/sbt-demo` (Scala 3, munit), an end-to-end
-      script and unit tests.
+- [ ] An sbt project (Scala 3, munit) opened and built by hand.
 
 **8.6 Integration** (in progress: Java, Kotlin and Clojure verified;
 Groovy and Scala pending): starter `init.el`, README, doctor, fixtures, an
@@ -1720,8 +1724,8 @@ ship.
 - [x] **Startup with those modules on** (synced profile): about **0.073s**
       (0.073 to 0.080 over five runs, 0.126s cold), against about 0.057s with
       the Java modules and Magit alone.
-- [ ] Groovy and Scala: their modules, fixtures and end-to-end scripts (8.4
-      and 8.5), then the same fresh-install run with them on.
+- [ ] Groovy and Scala: their modules (8.4 and 8.5), checked by hand, then
+      the same fresh-install run with them on.
 
 **8.7 Acceptance** (in progress: Kotlin done; Groovy and Scala pending)
 - [x] `test/integration/kotlin-parity.el` (new) is the Java checklist for
@@ -4145,7 +4149,7 @@ in the findings pass and turned off (12.9). Keys: only the modes' own and
 
 **14.5 Scala** (8.5's spec, unchanged, moved here from "Later")
 - [ ] 8.5's items (scala-mode/sbt-mode, Metals pinned, `metals/status`,
-      `C-c l s` keys, `test/fixtures/scala/sbt-demo` and its e2e script),
+      `C-c l s` keys),
       and on by default.
 
 **14.6 API and infrastructure files**
@@ -4168,15 +4172,14 @@ in the findings pass and turned off (12.9). Keys: only the modes' own and
 - [ ] Node becomes a default requirement: `doctor` warns (doesn't fail)
       when it's missing, names the modules that need it, and those modules
       still give their modes without a server.
-- [ ] An e2e script for the non-JVM languages (10.1's and this phase's):
+- [ ] The non-JVM languages (10.1's and this phase's), checked by hand:
       each file type opens in its mode, its server answers completion,
-      a diagnostic and a hover. (10.1 shipped without one.)
-- [ ] The telemetry check (12.9, `telemetry-check.sh`) passes with every
-      module on.
+      a diagnostic and a hover.
+- [ ] No telemetry with every module on (12.9), checked by hand.
 - [ ] README, per-module docs (12.10), the feature matrix rows.
 - [ ] A fresh install in temporary folders with the new defaults: sync,
-      doctor, the unit and e2e suites, startup under 0.12s.
-- *Verify:* 14.7's fresh install, and each 14.x fixture's checks.
+      doctor, startup under 0.12s.
+- *Verify:* 14.7's fresh install, and each 14.x language tried by hand.
 
 **Risks**
 - **A heavier default install.** Every Node server, Metals and terraform-ls

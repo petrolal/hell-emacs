@@ -254,9 +254,6 @@ Commands (short names in brackets):
              List the modules on by default that your hellmacs! block misses
              (made from an older template?); --add-defaults adds them, keeping
              a backup of init.el. Then run sync.
-  test [REGEXP]
-             Run Hellmacs' own test suites (only tests matching REGEXP),
-             in temporary directories.
   help [h]   Show this help.
 
 More commands: a hellmacs-NAME file in your config's bin/, or in a directory

@@ -688,8 +688,7 @@ Running the sync again usually finishes the job." (length pending)))
   "Install every declared package, then write the synced profile." t)
 
 ;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.
-;; Every `;;;###autoload' function in lisp/lib/jdk.el belongs here
-;; (`test-jdk/public-functions-autoloaded-from-core').
+;; Every `;;;###autoload' function in lisp/lib/jdk.el belongs here.
 (defconst hellmacs-modules--jdk-autoloads
   '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
     hellmacs-jdk-home-release hellmacs-jdk-home-major hellmacs-jdk-pick hellmacs-jdk-default-roots hellmacs-jdk-scan-roots hellmacs-jdk-detect

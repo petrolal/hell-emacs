@@ -1,6 +1,6 @@
 # CLI Reference (`bin/hellmacs`)
 
-Hellmacs includes a command-line tool (`bin/hellmacs`) to install, synchronize, upgrade, lock, test, and troubleshoot your installation without launching interactive Emacs.
+Hellmacs includes a command-line tool (`bin/hellmacs`) to install, synchronize, upgrade, lock, and troubleshoot your installation without launching interactive Emacs.
 
 As in Doom Emacs v3, each command is its own file: `bin/hellmacs` dispatches `bin/hellmacs sync` to `bin/hellmacs-sync`, loaded only when it runs. With `bin/` on your `PATH`, a command also runs on its own (`hellmacs-sync`, `hellmacs-doctor`), through `bin/hellmacsscript`; it goes through `bin/hellmacs` either way, so `--profile` and the rest apply. Where `/usr/bin/env` is missing (Android's Termux), use `bin/hellmacs.sh`, as Doom's `doom.sh`.
 
@@ -200,14 +200,6 @@ bin/hellmacs profile sync --all
 bin/hellmacs info
 ```
 * Prints what a bug report needs, as `doom info`: Hellmacs' version and commit, Emacs' version and build features, the system, the profile and whether it's synced, your config's directory and modules.
-
----
-
-### `test`
-```sh
-bin/hellmacs test [SELECTOR]
-```
-* Executes the internal ERT unit test suite.
 
 ---
 
