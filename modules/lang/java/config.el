@@ -217,24 +217,20 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
 ;; session stopped to ask (docs/roadmap.md, 12.7 Tuning). Maven's target/
 ;; is in lsp-mode's own list.
 (defconst hellmacs-jvm-build-output-regexp
-  (rx bos (* (not "/"))                 ; a drive letter
-      ;; Any directories but src: a package named build is source.
-      (* "/" (or ""
-                 (seq (not (any "s/")) (* (not "/")))
+  ;; Any directories but src (a package named build is source), from
+  ;; the first, which may be a drive letter.
+  (rx bos (* (or "" (seq (not (any "s/")) (* (not "/")))
                  "s" (seq "s" (not (any "r/")) (* (not "/")))
                  "sr" (seq "sr" (not (any "c/")) (* (not "/")))
-                 (seq "src" (+ (not "/")))))
-      "/" (or "build" "bin") eos)
+                 (seq "src" (+ (not "/"))))
+             "/")
+      (or "build" "bin") eos)
   "Matches Gradle's build/ and JDTLS's bin/ output directories, outside src/.")
 
 (defvar lsp-file-watch-ignored-directories)
 
-(defun hellmacs-jvm--ignore-build-output-h ()
-  "Have lsp-mode not watch build output (`hellmacs-jvm-build-output-regexp')."
-  (add-to-list 'lsp-file-watch-ignored-directories hellmacs-jvm-build-output-regexp))
-
 (after! lsp-mode
-  (hellmacs-jvm--ignore-build-output-h))
+  (add-to-list 'lsp-file-watch-ignored-directories hellmacs-jvm-build-output-regexp))
 
 ;; A missing JDTLS is installed with sync's pinned installer: lsp-java's
 ;; runs Maven on an unpinned pom.xml (docs/roadmap.md, 12.1).
