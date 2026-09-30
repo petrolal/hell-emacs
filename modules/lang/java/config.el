@@ -227,6 +227,25 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
                                callback error-callback))
 (advice-add 'lsp-java--ensure-server :override #'hellmacs-jvm--install-server-a)
 
+(defvar c-basic-offset)
+(defvar java-ts-mode-indent-offset)
+
+(defun hellmacs-jvm-format-tab-size ()
+  "JDTLS's `java.format.tabSize': the indent of this Java buffer, else of any.
+lsp-java's own reads `c-basic-offset' in whichever buffer is current when a
+server asks for its settings; from a Kotlin buffer that's `set-from-style',
+the reply fails to encode, and it's never sent."
+  (let ((java-p (lambda () (derived-mode-p 'java-mode 'java-ts-mode))))
+    (or (seq-some (lambda (buf)
+                    (with-current-buffer buf
+                      (when (funcall java-p)
+                        (let ((n (if (derived-mode-p 'java-ts-mode)
+                                     (bound-and-true-p java-ts-mode-indent-offset)
+                                   (bound-and-true-p c-basic-offset))))
+                          (and (integerp n) n)))))
+                  (cons (current-buffer) (buffer-list)))
+        4)))
+
 (use-package lsp-java
   ;; Loaded in the background after startup, so opening the first Java
   ;; file doesn't wait for it. (Otherwise lsp-mode loads it itself when
@@ -246,6 +265,7 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
                                              (vconcat (hellmacs-net-jvm-options))))
   (lsp-java-content-provider-preferred "fernflower") ; decompile library classes for M-.
   (lsp-java-maven-download-sources t)
+  (lsp-java-format-tab-size #'hellmacs-jvm-format-tab-size)
   ;; Off, as in VS Code: on a big class these lenses fill JDTLS's request
   ;; threads with workspace searches, and the import took 3x as long on
   ;; the reference monorepo (docs/roadmap.md, 12.7 Tuning).

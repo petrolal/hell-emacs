@@ -329,6 +329,33 @@ turn them back on."
       (should setting)
       (should-not (eval (cadr setting) t)))))
 
+(defvar c-basic-offset)
+
+(ert-deftest test-java/format-tab-size-from-any-buffer ()
+  "JDTLS's tab size is a number whichever buffer is current when a server asks
+for its settings. lsp-java's own reads `c-basic-offset' there: from a Kotlin
+buffer that's cc-mode's `set-from-style', the reply fails to encode as JSON,
+and it's never sent (found by telemetry-e2e, 12.9)."
+  (test-java--load)
+  (let ((setting (assq 'use-package (get 'lsp-java-format-tab-size 'theme-value))))
+    (should setting)
+    (should (eq (eval (cadr setting) t) #'hellmacs-jvm-format-tab-size)))
+  (require 'cc-mode)
+  (let ((java (generate-new-buffer "Tab.java")))
+    (unwind-protect
+        (progn
+          (with-temp-buffer
+            (should (eq (default-value 'c-basic-offset) 'set-from-style))
+            (should (integerp (hellmacs-jvm-format-tab-size))))
+          (with-current-buffer java
+            (delay-mode-hooks (java-mode)) ; not lsp-java's hooks
+            (setq-local c-basic-offset 2)
+            (should (= (hellmacs-jvm-format-tab-size) 2)))
+          ;; From another buffer: the Java buffer's.
+          (with-temp-buffer
+            (should (= (hellmacs-jvm-format-tab-size) 2))))
+      (kill-buffer java))))
+
 (defvar lsp-clients)
 
 (ert-deftest test-java/spring-client-setup-warns-instead-of-failing ()
