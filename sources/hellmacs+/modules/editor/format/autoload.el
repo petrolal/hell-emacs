@@ -226,8 +226,9 @@ isn't used for it."
 ;;;###autoload
 (defun hellmacs-format-buffer ()
   "Format the buffer with its language's formatter, else its language server's.
-On lsp-mode's own format keys (`C-c l = =') in buffers with a pinned formatter,
-and eglot's command: the server's is eglot's where eglot manages the buffer."
+On the format keys (`C-c c f', lsp-mode's `C-c c l = =') and eglot's
+command, in buffers with a pinned formatter: the server's is eglot's
+where eglot manages the buffer."
   (interactive)
   (if-let* ((formatter (hellmacs-format--formatter)))
       (progn (unless (fboundp 'apheleia-format-buffer) (require 'apheleia))

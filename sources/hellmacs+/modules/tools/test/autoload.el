@@ -162,7 +162,6 @@ of its own (a parameterized one named \"[1] ...\") is its class."
     (keymap-set map "RET" #'hellmacs-test-results-jump)
     (keymap-set map "r" #'hellmacs-test-results-rerun-at-point)
     (keymap-set map "f" #'hellmacs-test-results-rerun-failures)
-    (keymap-set map "g" #'hellmacs-test-results-refresh)
     (keymap-set map "c" #'hellmacs-coverage-summary)
     map)
   "Keys of the test results view.")
@@ -172,10 +171,12 @@ of its own (a parameterized one named \"[1] ...\") is its class."
   "The tests of the last run, from the build's JUnit XML reports.
 \\<hellmacs-test-results-mode-map>\\[hellmacs-test-results-jump] goes to the test (the failing line), \
 \\[hellmacs-test-results-rerun-at-point] reruns it, \\[hellmacs-test-results-rerun-failures] reruns the failing ones,
-\\[hellmacs-test-results-refresh] reads every report again, \\[hellmacs-coverage-summary] shows coverage per file."
+\\[revert-buffer] reads every report again, \\[hellmacs-coverage-summary] shows coverage per file."
   (setq tabulated-list-format [("" 4 t) ("Suite" 24 t) ("Test" 36 t)
                                ("Time" 7 t :right-align t) ("Message" 0 nil)]
         tabulated-list-padding 1)
+  ;; `g' is tabulated-list-mode's `revert-buffer', as in any list.
+  (setq-local revert-buffer-function #'hellmacs-test-results--revert)
   (tabulated-list-init-header))
 
 (defconst hellmacs-test-results--status-cells
@@ -232,9 +233,8 @@ It isn't displayed; `hellmacs-test-results' does that."
   (interactive)
   (pop-to-buffer (hellmacs-test-results-show (hellmacs-test--root))))
 
-(defun hellmacs-test-results-refresh ()
+(defun hellmacs-test-results--revert (&rest _)
   "Read the project's test reports again: every one of them, the latest of each class."
-  (interactive)
   (hellmacs-test-results-show hellmacs-test-results--root))
 
 (defun hellmacs-test-results--case-at-point ()

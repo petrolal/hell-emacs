@@ -28,25 +28,29 @@ the mode-line says `JVM:ready`.
 |---|---|
 | `M-.` / `M-?` / `M-,` | Definition (decompiled for jars) / references / back |
 | `C-M-.` | Workspace symbols |
-| `C-c l g t`, `C-c l g i` | Type definition, implementations |
-| `C-c l j h` | Type hierarchy |
+| `C-c c t`, `C-c c i` | Type definition, implementations |
+| `C-c l h` | Type hierarchy |
 
 **Editing and refactoring**
 
 | Key | Does |
 |---|---|
-| `C-c l a a` | Code actions: quick fixes, missing imports, generate |
-| `C-c l r r` | Rename across the workspace |
-| `C-c l r o` or `C-c l j o` | Organize imports |
-| `C-c l = =` | Format the buffer |
-| `C-c l j g` / `s` / `e` / `i` | Getters and setters / `toString` / `equals` and `hashCode` / unimplemented methods |
-| `C-c l j m` / `v` / `c` | Extract method / local variable / constant |
-| `C-c l j u` | Update the project configuration |
-| `C-c l j b` | Build the project |
-| `C-c l j t` / `T` | Run the test at point / the test class |
+| `C-c c a` | Code actions: quick fixes, missing imports, generate |
+| `C-c c r` | Rename across the workspace |
+| `C-c c o` | Organize imports |
+| `C-c c f` | Format the buffer |
+| `C-c l g` / `s` / `e` / `i` | Getters and setters / `toString` / `equals` and `hashCode` / unimplemented methods |
+| `C-c l m` / `v` / `c` | Extract method / local variable / constant |
+| `C-c l u` | Update the project configuration |
+| `C-c l b` | Build the project (JDTLS) |
+| `C-c l t t` / `C-c l t T` | Run the test at point / the test class |
+
+`C-c c` is the code group every language shares; `C-c l`, the
+localleader, holds Java's own commands. lsp-mode's full map is on
+`C-c c l`.
 
 **Diagnostics** are flymake's: `C-c ! n` / `C-c ! p` next and previous,
-`C-c ! l` the list.
+`C-c ! l` (or `C-c c x`) the list, `M-g f` jump to one.
 
 **Spring Boot (`+spring`).** Spring Boot's own language server runs beside
 JDTLS: completion and checks in `application*.yml` and `.properties`, and
@@ -78,9 +82,9 @@ compiles against the JDK its build targets, Java 8 and up.
 
 ## Kotlin (`:lang kotlin`)
 
-kotlin-language-server: navigation, diagnostics, rename (`C-c l r r`),
-completion. With `:tools build`, `C-c l k b` builds, `C-c l k t` runs the
-test at point (backticked names too), `C-c l k T` the class. IntelliJ's
+kotlin-language-server: navigation, diagnostics, rename (`C-c c r`),
+completion. With `:tools build`, `C-c c c` builds, `C-c l t t` runs the
+test at point (backticked names too), `C-c l t T` the class. IntelliJ's
 Kotlin refactorings (extract, organize imports) aren't there yet; Hellmacs
 switches to JetBrains' Kotlin server when it can be pinned (roadmap 12.7).
 
@@ -102,28 +106,30 @@ CIDER for the REPL, clojure-lsp for navigation and diagnostics.
 Groovy sources, Gradle's Groovy scripts and Jenkinsfiles, through
 groovy-language-server (built by `sync` from a pinned commit). The server
 learns the project's libraries from the build: the mode-line shows
-`JVM:igniting` until it has them. `C-c l g b` builds, `t` / `T` run the
-test at point (JUnit or Spock) / the class, `c` asks the build for the
-classpath again.
+`JVM:igniting` until it has them. `C-c c c` builds, `C-c l t t` /
+`C-c l t T` run the test at point (JUnit or Spock) / the class, `C-c l c`
+asks the build for the classpath again.
 
 ---
 
 ## Building and testing
 
-**Build (`:tools build`).** `C-x p c` builds with the project's wrapper
+**Build (`:tools build`).** `C-x p c` (or `C-c c c`) builds with the project's wrapper
 (`./gradlew`, `./mvnw`) or the installed tool. Errors and failing
 assertions are clickable: `M-g n` / `M-g p`.
 
-**Test results and coverage (`:tools test`, `C-c t`).** After a build that
-ran tests, `*hellmacs-tests*` lists them, failures first, from the JUnit
-XML reports (Java, Kotlin, Groovy and Scala alike).
+**Tests, results and coverage (`:tools build`, `:tools test`, `C-c l t`
+in a source file).** After a build that ran tests, `*hellmacs-tests*`
+lists them, failures first, from the JUnit XML reports (Java, Kotlin,
+Groovy and Scala alike).
 
 | Key | Does |
 |---|---|
-| `C-c t t` | The test results |
-| `C-c t f` | Rerun every failing test |
-| `C-c t c` | Run the tests with JaCoCo, then mark coverage |
-| `C-c t s` / `C-c t h` | Show / hide coverage marks |
+| `C-c l t t` / `C-c l t T` | Run the test at point / the test class |
+| `C-c l t r` | The test results |
+| `C-c l t f` | Rerun every failing test |
+| `C-c l t c` | Run the tests with JaCoCo, then mark coverage |
+| `C-c l t s` / `C-c l t h` | Show / hide coverage marks |
 
 In the results: `RET` goes to the failing line, `r` reruns the test, `f`
 the failures, `g` rereads the reports, `c` shows coverage per file.
@@ -170,7 +176,7 @@ into the running JVM, no restart. In Clojure it reloads into the REPL.
 
 ## Around the code
 
-**Formatting (`:editor format`, off).** `C-c l = =` formats with each
+**Formatting (`:editor format`, off).** `C-c c f` formats with each
 language's own formatter: google-java-format for Java, ktfmt for Kotlin,
 cljfmt for Clojure, the language server's for XML, YAML and JSON. A Java
 project that commits an Eclipse formatter profile (in its root, `config/`,
@@ -235,7 +241,7 @@ when a project fails to import or build.
 
 1. **A JDK is missing:** run `hellmacs doctor` in the project; it lists
    the JDKs the build asks for and which exist.
-2. **Import again:** `C-c l j u` makes JDTLS re-read the build.
+2. **Import again:** `C-c l u` makes JDTLS re-read the build.
 3. **GUI Emacs can't find your tools:** run `hellmacs env` in a terminal,
    then restart Emacs.
 4. **Behind a proxy or with internal repositories:** see the guide's

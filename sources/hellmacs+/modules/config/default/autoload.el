@@ -78,18 +78,6 @@ Offers to create it with starter files if it doesn't exist yet."
 ;;; Commands behind the infernal `C-c h' map (Phase 7) ------------------------
 
 ;;;###autoload
-(defun hellmacs-forge-find-file ()
-  "Open a file in the current project -- the JVM Forge.
-Outside a project, pick one first, then a file in it."
-  (interactive)
-  (require 'project)
-  (defvar project-switch-commands)      ; bind it dynamically, as project.el reads it
-  (if (project-current)
-      (project-find-file)
-    (let ((project-switch-commands #'project-find-file))
-      (call-interactively #'project-switch-project))))
-
-;;;###autoload
 (defun hellmacs-reap ()
   "Reap memory: run the garbage collector now and report what's left."
   (interactive)

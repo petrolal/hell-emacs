@@ -32,12 +32,11 @@
 ;; Maven) once the server has started: it shows JVM:igniting until then,
 ;; JVM:ready once the server has it, JVM:failed if the build can't say.
 ;; Completion, navigation, diagnostics and rename come from `:tools lsp'
-;; (`C-c l', `M-.', `C-c ! n'); this module adds `C-c l g' in Groovy
-;; buffers:
-;;   b build the project (Gradle or Maven, wrapper first)
-;;   t run the test at point (JUnit methods, Spock features)
-;;   T the test class        c ask the build for the classpath again
-;; b, t and T need `:tools build'.
+;; (`C-c c', `M-.', `C-c ! n'); this module adds `C-c l c' in Groovy
+;; buffers (ask the build for the classpath again). With `:tools build',
+;; `C-c c c' builds (Gradle or Maven, wrapper first) and `C-c l t t' /
+;; `C-c l t T' run the test at point (JUnit methods, Spock features) /
+;; the test class.
 
 (hellmacs-module-load "+paths")
 
@@ -137,23 +136,7 @@ The project is ready once the server has it; failed if the build can't say."
 (when (modulep! :tools build)
   (add-hook! groovy-mode #'hellmacs-groovy--setup-build-h))
 
-(defvar-keymap hellmacs-groovy-map
-  :doc "Groovy commands, on `C-c l g' in Groovy buffers."
-  "c" (cons "ask the build for the classpath" #'hellmacs-groovy-refresh-classpath))
-
-(when (modulep! :tools build)
-  (keymap-set hellmacs-groovy-map "b" (cons "build project" #'hellmacs-forge-build))
-  (keymap-set hellmacs-groovy-map "t" (cons "run test at point" #'hellmacs-forge-test-at-point))
-  (keymap-set hellmacs-groovy-map "T" (cons "run test class" #'hellmacs-forge-test-class)))
-
-;; In Hellmacs' own minor mode, as `C-c l j' and `C-c l k' are.
-(defvar-keymap hellmacs-groovy-keys-mode-map
-  "C-c l g" (cons "groovy" hellmacs-groovy-map))
-
-(define-minor-mode hellmacs-groovy-keys-mode
-  "Groovy commands on `C-c l g' (`hellmacs-groovy-map')."
-  :keymap hellmacs-groovy-keys-mode-map)
-
-(add-hook! groovy-mode #'hellmacs-groovy-keys-mode)
+(hellmacs-localleader-def 'groovy-mode
+  "c" '("ask the build for the classpath" . hellmacs-groovy-refresh-classpath))
 
 ;;; lang/groovy/config.el ends here

@@ -25,33 +25,12 @@
 (declare-function dap-java-run-test-method "ext:dap-java")
 (declare-function dap-java-run-test-class "ext:dap-java")
 
-(declare-function hellmacs-forge-test-at-point "../../tools/build/autoload")
-(declare-function hellmacs-forge-test-class "../../tools/build/autoload")
-
 ;;;###autoload
-(defun hellmacs-jvm-test-at-point ()
-  "Run the JUnit test method at point.
-Through dap-java's runner with `:tools debugger', otherwise through
-the project's build tool (`:tools build'): failures are then clickable
-in the compilation buffer."
-  (interactive)
-  (cond ((modulep! :tools debugger)
-         (require 'dap-java)
-         (call-interactively #'dap-java-run-test-method))
-        ((fboundp 'hellmacs-forge-test-at-point)
-         (hellmacs-forge-test-at-point))
-        (t (user-error "Running tests needs :tools build or :tools debugger"))))
-
-;;;###autoload
-(defun hellmacs-jvm-test-class ()
-  "Run every JUnit test in the current class (see `hellmacs-jvm-test-at-point')."
-  (interactive)
-  (cond ((modulep! :tools debugger)
-         (require 'dap-java)
-         (call-interactively #'dap-java-run-test-class))
-        ((fboundp 'hellmacs-forge-test-class)
-         (hellmacs-forge-test-class))
-        (t (user-error "Running tests needs :tools build or :tools debugger"))))
+(defun hellmacs-jvm-run-test (what)
+  "Run the JUnit test WHAT (`method' at point, or `class') with dap-java's runner.
+Java's `hellmacs-forge-test-run-function' under `:tools debugger'."
+  (require 'dap-java)
+  (call-interactively (if (eq what 'method) #'dap-java-run-test-method #'dap-java-run-test-class)))
 
 (declare-function lsp-java-update-project-configuration "ext:lsp-java")
 

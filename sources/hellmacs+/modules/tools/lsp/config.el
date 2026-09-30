@@ -27,10 +27,12 @@
 ;; ...) start the server for their buffers; this module only sets up
 ;; the client.
 ;;
-;; Owns `C-c l' (lsp-mode's own command map: `a a' code action, `r r'
-;; rename, `r o' organize imports, `g g'/`g i'/`g r' definition,
-;; implementation, references, `= =' format, `w r' restart) and, in
-;; LSP buffers only, `C-c !' for diagnostics. Emacs' xref keys work as
+;; Keys, as Doom's: in a buffer with a server, the `C-c c' code group
+;; gains the server's actions (`a' code action, `r' rename, `o' organize
+;; imports, `f' format, `i' implementations, `t' type definition, `k'
+;; documentation), and `C-c c l' is lsp-mode's own whole command map
+;; (`w r' restart, `T' toggles, `g' goto, ...). Diagnostics are
+;; flymake's, on `C-c !' wherever it runs. Emacs' xref keys work as
 ;; everywhere: `M-.' definition, `M-?' references, `M-,' back,
 ;; `C-M-.' search workspace symbols.
 ;;
@@ -69,12 +71,12 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   (and (assq 'lsp-mode hellmacs-packages)
        (not (hellmacs-package-disabled-p 'lsp-mode))))
 
-;; lsp-mode names its `C-c l' groups for which-key, but needs which-key
+;; lsp-mode names its `C-c c l' groups for which-key, but needs which-key
 ;; loaded to: a file opened at startup can start lsp-mode first, and the
 ;; error would also stop the rest of the hook.
 (declare-function lsp-enable-which-key-integration "lsp-mode")
 (defun hellmacs-lsp--which-key-h ()
-  "Name lsp-mode's `C-c l' groups in which-key, loading it if need be."
+  "Name lsp-mode's `C-c c l' groups in which-key, loading it if need be."
   (when (require 'which-key nil t)
     (lsp-enable-which-key-integration)))
 
@@ -92,7 +94,8 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
     :commands (lsp lsp-deferred)
     :init
     ;; Must be set before lsp-mode loads: it binds its command map there.
-    (setq lsp-keymap-prefix "C-c l")
+    ;; Inside Doom's code group, as Doom puts it; `C-c l' is the localleader.
+    (setq lsp-keymap-prefix "C-c c l")
     :custom
     (lsp-completion-provider :none)         ; plain completion-at-point, shown by corfu
     (lsp-diagnostics-provider :flymake)     ; built-in; no flycheck
@@ -111,6 +114,18 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
 ;; Diagnostics are flymake's (`lsp-diagnostics-provider' above), so its
 ;; keys are in flymake's map: they work wherever flymake runs, elisp too.
 ;; `C-c' and punctuation is the minor modes' own range.
+;; The server's actions in the `C-c c' code group (`:config default'),
+;; only where lsp-mode runs; the group's other keys are built-in.
+(defvar lsp-mode-map)
+(after! lsp-mode
+  (keymap-set lsp-mode-map "C-c c a" (cons "code action" #'lsp-execute-code-action))
+  (keymap-set lsp-mode-map "C-c c r" (cons "rename" #'lsp-rename))
+  (keymap-set lsp-mode-map "C-c c o" (cons "organize imports" #'lsp-organize-imports))
+  (keymap-set lsp-mode-map "C-c c f" (cons "format buffer" #'lsp-format-buffer))
+  (keymap-set lsp-mode-map "C-c c i" (cons "find implementations" #'lsp-find-implementation))
+  (keymap-set lsp-mode-map "C-c c t" (cons "find type definition" #'lsp-find-type-definition))
+  (keymap-set lsp-mode-map "C-c c k" (cons "documentation at point" #'lsp-describe-thing-at-point)))
+
 (defvar flymake-mode-map)
 (after! flymake
   (keymap-set flymake-mode-map "C-c ! n" #'flymake-goto-next-error)

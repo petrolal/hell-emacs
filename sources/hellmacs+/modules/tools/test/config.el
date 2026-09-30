@@ -33,23 +33,25 @@
 ;;   covered, partly covered and missed lines marked in the fringe (the
 ;;   margin in a terminal).
 ;;
-;; Owns `C-c t':
-;;   t results   f rerun failing tests
+;; Adds to the localleader's test group, `C-c l t' in a buffer that
+;; builds with the project's build tool (`hellmacs-forge-mode', from
+;; `:tools build', which binds `t' the test at point and `T' the class):
+;;   r results   f rerun failing tests
 ;;   c run the tests with coverage   s show coverage   h hide it
 ;;
 ;; +watch: saving a JVM source reruns its class's tests
 ;; (`hellmacs-test-watch-mode'): a test class itself, another class its
 ;; ...Test class if there's one.
 
-(setq hellmacs-forge-test-failures-hint " -- see *hellmacs-tests* (C-c t t)")
+(setq hellmacs-forge-test-failures-hint " -- see *hellmacs-tests* (C-c l t r)")
 
 (after! compile
   (add-hook 'compilation-finish-functions #'hellmacs-test-results--after-build-h)
   (add-hook 'compilation-finish-functions #'hellmacs-coverage--after-build-h))
 
-(hellmacs-leader-def
+(hellmacs-localleader-def 'hellmacs-forge-mode
   "t"   "test"
-  "t t" '("test results" . hellmacs-test-results)
+  "t r" '("test results" . hellmacs-test-results)
   "t f" '("rerun failing tests" . hellmacs-test-results-rerun-failures)
   "t c" '("run tests with coverage" . hellmacs-coverage-run)
   "t s" '("show coverage" . hellmacs-coverage-show)

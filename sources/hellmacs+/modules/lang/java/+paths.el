@@ -127,7 +127,7 @@ marker says it's the pinned release."
                                                 hellmacs-jvm-jdtls-dir))
        (hellmacs-marker-current-p (hellmacs-jvm--jdtls-marker) hellmacs-jvm-jdtls-sha256)))
 
-;; dap-java's JUnit runner (`C-c l j t' with :tools debugger), pinned too
+;; dap-java's JUnit runner (`C-c l t t' with :tools debugger), pinned too
 ;; (Maven Central's SHA-1 matched). Its default is under
 ;; `user-emacs-directory', Hellmacs' disposable cache.
 (setq dap-java-test-runner

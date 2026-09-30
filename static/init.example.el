@@ -46,7 +46,7 @@
            undo               ; persistent undo history (undo-fu-session)
            ;;file-templates   ; new files filled from a template (auto-insert): FooTest.java gets its package, imports and class; needs snippets
            ;;fold             ; [idea] code folding (hideshow, treesit-fold)
-           ;;format           ; formatters: google-java-format, ktfmt, cljfmt, on C-c l = = (+onsave)
+           ;;format           ; formatters: google-java-format, ktfmt, cljfmt, on C-c c f (+onsave)
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys
            ;;parinfer         ; [idea] indentation-driven Lisp editing
            ;;smartparens      ; [idea] structural editing for Lisps and brackets
@@ -80,10 +80,10 @@
            build              ; build/test with Gradle or Maven (C-x p c), clickable errors
            debugger           ; debug via dap-mode, C-c d (Java: breakpoints, tests, hot swap)
            direnv             ; per-project environments from .envrc (JAVA_HOME, MAVEN_OPTS...); needs direnv
-           lsp                ; code intelligence via lsp-mode, C-c l
+           lsp                ; code intelligence via lsp-mode, C-c c (lsp-mode's map on C-c c l)
            magit              ; Git via Magit: C-x g status, C-x M-g dispatch, C-c M-g file
            run                ; run configurations (.hellmacs/run.eld, IntelliJ .run/, Eclipse .launch), C-c r
-           test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c t (+watch)
+           test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c l t (+watch)
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
            ;;db               ; databases over JDBC: sql-mode + sqlline, .hellmacs/db.eld, passwords in auth-source

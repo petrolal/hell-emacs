@@ -26,7 +26,8 @@
 ;; (Maven, Gradle), completion with auto-import, navigation into JDK and
 ;; library classes (decompiled), refactoring and code generation.
 ;;
-;; Owns `C-c l j' (Java-only commands; the rest of `C-c l' is lsp-mode's).
+;; Java-only commands on the localleader, `C-c l' (the language server's
+;; common ones are the `C-c c' code group, tests `C-c l t').
 ;; JDTLS reports its progress in the echo area -- [FORGE IGNITED] when
 ;; the server starts, [DAEMON READY] once the project is imported -- and
 ;; in the mode-line (JVM:igniting / JVM:ready).
@@ -103,7 +104,7 @@ Runtimes you set yourself are left alone."
 (defun hellmacs-jvm--import-failure-reason (message)
   "A short reason for the import failure described by log MESSAGE."
   (cond ((string-match "Cannot find a Java installation[^\n]*languageVersion=\\([0-9]+\\)" message)
-         (format "the build needs a JDK %s that Gradle can't find (install it, then C-c l j u)"
+         (format "the build needs a JDK %s that Gradle can't find (install it, then C-c l u)"
                  (match-string 1 message)))
         ((string-match-p "Gradle" message) "the Gradle sync failed (see the *lsp-log* buffer)")
         ((string-match-p "Maven" message) "the Maven import failed (see the *lsp-log* buffer)")
@@ -285,10 +286,13 @@ Not a helper or a setup method: see `hellmacs-forge-annotated-test-at-point'."
   (hellmacs-forge-annotated-test-at-point "\\_<\\([[:alpha:]_$][[:alnum:]_$]*\\)[ \t\n]*("))
 
 (defun hellmacs-jvm--setup-build-h ()
-  "Use the project's build, and Java's test methods, in this buffer."
+  "Use the project's build, and Java's test methods, in this buffer.
+With `:tools debugger', tests run through dap-java's JUnit runner."
   (hellmacs-forge-setup-build-h)
   ;; The class is the file's name: forge's default.
-  (setq-local hellmacs-forge-test-method-function #'hellmacs-jvm-test-method))
+  (setq-local hellmacs-forge-test-method-function #'hellmacs-jvm-test-method)
+  (when (modulep! :tools debugger)
+    (setq-local hellmacs-forge-test-run-function #'hellmacs-jvm-run-test)))
 
 (when (modulep! :tools build)
   (add-hook! (java-mode java-ts-mode) #'hellmacs-jvm--setup-build-h))
@@ -450,32 +454,19 @@ A `:filter-return' advice on `dap-java--populate-launch-args'."
                                  (list :type "java" :request "attach"
                                        :hostName "localhost" :port 5005))))
 
-;;; C-c l j -- Java commands ---------------------------------------------------
+;;; C-c l -- Java commands (the localleader) ----------------------------------
+;;
+;; Organize imports is the code group's `C-c c o'; tests are the build's
+;; `C-c l t' group.
 
-(defvar-keymap hellmacs-jvm-map
-  :doc "Java commands, on `C-c l j' in Java buffers."
-  "b" (cons "build project" #'lsp-java-build-project)
-  "u" (cons "update project config" #'hellmacs-jvm-update-project-configuration)
-  "o" (cons "organize imports" #'lsp-java-organize-imports)
-  "i" (cons "add unimplemented methods" #'lsp-java-add-unimplemented-methods)
-  "g" (cons "generate getters/setters" #'lsp-java-generate-getters-and-setters)
-  "s" (cons "generate toString" #'lsp-java-generate-to-string)
-  "e" (cons "generate equals/hashCode" #'lsp-java-generate-equals-and-hash-code)
-  "m" (cons "extract method" #'lsp-java-extract-method)
-  "v" (cons "extract local variable" #'lsp-java-extract-to-local-variable)
-  "c" (cons "extract constant" #'lsp-java-extract-to-constant)
-  "h" (cons "type hierarchy" #'lsp-java-type-hierarchy)
-  "t" (cons "run test at point" #'hellmacs-jvm-test-at-point)
-  "T" (cons "run test class" #'hellmacs-jvm-test-class))
-
-;; In Hellmacs' own minor mode, not cc-mode's or java-ts-mode's map:
-;; `C-c' and a letter is the user's, and Hellmacs binds for the user.
-;; lsp-mode's `C-c l' map has no `j', so the full key reaches this one.
-(defvar-keymap hellmacs-jvm-keys-mode-map
-  "C-c l j" (cons "java" hellmacs-jvm-map))
-
-(define-minor-mode hellmacs-jvm-keys-mode
-  "Java commands on `C-c l j' (`hellmacs-jvm-map')."
-  :keymap hellmacs-jvm-keys-mode-map)
-
-(add-hook! (java-mode java-ts-mode) #'hellmacs-jvm-keys-mode)
+(hellmacs-localleader-def '(java-mode java-ts-mode)
+  "b" '("build project" . lsp-java-build-project)
+  "u" '("update project config" . hellmacs-jvm-update-project-configuration)
+  "i" '("add unimplemented methods" . lsp-java-add-unimplemented-methods)
+  "g" '("generate getters/setters" . lsp-java-generate-getters-and-setters)
+  "s" '("generate toString" . lsp-java-generate-to-string)
+  "e" '("generate equals/hashCode" . lsp-java-generate-equals-and-hash-code)
+  "m" '("extract method" . lsp-java-extract-method)
+  "v" '("extract local variable" . lsp-java-extract-to-local-variable)
+  "c" '("extract constant" . lsp-java-extract-to-constant)
+  "h" '("type hierarchy" . lsp-java-type-hierarchy))

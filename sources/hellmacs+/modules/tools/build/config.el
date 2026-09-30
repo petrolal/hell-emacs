@@ -31,9 +31,12 @@
 ;; language servers show JVM:purgatory in the mode-line until the next
 ;; successful build.
 ;;
-;; Built-in packages only; no keys of its own. Language modules call
-;; `hellmacs-forge-setup-build-h' and run tests through
-;; `hellmacs-forge-test-at-point' / `hellmacs-forge-test-class'.
+;; Built-in packages only. Language modules call
+;; `hellmacs-forge-setup-build-h', which turns on `hellmacs-forge-mode'
+;; and with it the localleader's test group (`:tools test' adds the
+;; results and coverage to it):
+;;   C-c l t t  the test at point    C-c l t T  the test class
+;; `C-c c c' (`project-compile') builds.
 
 (defgroup hellmacs-forge nil
   "Hellmacs' build integration."
@@ -52,3 +55,8 @@
   (hellmacs-forge--add-error-regexps)
   (add-hook 'compilation-start-hook #'hellmacs-forge--note-start-h)
   (add-hook 'compilation-finish-functions #'hellmacs-forge--report-h))
+
+(hellmacs-localleader-def 'hellmacs-forge-mode
+  "t"   "test"
+  "t t" '("test at point" . hellmacs-forge-test-at-point)
+  "t T" '("test class" . hellmacs-forge-test-class))

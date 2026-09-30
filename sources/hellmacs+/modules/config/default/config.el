@@ -23,8 +23,10 @@
 
 ;; Hellmacs' default keybindings and the groups with no natural owning
 ;; feature module: `C-c h' (Hellmacs' own map, `hellmacs-prefix-map'),
-;; `C-c q' (quit) and `C-c w' (built-in window commands). Feature modules fill their own groups,
-;; e.g. `:completion vertico' owns `C-c f', `C-c b' and `C-c s'.
+;; `C-c c' (code), `C-c t' (toggles), `C-c q' (quit) and `C-c w'
+;; (windows), all built-in commands. Feature modules fill their own
+;; groups, e.g. `:completion vertico' owns `C-c f', `C-c b' and `C-c s',
+;; and `C-c l' is the localleader (`hellmacs-localleader-def').
 
 ;; Emacs' own prefix keys that come without a name, so which-key would
 ;; show them as "+prefix". Names only; the keys are Emacs'. Some exist
@@ -33,7 +35,9 @@
 (defun hellmacs-default--name-stock-prefixes ()
   (hellmacs-which-key-labels
    nil
+   "C-c !"         "diagnostics (flymake)"
    "C-c ^"         "merge conflicts (smerge)"
+   "C-c l"         "local (this mode)"
    "C-x a"         "abbrevs"
    "C-x a i"       "inverse add abbrev"
    "C-x C-a"       "debugger (gud)"
@@ -102,32 +106,69 @@
 ;;
 ;; `hellmacs-prefix-map' is a named keymap, so you can also put it on a
 ;; key of your own:  (keymap-global-set "<f12>" hellmacs-prefix-map)
-;; which-key labels use Hellmacs' own names: +altar/... for the splash
-;; and memory, +forge/... for projects and the config, +crucible/... for
-;; the REPL.
+;; which-key labels use Hellmacs' own names: altar/... for the splash
+;; and memory, forge/... for projects and the config, crucible/... for
+;; the REPL. No leading `+': which-key marks groups with it, and these
+;; are commands.
 
 (defvar-keymap hellmacs-prefix-map
   :doc "Hellmacs' own commands, on `C-c h'."
   ;; `:ui dashboard' remaps `hellmacs-splash' to itself.
-  "s" (cons (if (modulep! :ui dashboard) "+altar/dashboard" "+altar/return") #'hellmacs-splash)
-  "c" (cons "+altar/reap" #'hellmacs-reap)
-  "f" (cons "+forge/find-file" #'hellmacs-forge-find-file)
-  "r" (cons "+crucible/reload" #'hellmacs-crucible-reload)
-  "R" (cons "+forge/reload-config" #'hellmacs-reload)
-  "S" (cons "+forge/sync" #'hellmacs-sync)
-  "u" (cons "+forge/user-config" #'hellmacs-visit-user-dir)
-  "v" (cons "+forge/hellmacs-dir" #'hellmacs-visit-dir)
-  "m" (cons "+forge/modules" #'hellmacs-list-modules))
+  "s" (cons (if (modulep! :ui dashboard) "altar/dashboard" "altar/return") #'hellmacs-splash)
+  "c" (cons "altar/reap" #'hellmacs-reap)
+  ;; Outside a project, `project-find-file' asks for one first.
+  "f" (cons "forge/find-file" #'project-find-file)
+  "r" (cons "crucible/reload" #'hellmacs-crucible-reload)
+  "R" (cons "forge/reload-config" #'hellmacs-reload)
+  "S" (cons "forge/sync" #'hellmacs-sync)
+  "u" (cons "forge/user-config" #'hellmacs-visit-user-dir)
+  "v" (cons "forge/hellmacs-dir" #'hellmacs-visit-dir)
+  "m" (cons "forge/modules" #'hellmacs-list-modules))
 
 (keymap-set mode-specific-map "h" hellmacs-prefix-map)
 
 ;;; C-c q -----------------------------------------------------------------------
 
 (hellmacs-leader-def
-  "h"   "+hellmacs/forge"            ; labels the map bound just above
+  "h"   "hellmacs"                   ; labels the map bound just above
   "q"   "quit"
   "q q" '("quit emacs" . save-buffers-kill-terminal)
   "q r" '("restart emacs" . restart-emacs))
+
+;;; C-c c -- code ---------------------------------------------------------------
+;;
+;; Doom's code group, with built-in commands: xref (which a language
+;; server feeds), `compile' (which `:tools build' makes the project's
+;; build), eldoc and flymake. `:tools lsp' adds the server's actions to
+;; this group in its buffers, and lsp-mode's whole map on `C-c c l'.
+
+(autoload 'flymake-show-buffer-diagnostics "flymake" nil t)
+
+(hellmacs-leader-def
+  "c"   "code"
+  "c c" '("compile project" . project-compile)
+  "c C" '("recompile" . recompile)
+  "c d" '("jump to definition" . xref-find-definitions)
+  "c D" '("jump to references" . xref-find-references)
+  "c j" '("jump to symbol in project" . xref-find-apropos)
+  "c k" '("documentation at point" . eldoc-doc-buffer)
+  "c w" '("delete trailing whitespace" . delete-trailing-whitespace)
+  "c x" '("list errors" . flymake-show-buffer-diagnostics))
+
+;;; C-c t -- toggle -------------------------------------------------------------
+;;
+;; Doom's toggles, with built-in minor modes.
+
+(hellmacs-leader-def
+  "t"   "toggle"
+  "t c" '("fill column indicator" . display-fill-column-indicator-mode)
+  "t f" '("flymake" . flymake-mode)
+  "t F" '("frame fullscreen" . toggle-frame-fullscreen)
+  "t l" '("line numbers" . display-line-numbers-mode)
+  "t r" '("read-only mode" . read-only-mode)
+  "t s" '("spell checker" . flyspell-mode)
+  "t v" '("visible mode" . visible-mode)
+  "t w" '("soft line wrapping" . visual-line-mode))
 
 ;;; C-c w -- windows -----------------------------------------------------------
 ;;

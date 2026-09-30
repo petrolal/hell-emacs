@@ -29,13 +29,11 @@
 ;; The server is unpacked by `bin/hellmacs sync' (a pinned release, checked
 ;; by SHA-256) into the data directory. It runs on JAVA_HOME's JDK, like
 ;; the Gradle build. Completion, navigation, diagnostics, rename and code
-;; actions come from `:tools lsp' (`C-c l', `M-.', `C-c ! n'); this module
-;; adds `C-c l k' in Kotlin buffers:
-;;   b build the project (Gradle, wrapper first)
-;;   t run the test at point (with backticked names)    T the test class
-;; Both need `:tools build', which also makes compile errors clickable
-;; (`e: file:///...Foo.kt:12:5' lines) and shows `[BYTECODE PURGATORY]' when
-;; a build fails.
+;; actions come from `:tools lsp' (`C-c c', `M-.', `C-c ! n'). With
+;; `:tools build', `C-c c c' builds (Gradle, wrapper first) and `C-c l t t'
+;; / `C-c l t T' run the test at point (backticked names too) / the test
+;; class; compile errors are clickable (`e: file:///...Foo.kt:12:5'
+;; lines) and a failed build shows `[BYTECODE PURGATORY]'.
 
 (hellmacs-module-load "+paths")
 
@@ -140,23 +138,3 @@ included (`fun `greets by name`()'). Not a helper: see
   :label "Kotlin server"
   :on-log #'hellmacs-kotlin--note-log)
 
-;;; Keys: C-c l k --------------------------------------------------------------------
-
-(when (modulep! :tools build)
-  (defvar-keymap hellmacs-kotlin-map
-    :doc "Kotlin commands, on `C-c l k' in Kotlin buffers."
-    "b" (cons "build project" #'hellmacs-forge-build)
-    "t" (cons "run test at point" #'hellmacs-forge-test-at-point)
-    "T" (cons "run test class" #'hellmacs-forge-test-class))
-
-  ;; In Hellmacs' own minor mode, not the Kotlin modes' maps (`C-c' and a
-  ;; letter is the user's). lsp-mode's `C-c l' map has no `k', so the
-  ;; full key reaches this one.
-  (defvar-keymap hellmacs-kotlin-keys-mode-map
-    "C-c l k" (cons "kotlin" hellmacs-kotlin-map))
-
-  (define-minor-mode hellmacs-kotlin-keys-mode
-    "Kotlin commands on `C-c l k' (`hellmacs-kotlin-map')."
-    :keymap hellmacs-kotlin-keys-mode-map)
-
-  (add-hook! (kotlin-mode kotlin-ts-mode) #'hellmacs-kotlin-keys-mode))

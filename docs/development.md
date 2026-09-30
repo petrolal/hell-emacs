@@ -141,6 +141,8 @@ Every file is optional:
 (hellmacs-component! :name ... :version ... :license "EPL-2.0" :url ... :sha256 ... :path ...)
 
 (hellmacs-leader-def "x" "group" "x y" '("label" . command))   ; C-c x y
+(hellmacs-localleader-def '(java-mode java-ts-mode)          ; C-c l b, in those modes
+  "b" '("build" . command))
 (after! lsp-mode ...) (add-hook! java-mode #'fn) (defadvice! ...)
 (hellmacs-require 'hellmacs-lib 'jdk)         ; a lisp/lib/ part
 ```
@@ -148,7 +150,8 @@ Every file is optional:
 `:lang` modules plug into shared features through buffer-local variables,
 so core and `:tools` never name a language: `hellmacs-reload-function`
 (`C-c h r`), `hellmacs-forge-test-class-function` and
-`-test-method-function` (running tests), and
+`-test-method-function` and `-test-run-function` (running tests, on
+`C-c l t` once `hellmacs-forge-setup-build-h` has run), and
 `(hellmacs-lsp-status-register SERVER ...)` (the modeline and messages).
 
 Useful hooks: `hellmacs-first-input-hook`, `-first-file-hook`,
@@ -164,7 +167,10 @@ Useful hooks: `hellmacs-first-input-hook`, `-first-file-hook`,
    server gets a pinned installer in `cli.el` (registered with
    `hellmacs-lsp-pin-installer`, so lsp-mode never downloads its own), its
    pin declared with `hellmacs-component!` in `+paths.el`, and a check in
-   `doctor.el`. Keys only under `C-c`, or in the mode's own map.
+   `doctor.el`. The language's own commands go on the localleader
+   (`hellmacs-localleader-def`, `C-c l`); what every language shares
+   (rename, format, code actions) is already on `C-c c`. Never a
+   single-key or modal binding, and never a stock key rebound.
 3. Add it to `static/init.example.el`, the single list of default modules
    (commented out if it's off by default).
 4. Sync in throwaway directories, try it, run `doctor` (below).

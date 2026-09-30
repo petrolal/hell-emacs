@@ -242,7 +242,7 @@ check, commands from `$HELLMACSPATH`; `install`'s flags and warnings;
 
 - [/] `:lang groovy`: groovy-mode (Gradle scripts, Jenkinsfiles),
       groovy-language-server built pinned by sync, status messages,
-      `C-c l g` keys. Left: one full check by hand (the last run passed 14
+      `C-c l c` key. Left: one full check by hand (the last run passed 14
       of 16 checks, before a fix).
 
 ### 4. Every language IntelliJ IDEA bundles, on by default (Phase 14)
@@ -250,7 +250,8 @@ check, commands from `$HELLMACSPATH`; `install`'s flags and warnings;
 A project IntelliJ IDEA Ultimate understands opens understood in Hellmacs,
 with nothing to enable. Same pattern as every language: a findings pass
 first, each server pinned and installed by sync, declared for the SBOM,
-checked by `doctor`, telemetry off, only `C-c l` keys.
+checked by `doctor`, telemetry off, its own keys only on the `C-c l`
+localleader (`hellmacs-localleader-def`).
 
 - [ ] 14.0 Findings: each language's server, how it ships, license,
       telemetry; the cost of all-on (sync time, disk, bundle size, startup).
@@ -260,7 +261,7 @@ checked by `doctor`, telemetry off, only `C-c l` keys.
 - [ ] 14.3 `:lang sql`: a SQL server on `:tools db`'s connections.
 - [ ] 14.4 XSLT and XPath; `.properties` with Spring keys.
 - [ ] 14.5 `:lang scala`: scala-mode, sbt-mode, Metals pinned,
-      `metals/status`, `C-c l s`.
+      `metals/status`, localleader keys.
 - [ ] 14.6 Kubernetes schemas, `:lang openapi`, `:lang terraform`,
       `:lang protobuf`.
 - [ ] 14.7 All of them on by default (with 10.1's six and Groovy), Node a

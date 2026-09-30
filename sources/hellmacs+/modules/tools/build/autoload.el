@@ -86,6 +86,13 @@ or a list of them. BUILD is the build's (TOOL ROOT PROGRAM), if already known."
   "The entries `hellmacs-forge-setup-build-h' put in `compilation-environment'.")
 
 ;;;###autoload
+(define-minor-mode hellmacs-forge-mode
+  "This buffer builds and tests with its project's build tool.
+Turned on by `hellmacs-forge-setup-build-h'; it gives the buffer the
+tests' `C-c l t' group."
+  :lighter nil)
+
+;;;###autoload
 (defun hellmacs-forge-setup-build-h ()
   "Make `compile-command' (and so `C-x p c') the build's own build command.
 Builds started from this buffer get your proxy and CA
@@ -115,7 +122,8 @@ Gradle builds run on a JDK their Gradle release runs on
       ;; compile.el may not be loaded yet (this runs as the file opens): the
       ;; buffer-local value then simply starts from its default, nil.
       (setq-local compilation-environment (append added (bound-and-true-p compilation-environment))))
-    (setq-local hellmacs-forge--added-environment added)))
+    (setq-local hellmacs-forge--added-environment added))
+  (hellmacs-forge-mode 1))
 
 ;;; Running builds and tests -----------------------------------------------------
 
@@ -128,6 +136,11 @@ Gradle builds run on a JDK their Gradle release runs on
 (defvar-local hellmacs-forge-test-class-function #'hellmacs-forge-file-class
   "Function returning the fully qualified name of the buffer's test class.
 Languages whose files don't follow the file-name rule set their own.")
+
+(defvar-local hellmacs-forge-test-run-function nil
+  "Function running this buffer's tests instead of the build tool, or nil.
+Called with `method' (the test at point) or `class'. Java's, under
+`:tools debugger', runs them through dap-java.")
 
 (defvar-local hellmacs-forge-test-method-function nil
   "Function returning the name of the test method around point, or nil.
@@ -204,18 +217,24 @@ The same line in Java, Kotlin, Groovy and Scala, with or without a `;'."
 
 ;;;###autoload
 (defun hellmacs-forge-test-at-point ()
-  "Run the test method at point with the build tool (the whole class if none)."
+  "Run the test method at point with the build tool (the whole class if none).
+Or with `hellmacs-forge-test-run-function', when the language sets one."
   (interactive)
-  (let ((method (and hellmacs-forge-test-method-function
+  (if hellmacs-forge-test-run-function
+      (funcall hellmacs-forge-test-run-function 'method)
+    (let ((method (and hellmacs-forge-test-method-function
                      (funcall hellmacs-forge-test-method-function))))
-    (hellmacs-forge--run 'test (concat (hellmacs-forge--test-class)
-                                       (and method (concat "#" method))))))
+      (hellmacs-forge--run 'test (concat (hellmacs-forge--test-class)
+                                         (and method (concat "#" method)))))))
 
 ;;;###autoload
 (defun hellmacs-forge-test-class ()
-  "Run every test in the current class with the build tool."
+  "Run every test in the current class with the build tool.
+Or with `hellmacs-forge-test-run-function', when the language sets one."
   (interactive)
-  (hellmacs-forge--run 'test (hellmacs-forge--test-class)))
+  (if hellmacs-forge-test-run-function
+      (funcall hellmacs-forge-test-run-function 'class)
+    (hellmacs-forge--run 'test (hellmacs-forge--test-class))))
 
 ;;; Clickable errors and test failures -------------------------------------------
 ;;

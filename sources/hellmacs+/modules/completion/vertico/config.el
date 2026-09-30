@@ -40,7 +40,6 @@
   "b d" '("kill buffer" . kill-current-buffer)
   "b r" '("revert buffer" . revert-buffer-quick)
   "s"   "search"
-  "s s" '("isearch" . isearch-forward)
   "s o" '("occur" . occur))
 
 ;; Neither is needed before the first command: vertico turns on with it
@@ -68,24 +67,32 @@
   :defer-incrementally t
   :bind
   (;; Replace default commands everywhere they're bound -- `C-x b',
-   ;; `C-c b b', `M-y', `M-g g', ... -- rather than inventing new keys.
+   ;; `C-x 4 b', `C-x 5 b', `C-x t b', `C-c b b', `M-y', `M-g g', ...
+   ;; -- rather than inventing new keys.
    ([remap switch-to-buffer]              . consult-buffer)
    ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
+   ([remap switch-to-buffer-other-frame]  . consult-buffer-other-frame)
+   ([remap switch-to-buffer-other-tab]    . consult-buffer-other-tab)
    ([remap project-switch-to-buffer]      . consult-project-buffer)
    ([remap yank-pop]                      . consult-yank-pop)
    ([remap goto-line]                     . consult-goto-line)
    ([remap imenu]                         . consult-imenu)
    ([remap bookmark-jump]                 . consult-bookmark)
-   ;; `M-s' is Emacs' own search prefix; these keys are free in it.
+   ;; Keys stock Emacs leaves free in its own `M-g' (go to) and `M-s'
+   ;; (search) prefixes, where consult's README puts them.
+   ("M-g f" . consult-flymake)
+   ("M-g o" . consult-outline)
    ("M-s l" . consult-line)
    ("M-s r" . consult-ripgrep)
-   ("M-s f" . consult-find))
+   ("M-s d" . consult-find))
   :init
   (setq consult-narrow-key "<"
         consult-preview-key 'any)
+  ;; `C-c s' has Doom's letters: s this buffer, p the project, f a file.
   (hellmacs-leader-def
     "f r" '("recent file" . consult-recent-file)
-    "s l" '("search line" . consult-line)
-    "s g" '("search grep" . consult-ripgrep)
-    "s f" '("find file by name" . consult-find)
-    "s i" '("jump to symbol" . consult-imenu)))
+    "s s" '("search buffer" . consult-line)
+    "s p" '("search project" . consult-ripgrep)
+    "s f" '("locate file" . consult-find)
+    "s i" '("jump to symbol" . consult-imenu)
+    "s m" '("jump to bookmark" . consult-bookmark)))

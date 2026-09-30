@@ -23,5 +23,5 @@
 
 ;; Checked by `bin/hellmacs doctor' (see `hellmacs-doctor-executable').
 
-(hellmacs-doctor-executable "rg" "fast project search (consult-ripgrep, C-c s g)" nil "--version")
+(hellmacs-doctor-executable "rg" "fast project search (consult-ripgrep, C-c s p)" nil "--version")
 (hellmacs-doctor-executable "fd" "fast file search by name (consult-find, C-c s f)" nil "--version")

@@ -45,6 +45,18 @@ The first tagged release will be 0.9.0. Since the project started
   architecture, contributing and vision-and-rules) and docs/roadmap.md,
   which absorbs the work order: the rules, IntelliJ and Doom parity, and
   every open item, including the Doom follow-ups (16.11 to 16.19).
+- Keybindings are laid out as Doom's non-evil leader, still with stock
+  keys only. `C-c c` is the code group (compile, xref, documentation,
+  errors; with a language server also code actions, rename, organize
+  imports, format), and lsp-mode's map moved from `C-c l` to `C-c c l`.
+  `C-c l` is now the localleader (`hellmacs-localleader-def`): Java's
+  commands (`C-c l j X` is now `C-c l X`), Groovy's classpath, and in JVM
+  sources the tests (`C-c l t t` / `t T`, and the results and coverage
+  that were on `C-c t`). `C-c t` toggles built-in modes. `C-c s` has
+  Doom's letters (`s` buffer, `p` project, `f` file, `m` bookmark) and
+  `M-s f` became consult's `M-s d`; `M-g f` / `M-g o` jump to a
+  diagnostic / heading, and `C-x 5 b` / `C-x t b` preview like `C-x b`.
+  This also ends Groovy's `C-c l g` shadowing lsp-mode's goto keys.
 - Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
   budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
   `licenses` and `sbom`.

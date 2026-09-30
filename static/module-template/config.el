@@ -27,8 +27,11 @@
 ;;     `(modulep! :group name)'.
 ;;   - Keybindings follow Emacs conventions (see "Rules"
 ;;     in docs/roadmap.md): never rebind a default key to something
-;;     else. Improve a default command with `[remap ...]' in `:bind',
-;;     or add a `C-c' leader binding with `hellmacs-leader-def'.
+;;     else, and nothing modal or vi-like (no single-key commands
+;;     outside special buffers). Improve a default command with
+;;     `[remap ...]' in `:bind', add a `C-c' leader binding with
+;;     `hellmacs-leader-def', or put a mode's own commands on the
+;;     `C-c l' localleader with `hellmacs-localleader-def'.
 ;;   - Leader groups belong to exactly one module -- the one that owns
 ;;     that feature. Don't duplicate a binding across modules; layer
 ;;     onto the owning module's group instead.
