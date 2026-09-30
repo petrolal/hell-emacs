@@ -144,6 +144,23 @@ This file only tracks progress. Don't copy specs into it.
 - [x] Fixture `test/fixtures/groovy/gradle-demo` (2026-09-30: Groovy 5.0.8, JUnit 5, `BrokenTest` behind `-Dhellmacs.fail=true`; builds and tests on JDK 21 and 25)
 - [/] Verified live (`test/integration/groovy-e2e.el`) and unit tests (2026-09-30: 11 unit tests in `test-groovy`; last live run 14 of 16, references and the syntax-error check failing after the completion check edited a file; that check now runs last. Left: one full live run passing)
 
+## Step 10a: Phase 14, every language IntelliJ IDEA bundles, on by default (roadmap "Phase 14"; added 2026-09-30 at the user's request)
+
+- [ ] 14.0 Findings first: each language's server, how it ships, license, telemetry, needs; the bundled list confirmed; the cost of all-on (sync time, disk, bundle size, startup)
+- [ ] 14.1 `:lang web`: HTML, CSS/Less/SCSS, Thymeleaf, FreeMarker, Velocity, JSP
+- [ ] 14.2 `:lang javascript`: JavaScript, TypeScript, JSX/TSX, ESLint, Prettier
+- [ ] 14.3 `:lang sql`: a SQL server on `:tools db`'s connections
+- [ ] 14.4 `:lang data`: XSLT and XPath; `.properties`
+- [ ] 14.5 Scala (8.5's items: scala-mode/sbt-mode, Metals pinned, `metals/status`, `C-c l s`, `test/fixtures/scala/sbt-demo` and e2e)
+- [ ] 14.6 Kubernetes schemas, `:lang openapi`, `:lang terraform`, `:lang protobuf`
+- [ ] 14.7 Integration: all on by default (with 10.1's six and Groovy), Node a `doctor` warning, an e2e script for the non-JVM languages, the telemetry check with every module, docs, a fresh install
+
+## Step 10b: Phase 15, plugins (roadmap "Phase 15"; added 2026-09-30 at the user's request)
+
+- [ ] 15.1 Plugin manager: catalog, `bin/hellmacs plugins` (list, search, enable, disable), `M-x hellmacs-plugins` on `C-c h p` (`list-packages` keys), `doctor`
+- [ ] 15.2 Plugin languages: `:lang python`, `go`, `ruby`, `php`, `cc`
+- [ ] 15.3 Third-party plugins: `plugin!` pinned by commit, trust prompt, lock/SBOM/licenses/verify/bundles, `plugins update`
+
 ## Step 11: 12.11 Enterprise pilot, then 1.0 (roadmap "12.11 Enterprise pilot and 1.0")
 
 - [ ] 12.8 Remaining team adoption: team layer, keys for migrants, `install --team URL`
@@ -152,13 +169,8 @@ This file only tracks progress. Don't copy specs into it.
 - [ ] 1.0 exit criteria met
 - [ ] 1.0 release
 
-## Later: Phase 8.5 Scala and Phase 10's deferred list
+## Later: Phase 10's deferred list (8.5 Scala moved to Step 10a on 2026-09-30)
 
-- [ ] 8.5 `scala-mode` / `sbt-mode` (`scala-ts-mode` with `+tree-sitter`)
-- [ ] 8.5 Metals through `lsp-metals`, pinned download at sync
-- [ ] 8.5 Status messages from `metals/status`
-- [ ] 8.5 `C-c l s` keys
-- [ ] 8.5 Fixture `test/fixtures/scala/sbt-demo` and e2e script
 - [ ] 10.5 `:ui workspaces` (`tab-bar`, one tab per project)
 - [ ] 10.6 Integration: `static/init.example.el` for Phase 10's modules
 

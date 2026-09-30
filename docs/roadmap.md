@@ -108,6 +108,8 @@ them, the principle wins and the feature finds another way.
 | **Phase 12.4-12.6** | Spring Boot & Toolbelt | **DONE [x]** | Run configurations, Spring profiles, JUnit XML, coverage, database clients, `.http` REST files, containers, static analysis |
 | **Phase 12.7-12.11** | Enterprise Scale & 1.0 Pilot | **IN PROGRESS [/]** (12.7, 12.9 mostly done; 12.10, 12.11 not started) | Reference monorepo, SBOM, license report, `verify`, releases, docs, real pilot |
 | **Phase 13** | Hellmacs Manual & Purist Onboarding | **PLANNED [ ]** | GNU Info manual, Vanilla startup actions on The Altar, C-h help suite |
+| **Phase 14** | IntelliJ's Bundled Languages, On by Default | **PLANNED [ ]** | HTML/CSS/templates, JavaScript/TypeScript, SQL, Scala, XSLT, Kubernetes, OpenAPI, Terraform, Protobuf; every language module on |
+| **Phase 15** | Plugins | **PLANNED [ ]** | Plugin manager (`bin/hellmacs plugins`, `M-x hellmacs-plugins`), Python, Go, Ruby, PHP, C/C++, pinned third-party plugins |
 
 ---
 
@@ -219,8 +221,10 @@ adoption, not by phase number:
 | 8 | **12.6 Enterprise tool belt**, **10.3**, **10.4** | Database, HTTP, containers, static analysis; then comforts |
 | 9 | **12.7 Scale**, **12.9 Security and compliance**, **12.10 Documentation** | What an enterprise's platform and security teams ask for before approving a tool |
 | 10 | **Phase 8.4 Groovy** (Gradle scripts, Jenkinsfiles) | Common in enterprise builds |
+| 10a | **Phase 14**, every language IntelliJ IDEA bundles, on by default (takes in 8.5 Scala; added 2026-09-30) | A project IntelliJ understands must open fully understood; the pilot checks parity |
+| 10b | **Phase 15**, plugins (added 2026-09-30) | What IntelliJ adds through plugins (Python, Go, Ruby, PHP, C/C++), and teams' own modules |
 | 11 | **12.11 Enterprise pilot**, then the **1.0 release** | The objective's criteria, checked on real codebases |
-| Later | **Phase 8.5 Scala**, 10's deferred list | Valuable, but rarer in the enterprise JVM sector |
+| Later | 10's deferred list | Valuable, but not what blocks adoption (8.5 Scala moved to 10a, in Phase 14) |
 
 ## Architecture origins
 
@@ -1664,7 +1668,7 @@ config.el, cli.el, doctor.el), plus Kotlin support in `:tools build`.
   sends no progress: it's ready once it has the classpath. Left: one full
   live run of `groovy-e2e.el` passing (14 of 16 on the last).
 
-**8.5 `:lang scala`** (planned): `modules/lang/scala/`.
+**8.5 `:lang scala`** (planned; sequenced in Phase 14.5, on by default): `modules/lang/scala/`.
 - [ ] `scala-mode` and `sbt-mode` (`scala-ts-mode` with `+tree-sitter`,
       grammar pinned; the autoload takeover undone, with a unit test).
 - [ ] Metals 1.6.9 through `lsp-metals`. `bin/hellmacs sync` downloads the
@@ -2184,6 +2188,8 @@ Phase 9 and each step ships on its own.
 out on purpose: `:editor evil`, `god` and `lispy` (modal or rebinding),
 `:completion` alternatives (vertico and corfu fill those slots), and other
 languages (the 8.6 `:lang` template covers them). They stay `[idea]`.
+*Superseded 2026-09-30:* the languages IntelliJ IDEA bundles are Phase 14,
+on by default, and those it gets through plugins are Phase 15's.
 
 **Keys: vanilla only.** Every step follows the keybinding policy above,
 checked against what each package does by default (read from their
@@ -2409,7 +2415,7 @@ per-project JDKs need it; `:ui workspaces` stays here)
 
 **10.6 Integration:** `static/init.example.el` (these modules move from
 `[idea]` to shipped, commented out by default except `:tools editorconfig`
-and `:ui popup`), README, `doctor`, and a fresh install in temporary
+and `:ui popup`; 10.1's language modules go on by default in Phase 14.7), README, `doctor`, and a fresh install in temporary
 folders with the unit and end-to-end suites.
 
 **Budget.** Startup stays under Phase 9's 0.12s with every Phase 10 module
@@ -4033,6 +4039,214 @@ in-editor documentation formatted according to GNU standards.
     for declared `:ui`, `:editor`, `:tools`, and `:lang` modules.
 
 ---
+
+### Phase 14: Every language IntelliJ IDEA bundles, on by default (planned)
+
+**Objective:** a project that opens in IntelliJ IDEA Ultimate with all its
+languages understood opens the same way in Hellmacs, with nothing to
+enable. Decided 2026-09-30, at the user's request: every language IntelliJ
+IDEA Ultimate bundles is a Hellmacs module, **enabled by default** in
+`static/init.example.el`. This reverses two earlier choices, which this
+phase replaces: 10.6's "commented out by default" for 10.1's modules, and
+8.6/Phase 10's "other languages stay `[idea]`". Languages IntelliJ gets
+through plugins (Python, Go, Ruby, PHP, C/C++) are Phase 15's.
+
+**What IntelliJ IDEA Ultimate bundles** (JetBrains' help,
+"IntelliJ IDEA overview", 2026.1; the rows marked *known* are from its
+bundled plugins and are confirmed by 14.0's findings pass):
+
+| Language / files | Hellmacs before this phase | Here |
+|---|---|---|
+| Java, Kotlin | on by default | — |
+| Groovy | `:lang groovy`, off (8.4) | on by default (14.7) |
+| Scala | planned, "Later" (8.5) | 14.5, on by default |
+| XML, XSL, XPath, XSLT | XML (`:lang data`), off | 14.4, on |
+| JSON, Markdown, YAML, shell, Dockerfile (*known*) | 10.1's modules, off | on (14.7) |
+| HTML, CSS, Less, Sass/SCSS | none | 14.1 `:lang web` |
+| JavaScript, TypeScript (JSX, TSX) | none | 14.2 `:lang javascript` |
+| Thymeleaf, FreeMarker, Velocity, JSP | none | 14.1 `:lang web` (templates) |
+| SQL, with its database tools | `:tools db` runs queries, no language support | 14.3 `:lang sql` |
+| `.properties` (*known*) | built-in `conf-javaprop-mode` | 14.4 |
+| Kubernetes manifests (*known*) | `:tools kubernetes`, no schemas | 14.6 |
+| OpenAPI / Swagger (*known*) | none | 14.6 `:lang openapi` |
+| Terraform / HCL (*known*) | none | 14.6 `:lang terraform` |
+| Protocol Buffers (*known*) | none | 14.6 `:lang protobuf` |
+| HTTP Client `.http` (*known*) | `:tools http`, on | — |
+
+**Pattern.** Phases 8 and 10's: each server pinned (SHA-256 for a
+download, version plus the lockfile's integrity hashes for npm), installed
+by `bin/hellmacs sync` into the data directory, declared with
+`hellmacs-component!` (SBOM, licenses, `verify`), fetched through
+`with-hellmacs-network`, checked by `doctor`, and its telemetry looked for
+in the findings pass and turned off (12.9). Keys: only the modes' own and
+`C-c l` through `:tools lsp`; no new `C-c` group.
+
+**14.0 Findings first** (written here before any code)
+- [ ] For each language: the server (and alternatives), how it ships
+      (native binary, jar, npm), license, whether it phones home or
+      downloads at runtime, what it needs installed (Node, a JDK, Go).
+- [ ] Confirm the *known* rows against the current IntelliJ IDEA release's
+      bundled plugins; add any language it bundles that this table misses.
+- [ ] The cost of "all on by default": `sync` time and disk on a fresh
+      profile, offline bundle size, and startup with every module on (the
+      0.12s budget holds: everything loads on its mode). Measured before
+      and after this phase.
+
+**14.1 `:lang web`: HTML, CSS and server-side templates**
+- [ ] HTML and CSS/Less/SCSS through vscode-html-language-server and
+      vscode-css-language-server. Both are in vscode-langservers-extracted,
+      already pinned for `:lang json` (one lockfile, shared).
+- [ ] Built-in `html-ts-mode`/`mhtml-mode`, `css-ts-mode`/`css-mode`;
+      `scss-mode` and `less-css-mode` built in.
+- [ ] Templates: Thymeleaf (HTML with `th:` attributes: the HTML server,
+      plus the Spring Boot server's Thymeleaf support under `+spring`),
+      FreeMarker (`.ftl`, `.ftlh`), Velocity (`.vm`), JSP (`.jsp`, `.jspx`),
+      through web-mode if the findings show no server for them.
+- *Verify:* a Spring MVC fixture with Thymeleaf and FreeMarker views and a
+  stylesheet: completion, diagnostics, go to a CSS class.
+
+**14.2 `:lang javascript`: JavaScript and TypeScript**
+- [ ] vtsls (or typescript-language-server, per the findings) with a pinned
+      TypeScript, npm lockfile. Built-in `js-ts-mode`, `typescript-ts-mode`,
+      `tsx-ts-mode`, grammars pinned.
+- [ ] ESLint diagnostics when the project has a config (vscode-eslint
+      server from vscode-langservers-extracted); Prettier through
+      `:editor format` when the project uses it.
+- [ ] Debugging Node and the browser: findings only (dap-mode's js-debug);
+      a gap in the feature matrix until it's planned.
+- *Verify:* a fixture with a TypeScript front end next to a Spring Boot
+  back end (`frontend/` in a Maven build): both servers in one session.
+
+**14.3 `:lang sql`**
+- [ ] A SQL language server (sqls, or another per the findings) for
+      completion and diagnostics in `.sql` files, using the connections
+      `:tools db` already reads (`.hellmacs/db.eld`, auth-source), so
+      there's one place for them.
+- [ ] Dialects: PostgreSQL, MySQL/MariaDB, Oracle, SQL Server, H2.
+- [ ] SQL inside Java/Kotlin strings (IntelliJ's language injection):
+      findings only; a matrix gap if no server does it.
+- *Verify:* completion of a table and a column from the H2 database 12.6
+  was checked on.
+
+**14.4 XML family and `.properties`** (in `:lang data`)
+- [ ] XSLT and XPath: lemminx's XSL support, or another server per the
+      findings.
+- [ ] `.properties`: built-in `conf-javaprop-mode`; Spring keys through the
+      Spring Boot server (`:lang java +spring`) as for `application.yml`.
+
+**14.5 Scala** (8.5's spec, unchanged, moved here from "Later")
+- [ ] 8.5's items (scala-mode/sbt-mode, Metals pinned, `metals/status`,
+      `C-c l s` keys, `test/fixtures/scala/sbt-demo` and its e2e script),
+      and on by default.
+
+**14.6 API and infrastructure files**
+- [ ] Kubernetes: yaml-language-server's Kubernetes schema, pinned and
+      shipped (not fetched at runtime), for manifests (detected by
+      `apiVersion`/`kind`) and Helm values.
+- [ ] `:lang openapi`: OpenAPI 3 and Swagger 2 in YAML and JSON, validated
+      against pinned schemas (and a linting server if the findings find a
+      pinnable one).
+- [ ] `:lang terraform`: terraform-ls (HashiCorp, pinned binary), with
+      terraform-mode or a pinned HCL grammar.
+- [ ] `:lang protobuf`: a Protocol Buffers server (buf's, or another per
+      the findings), pinned.
+
+**14.7 Integration**
+- [ ] `static/init.example.el`: every module above, 10.1's six and
+      `:lang groovy` enabled by default (from `[idea]`/commented to on);
+      `bin/hellmacs config --add-defaults` (12.8) offers them to existing
+      configs.
+- [ ] Node becomes a default requirement: `doctor` warns (doesn't fail)
+      when it's missing, names the modules that need it, and those modules
+      still give their modes without a server.
+- [ ] An e2e script for the non-JVM languages (10.1's and this phase's):
+      each file type opens in its mode, its server answers completion,
+      a diagnostic and a hover. (10.1 shipped without one.)
+- [ ] The telemetry check (12.9, `telemetry-check.sh`) passes with every
+      module on.
+- [ ] README, per-module docs (12.10), the feature matrix rows.
+- [ ] A fresh install in temporary folders with the new defaults: sync,
+      doctor, the unit and e2e suites, startup under 0.12s.
+- *Verify:* 14.7's fresh install, and each 14.x fixture's checks.
+
+**Risks**
+- **A heavier default install.** Every Node server, Metals and terraform-ls
+  are installed for everyone. 14.0 measures it; a user can still comment
+  any module out, and `bundle --modules` can trim offline bundles.
+- **Node on enterprise laptops.** Not always allowed. The modes work
+  without it; only the servers are missing, and `doctor` says so.
+- **No server for some templates or for SQL injection.** Those stay mode
+  support only, listed in the feature matrix as gaps.
+
+### Phase 15: Plugins (planned)
+
+**Objective:** what IntelliJ gets through plugins (Python, Go, Ruby, PHP,
+C/C++, and anyone's own additions), Hellmacs gets through a plugin
+manager: browse, enable, disable and update optional modules without
+editing `init.el` by hand, with the same pinning, verification and
+offline support as everything else. Decided 2026-09-30, at the user's
+request.
+
+**What a plugin is.** A Hellmacs module that isn't on by default: either
+one Hellmacs ships (`modules/lang/python`, ...) or a third-party module
+from a git repository. Enabling a plugin is enabling its module; the
+manager does the editing, syncing and checking.
+
+**15.1 The plugin manager, for Hellmacs' own modules**
+- [ ] A catalog: every module Hellmacs ships, with its one-line
+      description (from `static/init.example.el`, as 12.8 reads it), group,
+      flags, what it installs (its `hellmacs-component!` declarations),
+      licenses, and whether it's enabled.
+- [ ] CLI: `bin/hellmacs plugins` (list), `plugins search TERM`,
+      `plugins enable :group name [+flags]`, `plugins disable :group name`.
+      Enable and disable edit the `hellmacs!` block through 12.8's
+      `core/hellmacs-config.el` (a backup first, a commented line
+      uncommented rather than a duplicate added), then run `sync`.
+- [ ] Interactive: `M-x hellmacs-plugins`, on `C-c h p`, a
+      `tabulated-list-mode` buffer that works like `list-packages`, with
+      its stock keys: `i` mark to enable, `d` mark to disable, `u` unmark,
+      `x` execute, `g` refresh, `RET` describe. Executing syncs in the
+      background (a compilation buffer) and then offers
+      `restart-emacs`.
+- [ ] `doctor` names each enabled plugin and runs its checks as for any
+      module.
+
+**15.2 The plugin languages** (Hellmacs' own, not on by default; each
+with 14's pattern: findings, pinned server, telemetry off, fixture, e2e)
+- [ ] `:lang python`: basedpyright and ruff (per the findings), npm/pip
+      pinned; virtualenvs through `:tools direnv`.
+- [ ] `:lang go`: gopls, pinned; needs a Go toolchain (`doctor`).
+- [ ] `:lang ruby`: ruby-lsp, pinned gem.
+- [ ] `:lang php`: phpactor (MIT; intelephense's premium features are
+      proprietary, so not the default).
+- [ ] `:lang cc`: clangd, pinned binary from its GitHub releases.
+
+**15.3 Third-party plugins**
+- [ ] A plugin source: a git URL pinned to a commit, declared in the user's
+      (or the team layer's, 12.8) `packages.el` with a new
+      `(plugin! NAME :repo URL :commit SHA)`. `sync` fetches it through
+      `with-hellmacs-network` into the data directory; its modules resolve
+      after the user's own and before Hellmacs' (user > plugin > core).
+- [ ] Trust: enabling a third-party plugin shows its URL, commit and
+      license and asks once; it runs Emacs Lisp like any package.
+- [ ] Recorded like everything else: the lock file (`bin/hellmacs lock`),
+      the SBOM, the license report, `bin/hellmacs verify`, and offline
+      bundles (`bundle` carries it, `install --from-bundle` restores it).
+- [ ] `plugins update NAME` moves the pin (as `upgrade` does for packages)
+      and shows the log between the two commits.
+- [ ] A catalog of third-party plugins: later, only once some exist.
+- *Verify:* on a fresh profile, `:lang python` enabled from
+  `M-x hellmacs-plugins`, synced, a `.py` file gets its server, then
+  disabled; a third-party plugin from a local git fixture is enabled,
+  appears in the SBOM and lock, `verify` catches an edit to it, and it
+  installs from a bundle offline.
+
+**Risks**
+- **Plugins run code.** Third-party plugins are as trusted as packages;
+  the pin, the trust prompt and `verify` are the protection, not a
+  sandbox.
+- **Toolchains outside Hellmacs** (Go, Ruby, PHP, a C compiler): the
+  servers are pinned; the toolchains are the user's, checked by `doctor`.
 
 ### Out of scope
 

@@ -118,7 +118,7 @@
            ;; module would run through :tools lsp.
            ;;agda             ; [idea] Agda: agda-mode (no LSP)
            ;;beancount        ; [idea] Beancount: beancount-language-server
-           ;;cc               ; [idea] C, C++, Objective-C: clangd
+           ;;cc               ; [planned] C, C++, Objective-C: clangd
            ;;cmake            ; [idea] CMake: neocmakelsp
            ;;common-lisp      ; [idea] Common Lisp: SLY (REPL, no LSP)
            ;;coq              ; [idea] Rocq/Coq: coq-lsp, Proof General
@@ -137,12 +137,12 @@
            ;;fsharp           ; [idea] F#: fsautocomplete
            ;;gdscript         ; [idea] Godot GDScript: the Godot editor's server
            ;;gleam            ; [idea] Gleam: gleam lsp
-           ;;go               ; [idea] Go: gopls
+           ;;go               ; [planned] Go: gopls
            ;;graphql          ; [idea] GraphQL: graphql-lsp
            ;;graphviz         ; [idea] Graphviz dot files (no LSP)
            ;;haskell          ; [idea] Haskell: haskell-language-server
            ;;janet            ; [idea] Janet: janet-lsp
-           ;;javascript       ; [idea] JavaScript, TypeScript, JSX: vtsls (typescript-language-server)
+           ;;javascript       ; [planned] JavaScript, TypeScript, JSX: vtsls (typescript-language-server)
            ;;json             ; JSON: vscode-json-language-server; needs Node (+tree-sitter)
            ;;julia            ; [idea] Julia: LanguageServer.jl
            ;;latex            ; [idea] LaTeX: texlab, AUCTeX
@@ -152,27 +152,28 @@
            ;;markdown         ; Markdown: marksman
            ;;nim              ; [idea] Nim: nimlangserver
            ;;nix              ; [idea] Nix: nixd (nil)
+           ;;openapi          ; [planned] OpenAPI and Swagger: pinned schemas
            ;;ocaml            ; [idea] OCaml: ocaml-lsp-server
            ;;odin             ; [idea] Odin: ols
            ;;org              ; [idea] Org mode (no LSP)
-           ;;php              ; [idea] PHP: phpactor (intelephense)
+           ;;php              ; [planned] PHP: phpactor (intelephense)
            ;;plantuml         ; [idea] PlantUML diagrams (no LSP)
-           ;;protobuf         ; [idea] Protocol Buffers: buf
+           ;;protobuf         ; [planned] Protocol Buffers: buf
            ;;purescript       ; [idea] PureScript: purescript-language-server
-           ;;python           ; [idea] Python: basedpyright, ruff
+           ;;python           ; [planned] Python: basedpyright, ruff
            ;;racket           ; [idea] Racket: racket-langserver
            ;;rst              ; [idea] reStructuredText: esbonio
-           ;;ruby             ; [idea] Ruby: ruby-lsp
+           ;;ruby             ; [planned] Ruby: ruby-lsp
            ;;rust             ; [idea] Rust: rust-analyzer
            ;;scheme           ; [idea] Scheme: Geiser (no LSP)
            ;;sh               ; Shell scripts, gradlew/mvnw: bash-language-server; needs Node (+tree-sitter)
            ;;sml              ; [idea] Standard ML: millet
            ;;solidity         ; [idea] Solidity: nomicfoundation-solidity-language-server
-           ;;sql              ; [idea] SQL: sqls
+           ;;sql              ; [planned] SQL: sqls
            ;;swift            ; [idea] Swift: sourcekit-lsp
-           ;;terraform        ; [idea] Terraform and HCL: terraform-ls
+           ;;terraform        ; [planned] Terraform and HCL: terraform-ls
            ;;toml             ; [idea] TOML: taplo
-           ;;web              ; [idea] HTML and CSS: vscode-html/css-language-server
+           ;;web              ; [planned] HTML and CSS: vscode-html/css-language-server
            ;;yaml             ; YAML: yaml-language-server; needs Node (+tree-sitter)
            ;;zig              ; [idea] Zig: zls
 
