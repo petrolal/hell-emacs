@@ -48,7 +48,8 @@ A full sync downloads language servers and takes minutes: run it in the backgrou
 
 ## Rules (from `docs/roadmap.md`)
 
-- **Stock Emacs keys.** No Evil, no `SPC` leader, no modal or single-key hijacks, no IntelliJ keymap. Hellmacs keys live under `C-c` (`C-c h` is Hellmacs' own); packages improve default commands instead of adding keys; `TAB` indents; `C-h` untouched.
+- **Stock Emacs keys.** No Evil, no `SPC` leader, no modal or single-key hijacks, no IntelliJ keymap. Hellmacs keys live under `C-c` in Doom's non-evil groups (`C-c h` Hellmacs' own, `C-c c` code, `C-c t` toggles, ...; `hellmacs-leader-def`), and a mode's own commands on the `C-c l` localleader (`hellmacs-localleader-def`); packages improve default commands instead of adding keys, and keys a package takes from stock Emacs are given back; `TAB` indents; `C-h` untouched. The deliberate departures (as-you-type completion, `delete-selection-mode`, `electric-pair-mode`) are listed in docs/keybindings.md.
+- **`doctor` messages link to docs.** Every `hellmacs-doctor-warn` / `-error` in core and the modules starts with `:topic 'NAME`, matching a `#### Doctor: NAME` entry in docs/guide.md's "What doctor's messages mean"; a new message needs one.
 - **The identity is fixed:** `hellmacs-inferno` theme and palette, banner/logos, the Altar, themed messages (`[FORGE IGNITED]` …). `hellmacs-ux-enable nil` is the neutral opt-out.
 - **Built-ins first** (`project.el`, flymake, treesit, `compile`, …); third-party only where the JVM workflow needs it.
 - **Pinned and reproducible.** Packages only via `package!` in a `packages.el` (never `package-install`). Every download goes through `hellmacs-sync-download-verified` (SHA-256) inside `with-hellmacs-network`, is declared with `hellmacs-component!` in the module's `+paths.el`, and grammars carry a `:license`. Language servers get a pinned installer in the module's `cli.el` registered with `hellmacs-lsp-pin-installer`. Nothing installs mid-session.

@@ -32,5 +32,5 @@
   (hellmacs-require 'hellmacs-lib 'jdk)
   (let ((java (hellmacs-jdk-java-executable 17)))
     (if (and (equal java "java") (not (executable-find "java")))
-        (hellmacs-doctor-error "SonarLint needs a JDK 17 or later, and there's no java")
+        (hellmacs-doctor-error :topic 'jdk "SonarLint needs a JDK 17 or later, and there's no java")
       (hellmacs-doctor-ok "SonarLint runs on %s" (abbreviate-file-name java)))))

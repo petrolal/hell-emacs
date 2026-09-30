@@ -229,8 +229,12 @@ announced instead of leaving completion silently empty.
         in [keybindings.md](keybindings.md) (2026-09-30: 57 actions in five
         tables; every Hellmacs key checked bound in a started profile, every
         stock one against `emacs -Q`).
-  - [ ] A troubleshooting entry for every `doctor` failure, linked from
-        `doctor`'s output.
+  - [x] A troubleshooting entry for every `doctor` failure, linked from
+        `doctor`'s output (2026-09-30: eleven topics in the guide's "What
+        doctor's messages mean"; every warning and error in core and the
+        modules carries a `:topic`, and `doctor` prints a `see` line to that
+        entry in the checkout's own guide; checked by breaking the PATH and
+        the sync state in a throwaway profile).
   - [ ] Each guide followed from scratch on a clean machine by someone who
         didn't write it.
 

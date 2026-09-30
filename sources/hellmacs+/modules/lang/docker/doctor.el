@@ -27,7 +27,7 @@
 (hellmacs-module-load "+paths")
 
 (if (not (hellmacs-docker-ls-pin))
-    (hellmacs-doctor-warn "No pinned docker-language-server for %s" (or (hellmacs-platform) system-type))
+    (hellmacs-doctor-warn :topic 'installs "No pinned docker-language-server for %s" (or (hellmacs-platform) system-type))
   (hellmacs-doctor-reachable (hellmacs-docker-ls-url) "installing docker-language-server")
   (hellmacs-doctor-pinned "docker-language-server" hellmacs-docker-ls-version
                           (hellmacs-docker-ls-installed-p) (file-exists-p hellmacs-docker-ls-executable)

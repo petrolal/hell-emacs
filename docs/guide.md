@@ -299,3 +299,124 @@ are planned ([roadmap](roadmap.md), 12.8).
 6. **Reporting a bug:** include `hellmacs info`'s output.
 
 JVM projects that won't import: see the [JVM guide](jvm.md#when-a-project-wont-import).
+
+### What doctor's messages mean
+
+`!` is a warning (something optional is missing), `✗` an error (something
+won't work; `doctor` then exits with a failure). Each prints a `see` line
+pointing to its entry below, in your own copy of this guide. After any
+fix, run `hellmacs doctor` again.
+
+#### Doctor: Emacs
+
+- **Emacs is too old:** Hellmacs needs Emacs 29.1 or newer. Install it
+  from your package manager (or Homebrew's `emacs-plus` on macOS), then
+  `hellmacs sync`: each Emacs version gets its own synced init file.
+- **A development build:** a snapshot Emacs (a version ending in `.50`
+  and up) works, but packages may break on it. Use a release if they do.
+- **No tree-sitter support**, which `+tree-sitter` needs: this Emacs was
+  built without it. Install an Emacs built with tree-sitter (most
+  distributions' Emacs 29+ is), or drop `+tree-sitter` from the module.
+- **clojure-ts-mode needs Emacs 30.1:** drop `+tree-sitter` from
+  `:lang clojure`, or upgrade Emacs.
+
+#### Doctor: platform
+
+- **Hellmacs or your config on a Windows mount (`/mnt/...`)** under WSL2:
+  every file read crosses to Windows and is slow. Clone Hellmacs and keep
+  your config under your Linux home (`~/`).
+
+#### Doctor: tools
+
+- **A program isn't found** (`git`, `rg`, `unzip`, `node`, `clojure`...):
+  install it with your package manager. The message says what it's for;
+  a warning means only that feature is missing, an error that the module
+  can't work.
+- **Found in a terminal, not in GUI Emacs:** a GUI launcher doesn't read
+  your shell's PATH. Run `hellmacs env` in a terminal, then restart Emacs.
+- **Node or Git too old:** the message says the minimum; upgrade it.
+- **No C compiler** (`cc`, `gcc` or `clang`): tree-sitter grammars are
+  built from source. Install your system's build tools (`build-essential`,
+  `base-devel`, Xcode's command-line tools).
+
+#### Doctor: JDK
+
+- **No JDK to run JDTLS**, or `hellmacs-jvm-java-home` is the wrong one:
+  the Java server runs on the releases the message names. Install one
+  (SDKMAN, your package manager), then `hellmacs sync`; or point
+  `hellmacs-jvm-java-home` at one in your `config.el`.
+- **A server or tool needs a JDK 11+ (or 17+)** and none is found: set
+  `JAVA_HOME`, put `java` on the PATH, or install one; for GUI Emacs, also
+  run `hellmacs env`.
+- **`hellmacs-jdks` names a JDK wrongly:** each entry's name must be its
+  release, as JDTLS spells it (`("JavaSE-17" . "/opt/jdk-17")`).
+- **JDKs not known to JDTLS yet:** you installed some since the last
+  sync; `hellmacs sync` stores them. See the JVM guide's
+  [Several JDKs](jvm.md#several-jdks).
+
+#### Doctor: toolchains
+
+- **The build asks for a JDK toolchain that isn't installed** (Gradle's
+  `languageVersion`): install that release, or tell Gradle where it is
+  with `org.gradle.java.installations.paths` in
+  `~/.gradle/gradle.properties`, or add a toolchain resolver to the
+  build so Gradle downloads it.
+- **Maven's `toolchains.xml`** is missing the JDK the build asks for, or
+  one of its entries points elsewhere: add a `<toolchain>` of type `jdk`
+  with the right `jdkHome`.
+
+#### Doctor: installs
+
+- **Not installed yet / not the pinned release / fails its SHA-256
+  check:** `hellmacs sync` installs or replaces it. Language servers,
+  grammars, jars and the JVM truststore are all installed by sync, never
+  while you edit.
+- **No pinned build for this platform:** Hellmacs has no checksummed
+  release of that tool for your OS and CPU. Install it yourself and put
+  it on the PATH; Hellmacs uses the one it finds there.
+- **Sync can't download** (offline, or a blocked host): see
+  [Doctor: network](#doctor-network), or install from an offline bundle
+  (`hellmacs bundle`).
+
+#### Doctor: network
+
+- **A certificate isn't trusted:** your network inspects TLS. Set
+  `hellmacs-ca-bundle` to your company's CA (a PEM file) in `config.el`,
+  then `hellmacs sync`, which also builds the JVM's truststore from it.
+- **`hellmacs-ca-bundle` can't be read or holds no certificate:** check
+  the path, and that the file is PEM (`-----BEGIN CERTIFICATE-----`).
+- **Can't reach a host / through the proxy:** set `hellmacs-proxy` (with
+  its credentials if it needs them), or map the host to an internal
+  mirror with `hellmacs-mirrors`. The details are in
+  [Companies](#6-companies-networks-offline-machines-compliance).
+
+#### Doctor: config
+
+- **A module needs another** ("Needs :tools lsp; add it to your
+  hellmacs! block"): add that module to `init.el`, then `hellmacs sync`.
+- **Without `:completion corfu`**, or **no module supplies a debug
+  adapter**: those features are missing until you enable the module the
+  message names.
+- **`hellmacs-maven-settings` can't be read:** fix the path in your
+  `config.el`, or remove the setting to use `~/.m2/settings.xml`.
+
+#### Doctor: sync
+
+- **Not synced yet** or **out of sync** (it says what changed): run
+  `hellmacs sync`, or `C-c h S` inside Emacs, then restart Emacs. Startup
+  only replays the last sync, so a changed `init.el`, `packages.el` or
+  module isn't used until then.
+
+#### Doctor: fonts
+
+- **No Nerd Font:** icons in the dashboard and modeline show as boxes.
+  Run `M-x nerd-icons-install-fonts`, or install a Nerd Font from your
+  distribution; Hellmacs never installs fonts itself.
+
+#### Doctor: checkout
+
+- **`var/` or `etc/` left over from an older Hellmacs:** nothing uses
+  them; delete them.
+- **A file of Hellmacs itself is missing** (a dashboard banner in
+  `assets/`): your checkout is incomplete. `git status` in it shows what
+  changed; `git checkout -- assets/` restores it.

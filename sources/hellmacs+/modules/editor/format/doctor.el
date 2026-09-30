@@ -39,11 +39,11 @@
                             :where (plist-get spec :file))
     (if (and major (>= major (plist-get spec :jdk)))
         (hellmacs-doctor-ok "%s runs on JDK %d (%s)" name major (abbreviate-file-name java))
-      (hellmacs-doctor-error "%s needs a JDK %d+; none found (JAVA_HOME, the JDKs sync found, the PATH)"
+      (hellmacs-doctor-error :topic 'jdk "%s needs a JDK %d+; none found (JAVA_HOME, the JDKs sync found, the PATH)"
                              name (plist-get spec :jdk)))))
 
 (when (modulep! :lang clojure)
   (let ((clojure-lsp (hellmacs-format--clojure-lsp)))
     (if (executable-find clojure-lsp)
         (hellmacs-doctor-ok "cljfmt through clojure-lsp: %s" (abbreviate-file-name (executable-find clojure-lsp)))
-      (hellmacs-doctor-warn "No clojure-lsp yet to format Clojure with; `bin/hellmacs sync' installs it"))))
+      (hellmacs-doctor-warn :topic 'installs "No clojure-lsp yet to format Clojure with; `bin/hellmacs sync' installs it"))))

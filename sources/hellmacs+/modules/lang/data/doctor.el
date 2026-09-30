@@ -29,7 +29,7 @@
 (let ((java (hellmacs-xml-java)))
   (if (file-executable-p java)
       (hellmacs-doctor-ok "JDK for lemminx: %s" (abbreviate-file-name java))
-    (hellmacs-doctor-error "No JDK found (set JAVA_HOME or put java on the PATH); lemminx needs 11+")))
+    (hellmacs-doctor-error :topic 'jdk "No JDK found (set JAVA_HOME or put java on the PATH); lemminx needs 11+")))
 
 (hellmacs-doctor-reachable hellmacs-xml-lemminx-url "installing lemminx")
 (hellmacs-doctor-pinned "lemminx" hellmacs-xml-lemminx-version

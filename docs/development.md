@@ -120,7 +120,7 @@ Every file is optional:
 | `init.el` | startup, before any `config.el` | Early settings |
 | `config.el` | startup | The configuration (`use-package`) |
 | `cli.el` | `bin/hellmacs` only | Sync steps (`hellmacs-sync-functions`), commands (`hellmacs-cli-NAME`) |
-| `doctor.el` | `bin/hellmacs doctor` | Checks |
+| `doctor.el` | `bin/hellmacs doctor` | Checks: `hellmacs-doctor-ok`, `-info`, `-warn`, `-error` (a leading `:topic 'jdk` links a warning or error to that entry of the guide's "What doctor's messages mean"), `-executable`, `-pinned` |
 | `+paths.el` | loaded by `config.el` and `cli.el` | A language server's paths and pins (`hellmacs-component!`) |
 | `+NAME.el` | loaded with `(hellmacs-module-load "+NAME")` | Splitting a big config |
 

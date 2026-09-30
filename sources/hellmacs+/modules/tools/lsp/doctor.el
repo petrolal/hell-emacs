@@ -26,4 +26,4 @@
 
 (hellmacs-doctor-info "Using lsp-mode. Inside Emacs, M-x lsp-doctor checks its performance settings")
 (unless (modulep! :completion corfu)
-  (hellmacs-doctor-warn "Without :completion corfu, language-server completion has no popup (only C-M-i)"))
+  (hellmacs-doctor-warn :topic 'config "Without :completion corfu, language-server completion has no popup (only C-M-i)"))

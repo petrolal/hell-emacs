@@ -108,11 +108,11 @@ Says which it is, and why JAVA_HOME's or the PATH's was passed over."
      (hellmacs-jvm-java-home
       (if (funcall fits major)
           (hellmacs-doctor-ok "JDK %d for JDTLS: %s (`hellmacs-jvm-java-home')" major (abbreviate-file-name home))
-        (hellmacs-doctor-error "`hellmacs-jvm-java-home' is %s; JDTLS %s runs on %s"
+        (hellmacs-doctor-error :topic 'jdk "`hellmacs-jvm-java-home' is %s; JDTLS %s runs on %s"
                                (if major (format "JDK %d" major) (format "%s, not a JDK" (abbreviate-file-name home)))
                                hellmacs-jvm-jdtls-version range)))
      ((null home)
-      (hellmacs-doctor-error "No JDK %s to run JDTLS %s; install one (then `bin/hellmacs sync'), or set `hellmacs-jvm-java-home'"
+      (hellmacs-doctor-error :topic 'jdk "No JDK %s to run JDTLS %s; install one (then `bin/hellmacs sync'), or set `hellmacs-jvm-java-home'"
                              range hellmacs-jvm-jdtls-version))
      (t
       (hellmacs-doctor-ok "JDK %d for JDTLS: %s" major (abbreviate-file-name home))
@@ -144,10 +144,10 @@ Maven toolchain, an entry in toolchains.xml. Build files are only read."
       (let ((major (hellmacs-jvm--major-string release))
             (actual (and home (hellmacs-jdk-home-release home))))
         (cond ((null home)
-               (hellmacs-doctor-warn "%s lists a JDK %s with no jdkHome" (abbreviate-file-name xml) major))
+               (hellmacs-doctor-warn :topic 'toolchains "%s lists a JDK %s with no jdkHome" (abbreviate-file-name xml) major))
               ((equal actual release)
                (hellmacs-doctor-ok "Maven toolchain JDK %s: %s" major (abbreviate-file-name home)))
-              (t (hellmacs-doctor-error "%s gives %s for JDK %s, which %s" (abbreviate-file-name xml)
+              (t (hellmacs-doctor-error :topic 'toolchains "%s gives %s for JDK %s, which %s" (abbreviate-file-name xml)
                                         (abbreviate-file-name home) major
                                         (if actual (format "is a JDK %s" (hellmacs-jvm--major-string actual))
                                           "isn't a JDK"))))))
@@ -164,7 +164,7 @@ Maven toolchain, an entry in toolchains.xml. Build files are only read."
              (cond (home (hellmacs-doctor-ok "%s: %s" asks (abbreviate-file-name home)))
                    ((hellmacs-jdk-gradle-provisions-p dir)
                     (hellmacs-doctor-info "%s; none is installed, so Gradle downloads one (its toolchain resolver)" asks))
-                   (t (hellmacs-doctor-error "%s, and none is installed. Install one (SDKMAN, your package manager), or list it in org.gradle.java.installations.paths (~/.gradle/gradle.properties)"
+                   (t (hellmacs-doctor-error :topic 'toolchains "%s, and none is installed. Install one (SDKMAN, your package manager), or list it in org.gradle.java.installations.paths (~/.gradle/gradle.properties)"
                                              asks)))))
           ('maven
            (let ((home (cdr (seq-find (lambda (jdk) (and (equal (car jdk) release) (cdr jdk)
@@ -172,7 +172,7 @@ Maven toolchain, an entry in toolchains.xml. Build files are only read."
                                       listed))))
              (if home
                  (hellmacs-doctor-ok "%s: %s" asks (abbreviate-file-name home))
-               (hellmacs-doctor-error "%s, and %s %s. Add the JDK there (<toolchain> of type jdk, with its jdkHome)"
+               (hellmacs-doctor-error :topic 'toolchains "%s, and %s %s. Add the JDK there (<toolchain> of type jdk, with its jdkHome)"
                                       asks (abbreviate-file-name xml)
                                       (if (file-exists-p xml) "has none" "doesn't exist"))))))))))
 
@@ -206,7 +206,7 @@ for; found ones are compared with what the last sync stored."
              (home (plist-get runtime :path))
              (actual (hellmacs-jdk-home-release home)))
         (if (and yours (not (equal actual name)))
-            (hellmacs-doctor-error "`hellmacs-jdks' names %s for %s, which %s" name (abbreviate-file-name home)
+            (hellmacs-doctor-error :topic 'jdk "`hellmacs-jdks' names %s for %s, which %s" name (abbreviate-file-name home)
                                    (if actual (format "is a %s" actual) "isn't a JDK (no release file)"))
           (hellmacs-doctor-ok "JDK %s: %s%s" name (abbreviate-file-name home)
                               (if (eq (plist-get runtime :default) t) " (the default)" "")))))
@@ -217,7 +217,7 @@ for; found ones are compared with what the last sync stored."
         (hellmacs-doctor-info "No JDKs found for projects; set `hellmacs-jdks' if yours are elsewhere")
       (unless yours
         (when-let* ((unseen (seq-remove (lambda (jdk) (member jdk (hellmacs-jdk-read))) jdks)))
-          (hellmacs-doctor-warn "%s not known to JDTLS yet; `bin/hellmacs sync' stores them"
+          (hellmacs-doctor-warn :topic 'jdk "%s not known to JDTLS yet; `bin/hellmacs sync' stores them"
                                 (mapconcat #'car unseen ", ")))))))
 
 ;;; Spring Boot's language server (+spring) --------------------------------------

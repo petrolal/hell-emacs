@@ -30,13 +30,13 @@
 (let ((java (hellmacs-jdk-java-executable 11)))
   (if (file-name-absolute-p java)
       (hellmacs-doctor-ok "JDK for the server: %s" (abbreviate-file-name java))
-    (hellmacs-doctor-error "No JDK 11+ found (JAVA_HOME, or one `bin/hellmacs sync' found) for groovy-language-server")))
+    (hellmacs-doctor-error :topic 'jdk "No JDK 11+ found (JAVA_HOME, or one `bin/hellmacs sync' found) for groovy-language-server")))
 
 (unless (hellmacs-groovy-server-installed-p)
   (let ((range (hellmacs-jdk-gradle-daemon-range hellmacs-groovy-gradle-version)))
     (if (hellmacs-jdk-pick (mapcar #'cdr (hellmacs-jdk-detect)) (car range) (cdr range))
         (hellmacs-doctor-ok "A JDK %d to %d to build the server with" (car range) (cdr range))
-      (hellmacs-doctor-error "Building groovy-language-server needs a JDK %d to %d (for Gradle %s); none found"
+      (hellmacs-doctor-error :topic 'jdk "Building groovy-language-server needs a JDK %d to %d (for Gradle %s); none found"
                              (car range) (cdr range) hellmacs-groovy-gradle-version)))
   (hellmacs-doctor-executable "git" "fetching groovy-language-server's source" t)
   (hellmacs-doctor-executable "unzip" "unpacking the Gradle it's built with" t)

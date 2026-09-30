@@ -30,7 +30,7 @@
   (if (and line (string-match "\\([0-9]+\\(?:\\.[0-9]+\\)+\\)" line))
       (let ((number (match-string 1 line)))
         (if (version< number hellmacs-magit--minimal-git)
-            (hellmacs-doctor-error "Git %s is too old for Magit (needs %s+)"
+            (hellmacs-doctor-error :topic 'tools "Git %s is too old for Magit (needs %s+)"
                                    number hellmacs-magit--minimal-git)
           (hellmacs-doctor-ok "Git %s (Magit needs %s+)" number hellmacs-magit--minimal-git)))
-    (hellmacs-doctor-error "git not found; Magit runs every command through it")))
+    (hellmacs-doctor-error :topic 'tools "git not found; Magit runs every command through it")))

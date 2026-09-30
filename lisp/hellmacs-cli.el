@@ -44,19 +44,45 @@
 
 ;;; Output -----------------------------------------------------------------------
 
+(defvar hellmacs-cli--last-topic nil
+  "The troubleshooting topic the last warning or error pointed to.")
+
 (defun hellmacs-cli--say (format-string &rest args)
-  "Print FORMAT-STRING with ARGS, and a newline, on stdout."
+  "Print FORMAT-STRING with ARGS, and a newline, on stdout.
+A line that starts with a blank one is a section's heading: the next
+warning of a section points to its troubleshooting entry again."
+  (when (string-prefix-p "\n" format-string)
+    (setq hellmacs-cli--last-topic nil))
   (princ (concat (apply #'format format-string args) "\n")))
 
 (defvar hellmacs-cli--problems 0
   "How many `error'-level results `hellmacs-cli--check' printed.")
 
+(defun hellmacs-cli-doctor-docs (topic)
+  "Where TOPIC's troubleshooting entry is: this checkout's guide, so it
+matches the Hellmacs that printed it, and works offline."
+  (format "%s#doctor-%s" (abbreviate-file-name (expand-file-name "docs/guide.md" hellmacs-dir))
+          topic))
+
 (defun hellmacs-cli--check (level format-string &rest args)
-  "Print a check result. LEVEL is `ok', `warn', `error' or `info'."
-  (when (eq level 'error) (cl-incf hellmacs-cli--problems))
-  (hellmacs-cli--say "  %s %s"
-                     (pcase level ('ok "✓") ('warn "!") ('error "✗") (_ "·"))
-                     (apply #'format format-string args)))
+  "Print a check result. LEVEL is `ok', `warn', `error' or `info'.
+FORMAT-STRING may be preceded by `:topic' and a symbol: a warning or an
+error then points to that troubleshooting entry in docs/guide.md
+\("What doctor's messages mean"), once for a run of lines on the same
+topic."
+  (let ((topic nil))
+    (when (eq format-string :topic)
+      (setq topic (pop args)
+            format-string (pop args)))
+    (when (eq level 'error) (cl-incf hellmacs-cli--problems))
+    (hellmacs-cli--say "  %s %s"
+                       (pcase level ('ok "✓") ('warn "!") ('error "✗") (_ "·"))
+                       (apply #'format format-string args))
+    (if (not (memq level '(warn error)))
+        (setq hellmacs-cli--last-topic nil)
+      (when (and topic (not (eq topic hellmacs-cli--last-topic)))
+        (hellmacs-cli--say "      see %s" (hellmacs-cli-doctor-docs topic)))
+      (setq hellmacs-cli--last-topic topic))))
 
 (defvar hellmacs-cli-jobs 16
   "How many processes `hellmacs-cli--run-all' runs at once.")

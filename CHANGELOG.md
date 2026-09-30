@@ -74,6 +74,10 @@ The first tagged release will be 0.9.0. Since the project started
   it; a Gradle cache-lock timeout (another daemon holding `~/.gradle`) is
   named as the reason for a failed import; and after an import JDTLS's
   unresolved dependencies are listed.
+- Every `doctor` warning and error points to its troubleshooting entry
+  (`see ~/hellmacs/docs/guide.md#doctor-jdk`): eleven entries in the
+  guide's new "What doctor's messages mean". Module doctors can do the same
+  with a leading `:topic` in `hellmacs-doctor-warn` / `-error`.
 - Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
   budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
   `licenses` and `sbom`.

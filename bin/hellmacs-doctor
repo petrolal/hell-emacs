@@ -44,12 +44,15 @@
   (apply #'hellmacs-cli--check 'info format-string args))
 
 (defun hellmacs-doctor-warn (format-string &rest args)
-  "Report something optional that's missing (FORMAT-STRING, ARGS)."
+  "Report something optional that's missing (FORMAT-STRING, ARGS).
+Precede FORMAT-STRING with `:topic' and a symbol to point to that entry
+of docs/guide.md's \"What doctor's messages mean\" (`hellmacs-cli--check')."
   (apply #'hellmacs-cli--check 'warn format-string args))
 
 (defun hellmacs-doctor-error (format-string &rest args)
   "Report a problem that breaks the module (FORMAT-STRING, ARGS).
-Makes `bin/hellmacs doctor' exit with a failure."
+Makes `bin/hellmacs doctor' exit with a failure. Takes `:topic' as
+`hellmacs-doctor-warn' does."
   (apply #'hellmacs-cli--check 'error format-string args))
 
 (defun hellmacs-doctor-executable (program why &optional required &rest version-args)
@@ -63,7 +66,7 @@ Returns PROGRAM's path, or nil."
                                      (abbreviate-file-name path)))
              path)
     (funcall (if required #'hellmacs-doctor-error #'hellmacs-doctor-warn)
-             "%s not found -- %s" program why)
+             :topic 'tools "%s not found -- %s" program why)
     nil))
 
 (defun hellmacs-doctor-node (why min-major)
@@ -72,15 +75,15 @@ MIN-MAJOR is the oldest Node release it runs on. Errors when missing or
 too old: the server can't be installed or started without it."
   (let ((node (executable-find "node")))
     (if (not node)
-        (hellmacs-doctor-error "node not found -- %s is an npm package; install Node.js %d+" why min-major)
+        (hellmacs-doctor-error :topic 'tools "node not found -- %s is an npm package; install Node.js %d+" why min-major)
       (let* ((version (or (hellmacs-cli--version "node" "--version") ""))
              (major (and (string-match "\\`v?\\([0-9]+\\)" version)
                          (string-to-number (match-string 1 version)))))
         (if (and major (< major min-major))
-            (hellmacs-doctor-error "Node %s is too old for %s (it needs %d+)" version why min-major)
+            (hellmacs-doctor-error :topic 'tools "Node %s is too old for %s (it needs %d+)" version why min-major)
           (hellmacs-doctor-ok "node: %s" version)))
       (unless (executable-find "npm")
-        (hellmacs-doctor-error "npm not found -- `bin/hellmacs sync' installs %s with it" why)))))
+        (hellmacs-doctor-error :topic 'tools "npm not found -- `bin/hellmacs sync' installs %s with it" why)))))
 
 (cl-defun hellmacs-doctor-pinned (label version valid present &key where stale-note missing-note)
   "Check the pinned install of LABEL (release VERSION) that sync makes.
@@ -92,10 +95,10 @@ STALE-NOTE and MISSING-NOTE are appended to the error and warning."
              (hellmacs-doctor-ok "%s %s installed in %s" label version (abbreviate-file-name where))
            (hellmacs-doctor-ok "%s %s installed" label version)))
         (present
-         (hellmacs-doctor-error "The installed %s isn't the pinned %s%s; `bin/hellmacs sync' replaces it"
+         (hellmacs-doctor-error :topic 'installs "The installed %s isn't the pinned %s%s; `bin/hellmacs sync' replaces it"
                                 label version (or stale-note "")))
         (t
-         (hellmacs-doctor-warn "%s isn't installed yet; `bin/hellmacs sync' installs it%s"
+         (hellmacs-doctor-warn :topic 'installs "%s isn't installed yet; `bin/hellmacs sync' installs it%s"
                                label (or missing-note "")))))
 
 ;; Hellmacs never installs fonts (it writes only to its own directories),
@@ -107,24 +110,24 @@ STALE-NOTE and MISSING-NOTE are appended to the error and warning."
     (if-let* ((families (ignore-errors
                           (process-lines "fc-list" ":charset=f07b" "family"))))
         (hellmacs-doctor-ok "Nerd Font glyphs: %s" (car (split-string (car families) ",")))
-      (hellmacs-doctor-warn "No Nerd Font installed: %s. Install one with M-x nerd-icons-install-fonts (into ~/.local/share/fonts), or from your distribution"
+      (hellmacs-doctor-warn :topic 'fonts "No Nerd Font installed: %s. Install one with M-x nerd-icons-install-fonts (into ~/.local/share/fonts), or from your distribution"
                             consequence))))
 
 (defun hellmacs-doctor-treesit (lang)
   "Check what building and loading LANG's tree-sitter grammar needs.
 Run for every grammar a module declares (`hellmacs-treesit!')."
   (if (not (and (fboundp 'treesit-available-p) (treesit-available-p)))
-      (hellmacs-doctor-error "This Emacs has no tree-sitter support, which +tree-sitter needs")
+      (hellmacs-doctor-error :topic 'emacs "This Emacs has no tree-sitter support, which +tree-sitter needs")
     (if (hellmacs-treesit-installed-p lang)
         (hellmacs-doctor-ok "tree-sitter %s grammar: %s" lang
                             (abbreviate-file-name (hellmacs-treesit-library lang)))
       (if (file-exists-p (hellmacs-treesit-library lang))
-          (hellmacs-doctor-warn "The tree-sitter %s grammar isn't the pinned commit; `bin/hellmacs sync' rebuilds it" lang)
-        (hellmacs-doctor-warn "The tree-sitter %s grammar isn't built yet; `bin/hellmacs sync' builds it" lang))
+          (hellmacs-doctor-warn :topic 'installs "The tree-sitter %s grammar isn't the pinned commit; `bin/hellmacs sync' rebuilds it" lang)
+        (hellmacs-doctor-warn :topic 'installs "The tree-sitter %s grammar isn't built yet; `bin/hellmacs sync' builds it" lang))
       (unless (executable-find "git")
-        (hellmacs-doctor-error "git is needed to fetch the %s grammar" lang))
+        (hellmacs-doctor-error :topic 'tools "git is needed to fetch the %s grammar" lang))
       (unless (seq-some #'executable-find '("cc" "gcc" "clang"))
-        (hellmacs-doctor-error "No C compiler (cc, gcc or clang) to build the %s grammar" lang)))))
+        (hellmacs-doctor-error :topic 'tools "No C compiler (cc, gcc or clang) to build the %s grammar" lang)))))
 
 ;;; The network --------------------------------------------------------------
 
@@ -156,15 +159,15 @@ mirror, the proxy, the CAs. Only when doctor checks the network."
       (pcase result
         ('nil (hellmacs-doctor-ok "Reaches %s%s (%s)" host (if proxy " through the proxy" "") why))
         (`(tls . ,message)
-         (hellmacs-doctor-error "%s's certificate isn't trusted: %s. %s" host message
+         (hellmacs-doctor-error :topic 'network "%s's certificate isn't trusted: %s. %s" host message
                                 (if hellmacs-ca-bundle
                                     (format "The CA that signs it is missing from `hellmacs-ca-bundle' (%s)"
                                             (abbreviate-file-name hellmacs-ca-bundle))
                                   "If your network inspects TLS, set `hellmacs-ca-bundle' to your company's CA (a PEM file)")))
         (`(proxy . ,message)
-         (hellmacs-doctor-error "Can't reach %s through the proxy %s: %s" host proxy message))
+         (hellmacs-doctor-error :topic 'network "Can't reach %s through the proxy %s: %s" host proxy message))
         (`(,_ . ,message)
-         (hellmacs-doctor-error "Can't reach %s (%s): %s%s" host why message
+         (hellmacs-doctor-error :topic 'network "Can't reach %s (%s): %s%s" host why message
                                 (if (hellmacs-net-proxy) "" "; behind a proxy, set `hellmacs-proxy'")))))))
 
 (defun hellmacs-cli--package-hosts ()
@@ -190,15 +193,15 @@ mirror, the proxy, the CAs. Only when doctor checks the network."
   (when hellmacs-ca-bundle
     (let ((ca (expand-file-name hellmacs-ca-bundle)))
       (if (not (file-readable-p ca))
-          (hellmacs-doctor-error "`hellmacs-ca-bundle' is %s, which can't be read" (abbreviate-file-name ca))
+          (hellmacs-doctor-error :topic 'network "`hellmacs-ca-bundle' is %s, which can't be read" (abbreviate-file-name ca))
         (let ((count (length (hellmacs-net--pem-certificates ca))))
           (if (zerop count)
-              (hellmacs-doctor-error "`hellmacs-ca-bundle' (%s) holds no PEM certificate" (abbreviate-file-name ca))
+              (hellmacs-doctor-error :topic 'network "`hellmacs-ca-bundle' (%s) holds no PEM certificate" (abbreviate-file-name ca))
             (hellmacs-doctor-ok "Corporate CA: %s (%d certificate%s)" (abbreviate-file-name ca)
                                 count (if (= count 1) "" "s"))))
         (if (hellmacs-net-truststore-current-p)
             (hellmacs-doctor-ok "JVM truststore: %s" (abbreviate-file-name hellmacs-net-truststore))
-          (hellmacs-doctor-warn "The JVM truststore isn't built or is older than your CA; `bin/hellmacs sync' builds it")))))
+          (hellmacs-doctor-warn :topic 'installs "The JVM truststore isn't built or is older than your CA; `bin/hellmacs sync' builds it")))))
   (pcase-dolist (`(,from . ,to) hellmacs-mirrors)
     (hellmacs-doctor-info "Mirror: %s -> %s" from to))
   (cond
@@ -223,7 +226,7 @@ mirror, the proxy, the CAs. Only when doctor checks the network."
     (hellmacs-cli--check 'ok "Platform: Linux under Windows WSL2")
     (when (or (string-prefix-p "/mnt/" (expand-file-name hellmacs-dir))
               (string-prefix-p "/mnt/" (expand-file-name hellmacs-user-dir)))
-      (hellmacs-cli--check 'warn "Hellmacs or config is on a Windows mount (/mnt/...). Store them on the Linux filesystem (~/...) for native performance")))
+      (hellmacs-cli--check 'warn :topic 'platform "Hellmacs or config is on a Windows mount (/mnt/...). Store them on the Linux filesystem (~/...) for native performance")))
    ((eq system-type 'darwin)
     (hellmacs-cli--check 'ok "Platform: macOS (%s)" (or (and (boundp 'system-configuration) system-configuration) "darwin"))
     (unless (file-exists-p hellmacs-env-file)
@@ -243,10 +246,10 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
                                          t))
   (hellmacs-cli--say "Emacs")
   (if (version< emacs-version "29.1")
-      (hellmacs-cli--check 'error "Emacs %s is too old; Hellmacs needs 29.1+" emacs-version)
+      (hellmacs-cli--check 'error :topic 'emacs "Emacs %s is too old; Hellmacs needs 29.1+" emacs-version)
     (hellmacs-cli--check 'ok "Emacs %s" emacs-version))
   (when (string-match-p "\\.[5-9][0-9]\\'" emacs-version)
-    (hellmacs-cli--check 'warn "This is a development build of Emacs; expect breakage"))
+    (hellmacs-cli--check 'warn :topic 'emacs "This is a development build of Emacs; expect breakage"))
   (if (and (fboundp 'native-comp-available-p) (native-comp-available-p))
       (hellmacs-cli--check 'ok "Native compilation available")
     (hellmacs-cli--check 'info "No native compilation (optional; makes packages faster)"))
@@ -255,7 +258,7 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
   (hellmacs-cli--say "\nRequired tools")
   (if-let* ((git (hellmacs-cli--version "git" "--version")))
       (hellmacs-cli--check 'ok "%s" git)
-    (hellmacs-cli--check 'error "git not found; it's needed to install packages"))
+    (hellmacs-cli--check 'error :topic 'tools "git not found; it's needed to install packages"))
 
   (hellmacs-cli--doctor-network)
 
@@ -270,7 +273,7 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
       (when (or missing grammars (file-exists-p file))
         (hellmacs-cli--say "\nModule %s" (hellmacs-module-key-string key))
         (dolist (dep missing)
-          (hellmacs-cli--check 'error "Needs %s; add it to your hellmacs! block"
+          (hellmacs-cli--check 'error :topic 'config "Needs %s; add it to your hellmacs! block"
                                (hellmacs-module-dependency-string dep)))
         (when (file-exists-p file)
           (hellmacs-module--load key "doctor.el"))
@@ -290,9 +293,9 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
   (let* ((profile (hellmacs-profile-read))
          (reason (and profile (hellmacs-profile--stale-reason profile))))
     (cond ((null profile)
-           (hellmacs-cli--check 'error "Not synced yet; run `bin/hellmacs sync'"))
+           (hellmacs-cli--check 'error :topic 'sync "Not synced yet; run `bin/hellmacs sync'"))
           (reason
-           (hellmacs-cli--check 'error "Out of sync (%s); run `bin/hellmacs sync'" reason))
+           (hellmacs-cli--check 'error :topic 'sync "Out of sync (%s); run `bin/hellmacs sync'" reason))
           (t (hellmacs-cli--check 'ok "Synced: %d packages" (length (plist-get profile :load-path))))))
   (cond ((hellmacs-compiled-core-current-p)
          (hellmacs-cli--check 'ok "Byte-compiled: core and the enabled modules (%s)"
@@ -311,7 +314,7 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
   (dolist (legacy '("var/" "etc/"))
     (let ((dir (expand-file-name legacy hellmacs-dir)))
       (when (file-directory-p dir)
-        (hellmacs-cli--check 'warn "%s is left over from an older Hellmacs; nothing uses it, safe to delete"
+        (hellmacs-cli--check 'warn :topic 'checkout "%s is left over from an older Hellmacs; nothing uses it, safe to delete"
                              (abbreviate-file-name dir)))))
 
   (hellmacs-cli--say "")

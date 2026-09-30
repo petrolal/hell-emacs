@@ -31,7 +31,7 @@
                    (hellmacs-jdk-home-major (file-name-directory (directory-file-name (file-name-directory java)))))))
   (if major
       (hellmacs-doctor-ok "JDK for sqlline: %d (%s)" major (abbreviate-file-name java))
-    (hellmacs-doctor-error "sqlline and the JDBC drivers need a JDK 11+; none found")))
+    (hellmacs-doctor-error :topic 'jdk "sqlline and the JDBC drivers need a JDK 11+; none found")))
 
 (dolist (name (cons 'sqlline hellmacs-db-drivers))
   (let ((spec (cdr (assq name hellmacs-db-jars))))

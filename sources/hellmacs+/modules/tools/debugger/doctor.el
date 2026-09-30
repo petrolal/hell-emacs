@@ -24,6 +24,6 @@
 ;; Checked by `bin/hellmacs doctor'.
 
 (unless (modulep! :lang java)
-  (hellmacs-doctor-warn "No language module supplies a debug adapter; :lang java brings java-debug"))
+  (hellmacs-doctor-warn :topic 'config "No language module supplies a debug adapter; :lang java brings java-debug"))
 (when (modulep! :lang java)
   (hellmacs-doctor-ok "Debug adapter: java-debug, installed with JDTLS (checked under :lang java)"))

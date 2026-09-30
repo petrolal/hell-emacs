@@ -27,6 +27,6 @@
 (dolist (name '("banner-960.png" "banner.png" "banner.svg" "banner-ascii.txt"))
   (if (file-readable-p (expand-file-name (concat "assets/" name) hellmacs-dir))
       (hellmacs-doctor-ok "Banner assets/%s" name)
-    (hellmacs-doctor-warn "assets/%s is missing; the dashboard falls back to the next banner" name)))
+    (hellmacs-doctor-warn :topic 'checkout "assets/%s is missing; the dashboard falls back to the next banner" name)))
 
 (hellmacs-doctor-nerd-font "the dashboard shows no icons")

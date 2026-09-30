@@ -42,7 +42,7 @@
   (cond ((file-readable-p file)
          (hellmacs-doctor-ok "Maven settings: %s" (abbreviate-file-name file)))
         ((bound-and-true-p hellmacs-maven-settings)
-         (hellmacs-doctor-error "`hellmacs-maven-settings' is %s, which can't be read" (abbreviate-file-name file)))
+         (hellmacs-doctor-error :topic 'config "`hellmacs-maven-settings' is %s, which can't be read" (abbreviate-file-name file)))
         (t (hellmacs-doctor-info "No Maven settings.xml (%s); Maven's defaults apply" (abbreviate-file-name file)))))
 (let* ((home (or (getenv "GRADLE_USER_HOME") (expand-file-name "~/.gradle")))
        (inits (length (file-expand-wildcards (expand-file-name "init.d/*.gradle*" home))))
@@ -76,10 +76,10 @@
   (cond ((hellmacs-jvm-lombok-jar-valid-p)
          (hellmacs-doctor-ok "Lombok: %s" (abbreviate-file-name hellmacs-jvm-lombok-jar)))
         ((file-exists-p hellmacs-jvm-lombok-jar)
-         (hellmacs-doctor-error "Lombok jar %s fails its SHA-256 check; `bin/hellmacs sync' downloads it again"
+         (hellmacs-doctor-error :topic 'installs "Lombok jar %s fails its SHA-256 check; `bin/hellmacs sync' downloads it again"
                                 (abbreviate-file-name hellmacs-jvm-lombok-jar)))
         (t
-         (hellmacs-doctor-error "+lombok is on but Lombok isn't installed; run `bin/hellmacs sync'"))))
+         (hellmacs-doctor-error :topic 'installs "+lombok is on but Lombok isn't installed; run `bin/hellmacs sync'"))))
 
 (when (modulep! :tools debugger)
   (hellmacs-doctor-pinned "java-debug" hellmacs-jvm-java-debug-version

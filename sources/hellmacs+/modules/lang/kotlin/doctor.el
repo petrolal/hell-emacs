@@ -30,7 +30,7 @@
 (let* ((home (getenv "JAVA_HOME"))
        (java (if home (expand-file-name "bin/java" home) (executable-find "java"))))
   (if (not (and java (file-executable-p java)))
-      (hellmacs-doctor-error "No JDK found (set JAVA_HOME or put java on the PATH); kotlin-language-server needs 11+")
+      (hellmacs-doctor-error :topic 'jdk "No JDK found (set JAVA_HOME or put java on the PATH); kotlin-language-server needs 11+")
     (hellmacs-doctor-ok "JDK for the server: %s" (abbreviate-file-name java))))
 
 (hellmacs-doctor-executable "unzip" "installing kotlin-language-server")
