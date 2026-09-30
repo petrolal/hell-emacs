@@ -28,6 +28,10 @@
 
 ;;; Code:
 
+;; Hellmacs' dotfiles (.hellmacs, .hellmacsmodule, .hellmacsprofile) are
+;; Lisp data, as Doom's are.
+(add-to-list 'auto-mode-alist '("/\\.hellmacs\\(?:module\\|profile\\)?\\'" . lisp-data-mode))
+
 ;; gcmh collects garbage while Emacs is idle (see "GC lifecycle" in
 ;; lisp/hellmacs.el, which restores a bounded threshold after startup).
 ;; Emacs builds with the incremental GC (igc) don't need it.

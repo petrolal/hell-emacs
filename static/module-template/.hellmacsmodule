@@ -1,0 +1,4 @@
+;; Rename to your module: (name :GROUP NAME), as its directory is GROUP/NAME/.
+;; Add (depth . N) to load it before (negative) or after other modules.
+"0.9.0"
+((name :group name))

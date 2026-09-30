@@ -94,6 +94,54 @@ Returns FEATURE; with NOERROR, nil instead of an error if it's missing."
         ((load (hellmacs--part-file feature part) noerror 'nomessage)
          feature)))
 
+;;; Dotfiles: .hellmacs, .hellmacsmodule, .hellmacsprofile ---------------------
+;;
+;; Doom v3's dotfiles (.doom, .doommodule, .doomprofile), read as
+;; `doom-config' reads them: a version string (the Hellmacs version the
+;; file was written for), then an unquoted alist, whose ,forms are
+;; evaluated. `hellmacs-dotfile' is `doom-config' (the name
+;; `hellmacs-config-' already belongs to lisp/cli/config.el).
+
+(defconst hellmacs-dotfile-names
+  '(project ".hellmacs" module ".hellmacsmodule" profile ".hellmacsprofile")
+  "Each type of dotfile, and its file name.")
+
+(defun hellmacs-dotfile-locate (type path &optional dir)
+  "The nearest dotfile of TYPE at or above PATH, or nil.
+With DIR, the directory it's in instead."
+  (let* ((name (or (plist-get hellmacs-dotfile-names type)
+                   (error "No such kind of Hellmacs dotfile: %S" type)))
+         (found (locate-dominating-file path name)))
+    (and found (if dir (file-name-as-directory found) (expand-file-name name found)))))
+
+(defvar hellmacs--dotfile-cache (make-hash-table :test #'equal)
+  "Dotfiles read so far: path -> alist.")
+
+(defun hellmacs-dotfile--read (path)
+  "The alist in dotfile PATH, its ,forms evaluated."
+  (with-temp-buffer
+    (insert-file-contents path)
+    (let ((version (ignore-errors (read (current-buffer))))
+          (alist (ignore-errors (read (current-buffer)))))
+      (unless (stringp version)
+        (error "%s: no version string before its alist" (abbreviate-file-name path)))
+      (eval (list '\` alist) t))))
+
+(defun hellmacs-dotfile (keys &optional nocache)
+  "Return what the nearest dotfile holds: its alist, or the value at KEYS.
+KEYS is ([DIR] TYPE KEY...): the search starts at DIR (a string, else
+`default-directory') for the dotfile of TYPE (see
+`hellmacs-dotfile-names'); each KEY picks a field of the alist, as in
+\(hellmacs-dotfile (list dir \='module \='depth)). Read once, unless NOCACHE."
+  (let* ((keys (if (listp keys) (copy-sequence keys) (list keys)))
+         (dir (if (stringp (car keys)) (pop keys) default-directory))
+         (path (hellmacs-dotfile-locate (pop keys) dir)))
+    (when path
+      (let ((value (or (and (not nocache) (gethash path hellmacs--dotfile-cache))
+                       (puthash path (hellmacs-dotfile--read path) hellmacs--dotfile-cache))))
+        (dolist (key keys value)
+          (setq value (alist-get key value)))))))
+
 ;;; Logging ----------------------------------------------------------------
 
 (defmacro hellmacs-log (format-string &rest args)

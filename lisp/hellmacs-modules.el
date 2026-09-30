@@ -117,15 +117,28 @@ A group's own module (NAME nil) is the group's directory: \"hellmacs/\"."
                   (and (file-directory-p path) path)))
               hellmacs-module-load-path)))
 
+(defun hellmacs-module-metadata (path &optional key)
+  "The alist in module directory PATH's .hellmacsmodule, or its KEY; nil without one.
+Doom v3's .doommodule: `name' (GROUP NAME), and optionally `depth'."
+  (when (file-exists-p (expand-file-name ".hellmacsmodule" path))
+    (hellmacs-dotfile (if key (list path 'module key) (list path 'module)))))
+
+(defun hellmacs-module-from-path (file)
+  "The (GROUP . NAME) of the module FILE is in, from its .hellmacsmodule; or nil."
+  (when-let* ((dir (hellmacs-dotfile-locate 'module file t))
+              (name (hellmacs-module-metadata dir 'name)))
+    (cons (car name) (cadr name))))
+
 (defun hellmacs-module-enable (group name &optional flags depth)
   "Enable module GROUP NAME with FLAGS (a list of +symbols) at DEPTH.
-Modules load in ascending DEPTH (default 0), then in the order they
-were enabled. Returns nil (and warns) if the module doesn't exist."
+Modules load in ascending DEPTH (by default the `depth' in the module's
+.hellmacsmodule, else 0), then in the order they were enabled. Returns
+nil (and warns) if the module doesn't exist."
   (if-let* ((path (hellmacs-module-locate-path group name)))
       (puthash (cons group name)
                (list :path path
                      :flags flags
-                     :depth (or depth 0)
+                     :depth (or depth (hellmacs-module-metadata path 'depth) 0)
                      :index (hash-table-count hellmacs-modules))
                hellmacs-modules)
     (display-warning 'hellmacs (format "Unknown module %s, skipped"
@@ -435,14 +448,13 @@ wins over both."
   ;; The proxy and CA you set there, for all of Emacs.
   (hellmacs-net-setup))
 
-(defconst hellmacs-module-core-depth -100
-  "Where core's own module loads: before any other (Doom's `:doom' is at -110).")
-
 (defun hellmacs-modules-enable-core ()
   "Enable core's own module, `:hellmacs' (modules/hellmacs/), always, first.
 Like Doom v3's (:doom . nil): Hellmacs' own features and packages, which
 every configuration gets, whatever its `hellmacs!' block says."
-  (hellmacs-module-enable :hellmacs nil nil hellmacs-module-core-depth))
+  ;; At the depth its .hellmacsmodule gives: -100, before any other
+  ;; (Doom's `:doom' is at -110).
+  (hellmacs-module-enable :hellmacs nil))
 
 (defvar hellmacs--loaded-cli-files nil
   "cli.el files `hellmacs-modules-load-cli-files' has loaded this session.")

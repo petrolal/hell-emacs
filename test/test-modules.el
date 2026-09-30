@@ -107,6 +107,38 @@ own, hellmacs/), then the sources: sources/hellmacs+/modules/."
   (should (file-equal-p (hellmacs-module-locate-path :hellmacs nil)
                         (expand-file-name "hellmacs/" hellmacs-modules-dir))))
 
+;; Phase 16.4: each module has a .hellmacsmodule (Doom's .doommodule).
+
+(ert-deftest test-modules/every-module-has-metadata ()
+  "Every module Hellmacs ships has a .hellmacsmodule naming it as its path does."
+  (let ((dirs (cons (expand-file-name "hellmacs/" hellmacs-modules-dir)
+                    (file-expand-wildcards
+                     (expand-file-name "hellmacs+/modules/*/*/" hellmacs-sources-dir)))))
+    (should (> (length dirs) 30))
+    (dolist (dir dirs)
+      (let ((key (hellmacs-module-from-path (expand-file-name "config.el" dir))))
+        (should key)
+        (should (file-equal-p (hellmacs-module-locate-path (car key) (cdr key)) dir))))
+    (should (equal (hellmacs-module-from-path
+                    (expand-file-name "hellmacs+/modules/lang/java/+paths.el" hellmacs-sources-dir))
+                   '(:lang . java)))
+    (should (equal (hellmacs-module-from-path (expand-file-name "hellmacs/+ux.el" hellmacs-modules-dir))
+                   '(:hellmacs)))
+    (should-not (hellmacs-module-from-path (expand-file-name "hellmacs.el" hellmacs-core-dir)))))
+
+(ert-deftest test-modules/depth-from-metadata ()
+  "A module's depth is its .hellmacsmodule's, unless `hellmacs!' gives one:
+core's module is at -100 because its metadata says so."
+  (test-modules--with-module-dir
+      '(("tools/deep/.hellmacsmodule" . "\"0.9.0\"\n((name :tools deep) (depth . 7))\n")
+        ("tools/deep/config.el" . ""))
+    (hellmacs--enable-modules '(:tools deep))
+    (should (= (hellmacs-module-get '(:tools . deep) :depth) 7))
+    (hellmacs--enable-modules '(:tools (deep :depth -3)))
+    (should (= (hellmacs-module-get '(:tools . deep) :depth) -3)))
+  (should (equal (hellmacs-dotfile (list (expand-file-name "hellmacs/" hellmacs-modules-dir) 'module 'depth))
+                 -100)))
+
 (defvar test-modules--loaded nil)
 
 (ert-deftest test-modules/compiled-file-needs-its-source ()

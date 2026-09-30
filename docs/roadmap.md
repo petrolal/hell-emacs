@@ -4298,11 +4298,30 @@ end of each step; one commit per step.
       `hellmacs-module-load-path` is your `modules/`, then Hellmacs'
       `modules/`, then each `sources/*/modules/`. A source is where
       Phase 15.3's third-party plugins go.
-- [ ] **16.4 Metadata.** `.hellmacs` (the project: name, version, commit
-      style) replaces the version in code; `.hellmacsmodule` in each module
-      (Doom's format: a version string, then an alist: `name`, `depth`,
-      plus Hellmacs' `description` for Phase 15's catalog). Depth comes from
-      it unless the `hellmacs!` block gives one.
+- [x] **16.4 Metadata.** `.hellmacs` (the project: name, version, commit
+      style); `.hellmacsmodule` in each module (Doom's format: a version
+      string, then an alist: `name`, and `depth` where it isn't 0). Depth
+      comes from it unless the `hellmacs!` block gives one.
+  - *Done 2026-09-30:* `hellmacs-dotfile` (Doom's `doom-config`: the
+    nearest dotfile of a type, its alist or a key of it, `,forms`
+    evaluated, cached), `hellmacs-dotfile-locate`, `hellmacs-module-metadata`
+    and `hellmacs-module-from-path` (Doom finds a file's module by its
+    `.doommodule` too). As in Doom, the version stays in code
+    (`hellmacs-version`) and `.hellmacs` reads it (`,hellmacs-version`),
+    rather than the other way round. Core's module is at -100 because its
+    `.hellmacsmodule` says so. 37 dotfiles (core's module and 36 in the
+    catalog), one in `static/module-template/`; `lisp-data-mode` for them.
+    No `description`: `static/init.example.el`'s comments stay the one
+    place for it (12.8 reads them); Phase 15 can add one if the catalog
+    needs more. Tests: `test-lib/dotfile-format`, `project-dotfile`,
+    `test-modules/every-module-has-metadata`, `depth-from-metadata`; 491
+    tests, doctor, sync, tty startup 0.030-0.033s.
+  - *Open:* some tty benches right after a sync showed the first frame at
+    ~4.3s (startup itself 0.03s) in 16.3 and 16.4, then not again with no
+    code change. The CPU profile of one was empty (waiting, not working),
+    and 4.3s is two of xterm's 2s terminal-query timeouts, so it looks like
+    the headless terminal the bench runs in (`script`), not Hellmacs;
+    not proven. 16's *Verify* re-measures in a real terminal.
 - [ ] **16.5 `bin/hellmacs-<command>`.** Each command's definition moves
       to its own file (`bin/hellmacs-sync`, `-doctor`, `-test`, `-install`,
       `-upgrade`, `-bundle`, `-verify`, `-sbom`, ...), dispatched by

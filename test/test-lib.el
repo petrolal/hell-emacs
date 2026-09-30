@@ -76,6 +76,33 @@ does: (hellmacs-require \='hellmacs-lib \='jdk) is lisp/lib/jdk.el."
   (should-error (hellmacs-require 'hellmacs-lib 'no-such-part))
   (should-not (hellmacs-require 'hellmacs-lib 'no-such-part 'noerror)))
 
+;; Phase 16.4: dotfiles, as Doom v3's (.doom, .doommodule): a version string,
+;; then an alist, whose ,forms are evaluated.
+
+(ert-deftest test-lib/dotfile-format ()
+  "`hellmacs-dotfile' reads the nearest dotfile of a type, as `doom-config':
+the alist, or one key of it; a ,form is evaluated; no version is an error."
+  (let ((dir (make-temp-file "test-lib-dotfile" t)))
+    (unwind-protect
+        (let ((sub (expand-file-name "a/b/" dir)))
+          (make-directory sub t)
+          (with-temp-file (expand-file-name ".hellmacsmodule" dir)
+            (insert ";; -*- mode: lisp-data -*-\n\"0.9.0\"\n((name :lang demo)\n (depth . 5)\n (version . ,hellmacs-version))\n"))
+          (should (equal (hellmacs-dotfile-locate 'module sub t) (file-name-as-directory dir)))
+          (should (equal (hellmacs-dotfile (list sub 'module 'name)) '(:lang demo)))
+          (should (equal (hellmacs-dotfile (list dir 'module 'depth)) 5))
+          (should (equal (hellmacs-dotfile (list dir 'module 'version)) hellmacs-version))
+          (should (assq 'depth (hellmacs-dotfile (list dir 'module))))
+          (should-not (hellmacs-dotfile (list dir 'profile)))
+          (with-temp-file (expand-file-name ".hellmacsmodule" dir) (insert "((name :lang demo))\n"))
+          (should-error (hellmacs-dotfile (list dir 'module) t)))
+      (delete-directory dir t))))
+
+(ert-deftest test-lib/project-dotfile ()
+  "The repository's .hellmacs (Doom's .doom) names the project and its version."
+  (should (eq (hellmacs-dotfile (list hellmacs-dir 'project 'name)) 'petrolal/hellmacs))
+  (should (equal (hellmacs-dotfile (list hellmacs-dir 'project 'version)) hellmacs-version)))
+
 (ert-deftest test-lib/add-hook!-forms ()
   "Forms, `defun's and function symbols; :append; `remove-hook!'."
   (setq test-lib--hook nil test-lib--log nil)
