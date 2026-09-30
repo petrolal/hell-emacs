@@ -116,6 +116,36 @@ that aborts the command."
 
 ;;; Releases and channels ----------------------------------------------------------
 
+(ert-deftest test-cli/install-start-command ()
+  "Install ends by saying how to start Emacs: plain `emacs' when Hellmacs is
+Emacs' own directory (~/.config/emacs, a symlink to the checkout included,
+or ~/.emacs.d), else with --init-directory."
+  (let* ((home (make-temp-file "test-cli-home" t))
+         (checkout (make-temp-file "test-cli-checkout" t))
+         (process-environment (append (list (concat "HOME=" home)
+                                            (concat "XDG_CONFIG_HOME=" home "/.config"))
+                                      process-environment)))
+    (unwind-protect
+        (progn
+          (should (equal (hellmacs-cli--start-command checkout)
+                         (format "emacs --init-directory %s" (abbreviate-file-name checkout))))
+          (make-directory (expand-file-name ".config" home))
+          (make-symbolic-link checkout (expand-file-name ".config/emacs" home))
+          (should (equal (hellmacs-cli--start-command checkout) "emacs"))
+          ;; Emacs prefers ~/.emacs.d when there is one.
+          (make-directory (expand-file-name ".emacs.d" home))
+          (should (equal (hellmacs-cli--start-command checkout)
+                         (format "emacs --init-directory %s" (abbreviate-file-name checkout)))))
+      (delete-directory home t)
+      (delete-directory checkout t))))
+
+(ert-deftest test-cli/elpaca-bootstrap-quiet ()
+  "Elpaca's pinned bootstrap checks out its commit without git's detached-HEAD
+advice, which install used to print in full."
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name "hellmacs-elpaca.el" hellmacs-core-dir))
+    (should (search-forward "\"-c\" \"advice.detachedHead=false\" \"checkout\"" nil t))))
+
 (ert-deftest test-cli/version ()
   "Hellmacs has a semantic version; `bin/hellmacs version' says it, with the
 channel `upgrade' follows and the Emacs it runs on."

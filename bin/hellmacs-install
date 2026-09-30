@@ -54,7 +54,17 @@ offline bundle, with no network access at all)."
       (hellmacs-cli-env))
     (hellmacs-cli--say "")
     (hellmacs-cli-doctor)
-    (hellmacs-cli--say "\nDone. Start Emacs with:  emacs --init-directory %s"
-                       (abbreviate-file-name (directory-file-name hellmacs-dir)))))
+    (hellmacs-cli--say "\nDone. Start Emacs with:  %s" (hellmacs-cli--start-command hellmacs-dir))))
+
+(defun hellmacs-cli--start-command (dir)
+  "How to start Emacs on Hellmacs installed in DIR: plain \"emacs\" when DIR is
+the directory Emacs itself uses (~/.emacs.d if there is one, else
+~/.config/emacs, a symlink to DIR included), else with --init-directory."
+  (let ((own (if (file-directory-p "~/.emacs.d/")
+                 "~/.emacs.d/"
+               (expand-file-name "emacs/" (or (getenv "XDG_CONFIG_HOME") "~/.config")))))
+    (if (and (file-directory-p own) (file-equal-p own dir))
+        "emacs"
+      (format "emacs --init-directory %s" (abbreviate-file-name (directory-file-name dir))))))
 
 ;;; hellmacs-install ends here
