@@ -54,8 +54,9 @@
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Root directory of the Hellmacs distribution.")
 
-(defconst hellmacs-core-dir (expand-file-name "core/" hellmacs-dir)
-  "Directory holding Hellmacs engine internals (bootstrap, package manager).")
+(defconst hellmacs-core-dir (expand-file-name "lisp/" hellmacs-dir)
+  "Directory holding Hellmacs' core: lisp/, as Doom v3's `doom-core-dir'.
+Its library is in lib/ and the CLI's parts in cli/ (see `hellmacs-require').")
 
 (defconst hellmacs-modules-dir (expand-file-name "modules/" hellmacs-dir)
   "Directory holding user-facing Hellmacs feature modules.")
@@ -123,14 +124,14 @@ depends on the profile (the packages it declares or disables).")
 
 (defun hellmacs-compiled-core-current-p ()
   "Non-nil if the core compiled by the last sync matches core's sources.
-That is: this Emacs compiled it, and no core/*.el changed since. Cheap
-enough for every startup (one directory listing and a few stats)."
-  (let ((stamp (expand-file-name "core/stamp" hellmacs-compiled-dir)))
+That is: this Emacs compiled it, and no lisp/**/*.el changed since. Cheap
+enough for every startup (three directory listings and a few stats)."
+  (let ((stamp (expand-file-name "lisp/stamp" hellmacs-compiled-dir)))
     (and (file-exists-p stamp)
          (equal (with-temp-buffer (insert-file-contents stamp) (buffer-string))
                 emacs-version)
          (catch 'changed
-           (dolist (file (directory-files hellmacs-core-dir t "\\.el\\'") t)
+           (dolist (file (directory-files-recursively hellmacs-core-dir "\\.el\\'") t)
              (when (file-newer-than-file-p file stamp)
                (throw 'changed nil)))))))
 

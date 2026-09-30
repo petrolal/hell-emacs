@@ -1,4 +1,4 @@
-;;; hellmacs-jdk.el --- Find the JDKs installed on this machine -*- lexical-binding: t; -*-
+;;; lisp/lib/jdk.el --- Find the JDKs installed on this machine -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -43,6 +43,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'hellmacs-lib)
 
 (defvar hellmacs-data-dir)              ; early-init.el
 
@@ -427,5 +428,5 @@ chooses its own JVM."
                                                (car range) (cdr range))))
             (list (concat "JAVA_HOME=" home))))))))
 
-(provide 'hellmacs-jdk)
-;;; hellmacs-jdk.el ends here
+(hellmacs-provide 'hellmacs-lib 'jdk)
+;;; jdk.el ends here

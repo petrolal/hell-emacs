@@ -1,4 +1,4 @@
-;;; hellmacs-verify.el --- Check what sync installed is still as it left it -*- lexical-binding: t; -*-
+;;; lisp/cli/verify.el --- Check what sync installed is still as it left it -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -116,7 +116,7 @@ Git checks those, through the packages' commits."
   "Record what the sync that just ran installed, for `bin/hellmacs verify'.
 Run at the end of `hellmacs-sync' and `bin/hellmacs upgrade', with
 Elpaca loaded."
-  (require 'hellmacs-bundle)
+  (hellmacs-require 'hellmacs-cli 'bundle)
   (let ((packages (cl-loop for (id . e) in (elpaca--queued)
                            for dir = (elpaca<-source-dir e)
                            for head = (hellmacs-verify--git dir "rev-parse" "HEAD")
@@ -230,5 +230,5 @@ when all is well."
     (cons (cl-count :file (plist-get recorded :entries) :key #'cadr)
           (length (plist-get recorded :packages)))))
 
-(provide 'hellmacs-verify)
-;;; hellmacs-verify.el ends here
+(hellmacs-provide 'hellmacs-cli 'verify)
+;;; verify.el ends here

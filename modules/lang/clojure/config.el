@@ -130,9 +130,9 @@
 ;; end): the end means the project is analysed. If it can't build the
 ;; classpath (a dependency that doesn't resolve, no `clojure' on the PATH)
 ;; it asks to show a warning instead. The messages are in
-;; core/hellmacs-lsp-status.el.
+;; lisp/lib/lsp-status.el.
 
-(require 'hellmacs-lsp-status)
+(hellmacs-require 'hellmacs-lib 'lsp-status)
 
 (defun hellmacs-clojure-state (root)
   "The state of clojure-lsp for project ROOT: igniting, ready, failed or nil."

@@ -1,4 +1,4 @@
-;;; hellmacs-config.el --- Keep a config up with the default modules -*- lexical-binding: t; -*-
+;;; lisp/cli/config.el --- Keep a config up with the default modules -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -40,6 +40,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'hellmacs-lib)
 
 (defvar hellmacs-dir)                   ; early-init.el
 (defvar hellmacs-user-dir)
@@ -268,5 +269,5 @@ back with them, it is restored. Nothing to add leaves INIT untouched."
                  (mapconcat (lambda (m) (hellmacs-config--key-string (car m))) missing ", ")))
         missing))))
 
-(provide 'hellmacs-config)
-;;; hellmacs-config.el ends here
+(hellmacs-provide 'hellmacs-cli 'config)
+;;; config.el ends here

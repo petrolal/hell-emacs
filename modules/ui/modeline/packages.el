@@ -22,10 +22,10 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-;; doom-modeline requires compat (declared in core/packages.el),
+;; doom-modeline requires compat (declared in lisp/packages.el),
 ;; nerd-icons (shared with :ui dashboard) and shrink-path, which in turn
 ;; requires s, dash and f; f requires s and dash too. All declared up
-;; front so Elpaca builds each exactly once (see core/packages.el).
+;; front so Elpaca builds each exactly once (see lisp/packages.el).
 (package! s) (package! dash) (package! f)
 (package! nerd-icons)
 (package! shrink-path)

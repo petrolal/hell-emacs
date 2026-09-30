@@ -34,13 +34,13 @@
 ;; activating packages live, so forgetting to sync slows startup down
 ;; but never breaks it.
 ;;
-;; Not loaded at startup; `bin/hellmacs' (core/hellmacs-cli.el) and
+;; Not loaded at startup; `bin/hellmacs' (lisp/hellmacs-cli.el) and
 ;; `M-x hellmacs-sync' load it.
 
 ;;; Code:
 
 (require 'hellmacs-lib)
-(require 'hellmacs-core)
+(require 'hellmacs)
 (require 'hellmacs-packages)
 (require 'hellmacs-keybinds)
 (require 'hellmacs-modules)
@@ -247,10 +247,10 @@ to be compiled (it loads from source); on failure, leaves no DEST behind."
   "Byte-compile core and the enabled modules' startup files, into `hellmacs-compiled-dir'.
 Core is all or nothing (its files inline each other's macros), and
 modules are compiled only with it. Whatever fails loads from source."
-  (let ((core-dir (expand-file-name "core/" hellmacs-compiled-dir))
+  (let ((core-dir (expand-file-name "lisp/" hellmacs-compiled-dir))
         ;; packages.el is read, never loaded.
         (sources (seq-remove (lambda (src) (equal (file-name-nondirectory src) "packages.el"))
-                             (directory-files hellmacs-core-dir t "\\.el\\'")))
+                             (directory-files-recursively hellmacs-core-dir "\\.el\\'")))
         (count 0)
         failed)
     (when (file-directory-p hellmacs-compiled-dir)
@@ -258,9 +258,13 @@ modules are compiled only with it. Whatever fails loads from source."
     ;; Every core file loaded first: their macros must expand, and their
     ;; special variables bind dynamically, in whichever file uses them.
     (dolist (src sources)
-      (require (intern (file-name-base src))))
+      (let ((dir (file-name-nondirectory (directory-file-name (file-name-directory src)))))
+        (if (member dir '("lib" "cli"))   ; lisp/lib/net.el: part `net' of `hellmacs-lib'
+            (hellmacs-require (intern (concat "hellmacs-" dir)) (intern (file-name-base src)))
+          (require (intern (file-name-base src))))))
     (dolist (src sources)
-      (pcase (hellmacs-sync--byte-compile src (expand-file-name (concat (file-name-nondirectory src) "c") core-dir))
+      (pcase (hellmacs-sync--byte-compile
+              src (expand-file-name (concat (file-relative-name src hellmacs-core-dir) "c") core-dir))
         ('no-byte-compile)              ; loads from source, by its own choice
         ('nil (push src failed))
         (_ (cl-incf count))))
@@ -360,11 +364,11 @@ would fail the same way. Removing it lets that sync clone again."
 
 (defun hellmacs-sync--check-elpaca ()
   "Signal an error naming any of `hellmacs-sync--elpaca-functions' Elpaca lacks.
-Elpaca is pinned (core/hellmacs-elpaca.el), but `upgrade' moves it on,
+Elpaca is pinned (lisp/hellmacs-elpaca.el), but `upgrade' moves it on,
 and its internals change without notice."
   (when-let* ((missing (seq-remove #'fboundp hellmacs-sync--elpaca-functions)))
     (error "This Elpaca lacks %s, which Hellmacs uses; it changed since \
-core/hellmacs-elpaca.el's pin. Reinstall it at the pin (delete %s, then sync)"
+lisp/hellmacs-elpaca.el's pin. Reinstall it at the pin (delete %s, then sync)"
            (mapconcat #'symbol-name missing ", ")
            (abbreviate-file-name (expand-file-name "elpaca/" elpaca-sources-directory)))))
 
@@ -414,7 +418,7 @@ module's autoload.el. Signals an error if a package fails to install."
                         (length packages) (abbreviate-file-name hellmacs-profile-dir))
     (run-hooks 'hellmacs-sync-functions)
     ;; Last: what everything above installed, for `bin/hellmacs verify'.
-    (require 'hellmacs-verify)
+    (hellmacs-require 'hellmacs-cli 'verify)
     (hellmacs-verify-record-installed)
     (unless noninteractive
       (hellmacs-sync--log "done. Restart Emacs to start from the new profile."))))

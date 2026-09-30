@@ -46,7 +46,53 @@ supports. Between releases, main carries the next version's number.")
 
 (defvar hellmacs-init-time nil
   "Seconds (a float) Hellmacs took to start; nil while still starting.
-Set by `hellmacs-finalize' in `hellmacs-core'.")
+Set by `hellmacs-finalize' in `hellmacs'.")
+
+;;; Library parts: hellmacs-require ------------------------------------------
+;;
+;; As in Doom v3, lisp/lib/ (the library) and lisp/cli/ (the CLI's parts)
+;; aren't on `load-path': their files have short names (lib/net.el,
+;; cli/verify.el) and are loaded as parts of a feature, by
+;; (hellmacs-require \='hellmacs-lib \='net), like `doom-require'. Each part
+;; ends with (hellmacs-provide \='hellmacs-lib \='net).
+
+(defvar hellmacs--compiled-core-p) ; init.el
+(defvar hellmacs-compiled-dir)     ; early-init.el
+(defvar hellmacs-core-dir)         ; early-init.el
+
+(defun hellmacs--part-file (feature part)
+  "The file of PART of FEATURE, without extension: lisp/<dir>/PART.
+<dir> is FEATURE without its `hellmacs-' prefix: `hellmacs-lib' is lib/.
+From the byte-compiled core when that's what this session loaded."
+  (let* ((rel (format "%s/%s" (substring (symbol-name feature) (length "hellmacs-")) part))
+         (compiled (and (bound-and-true-p hellmacs--compiled-core-p)
+                        (expand-file-name rel (expand-file-name "lisp/" hellmacs-compiled-dir)))))
+    (if (and compiled (file-exists-p (concat compiled ".elc")))
+        compiled
+      (expand-file-name rel (if (boundp 'hellmacs-core-dir)
+                                hellmacs-core-dir
+                              ;; A child Emacs that loaded only hellmacs-lib
+                              ;; (see `hellmacs-net-probe').
+                              (file-name-directory (locate-library "hellmacs-lib")))))))
+
+(defun hellmacs-provide (feature part)
+  "Record that PART of FEATURE is loaded; each lib/ and cli/ file ends so."
+  (put feature 'hellmacs-parts (cons part (remq part (get feature 'hellmacs-parts)))))
+
+(defun hellmacs-featurep (feature &optional part)
+  "Non-nil if FEATURE is loaded, or with PART, if that part of it is."
+  (if part
+      (and (memq part (get feature 'hellmacs-parts)) t)
+    (featurep feature)))
+
+(defun hellmacs-require (feature &optional part noerror)
+  "Load FEATURE, as `require' does; with PART, that part of it, once.
+PART of `hellmacs-lib' is lisp/lib/PART.el, of `hellmacs-cli' lisp/cli/PART.el.
+Returns FEATURE; with NOERROR, nil instead of an error if it's missing."
+  (cond ((null part) (require feature nil noerror))
+        ((hellmacs-featurep feature part) feature)
+        ((load (hellmacs--part-file feature part) noerror 'nomessage)
+         feature)))
 
 ;;; Logging ----------------------------------------------------------------
 

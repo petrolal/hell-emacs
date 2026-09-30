@@ -1,4 +1,4 @@
-;;; hellmacs-net.el --- Proxies, corporate CAs and mirrors -*- lexical-binding: t; -*-
+;;; lisp/lib/net.el --- Proxies, corporate CAs and mirrors -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -383,7 +383,8 @@ It runs in a child Emacs, killed if it takes too long: GnuTLS'
 handshake waits forever for a server that accepts the connection and
 never answers, and nothing in the Emacs running it can stop that."
   (let* ((form `(progn (add-to-list 'load-path ,hellmacs-core-dir)
-                       (require 'hellmacs-net)
+                       (require 'hellmacs-lib)
+                       (hellmacs-require 'hellmacs-lib 'net)
                        (setq hellmacs-proxy ',hellmacs-proxy
                              hellmacs-no-proxy ',hellmacs-no-proxy
                              hellmacs-ca-bundle ',hellmacs-ca-bundle
@@ -571,5 +572,5 @@ An HTTP error status is an error. Refused while `hellmacs-net-offline'."
       ;; url.el goes to the mirror by itself here (`hellmacs-net--mirror-a').
       (url-copy-file url file t))))
 
-(provide 'hellmacs-net)
-;;; hellmacs-net.el ends here
+(hellmacs-provide 'hellmacs-lib 'net)
+;;; net.el ends here

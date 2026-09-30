@@ -578,7 +578,7 @@ yours (`hellmacs-jdks', or runtimes you set) win."
 
 (defun test-java--load-cli ()
   (require 'hellmacs-cli)
-  (require 'hellmacs-jdk)               ; loaded now, so its functions can be stubbed
+  (hellmacs-require 'hellmacs-lib 'jdk)               ; loaded now, so its functions can be stubbed
   (let ((hellmacs-modules (make-hash-table :test #'equal))
         (warning-minimum-log-level :emergency))
     (hellmacs--enable-modules '(:tools lsp :lang java))
@@ -878,7 +878,7 @@ initialize (a JsonNull cast in JdtLsProjectCache.initialize)."
 (ert-deftest test-java/spring-flag-hooks ()
   "With +spring, sync installs the server and bundles carry it; without, neither."
   (require 'hellmacs-cli)
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (let ((hellmacs-modules (make-hash-table :test #'equal))
         (hellmacs-sync-functions nil)
         (hellmacs-bundle-functions nil)

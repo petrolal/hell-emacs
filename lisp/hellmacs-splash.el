@@ -154,7 +154,7 @@ Shared by the Altar and the :ui dashboard."
 
 (defun hellmacs-splash-recent-files ()
   "Open a recently visited file, starting `recentf-mode' if needed.
-Hellmacs only starts it at the first opened file (see hellmacs-core.el)."
+Hellmacs only starts it at the first opened file (see hellmacs.el)."
   (interactive)
   (recentf-mode 1)
   (call-interactively #'recentf-open))

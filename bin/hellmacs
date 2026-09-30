@@ -23,7 +23,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # Runs Emacs in batch mode against this checkout; the commands live in
-# core/hellmacs-cli.el. Set $EMACS to use a different Emacs binary;
+# lisp/hellmacs-cli.el. Set $EMACS to use a different Emacs binary;
 # $HELLMACSDIR and the XDG_*_HOME variables are honored exactly as in
 # an interactive session.
 

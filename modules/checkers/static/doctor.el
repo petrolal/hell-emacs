@@ -29,7 +29,7 @@
                           (hellmacs-static-sonarlint-installed-p)
                           (file-exists-p hellmacs-static-sonarlint-dir)
                           :where hellmacs-static-sonarlint-dir)
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (let ((java (hellmacs-jdk-java-executable 17)))
     (if (and (equal java "java") (not (executable-find "java")))
         (hellmacs-doctor-error "SonarLint needs a JDK 17 or later, and there's no java")

@@ -110,6 +110,7 @@ them, the principle wins and the feature finds another way.
 | **Phase 13** | Hellmacs Manual & Purist Onboarding | **PLANNED [ ]** | GNU Info manual, Vanilla startup actions on The Altar, C-h help suite |
 | **Phase 14** | IntelliJ's Bundled Languages, On by Default | **PLANNED [ ]** | HTML/CSS/templates, JavaScript/TypeScript, SQL, Scala, XSLT, Kubernetes, OpenAPI, Terraform, Protobuf; every language module on |
 | **Phase 15** | Plugins | **PLANNED [ ]** | Plugin manager (`bin/hellmacs plugins`, `M-x hellmacs-plugins`), Python, Go, Ruby, PHP, C/C++, pinned third-party plugins |
+| **Phase 16** | Doom v3 Architecture & Layout | **IN PROGRESS [/]** | `lisp/` (+ `lib/`, `cli/`), `:hellmacs` core modules, `sources/hellmacs+`, `.hellmacsmodule`, `bin/hellmacs-<cmd>`, `profiles/`, generated profile `init.el` |
 
 ---
 
@@ -219,6 +220,7 @@ adoption, not by phase number:
 | 6 | **12.4 Spring Boot**, **12.5 Tests and coverage** | The biggest daily gaps against IntelliJ |
 | 7 | **Phase 10.1** (XML, YAML, JSON, Docker, shell), **10.2** with **12.8**'s formatter work | Every enterprise repo carries these files |
 | 8 | **12.6 Enterprise tool belt**, **10.3**, **10.4** | Database, HTTP, containers, static analysis; then comforts |
+| 8a | **Phase 16**, Doom v3's architecture and layout (added 2026-09-30, before 12.10 at the user's request) | 12.10's docs and Phases 14-15 would otherwise be written against paths that then change |
 | 9 | **12.7 Scale**, **12.9 Security and compliance**, **12.10 Documentation** | What an enterprise's platform and security teams ask for before approving a tool |
 | 10 | **Phase 8.4 Groovy** (Gradle scripts, Jenkinsfiles) | Common in enterprise builds |
 | 10a | **Phase 14**, every language IntelliJ IDEA bundles, on by default (takes in 8.5 Scala; added 2026-09-30) | A project IntelliJ understands must open fully understood; the pilot checks parity |
@@ -4247,6 +4249,82 @@ with 14's pattern: findings, pinned server, telemetry off, fixture, e2e)
   sandbox.
 - **Toolchains outside Hellmacs** (Go, Ruby, PHP, a C compiler): the
   servers are pinned; the toolchains are the user's, checked by `doctor`.
+
+### Phase 16: Doom v3's architecture and layout (in progress)
+
+**Objective:** Hellmacs' directories and boot follow Doom Emacs v3's
+(`doomemacs/core`, studied at commit `01d68aa`, 2026-09-05), so anyone who
+knows Doom finds their way, and Phase 15's plugins fall out of Doom's
+module sources. Decided 2026-09-30, at the user's request: a full mirror,
+the module catalog as an in-tree source (no submodule), done now, before
+12.10's docs are written against the old paths.
+
+**Doom v3 against Hellmacs before this phase**
+
+| Doom v3 | Hellmacs before | Here |
+|---|---|---|
+| `lisp/doom.el`, the heart, loaded by `early-init.el`; `doom-lib`, `-modules`, `-packages`, `-profiles`, `-cli`, `-elpaca`, `-emacs` beside it | `core/hellmacs-*.el`, 18 flat files, loaded by the root `init.el` | 16.1 |
+| `lisp/lib/*.el`: a standard library, autoloaded | helpers inside `hellmacs-lib.el` and others | 16.1 |
+| `lisp/cli/*.el`: the CLI's parts | `hellmacs-cli`, `-bundle`, `-verify`, `-compliance`, `-config` in `core/` | 16.1 |
+| `modules/doom/`: core's own features as the `:doom` group (`init.el`, `packages.el`, `cli/`, `compat/`) | splash, UX, keybinds, tree-sitter, server status wired into `core/` | 16.2 `:hellmacs` |
+| `sources/doom+/modules/`: the module catalog, a source; search order user → `modules/` → sources | `modules/<group>/<name>/` | 16.3 `sources/hellmacs+/` (in-tree) |
+| `.doommodule` per module (version, name, depth); `.doom` for the project | depth only in the `hellmacs!` block; version in code | 16.4 |
+| `bin/doom-<command>`, one file per command, dispatched by `bin/doom` | one `bin/hellmacs`, commands in `hellmacs-cli.el` | 16.5 |
+| `profiles/` (README, `safe-mode`), implicit profiles from directories | profiles only as XDG directories | 16.6 |
+| no root `init.el`: `sync` generates the profile's `init.el`, which `early-init.el` hands Emacs | the root `init.el` orchestrates; `sync` writes `profile.eld`, `compiled/`, `autoloads.el` | 16.7 |
+
+**Not copied:** straight.el (Elpaca, as `doom-elpaca.el` does too), evil and
+the `:doom compat` module, the shell/Lisp polyglot shebang, org docs
+(Markdown stays), Doom's `SPC` leader. The keybinding policy is unchanged.
+
+**Rules for every step:** `git mv` (history kept); feature names kept
+where users or modules `require` them, with obsolete aliases for renamed
+variables; `bin/hellmacs test`, `doctor` and a real `sync` pass at the
+end of each step; one commit per step.
+
+- [x] **16.1 `lisp/`.** (2026-09-30: done as below; parts of `hellmacs-lib`/`hellmacs-cli` load with `hellmacs-require`, and end with `hellmacs-provide`; tty startup 0.027s compiled.) `core/` becomes `lisp/`, `hellmacs-core-dir`
+      points there (as `doom-core-dir` does). `lisp/hellmacs.el` is the
+      heart (directories, system, lifecycle), `hellmacs-emacs.el` the
+      interactive defaults; `lisp/lib/` the autoloaded library (files,
+      net, jdk, ...), `lisp/cli/` the CLI's parts (sync's CLI side, bundle,
+      verify, compliance, config); `lisp/packages.el` core's packages.
+      Compiled core, its stamp and `test-compliance`'s file lists follow.
+- [ ] **16.2 `modules/hellmacs/`.** Core's own features become the
+      `:hellmacs` group, always on, loaded first (depth -100, as `:doom`'s
+      -110): its `init.el` (splash, UX, the `C-c` leader, tree-sitter
+      grammars, server status), `packages.el`, and `modules/hellmacs/cli/`.
+- [ ] **16.3 Module sources.** The catalog moves to
+      `sources/hellmacs+/modules/<group>/<name>/`;
+      `hellmacs-module-load-path` is your `modules/`, then Hellmacs'
+      `modules/`, then each `sources/*/modules/`. A source is where
+      Phase 15.3's third-party plugins go.
+- [ ] **16.4 Metadata.** `.hellmacs` (the project: name, version, commit
+      style) replaces the version in code; `.hellmacsmodule` in each module
+      (Doom's format: a version string, then an alist: `name`, `depth`,
+      plus Hellmacs' `description` for Phase 15's catalog). Depth comes from
+      it unless the `hellmacs!` block gives one.
+- [ ] **16.5 `bin/hellmacs-<command>`.** Each command's definition moves
+      to its own file (`bin/hellmacs-sync`, `-doctor`, `-test`, `-install`,
+      `-upgrade`, `-bundle`, `-verify`, `-sbom`, ...), dispatched by
+      `bin/hellmacs`; `bin/hellmacs.ps1` is not added (Windows is WSL2).
+- [ ] **16.6 `profiles/`.** `profiles/README.md` and a `safe-mode`
+      profile (Hellmacs' core, no modules, for bisecting a broken config);
+      implicit profiles from `profiles/NAME/` in the repo and in your
+      config directory.
+- [ ] **16.7 The generated init file.** `sync` writes the profile's
+      `init.el` (numbered parts, as Doom's `doom-profile-generate`: the
+      variables, the autoloads, the package activation, the modules in
+      order, your config) and compiles it; `early-init.el` loads
+      `lisp/hellmacs.el` and hands Emacs that file; the root `init.el`
+      goes. Without a synced profile, the same parts run from source.
+      Startup measured before and after (0.12s budget).
+- [ ] **16.8 Docs and tooling.** CLAUDE.md, `docs/development/`,
+      README, the roadmap's paths, `static/module-template/` (with a
+      `.hellmacsmodule`), CI, `.gitignore` (Doom's: `/*.el` but
+      `early-init.el`).
+- *Verify:* unit tests, `doctor`; a fresh `install` in temporary folders;
+  startup-bench under 0.12s; java, kotlin and clojure e2e, the telemetry
+  check, a bundle installed offline and `verify` on it.
 
 ### Out of scope
 

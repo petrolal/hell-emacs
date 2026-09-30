@@ -32,7 +32,7 @@
 ;; from any buffer in a repository, including Java sources.
 ;;
 ;; Magit's transient (the popup menus) keeps its history, levels and
-;; saved values in the state directory: see core/hellmacs-core.el.
+;; saved values in the state directory: see lisp/hellmacs.el.
 
 (use-package magit
   :commands (magit-status magit-dispatch magit-file-dispatch))

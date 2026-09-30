@@ -1,4 +1,4 @@
-;;; hellmacs-compliance.el --- SBOM and license report (Phase 12.9) -*- lexical-binding: t; -*-
+;;; lisp/cli/compliance.el --- SBOM and license report (Phase 12.9) -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -41,7 +41,7 @@
 (require 'cl-lib)
 (require 'json)
 (require 'hellmacs-lib)
-(require 'hellmacs-core)
+(require 'hellmacs)
 (require 'hellmacs-treesit)
 
 (defvar elpaca-builds-directory)
@@ -342,5 +342,5 @@ An alist for `json-encode'."
       (components . ,(vconcat (mapcar #'hellmacs-compliance--cyclonedx-component
                                       (or components (hellmacs-compliance-components))))))))
 
-(provide 'hellmacs-compliance)
-;;; hellmacs-compliance.el ends here
+(hellmacs-provide 'hellmacs-cli 'compliance)
+;;; compliance.el ends here

@@ -30,10 +30,11 @@
 ;;; Code:
 
 (require 'hellmacs-sync)
-(require 'hellmacs-bundle)
-(require 'hellmacs-config)
-(require 'hellmacs-compliance)
-(require 'hellmacs-verify)
+(eval-and-compile
+  (hellmacs-require 'hellmacs-cli 'bundle)
+  (hellmacs-require 'hellmacs-cli 'config)
+  (hellmacs-require 'hellmacs-cli 'compliance)
+  (hellmacs-require 'hellmacs-cli 'verify))
 
 ;;; Output ---------------------------------------------------------------------
 
@@ -809,7 +810,7 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
   (cond ((hellmacs-compiled-core-current-p)
          (hellmacs-cli--check 'ok "Byte-compiled: core and the enabled modules (%s)"
                               (abbreviate-file-name hellmacs-compiled-dir)))
-        ((file-exists-p (expand-file-name "core/stamp" hellmacs-compiled-dir))
+        ((file-exists-p (expand-file-name "lisp/stamp" hellmacs-compiled-dir))
          (hellmacs-cli--check 'info "Core changed since the last sync, so it loads from source (slower) until `bin/hellmacs sync'"))
         (t (hellmacs-cli--check 'info "Not byte-compiled yet; `bin/hellmacs sync' compiles core and the modules")))
   (if (file-exists-p hellmacs-lock-file)

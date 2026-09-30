@@ -1,4 +1,4 @@
-;;; test-treesit.el --- Tests for tree-sitter support (core/hellmacs-treesit.el) -*- lexical-binding: t; -*-
+;;; test-treesit.el --- Tests for tree-sitter support (lisp/hellmacs-treesit.el) -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

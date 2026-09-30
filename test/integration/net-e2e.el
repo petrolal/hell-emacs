@@ -36,8 +36,8 @@
 (require 'cl-lib)
 (load (expand-file-name "e2e-lib" (file-name-directory (or load-file-name buffer-file-name))) nil t)
 
-(require 'hellmacs-net)
-(require 'hellmacs-bundle)
+(hellmacs-require 'hellmacs-lib 'net)
+(hellmacs-require 'hellmacs-cli 'bundle)
 (require 'hellmacs-sync)
 (require 'hellmacs-cli)
 

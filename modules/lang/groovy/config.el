@@ -83,7 +83,7 @@ Replaces `lsp-groovy--lsp-command'."
 
 ;;; Status, and the classpath ----------------------------------------------------------
 
-(require 'hellmacs-lsp-status)
+(hellmacs-require 'hellmacs-lib 'lsp-status)
 
 (hellmacs-lsp-status-register 'groovy-ls :label "Groovy server")
 

@@ -40,7 +40,7 @@
 ;; back to it.
 ;;
 ;; Every state file it reads (recentf, bookmarks, the project list) is
-;; already in the state directory (core/hellmacs-core.el).
+;; already in the state directory (lisp/hellmacs.el).
 
 ;;; Code:
 

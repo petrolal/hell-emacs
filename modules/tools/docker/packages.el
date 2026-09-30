@@ -23,6 +23,6 @@
 
 ;; docker.el runs the developer's own docker (or podman) CLI. Its
 ;; dependencies are declared up front, so Elpaca builds each once: dash
-;; and s are shared with lsp-mode and kubel (see core/packages.el).
+;; and s are shared with lsp-mode and kubel (see lisp/packages.el).
 (package! dash) (package! s) (package! aio) (package! tablist)
 (package! docker)

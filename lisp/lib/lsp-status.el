@@ -1,4 +1,4 @@
-;;; hellmacs-lsp-status.el --- Status messages for language servers -*- lexical-binding: t; -*-
+;;; lisp/lib/lsp-status.el --- Status messages for language servers -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -46,6 +46,7 @@
 ;;; Code:
 
 (require 'seq)
+(require 'hellmacs-lib)
 
 (defvar lsp--cur-workspace)
 (defvar lsp--buffer-workspaces)
@@ -305,5 +306,5 @@ Without one it's forgotten, so a stopped server's workspace isn't kept."
 ;; (`:ui modeline' included); empty in buffers without such a server.
 (add-to-list 'mode-line-misc-info '(:eval (hellmacs-lsp-status-mode-line)))
 
-(provide 'hellmacs-lsp-status)
-;;; hellmacs-lsp-status.el ends here
+(hellmacs-provide 'hellmacs-lib 'lsp-status)
+;;; lsp-status.el ends here

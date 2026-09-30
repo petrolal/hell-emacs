@@ -1,4 +1,4 @@
-;;; test-cli.el --- Tests for core/hellmacs-cli.el -*- lexical-binding: t; -*-
+;;; test-cli.el --- Tests for lisp/hellmacs-cli.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

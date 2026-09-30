@@ -1,4 +1,4 @@
-;;; hellmacs-core.el --- Core engine: lifecycle, GC, incremental loading, dirs, defaults -*- lexical-binding: t; -*-
+;;; hellmacs.el --- The heart: lifecycle, GC, incremental loading, dirs -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -21,12 +21,13 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Everything in `core/' is engine plumbing every Hellmacs install
-;; depends on regardless of which feature modules are enabled. This
-;; file has no opinions about editing style -- no keybindings, no leader
-;; keys, no completion UI, that's `modules/'. It only makes stock
-;; Emacs behave sanely and keeps its droppings in Hellmacs' own XDG
-;; directories instead of scattering them across `~'.
+;; Hellmacs' heart (Doom v3's lisp/doom.el): what every session needs,
+;; whichever modules are enabled. Everything in `lisp/' is engine
+;; plumbing: no keybindings, no leader keys, no completion UI, that's
+;; the modules'. This file runs the startup lifecycle and keeps Emacs'
+;; droppings in Hellmacs' own XDG directories instead of scattering
+;; them across `~'; the stock settings Hellmacs changes are in
+;; hellmacs-emacs.el (Doom's doom-emacs.el).
 ;;
 ;; Expects the `hellmacs-*-dir' variables,
 ;; `hellmacs--gc-cons-threshold' and `hellmacs--gc-cons-percentage' to
@@ -117,7 +118,7 @@ opening a file."
 ;; without collection pauses. Left unbounded, pauses get *worse* later:
 ;; one huge collection lands mid-keystroke. So once startup finishes a
 ;; bounded value is restored, and then `gcmh' (the "GC magic hack",
-;; declared in core/packages.el) takes over at the first real buffer.
+;; declared in lisp/packages.el) takes over at the first real buffer.
 ;; It keeps the threshold high while you work and collects when Emacs
 ;; goes idle, so pauses stay invisible to typing. Its idle delay adapts
 ;; to how long collections take (`gcmh-idle-delay' `auto').
@@ -150,7 +151,7 @@ opening a file."
 ;; whenever Emacs is idle after startup -- so by the time you need
 ;; them they're already there, and typing is never blocked for more
 ;; than one small `require'. In `use-package' blocks, use
-;; `:defer-incrementally' (see core/hellmacs-packages.el).
+;; `:defer-incrementally' (see lisp/hellmacs-packages.el).
 
 (defvar hellmacs-incremental-packages nil
   "Features waiting to be loaded by `hellmacs-load-incrementally'.")
@@ -339,34 +340,5 @@ Existing files are never overwritten."
   (setq custom-file (expand-file-name "custom.el" hellmacs-user-dir))
   (message "Hellmacs user config is in %s" (abbreviate-file-name hellmacs-user-dir)))
 
-;;; Sane global defaults --------------------------------------------------
-
-(setq-default indent-tabs-mode nil
-              tab-width 4
-              fill-column 80
-              cursor-in-non-selected-windows nil)
-
-(setq ring-bell-function #'ignore
-      visible-bell nil
-      use-short-answers t            ; Emacs 28+: y/n instead of yes/no
-      confirm-kill-emacs #'y-or-n-p
-      create-lockfiles nil           ; TRAMP/CI mostly; local editing rarely needs them
-      load-prefer-newer t
-      sentence-end-double-space nil
-      require-final-newline t
-      help-window-select t           ; jump straight into *Help* buffers
-      delete-by-moving-to-trash t
-      large-file-warning-threshold (* 50 1024 1024))
-
-(setq global-auto-revert-non-file-buffers t
-      auto-revert-avoid-polling t)     ; file notifications, not a 5s stat of every buffer
-(global-auto-revert-mode 1)
-(delete-selection-mode 1)
-(electric-pair-mode 1)
-
-(set-language-environment "UTF-8")
-(set-default-coding-systems 'utf-8)
-(prefer-coding-system 'utf-8)
-
-(provide 'hellmacs-core)
-;;; hellmacs-core.el ends here
+(provide 'hellmacs)
+;;; hellmacs.el ends here

@@ -29,7 +29,7 @@
 
 (require 'ert)
 (require 'cl-lib)
-(require 'hellmacs-config)
+(hellmacs-require 'hellmacs-cli 'config)
 
 (load (expand-file-name "test/integration/budgets" hellmacs-dir) nil t)
 

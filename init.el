@@ -24,18 +24,20 @@
 ;; This file only orchestrates: it wires `load-path', brings up the
 ;; package manager, and loads modules and the user's config in a fixed
 ;; order. It holds no configuration of its own -- that lives in
-;; `core/' (engine internals), `modules/<group>/<name>/' (user-facing
+;; `lisp/' (engine internals), `modules/<group>/<name>/' (user-facing
 ;; features) and `hellmacs-user-dir' (your config, outside this repo).
 ;;
 ;; Load order matters and is intentional:
-;;   1. core/hellmacs-lib.el       -- macros/helpers (after!, add-hook!, ...), session context
-;;   2. core/hellmacs-core.el      -- lifecycle hooks, GC, dir isolation, sane defaults
-;;   3. core/hellmacs-packages.el  -- use-package settings (Elpaca itself loads on demand)
-;;   4. core/hellmacs-keybinds.el  -- the C-c leader (`hellmacs-leader-def')
-;;   5. core/hellmacs-modules.el   -- module system: `hellmacs!', `modulep!', `package!'
-;;      core/hellmacs-splash.el    -- the Altar splash screen (`initial-buffer-choice')
-;;      core/hellmacs-ux.el        -- themed quit prompt and error reporting
-;;      core/hellmacs-treesit.el   -- pinned tree-sitter grammars (built by sync)
+;;   1. lisp/hellmacs-lib.el       -- macros/helpers (after!, add-hook!, ...), session context
+;;   2. lisp/hellmacs.el           -- lifecycle hooks, GC, dir isolation
+;;      lisp/hellmacs-emacs.el     -- stock Emacs with saner defaults
+;;   3. lisp/hellmacs-packages.el  -- use-package settings (Elpaca itself loads on demand)
+;;   4. lisp/hellmacs-keybinds.el  -- the C-c leader (`hellmacs-leader-def')
+;;   5. lisp/hellmacs-modules.el   -- module system: `hellmacs!', `modulep!', `package!'
+;;      lisp/hellmacs-splash.el    -- the Altar splash screen (`initial-buffer-choice')
+;;      lisp/hellmacs-ux.el        -- themed quit prompt and error reporting
+;;      lisp/hellmacs-treesit.el   -- pinned tree-sitter grammars (built by sync)
+;;   (lisp/lib/ and lisp/cli/ load on demand: `hellmacs-require')
 ;;   6. $HELLMACSDIR/init.el       -- user: `hellmacs!' block choosing modules
 ;;                                    (static/init.example.el if there isn't one)
 ;;   7. packages: activated from the profile `bin/hellmacs sync' wrote --
@@ -60,13 +62,14 @@
 (defvar hellmacs--compiled-core-p (hellmacs-compiled-core-current-p)
   "Non-nil if core was loaded byte-compiled, from `hellmacs-compiled-dir'.")
 (when hellmacs--compiled-core-p
-  (add-to-list 'load-path (expand-file-name "core/" hellmacs-compiled-dir)))
+  (add-to-list 'load-path (expand-file-name "lisp/" hellmacs-compiled-dir)))
 
 (require 'hellmacs-lib)
 (hellmacs-context-push 'startup)
 (hellmacs-context-push (if noninteractive 'cli 'emacs))
 
-(require 'hellmacs-core)
+(require 'hellmacs)
+(require 'hellmacs-emacs)
 (require 'hellmacs-packages)
 
 (require 'hellmacs-keybinds)

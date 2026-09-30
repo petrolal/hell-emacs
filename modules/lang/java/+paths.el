@@ -93,7 +93,7 @@ nil when none JDTLS runs on is known (then the PATH's java is tried)."
   "JDKS, as (NAME . HOME), without the releases the pinned JDTLS doesn't know.
 JDTLS rejects a runtime newer than it knows (\"not compatible with the
 'JavaSE-27' environment\"); `hellmacs-jvm-jdtls-java-max' marks it."
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (seq-filter (lambda (jdk)
                 (let ((major (hellmacs-jdk--name-major (car jdk))))
                   (and major (<= major hellmacs-jvm-jdtls-java-max))))

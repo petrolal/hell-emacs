@@ -141,7 +141,7 @@ Language modules add their REPLs' (`:lang clojure' adds CIDER's).")
 (defun hellmacs-ux-activate ()
   "Turn on Hellmacs' prompts and error reporting, unless disabled."
   (when (and hellmacs-ux-enable (not noninteractive))
-    ;; Over Hellmacs' own default (hellmacs-core.el) only, not yours.
+    ;; Over Hellmacs' own default (hellmacs-emacs.el) only, not yours.
     (when (eq confirm-kill-emacs #'y-or-n-p)
       (setq confirm-kill-emacs #'hellmacs-ux-confirm-kill-emacs))
     (setq command-error-function #'hellmacs-ux-command-error)

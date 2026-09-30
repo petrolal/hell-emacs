@@ -1,4 +1,4 @@
-;;; core/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; lisp/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -33,6 +33,6 @@
 (package! compat)
 
 ;; Collects garbage while idle instead of mid-keystroke; see "GC
-;; lifecycle" in hellmacs-core.el. Not needed with Emacs' incremental GC.
+;; lifecycle" in hellmacs.el. Not needed with Emacs' incremental GC.
 (unless (fboundp 'igc-info)
   (package! gcmh))

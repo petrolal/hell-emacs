@@ -1,4 +1,4 @@
-;;; test-sync.el --- Tests for core/hellmacs-sync.el -*- lexical-binding: t; -*-
+;;; test-sync.el --- Tests for lisp/hellmacs-sync.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

@@ -1,4 +1,4 @@
-;;; test-modules.el --- Tests for core/hellmacs-modules.el -*- lexical-binding: t; -*-
+;;; test-modules.el --- Tests for lisp/hellmacs-modules.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

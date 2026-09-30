@@ -27,7 +27,7 @@
 
 (require 'ert)
 (require 'cl-lib)
-(require 'hellmacs-verify)
+(hellmacs-require 'hellmacs-cli 'verify)
 
 (defvar hellmacs-cli--problems)
 (defvar hellmacs-lock-file)

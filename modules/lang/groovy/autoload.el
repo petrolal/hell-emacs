@@ -28,8 +28,8 @@
 
 (defvar hellmacs-cache-dir)
 (declare-function hellmacs-forge-annotated-test-at-point "../../tools/build/autoload")
-(declare-function hellmacs-jdk-gradle-environment "hellmacs-jdk")
-(declare-function hellmacs-net-jvm-options "hellmacs-net")
+(declare-function hellmacs-jdk-gradle-environment "../../../lisp/lib/jdk")
+(declare-function hellmacs-net-jvm-options "../../../lisp/lib/net")
 
 ;;; Files --------------------------------------------------------------------------
 

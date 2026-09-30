@@ -24,6 +24,6 @@
 
 ;; nerd-icons is shared with :ui modeline (doom-modeline requires it):
 ;; declared up front so Elpaca builds it exactly once (see
-;; core/packages.el). dashboard itself needs only Emacs 27.1.
+;; lisp/packages.el). dashboard itself needs only Emacs 27.1.
 (package! nerd-icons)
 (package! dashboard)

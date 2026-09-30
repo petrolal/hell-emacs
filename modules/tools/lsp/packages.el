@@ -26,7 +26,7 @@
 ;; `(depends-on! :tools lsp)', which reads this file before its own.
 
 ;; Shared by lsp-mode, lsp-java, dap-mode and lsp-treemacs: declared up
-;; front so Elpaca builds each exactly once (see core/packages.el).
+;; front so Elpaca builds each exactly once (see lisp/packages.el).
 (package! dash) (package! f) (package! ht) (package! s)
 (package! lv) (package! spinner) (package! markdown-mode)
 ;; lsp-mode is much faster with plists instead of hash tables, but only

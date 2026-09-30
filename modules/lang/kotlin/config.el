@@ -119,9 +119,9 @@ included (`fun `greets by name`()'). Not a helper: see
 ;; kotlin-language-server has no "ready" notification, so its log is the
 ;; signal: a Gradle task failing means the project didn't import, and the
 ;; full symbol index being built means search and navigation work. The
-;; messages are in core/hellmacs-lsp-status.el.
+;; messages are in lisp/lib/lsp-status.el.
 
-(require 'hellmacs-lsp-status)
+(hellmacs-require 'hellmacs-lib 'lsp-status)
 
 (defun hellmacs-kotlin-state (root)
   "The state of the Kotlin server for project ROOT: igniting, ready, failed or nil."

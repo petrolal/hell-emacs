@@ -30,7 +30,7 @@
 
 ;;; Code:
 
-(require 'hellmacs-net)
+(hellmacs-require 'hellmacs-lib 'net)
 
 (defconst e2e-reference-projects
   '((spring-framework

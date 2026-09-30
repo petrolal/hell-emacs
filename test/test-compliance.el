@@ -109,7 +109,7 @@ its lockfile, and a built tree-sitter grammar."
 
 (ert-deftest test-compliance/license-from-file-headers ()
   "SPDX identifiers, the GPL notice, and common license texts are recognised."
-  (require 'hellmacs-compliance)
+  (hellmacs-require 'hellmacs-cli 'compliance)
   (cl-flet ((license-of (text)
               (with-temp-buffer (insert text) (hellmacs-compliance-text-license))))
     (should (equal (license-of ";; SPDX-License-Identifier: GPL-3.0-or-later\n") "GPL-3.0-or-later"))
@@ -304,21 +304,21 @@ being one as soon as the branch moves."
       found)))
 
 (ert-deftest test-compliance/network-only-through-hellmacs-net ()
-  "Hellmacs sends nothing of its own: only core/hellmacs-net.el reaches the
+  "Hellmacs sends nothing of its own: only lisp/lib/net.el reaches the
 network (pinned downloads, and doctor's reachability probe), through the
 proxy, CA and mirrors you set. A call anywhere else fails this test."
   (let ((offenders nil))
-    (dolist (file (append (directory-files-recursively (expand-file-name "core" hellmacs-dir) "\\.el\\'")
+    (dolist (file (append (directory-files-recursively (expand-file-name "lisp" hellmacs-dir) "\\.el\\'")
                           (directory-files-recursively (expand-file-name "modules" hellmacs-dir) "\\.el\\'")
                           (list (expand-file-name "init.el" hellmacs-dir)
                                 (expand-file-name "early-init.el" hellmacs-dir))))
-      (unless (equal (file-name-nondirectory file) "hellmacs-net.el")
+      (unless (equal file (expand-file-name "lisp/lib/net.el" hellmacs-dir))
         (when-let* ((calls (test-compliance--calls file test-compliance--network-functions)))
           (push (cons (file-relative-name file hellmacs-dir) calls) offenders))))
     (should-not offenders)
     ;; And the check finds one.
     (should (memq 'url-copy-file
-                  (test-compliance--calls (expand-file-name "core/hellmacs-net.el" hellmacs-dir)
+                  (test-compliance--calls (expand-file-name "lisp/lib/net.el" hellmacs-dir)
                                           test-compliance--network-functions)))))
 
 (ert-deftest test-compliance/cli-sbom ()

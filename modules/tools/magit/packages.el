@@ -23,6 +23,6 @@
 
 
 ;; Shared by magit, magit-section and with-editor: declared up front so
-;; Elpaca builds each exactly once (see core/packages.el).
+;; Elpaca builds each exactly once (see lisp/packages.el).
 (package! cond-let) (package! llama)
 (package! magit)

@@ -356,7 +356,7 @@
 
 (ert-deftest test-jdk/java-executable-new-enough ()
   "A java of at least a release: JAVA_HOME's, then those sync found, then the PATH's."
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (let ((root (file-name-as-directory (make-temp-file "hellmacs-test-jdk-java" t))))
     (unwind-protect
         (cl-flet ((jdk (name major)
@@ -379,7 +379,7 @@
 
 (ert-deftest test-jdk/gradle-daemon-range ()
   "The JDKs each Gradle release runs on, from Gradle's compatibility matrix."
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (should (equal (hellmacs-jdk-gradle-daemon-range "9.7.0") '(17 . 25)))
   (should (equal (hellmacs-jdk-gradle-daemon-range "9.1.0") '(17 . 25)))
   (should (equal (hellmacs-jdk-gradle-daemon-range "9.0.0") '(17 . 24)))
@@ -393,7 +393,7 @@
 
 (ert-deftest test-jdk/gradle-version-from-wrapper ()
   "The Gradle release the build's wrapper downloads, from any directory in the build."
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (test-jdk--with-fake-fs
       '("proj/sub/src" "plain")
       '(("proj/gradle/wrapper/gradle-wrapper.properties"
@@ -406,7 +406,7 @@
   "Gradle's JVM: JAVA_HOME set to a JDK its release runs on, only when needed.
 Found on Spring Framework: the system's JDK 27 can't run Gradle 9.7, and
 nothing picked another (docs/roadmap.md, 12.7)."
-  (require 'hellmacs-jdk)
+  (hellmacs-require 'hellmacs-lib 'jdk)
   (test-jdk--with-fake-fs
       '("jdk/11/bin" "jdk/21/bin" "jdk/25/bin" "jdk/27/bin" "proj" "own" "props")
       `(("jdk/11/release" . "JAVA_VERSION=\"11.0.2\"\n")
@@ -443,14 +443,14 @@ nothing picked another (docs/roadmap.md, 12.7)."
             (should-not (hellmacs-jdk-gradle-environment proj))))))))
 
 (ert-deftest test-jdk/public-functions-autoloaded-from-core ()
-  "Every `;;;###autoload' function in hellmacs-jdk.el is autoloaded by core.
-Modules call them as a file opens, before anything requires hellmacs-jdk:
+  "Every `;;;###autoload' function in lisp/lib/jdk.el is autoloaded by core.
+Modules call them as a file opens, before anything loads lisp/lib/jdk.el:
 a missing one broke Gradle buffers (\"void-function
 hellmacs-jdk-gradle-environment\") while the unit tests, which require the
 file, passed."
   (let (fns)
     (with-temp-buffer
-      (insert-file-contents (expand-file-name "hellmacs-jdk.el" hellmacs-core-dir))
+      (insert-file-contents (expand-file-name "lib/jdk.el" hellmacs-core-dir))
       (while (re-search-forward "^;;;###autoload\n(defun \\([^ ]+\\)" nil t)
         (push (intern (match-string 1)) fns)))
     (should fns)

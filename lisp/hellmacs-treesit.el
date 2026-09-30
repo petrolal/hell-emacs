@@ -45,8 +45,8 @@
 
 (require 'cl-lib)
 (require 'hellmacs-lib)
-(require 'hellmacs-core)
-(require 'hellmacs-net)
+(require 'hellmacs)
+(eval-and-compile (hellmacs-require 'hellmacs-lib 'net))
 
 (defvar hellmacs-treesit-sources nil
   "Grammar sources you pin yourself, over the modules' own: a list of

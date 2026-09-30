@@ -1,4 +1,4 @@
-;;; test-net.el --- Tests for core/hellmacs-net.el -*- lexical-binding: t; -*-
+;;; test-net.el --- Tests for lisp/hellmacs-net.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -27,7 +27,7 @@
 
 (require 'ert)
 (require 'cl-lib)
-(require 'hellmacs-net)
+(hellmacs-require 'hellmacs-lib 'net)
 (require 'hellmacs-sync)                ; `hellmacs-sync-download-verified'
 
 (defmacro test-net--with (settings &rest body)

@@ -50,8 +50,8 @@
 (declare-function sql-buffer-live-p "sql")
 (declare-function auth-source-search "auth-source")
 (declare-function comint-check-proc "comint")
-(declare-function hellmacs-jdk-java-executable "hellmacs-jdk")
-(declare-function hellmacs-jdk-home-major "hellmacs-jdk")
+(declare-function hellmacs-jdk-java-executable "../../../lisp/lib/jdk")
+(declare-function hellmacs-jdk-home-major "../../../lisp/lib/jdk")
 (declare-function hellmacs-sync-download-verified "hellmacs-sync")
 
 ;;;###autoload

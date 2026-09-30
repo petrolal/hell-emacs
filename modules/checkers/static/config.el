@@ -71,7 +71,7 @@
   (declare-function lsp--uri-to-path "ext:lsp-mode")
   (declare-function lsp--path-to-uri "ext:lsp-mode")
   (declare-function hellmacs-lsp-status-get "hellmacs-lsp-status")
-  (declare-function hellmacs-jdk-java-executable "hellmacs-jdk")
+  (declare-function hellmacs-jdk-java-executable "../../../lisp/lib/jdk")
 
   ;; Before lsp-sonarlint loads: it registers its client with these.
   (setq lsp-sonarlint-download-dir (directory-file-name hellmacs-static-sonarlint-dir)
@@ -89,7 +89,7 @@
 
   (defun hellmacs-static--sonarlint-command-a (command)
     "COMMAND (lsp-sonarlint's) with a java of release 17 or later Hellmacs picks."
-    (require 'hellmacs-jdk)
+    (hellmacs-require 'hellmacs-lib 'jdk)
     (cons (hellmacs-jdk-java-executable 17) (cdr command)))
 
   (defun hellmacs-static--sonarlint-download-a (&rest _)

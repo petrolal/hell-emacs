@@ -92,9 +92,9 @@ Runtimes you set yourself are left alone."
 
 ;;; Status: echo-area announcements and the mode-line segment ------------------
 
-;; Both are core/hellmacs-lsp-status.el's; this says which of JDTLS's
+;; Both are lisp/lib/lsp-status.el's; this says which of JDTLS's
 ;; signals mean "imported" and "failed".
-(require 'hellmacs-lsp-status)
+(hellmacs-require 'hellmacs-lib 'lsp-status)
 
 (defun hellmacs-jvm-state (root)
   "The state of JDTLS for project ROOT: igniting, ready, failed or nil."

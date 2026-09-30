@@ -29,7 +29,7 @@
 (require 'cl-lib)
 (require 'hellmacs-modules)
 (require 'hellmacs-sync)
-(require 'hellmacs-jdk)                 ; loaded first, so its defuns don't replace the mocks
+(hellmacs-require 'hellmacs-lib 'jdk)                 ; loaded first, so its defuns don't replace the mocks
 
 (defvar lsp-java-format-settings-url)
 (defvar lsp-java-format-settings-profile)

@@ -45,7 +45,7 @@
 (defvar hellmacs-net-ca-file)
 (declare-function restclient-http-send-current "restclient")
 (declare-function project-root "project")
-(declare-function hellmacs-net-ca-file "hellmacs-net")
+(declare-function hellmacs-net-ca-file "../../../lisp/lib/net")
 
 ;;; Reading a file's requests ---------------------------------------------------
 

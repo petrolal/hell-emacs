@@ -115,6 +115,18 @@ This file only tracks progress. Don't copy specs into it.
 - [x] 10.4 `:editor snippets` (tempel) (2026-09-29: `modules/editor/snippets/`, tempel 1.14; junit and controller (Java), dataclass (Kotlin), deftest (Clojure), munit (Scala) in the module's `templates/`, yours in `$HELLMACSDIR/templates/`; the package comes from the path; the exact name completes ahead of the server's candidates; tempel's own keys stripped, only remaps; commented out in `static/init.example.el`; `test/test-snippets.el`. Live: a throwaway profile synced; every snippet but munit expanded through `completion-at-point` with the real tempel (the JUnit class got `package com.acme;` and `CartTest`), `M-}`/`M-{`/`ESC ESC ESC` moved and aborted, `M-RET` and `M-<down>` stayed unbound and TAB still indented. Not yet: munit live (no Scala mode before 8.5))
 - [x] 10.4 `:editor file-templates` (`auto-insert-mode`) (2026-09-29: `modules/editor/file-templates/`, no packages (builds on `:editor snippets`, `depends-on!`); Emacs' own `auto-insert` asks, then fills a new, empty file from a tempel template: `__test`/`__class` for Java (JUnit 5) and Kotlin (kotlin.test), `__ns`/`__test` for Clojure, package and namespace from the path; only its own templates, never Emacs' default `auto-insert-alist`; existing files, even empty, never touched; `M-x auto-insert` by hand; no keys; commented out in `static/init.example.el`; `test/test-file-templates.el`. Live: a throwaway profile synced with the real tempel; in a copy of maven-demo `CartTest.java` got `package dev.hellmacs.demo;`, the JUnit imports and class, `Cart.java` its package and class, a declined, an existing and a `package-info.java` file stayed empty, a new `.el` wasn't offered Emacs' header, TAB still ran java-mode's indent inside the snippet; startup 0.015s (tty) with the module on, not loading tempel or autoinsert. Not yet: Kotlin and Clojure in their real modes (checked with stand-in modes: the templates filled, package and namespaces right))
 
+## Step 8a: Phase 16, Doom v3's architecture and layout (roadmap "Phase 16"; added 2026-09-30, before 12.10 at the user's request)
+
+- [x] 16.1 `core/` → `lisp/`, `lisp/lib/`, `lisp/cli/` (2026-09-30: `git mv`; `hellmacs.el` (heart) and `hellmacs-emacs.el` (defaults) from `hellmacs-core.el`; lib/ (jdk, net, lsp-status) and cli/ (bundle, compliance, config, verify) off `load-path`, loaded by `hellmacs-require`, Doom's `doom-require`; compiled core mirrors the subdirectories. `test-lib/layout-like-doom`, `test-lib/require-subfeature`; 484 tests, doctor, a real sync (37 files compiled), tty startup 0.027s)
+- [ ] 16.2 `modules/hellmacs/`: core's own features as the `:hellmacs` group
+- [ ] 16.3 Module sources: the catalog in `sources/hellmacs+/modules/`
+- [ ] 16.4 `.hellmacs` and `.hellmacsmodule` metadata
+- [ ] 16.5 `bin/hellmacs-<command>`
+- [ ] 16.6 `profiles/` (README, `safe-mode`, implicit profiles)
+- [ ] 16.7 The generated profile `init.el`; no root `init.el`
+- [ ] 16.8 Docs, template, CI, `.gitignore`
+- [ ] Verify: tests, doctor, fresh install, startup under 0.12s, JVM e2e, telemetry check, offline bundle + `verify`
+
 ## Step 9: 12.7 Scale, 12.9 Security and compliance, 12.10 Documentation (roadmap "12.7", "12.9", "12.10")
 
 - [x] 12.7 Reference monorepo for measurements (2026-09-29: Spring Framework v7.0.9, pinned by tag and commit in `test/integration/reference.el`, `HELLMACS_PARITY_REFERENCE=spring-framework` for java-parity; `test/test-reference.el`. Live: 21 of 22 checks pass once the three settings below are off; symbol search answered 72s after JDTLS started cold, 2197MB peak, `compileJava` 71.1s. With the defaults, navigation doesn't work on it; see the roadmap)

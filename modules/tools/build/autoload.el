@@ -491,5 +491,5 @@ For `compilation-finish-functions'. Only real compilations, not grep."
                                                       (string-trim status))))))
         ;; The project's language servers show failed until the next good
         ;; build. (Loaded by any :lang module; without one there's no server.)
-        (when (featurep 'hellmacs-lsp-status)
+        (when (hellmacs-featurep 'hellmacs-lib 'lsp-status)
           (hellmacs-lsp-status-build-result default-directory ok))))))

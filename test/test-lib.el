@@ -1,4 +1,4 @@
-;;; test-lib.el --- Tests for core/hellmacs-lib.el -*- lexical-binding: t; -*-
+;;; test-lib.el --- Tests for lisp/hellmacs-lib.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -26,6 +26,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 (require 'hellmacs-lib)
 
 (defvar test-lib--log nil)
@@ -41,6 +42,39 @@
 (defvar test-lib--errors-hook nil)
 (defvar test-lib--trigger-hook nil)
 (defvar test-lib--once-hook nil)
+
+;; Phase 16.1: Doom v3's layout. Core is lisp/, its library lisp/lib/ and
+;; the CLI's parts lisp/cli/; neither subdirectory is on `load-path'.
+
+(ert-deftest test-lib/layout-like-doom ()
+  "Core lives in lisp/ (as Doom's lisp/), with lib/ and cli/ beside it;
+there's no core/ any more."
+  (should (equal (file-name-nondirectory (directory-file-name hellmacs-core-dir)) "lisp"))
+  (should-not (file-exists-p (expand-file-name "core/" hellmacs-dir)))
+  (dolist (file '("hellmacs.el" "hellmacs-emacs.el" "hellmacs-lib.el" "hellmacs-modules.el"
+                  "hellmacs-packages.el" "hellmacs-cli.el" "packages.el"
+                  "lib/jdk.el" "lib/net.el" "lib/lsp-status.el"
+                  "cli/bundle.el" "cli/compliance.el" "cli/config.el" "cli/verify.el"))
+    (should (file-exists-p (expand-file-name file hellmacs-core-dir))))
+  (dolist (dir '("lib" "cli"))
+    (should-not (member (file-name-as-directory (expand-file-name dir hellmacs-core-dir))
+                        (mapcar #'file-name-as-directory load-path)))))
+
+(ert-deftest test-lib/require-subfeature ()
+  "`hellmacs-require' loads a library part by name, once, as `doom-require'
+does: (hellmacs-require \='hellmacs-lib \='jdk) is lisp/lib/jdk.el."
+  (hellmacs-require 'hellmacs-lib 'jdk)
+  (should (hellmacs-featurep 'hellmacs-lib 'jdk))
+  (should (fboundp 'hellmacs-jdk-detect))
+  (let ((loads 0))
+    (cl-letf* ((load-fn (symbol-function 'load))
+               ((symbol-function 'load) (lambda (&rest args) (cl-incf loads) (apply load-fn args))))
+      (hellmacs-require 'hellmacs-lib 'jdk))
+    (should (= loads 0)))
+  ;; Without a part: plain `require'.
+  (should (eq (hellmacs-require 'hellmacs-lib) 'hellmacs-lib))
+  (should-error (hellmacs-require 'hellmacs-lib 'no-such-part))
+  (should-not (hellmacs-require 'hellmacs-lib 'no-such-part 'noerror)))
 
 (ert-deftest test-lib/add-hook!-forms ()
   "Forms, `defun's and function symbols; :append; `remove-hook!'."

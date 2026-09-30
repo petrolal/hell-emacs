@@ -1,4 +1,4 @@
-;;; hellmacs-bundle.el --- Offline bundles -*- lexical-binding: t; -*-
+;;; lisp/cli/bundle.el --- Offline bundles -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -427,5 +427,5 @@ if their pins differ, the sync names what's missing"
               manifest))
         (delete-directory stage t)))))
 
-(provide 'hellmacs-bundle)
-;;; hellmacs-bundle.el ends here
+(hellmacs-provide 'hellmacs-cli 'bundle)
+;;; bundle.el ends here

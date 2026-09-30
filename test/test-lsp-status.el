@@ -1,4 +1,4 @@
-;;; test-lsp-status.el --- Tests for core/hellmacs-lsp-status.el -*- lexical-binding: t; -*-
+;;; test-lsp-status.el --- Tests for lisp/hellmacs-lsp-status.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -29,7 +29,7 @@
 (require 'ert)
 (require 'cl-lib)
 (require 'hellmacs-ux)                  ; `hellmacs-ux-enable', bound below
-(require 'hellmacs-lsp-status)
+(hellmacs-require 'hellmacs-lib 'lsp-status)
 
 (defvar lsp--cur-workspace)             ; lsp-mode's; bound below
 (defvar lsp--buffer-workspaces)

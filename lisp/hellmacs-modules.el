@@ -60,7 +60,8 @@
 ;;; Code:
 
 (require 'use-package)
-(require 'hellmacs-net)
+(require 'hellmacs-lib)
+(eval-and-compile (hellmacs-require 'hellmacs-lib 'net))
 
 ;;; Variables --------------------------------------------------------------
 
@@ -435,7 +436,7 @@ by bin/hellmacs and `hellmacs-sync', never at a normal startup."
         (hellmacs-module--load key "cli.el")))))
 
 (defun hellmacs-modules-read-packages ()
-  "Read core/packages.el, every enabled module's packages.el, then the user's.
+  "Read lisp/packages.el, every enabled module's packages.el, then the user's.
 Fills `hellmacs-packages' and `hellmacs-module-dependencies'. A module's
 dependencies (`depends-on!') have their packages.el read before its own."
   (setq hellmacs-packages nil
@@ -535,7 +536,7 @@ use the packages. Uses `hellmacs-lock-file' unless IGNORE-LOCK."
 (defun hellmacs--elpaca-wait ()
   "Like `elpaca-wait', but give up if Elpaca stops making progress.
 Elpaca can leave packages blocked forever on a dependency whose build
-failed (see core/packages.el), and `elpaca-wait' then never returns.
+failed (see lisp/packages.el), and `elpaca-wait' then never returns.
 A watchdog notices when every unfinished package has been blocked,
 unchanged, for `hellmacs-elpaca-stall-timeout' seconds, and interrupts
 the wait; Elpaca then marks those packages failed."
@@ -696,7 +697,7 @@ this file for the order."
   "Install every declared package, then write the synced profile." t)
 
 ;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.
-;; Every `;;;###autoload' function in hellmacs-jdk.el belongs here
+;; Every `;;;###autoload' function in lisp/lib/jdk.el belongs here
 ;; (`test-jdk/public-functions-autoloaded-from-core').
 (defconst hellmacs-modules--jdk-autoloads
   '(hellmacs-jdk-release-name hellmacs-jdk-parse-release-content
@@ -706,14 +707,14 @@ this file for the order."
     hellmacs-jdk-toolchains-xml-jdks hellmacs-jdk-build-request
     hellmacs-jdk-gradle-installation-paths hellmacs-jdk-gradle-provisions-p
     hellmacs-jdk-gradle-daemon-range hellmacs-jdk-gradle-version hellmacs-jdk-gradle-environment)
-  "The functions core autoloads from hellmacs-jdk.el.")
+  "The functions core autoloads from lisp/lib/jdk.el.")
 (dolist (fn hellmacs-modules--jdk-autoloads)
-  (autoload fn "hellmacs-jdk"))
+  (autoload fn (hellmacs--part-file 'hellmacs-lib 'jdk)))
 
 ;; The SBOM and license report: `bin/hellmacs sbom' and `licenses'.
 (dolist (fn '(hellmacs-compliance-components hellmacs-compliance-collect-licenses
               hellmacs-compliance-license-problems hellmacs-compliance-cyclonedx-sbom))
-  (autoload fn "hellmacs-compliance"))
+  (autoload fn (hellmacs--part-file 'hellmacs-cli 'compliance)))
 
 (provide 'hellmacs-modules)
 ;;; hellmacs-modules.el ends here
