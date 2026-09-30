@@ -3650,11 +3650,48 @@ pass against what enterprise developers already use.
   - *Found by it:* turning every module on broke `bin/hellmacs sync`:
     `:editor format`'s cli.el called a function only its autoload.el
     defined. Fixed (in `+paths.el`), with `test-format/cli-alone`.
-- [ ] **Tuning** that the measurements justify:
+- [x] **Tuning** that the measurements justify:
   - Exclude generated directories from JDTLS and file watching.
   - JDTLS heap auto-sized from the project (`hellmacs-jvm-vmargs`), and
     Gradle's build cache and configuration cache on for imports.
   - Phase 11.4's compiled startup and cached lookups.
+  - *Done 2026-09-29*, from java-parity runs on Spring Framework (same
+    workstation, cold JDTLS workspace, the fixes above in). With the
+    defaults, six runs imported in 70.5s to 73.6s (ready about 10s,
+    symbol search 60s to 64s later), under the 84s budget; peaks about
+    Emacs 316MB + JDTLS 2300MB. Each candidate measured against that:
+    - *Generated directories: done.* During the import lsp-mode sent
+      JDTLS no watched-file changes (2726 directories watched), so the
+      import doesn't get faster. But after one import and build, Gradle's
+      `build/` and JDTLS's `bin/` output took the tree lsp-mode would
+      watch from 2725 to 5998 directories, past `lsp-file-watch-threshold`
+      (5000): the next session stopped to ask. `:lang java` now keeps
+      lsp-mode from watching them outside `src/`
+      (`hellmacs-jvm-build-output-regexp`; a package named `build` is
+      still watched; Maven's `target/` was already in lsp-mode's list).
+      Live, with the real lsp-mode on that tree: 2725.
+      `test-java/build-output-not-watched`. JDTLS's own
+      `java.import.exclusions` stay VS Code's: Gradle imports from its
+      model, not by scanning.
+    - *Heap: not changed.* `-Xmx4G` against the default 2G: import 71.7s
+      against 70.8s, GC pauses 4.4s against 4.6s (7 full GCs against 10),
+      and JDTLS peaked at 3720MB, 1.4GB more, nearly the whole memory
+      budget. Sizing the heap up from the project buys nothing here.
+    - *Gradle caches: not changed.* Spring Framework already sets
+      `org.gradle.caching=true`, and an import runs no tasks for it to
+      cache. `--configuration-cache` in the import's arguments: 72.7s,
+      no gain (Gradle doesn't cache the tooling models JDTLS fetches).
+    - *Also tried, not adopted:* `java.maxConcurrentBuilds` 4 (default
+      1): 77.5s, and organize imports and the generate actions failed
+      their checks. Autobuild off: 59.9s, 11s faster, but the workspace
+      stops rebuilding on save and VS Code keeps it on. That trade is the
+      user's (`lsp-java-autobuild-enabled`).
+    - The first import, with annotation processing, fails about 10.5s in
+      and the second import (without it) is the one timed above: at most
+      10s to gain by starting without it, for projects Gradle 9 lets keep
+      it. Left as it is.
+    - *Compiled startup* is Phase 11.4's: startup 0.101s against the
+      0.3s budget with every module on.
 - [ ] **Kotlin's server.** Track JetBrains' own Kotlin LSP. When it is
       released and pinnable, it replaces kotlin-language-server in
       `:lang kotlin` behind the same status and keys, and the matrix's Kotlin

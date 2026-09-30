@@ -304,6 +304,51 @@ turn them back on."
       (should setting)
       (should-not (eval (cadr setting) t)))))
 
+(defvar lsp-file-watch-ignored-directories)
+
+(defun test-java--watched (root regexps)
+  "The directories under ROOT a watcher skipping REGEXPS would watch.
+As lsp-mode walks them: a directory matching one isn't entered."
+  (let ((stack (list root)) watched)
+    (while stack
+      (let ((dir (pop stack)))
+        (push (file-relative-name dir root) watched)
+        (dolist (sub (directory-files dir t directory-files-no-dot-files-regexp))
+          (when (and (file-directory-p sub)
+                     (not (seq-some (lambda (re) (string-match-p re sub)) regexps)))
+            (push sub stack)))))
+    (sort watched #'string<)))
+
+(ert-deftest test-java/build-output-not-watched ()
+  "Gradle's build/ and JDTLS's bin/ output aren't watched; sources are.
+On Spring Framework they took the watched directories from 2726 to 6119
+after one import and build, past `lsp-file-watch-threshold', so the next
+session stopped to ask (docs/roadmap.md, 12.7 Tuning). A package named
+build or bin, under src/, is source and still watched."
+  (test-java--load)
+  (let ((root (file-name-as-directory (make-temp-file "hellmacs-test-watch" t)))
+        (lsp-file-watch-ignored-directories (list "[/\\\\]\\.git\\'")))
+    (unwind-protect
+        (progn
+          (dolist (dir '("build/tmp" "buildSrc/src/main/java"
+                         "core/build/classes/java/main" "core/bin/main/org"
+                         "core/src/main/java/org/acme/build" "core/src/test/resources/bin"
+                         "core/binaries" ".git/objects"))
+            (make-directory (expand-file-name dir root) t))
+          (hellmacs-jvm--ignore-build-output-h)
+          (hellmacs-jvm--ignore-build-output-h) ; once, however often lsp-mode loads
+          (should (= (length lsp-file-watch-ignored-directories) 2))
+          (should (equal (test-java--watched (directory-file-name root) lsp-file-watch-ignored-directories)
+                         '("." "buildSrc" "buildSrc/src" "buildSrc/src/main" "buildSrc/src/main/java"
+                           "core" "core/binaries" "core/src" "core/src/main" "core/src/main/java"
+                           "core/src/main/java/org" "core/src/main/java/org/acme"
+                           "core/src/main/java/org/acme/build" "core/src/test"
+                           "core/src/test/resources" "core/src/test/resources/bin")))
+          ;; Windows' drive letters, too.
+          (should (string-match-p hellmacs-jvm-build-output-regexp "c:/work/app/build"))
+          (should-not (string-match-p hellmacs-jvm-build-output-regexp "c:/work/app/src/build")))
+      (delete-directory root t))))
+
 (defvar lsp-clients)
 
 (ert-deftest test-java/spring-client-setup-warns-instead-of-failing ()
