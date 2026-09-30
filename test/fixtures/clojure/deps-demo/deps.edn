@@ -1,8 +1,0 @@
-;; Hellmacs test fixture: a small tools.deps project with clojure.test tests.
-{:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.12.1"}}
- :aliases
- {;; clojure -M:test            (BrokenTest is skipped)
-  ;; clojure -J-Dhellmacs.fail=true -M:test   (it runs, and fails)
-  :test {:extra-paths ["test"]
-         :main-opts ["-m" "demo.test-runner"]}}}

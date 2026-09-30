@@ -1,13 +1,28 @@
+# Dotfiles at the root: only Hellmacs' own, as Doom's .gitignore.
+/.*
+!/.hellmacs
+!/.dir-locals.el
+!/.gitignore
+!/.github
+
 # Where older Hellmacs versions kept packages and state, before it moved
 # to the XDG directories. Nothing writes here any more; safe to delete.
 /var/
 /etc/
+/.local*/
 
-# As in Doom v3, Hellmacs has no init.el of its own (sync generates the
-# profile's): a root .el other than early-init.el is your config, when
-# $HELLMACSDIR is this checkout.
+# Your config, if $HELLMACSDIR is this checkout: as in Doom v3, Hellmacs
+# has no init.el of its own (sync generates the profile's), so a root .el
+# other than early-init.el, and these directories, are yours.
 /*.el
 !/early-init.el
+/user-lisp/
+/themes/
+/snippets/
+/modules/*/
+!/modules/hellmacs/
+/sources/*/
+!/sources/hellmacs+/
 
 # Byte-compiled / native-compiled artifacts, wherever they land.
 *.elc

@@ -52,7 +52,7 @@
 (declare-function comint-check-proc "comint")
 (declare-function hellmacs-jdk-java-executable "../../../lisp/lib/jdk")
 (declare-function hellmacs-jdk-home-major "../../../lisp/lib/jdk")
-(declare-function hellmacs-sync-download-verified "hellmacs-sync")
+(declare-function hellmacs-sync-download-verified "cli/sync")
 
 ;;;###autoload
 (defun hellmacs-db-jar-spec (name)
@@ -123,7 +123,7 @@
   (dolist (name (list 'sqlline (plist-get profile :driver)))
     (let ((spec (hellmacs-db-jar-spec name)))
       (when (and spec (not (hellmacs-file-pinned-p (plist-get spec :file) (plist-get spec :sha256))))
-        (require 'hellmacs-sync)
+        (hellmacs-require 'hellmacs-cli 'sync)
         (message "Installing %s %s (pinned)..." name (plist-get spec :version))
         (with-hellmacs-network
           (hellmacs-sync-download-verified (plist-get spec :url) (plist-get spec :file)

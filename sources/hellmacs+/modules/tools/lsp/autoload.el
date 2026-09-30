@@ -59,7 +59,7 @@ For lsp-mode's installers: ERROR-CALLBACK gets the message if it fails.
 It blocks while it downloads; `bin/hellmacs sync' does it ahead of time."
   (condition-case err
       (progn
-        (require 'hellmacs-sync)
+        (hellmacs-require 'hellmacs-cli 'sync)
         (hellmacs-module--load module "cli.el")
         (message "Installing the pinned server for %s %s (`bin/hellmacs sync' does this ahead of time)..."
                  (car module) (cdr module))

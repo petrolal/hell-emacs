@@ -23,7 +23,7 @@ Hellmacs is structured into four distinct layers:
                                     ▼
 +-------------------------------------------------------------------------+
 |                             CORE ENGINE                                 |
-|  early-init.el, lisp/ (hellmacs.el, lib/, cli/), profile's init.el      |
+|  early-init.el, lisp/ (hellmacs.el, lib/, cli/), profile's init file   |
 +-------------------------------------------------------------------------+
                                     │
                                     ▼
@@ -42,21 +42,20 @@ so anyone who knows Doom finds their way:
 
 | Doom v3 | Hellmacs | What it holds |
 |---|---|---|
-| `early-init.el` | `early-init.el` | Boot, XDG directories, and the hand-off to the profile's init file |
-| *(no root `init.el`)* | *(none)* | `sync` generates each profile's `init.el`; `.gitignore` keeps a root one out |
-| `lisp/doom.el` | `lisp/hellmacs.el` | The heart: lifecycle hooks, GC, directories |
-| `lisp/doom-emacs.el` | `lisp/hellmacs-emacs.el` | Stock Emacs, with saner defaults |
+| `early-init.el` | `early-init.el` | Boot, XDG directories, startup hacks; loads core and calls `hellmacs-initialize` |
+| *(no root `init.el`)* | *(none)* | `sync` generates each profile's `init.MAJOR.MINOR.el`; `.gitignore` keeps a root one out |
+| `lisp/doom.el` | `lisp/hellmacs.el` | The heart: lifecycle hooks, GC, directories, `hellmacs-initialize`/`-start`/`-startup` |
+| `lisp/doom-emacs.el` | `lisp/hellmacs-emacs.el` | Stock Emacs, with saner defaults, and the entry point (the init file loader's override) |
 | `lisp/doom-lib.el` | `lisp/hellmacs-lib.el` | Macros (`after!`, `add-hook!`), `hellmacs-require`, `hellmacs-dotfile` |
 | `lisp/doom-modules.el` | `lisp/hellmacs-modules.el` | `hellmacs!`, `modulep!`, `package!`, module load path and metadata |
-| `lisp/doom-profiles.el` | `lisp/hellmacs-profiles.el` | The profile's generated init file |
-| — | `lisp/hellmacs-start.el` | The startup sequence (part 10 of the generated file; loaded from source when there's none) |
+| `lisp/doom-profiles.el` | `lisp/hellmacs-profiles.el` | The profile's generated init file: `init.d/` parts on `hellmacs-startup-functions` |
 | `lisp/doom-cli.el` | `lisp/hellmacs-cli.el` | The command dispatcher and the helpers commands share |
 | `lisp/lib/*.el` | `lisp/lib/` (`jdk`, `net`, `lsp-status`) | The library, off `load-path`: `(hellmacs-require 'hellmacs-lib 'net)` |
-| `lisp/cli/*.el` | `lisp/cli/` (`bundle`, `compliance`, `config`, `verify`) | The CLI's parts: `(hellmacs-require 'hellmacs-cli 'verify)` |
-| `modules/doom/` (`:doom`) | `modules/hellmacs/` (`:hellmacs`) | Core's own module, always on, first: core's packages, gcmh, the Altar, themed UX |
+| `lisp/cli/*.el` | `lisp/cli/` (`sync`, `bundle`, `compliance`, `config`, `verify`) | The CLI's parts: `(hellmacs-require 'hellmacs-cli 'verify)` |
+| `modules/doom/` (`:doom`) | `modules/hellmacs/` (`:hellmacs`) | Core's own module, always on, first: core's packages, gcmh, the Altar, themed UX, the `C-c` leader API (`autoload/keybinds.el`) |
 | `sources/doom+/modules/` | `sources/hellmacs+/modules/` | The module catalog (a submodule in Doom, in-tree here) |
 | `.doom`, `.doommodule` | `.hellmacs`, `.hellmacsmodule` | Metadata: a version string, then an alist (`name`, `depth`) |
-| `bin/doom`, `bin/doom-COMMAND`, `bin/doomscript` | `bin/hellmacs`, `bin/hellmacs-COMMAND`, `bin/hellmacsscript` | The CLI: a dispatcher, one file per command, and a script runner |
+| `bin/doom`, `bin/doom-COMMAND`, `bin/doomscript`, `bin/doom.sh` | `bin/hellmacs`, `bin/hellmacs-COMMAND`, `bin/hellmacsscript`, `bin/hellmacs.sh` | The CLI: a dispatcher (global options, aliases, `$HELLMACSPATH`), one file per command, a script runner, and a bash launcher |
 | `profiles/` (`safe-mode`) | `profiles/` (`safe-mode`) | Profiles shipped; a directory is a profile |
 
 **Modules are found** in this order (`hellmacs-module-load-path`, Doom's
@@ -64,9 +63,14 @@ so anyone who knows Doom finds their way:
 `modules/`, then `sources/hellmacs+/modules/`. A module's depth comes from
 its `.hellmacsmodule` unless your `hellmacs!` block gives one.
 
-**Not taken from Doom:** straight.el (Elpaca), evil and the `:doom compat`
-module, the shell/Lisp polyglot `bin/doom`, org-format docs, and the `SPC`
-leader: the keybinding policy is unchanged.
+**Not taken from Doom:** straight.el (Elpaca: Doom's own `lisp/doom-elpaca.el`
+says it replaces straight next), evil and the `:doom compat` module, the
+shell/Lisp polyglot `bin/doom` and its `defcli!` framework (a sh dispatcher
+and plain `hellmacs-cli-NAME` functions instead), explicit `profiles.el`
+profiles (directory profiles only), the catalog as a git submodule, Windows'
+`doom.ps1`, org-format docs, and the `SPC` leader: the keybinding policy is
+unchanged. **Added to Doom's:** the generated init file is byte-compiled (and
+core and modules with it), for the startup budget.
 
 ---
 
@@ -76,15 +80,14 @@ Hellmacs strictly isolates user configurations, installed packages, caches, and 
 
 ```
 Hellmacs' installation (e.g. ~/.config/emacs), laid out as Doom v3's
-  ├── early-init.el     # boot, and the hand-off to the profile's init file
+  ├── early-init.el     # boot; loads core (hellmacs-initialize)
   ├── .hellmacs         # the project (Doom's .doom)
-  ├── bin/              # hellmacs (dispatch), hellmacs-COMMAND, hellmacsscript
+  ├── bin/              # hellmacs (dispatch), hellmacs-COMMAND, hellmacsscript, hellmacs.sh
   ├── lisp/             # the engine; lib/ and cli/ load with hellmacs-require
   ├── modules/hellmacs/ # core's own module, :hellmacs
   ├── sources/hellmacs+/modules/  # the module catalog
   ├── profiles/         # shipped profiles (safe-mode)
-  ├── static/
-  └── themes/
+  └── static/
 
 Modules are found in this order (`hellmacs-module-load-path`): your
 modules/, then modules/, then sources/hellmacs+/modules/.
@@ -99,7 +102,8 @@ $HELLMACS_USER_DIR (User Configuration: ~/.config/hellmacs/ or $HELLMACSDIR)
 
 XDG Storage Layout:
   Data  ($XDG_DATA_HOME/hellmacs/):  Installed packages (Elpaca); profiles/default/: profile.eld,
-                                      the generated init.el(c), compiled/ (core and modules)
+                                      init.d/ (the parts), the generated init.MAJOR.MINOR.el(c),
+                                      autoloads.el(c), compiled/ (core and modules)
   Cache ($XDG_CACHE_HOME/hellmacs/): Native compilation eln-cache, package caches
   State ($XDG_STATE_HOME/hellmacs/): Undo history, recentf, bookmarks, dap-breakpoints
 ```
@@ -115,38 +119,34 @@ sequenceDiagram
     autonumber
     participant Host as OS / Shell
     participant EI as early-init.el
-    participant IN as profile init.el (generated by sync)
+    participant IN as profile init file (generated by sync)
     participant CR as lisp/hellmacs.el
-    participant PR as Profile / Elpaca
     participant MD as modules/
     participant UC as user config.el
 
     Host->>EI: emacs invocation
     EI->>EI: GC tuning (collection off during boot)
-    EI->>EI: Inhibit UI chrome (tool-bar, menu-bar, scroll-bar)
+    EI->>EI: Inhibit UI chrome (tool-bar, menu-bar, scroll-bar), hide mode-line and messages
     EI->>EI: Remap XDG directories
-    EI->>IN: Hand off to the profile's init file (lisp/hellmacs-start.el if none is current)
-    IN->>CR: Load core libraries & macros
-    CR->>PR: Evaluate profile.eld staleness
-    alt Profile Valid
-        PR->>PR: Activate package paths & load generated autoloads
-    else Profile Stale / Missing
-        PR->>PR: Fall back to Elpaca live sync
-    end
-    IN->>MD: Load active module init.el (core's :hellmacs first)
-    IN->>MD: Load active module config.el (use-package)
+    EI->>CR: Load core (compiled if current); hellmacs-initialize
+    CR->>CR: Entry point replaces Emacs' init file loading (lisp/hellmacs-emacs.el)
+    CR->>IN: hellmacs-start: load init.MAJOR.MINOR.elc (none: warn, plain Emacs)
+    IN->>IN: Part 20: user init.el settings; part 30: packages' :env
+    IN->>CR: hellmacs-startup: run hellmacs-startup-functions
+    CR->>IN: 5: packages on load-path; 60: modules' autoloads; 70: packages' autoloads
+    IN->>MD: 80: every module's init.el (core's :hellmacs first), then every config.el
     IN->>UC: Load ~/.config/hellmacs/config.el
-    IN->>CR: Reset GC threshold to low-pause runtime value (16MB; gcmh collects when idle)
+    CR->>CR: after-init: custom-file, GC threshold back to 16MB (gcmh collects when idle)
 ```
 
 1. **Pre-Frame (`early-init.el`)**:
-   * Disables GUI chrome before frame creation.
+   * Disables GUI chrome before frame creation, and hides the mode-line and messages until the init file has loaded.
    * Sets temporary 1GB GC allocation threshold to avoid boot-time collections.
    * Remaps cache, state, and data paths to XDG directories.
-2. **Orchestrator (the profile's generated `init.el`)**: as in Doom v3 there is no root `init.el`. `bin/hellmacs sync` writes `<profile>/init.el` (part 05: the compiled core on `load-path`; part 10: `lisp/hellmacs-start.el`'s forms) and compiles it; `early-init.el` hands it to Emacs (`hellmacs-init-file`), or `lisp/hellmacs-start.el` while it's missing or out of date. Batch sessions: `emacs --batch -l early-init.el -f hellmacs-start`.
-   * Loads the engine (`lisp/hellmacs.el`, `lisp/hellmacs-emacs.el`, ...).
-   * Loads compiled profile snapshot (`profile.eld`) when valid, providing instant autoloads without filesystem walks.
-   * Evaluates active module `init.el` $\rightarrow$ `config.el` $\rightarrow$ user `config.el`.
+   * Loads core and calls `hellmacs-initialize`, as Doom's calls `doom-initialize`.
+2. **The profile's init file**: as in Doom v3 there is no root `init.el`. `bin/hellmacs sync` writes `<profile>/init.MAJOR.MINOR.el` from the parts in `init.d/` (`lisp/hellmacs-profiles.el`) and compiles it; the entry point in `lisp/hellmacs-emacs.el` loads it (`hellmacs-start`). Batch sessions: `emacs --batch -l early-init.el -f hellmacs-start`.
+   * Everything was decided at sync time: the enabled modules, the packages' paths, every autoload. Startup reads no `packages.el`, checks nothing for staleness, and never installs: after a config change, `bin/hellmacs sync` (`doctor` notices a stale profile).
+   * `hellmacs-startup` runs `hellmacs-startup-functions` by depth: 5 data, 60 modules' autoloads, 70 packages' autoloads, 80 modules (`init.el` $\rightarrow$ `config.el`) $\rightarrow$ user `config.el`.
    * Restores GC threshold to 16MB managed by GCMH during idle.
 
 ---

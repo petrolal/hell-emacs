@@ -39,6 +39,27 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Changed
 
+- Startup, packages, the CLI and installing now work as Doom Emacs v3's.
+  Core loads from early-init.el (`hellmacs-initialize`), and the entry point
+  in lisp/hellmacs-emacs.el loads the profile's generated init file, now
+  `init.MAJOR.MINOR.el`, built from numbered `init.d/` parts that run on
+  `hellmacs-startup-functions`. Startup no longer installs packages or reads
+  packages.el: after changing your modules or packages, run `bin/hellmacs
+  sync`, as with `doom sync`. Without a sync, Emacs starts plain and says so.
+  lisp/hellmacs-start.el is gone.
+- `package!` takes `:ignore` and `:type`; `unpin!` and `disable-packages!`
+  are new; modules can hold `autoload/*.el`; module init and config hooks.
+- `bin/hellmacs`: options before the command (`-p`, `--hellmacsdir`, `-D`,
+  `-!`), short names (`s`, `up`, `doc`, `pf`), Doom's exit codes, a refusal
+  to run as root, commands from your `bin/` and `$HELLMACSPATH`, the new
+  `emacs`, `info` and `profile` commands, and `bin/hellmacs.sh`. `install`
+  takes `--[no-]config`, `--[no-]env` (it asks otherwise) and
+  `--[no-]install`, and warns about a `~/.emacs` that would win.
+- Layout: sync is in lisp/cli/sync.el, the `C-c` leader API is core's
+  module's `autoload/keybinds.el`, and the dashboard, modeline and
+  hellmacs-inferno theme live in their modules. `C-c h R` syncs, then
+  reloads.
+
 - Doom Emacs v3's architecture and layout (Phase 16). The engine is in
   `lisp/` (was `core/`), with `lisp/lib/` and `lisp/cli/` loaded through
   `hellmacs-require`; core's own features are a module, `modules/hellmacs/`

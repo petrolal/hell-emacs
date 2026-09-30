@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(require 'hellmacs-sync)
+(eval-and-compile (hellmacs-require 'hellmacs-cli 'sync))
 
 (defvar elpaca-cache-directory)
 

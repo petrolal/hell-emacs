@@ -1,0 +1,103 @@
+#!/usr/bin/env hellmacsscript
+;;; bin/hellmacs-profile --- List and sync profiles -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hellmacs profile' (Doom's `doom profile'): the profiles there are,
+;; and syncing all of them. A profile is a directory (Doom v3's implicit
+;; profiles; see `hellmacs--user-dir' in early-init.el):
+;;
+;;   ~/.config/hellmacs-NAME/            your own
+;;   ~/.config/hellmacs/profiles/NAME/   kept with your config
+;;   profiles/NAME/ in Hellmacs          the ones Hellmacs ships (safe-mode)
+;;
+;; Loaded by `hellmacs-cli-main' when the command runs, or run directly
+;; through bin/hellmacsscript. Lives outside `load-path'; see
+;; `hellmacs-cli-load'.
+
+;;; Code:
+
+(require 'hellmacs-profiles)
+
+(defun hellmacs-cli-profile--names ()
+  "The names of every profile there is, the default one (nil) first."
+  (let* ((config (or (getenv "XDG_CONFIG_HOME") "~/.config"))
+         (names
+          (append
+           (mapcar (lambda (dir) (substring (file-name-nondirectory (directory-file-name dir))
+                                            (length "hellmacs-")))
+                   (seq-filter #'file-directory-p
+                               (file-expand-wildcards (expand-file-name "hellmacs-*" config))))
+           (mapcar (lambda (dir) (file-name-nondirectory (directory-file-name dir)))
+                   (seq-filter #'file-directory-p
+                               (append
+                                (file-expand-wildcards
+                                 (expand-file-name "profiles/*" (hellmacs--user-dir nil)))
+                                (file-expand-wildcards (expand-file-name "profiles/*" hellmacs-dir))))))))
+    (cons nil (sort (delete-dups (seq-filter (lambda (name)
+                                               (string-match-p "\\`[A-Za-z0-9_-]+\\'" name))
+                                             names))
+                    #'string<))))
+
+(defun hellmacs-cli-profile--init-file (name)
+  "Profile NAME's generated init file (NAME nil: the default profile's)."
+  (expand-file-name
+   (format "%s/profiles/%s/init.%d.%d.el" (if name (concat "hellmacs-" name) "hellmacs")
+           (or name "default") emacs-major-version emacs-minor-version)
+   (or (getenv "XDG_DATA_HOME") "~/.local/share")))
+
+(defun hellmacs-cli-profile--run (&rest args)
+  "Run bin/hellmacs with ARGS, its output going to ours; return its exit code."
+  (let* ((done nil)
+         (proc (make-process
+                :name "hellmacs-profile" :noquery t :connection-type 'pipe
+                :command (cons (expand-file-name "bin/hellmacs" hellmacs-dir) args)
+                :filter (lambda (_ output) (princ output))
+                :sentinel (lambda (_ _) (setq done t)))))
+    (while (not done)
+      (accept-process-output proc 0.1))
+    (process-exit-status proc)))
+
+(defun hellmacs-cli-profile (&rest args)
+  "`list' the profiles, or `sync --all' of them."
+  (pcase (car args)
+    ((or 'nil "list" "ls")
+     (dolist (name (hellmacs-cli-profile--names))
+       (hellmacs-cli--say "%s %-16s %s"
+                          (if (equal name hellmacs-profile) "*" " ")
+                          (or name "default")
+                          (let ((init (hellmacs-cli-profile--init-file name)))
+                            (if (file-exists-p init) "synced" "not synced")))))
+    ("sync"
+     (unless (member "--all" args)
+       (user-error "profile sync: say --all (or `bin/hellmacs --profile NAME sync' for one)"))
+     (let (failed)
+       (dolist (name (hellmacs-cli-profile--names))
+         (hellmacs-cli--say "\n== %s ==" (or name "default"))
+         (unless (zerop (apply #'hellmacs-cli-profile--run
+                               (append (and name (list "--profile" name)) '("sync"))))
+           (push (or name "default") failed)))
+       (when failed
+         (error "Couldn't sync: %s" (string-join (nreverse failed) ", ")))))
+    (other (user-error "profile: unknown subcommand `%s' (list, sync --all)" other))))
+
+;;; hellmacs-profile ends here

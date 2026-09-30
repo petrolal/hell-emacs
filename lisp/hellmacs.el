@@ -32,9 +32,28 @@
 ;; Expects the `hellmacs-*-dir' variables,
 ;; `hellmacs--gc-cons-threshold' and `hellmacs--gc-cons-percentage' to
 ;; already be defined -- they're set in `early-init.el', which always
-;; loads before this file.
+;; loads before this file, and then calls `hellmacs-initialize', as
+;; Doom's early-init.el calls `doom-initialize'.
+;;
+;; The startup itself, from there:
+;;
+;;   early-init.el            dirs, GC and UI tuning; loads this file
+;;   `hellmacs-initialize'    core libraries; interactively, also
+;;                            lisp/hellmacs-emacs.el, whose entry point
+;;                            replaces Emacs' init file loading with...
+;;   `hellmacs-start'         the profile's generated init file
+;;                            (lisp/hellmacs-profiles.el), then
+;;   `hellmacs-startup'       `hellmacs-startup-functions', which that
+;;                            file filled: packages, autoloads, modules,
+;;                            your config
+;;
+;; Batch sessions start the same way:
+;;
+;;   emacs --batch -l early-init.el -f hellmacs-start -l SCRIPT.el
 
 ;;; Code:
+
+(require 'hellmacs-lib)
 
 ;;; Startup lifecycle ----------------------------------------------------
 ;;
@@ -92,6 +111,13 @@ opening a file."
 (hellmacs-run-hook-on 'hellmacs-first-buffer-hook
                       '(find-file-hook window-buffer-change-functions)
                       #'hellmacs--real-buffer-p)
+
+(defun hellmacs--run-packages-ready-h ()
+  "Run `hellmacs--packages-ready-hook'.
+Each function's errors only warn: one broken function (an error in
+`custom-file', say) mustn't keep the GC reset or `hellmacs-finalize',
+which come after it, from running."
+  (hellmacs-run-hooks 'hellmacs--packages-ready-hook))
 
 (defun hellmacs-finalize ()
   "Mark the end of startup and run `hellmacs-after-init-hook'."
@@ -329,6 +355,82 @@ Existing files are never overwritten."
   ;; dir at startup; from now on it belongs here.
   (setq custom-file (expand-file-name "custom.el" hellmacs-user-dir))
   (message "Hellmacs user config is in %s" (abbreviate-file-name hellmacs-user-dir)))
+
+;;; Bootstrap: initialize, start --------------------------------------------
+
+(defvar hellmacs-before-init-hook nil
+  "Run by `hellmacs-initialize', before the profile or any module loads.")
+
+(defvar hellmacs-startup-functions nil
+  "Functions `hellmacs-startup' runs, each with the profile's name.
+The profile's generated init file adds them, at the depth of their part
+\(see lisp/hellmacs-profiles.el): 5 its data, 60 the modules' autoloads,
+70 the packages', 80 the modules and your config.")
+
+(defvar hellmacs-profile-generated nil
+  "What the profile's init file was generated from: a plist, set by it.")
+
+(define-error 'hellmacs-error "Hellmacs error")
+(define-error 'hellmacs-nosync-error
+  "Hellmacs isn't synced for this Emacs; run `bin/hellmacs sync'" 'hellmacs-error)
+
+(defun hellmacs-init-file ()
+  "The profile's generated init file, for this Emacs version.
+<profile>/init.MAJOR.MINOR.el, as Doom's init.%d.%d.el: another Emacs
+version never loads it. Written by `bin/hellmacs sync'."
+  (expand-file-name (format "init.%d.%d.el" emacs-major-version emacs-minor-version)
+                    hellmacs-profile-dir))
+
+(defun hellmacs-initialize (&optional interactive)
+  "Bootstrap the session: core's libraries, and with INTERACTIVE, its defaults.
+Called by early-init.el, in every session (the CLI's too), as Doom's
+`doom-initialize'. The profile itself loads later: `hellmacs-start'."
+  (require 'hellmacs-packages)
+  (require 'hellmacs-modules)
+  (require 'hellmacs-treesit)   ; only points Emacs at the grammars sync builds
+  (when interactive
+    (hellmacs-context-push 'startup)
+    (hellmacs-context-push 'emacs)
+    (require 'hellmacs-emacs))   ; the stock-Emacs defaults, and the entry point
+  (hellmacs-run-hooks 'hellmacs-before-init-hook))
+
+(defun hellmacs-start ()
+  "Start Hellmacs: load the profile's init file, then run `hellmacs-startup'.
+Emacs does it itself (the entry point in lisp/hellmacs-emacs.el); batch
+sessions call it:
+
+  emacs --batch -l early-init.el -f hellmacs-start -l SCRIPT.el
+
+Signals `hellmacs-nosync-error' if there's no init file: `bin/hellmacs
+sync' (or `install') writes it."
+  (hellmacs-context-push 'startup)
+  (when noninteractive
+    (hellmacs-context-push 'cli)
+    (require 'hellmacs-emacs))
+  (let ((init-file (hellmacs-init-file)))
+    (unless (file-exists-p init-file)
+      (signal 'hellmacs-nosync-error
+              (list (format "%s doesn't exist; run `bin/hellmacs%s sync'"
+                            (abbreviate-file-name init-file)
+                            (if hellmacs-profile (format " --profile %s" hellmacs-profile) "")))))
+    ;; The compiled one, when there is one (`load' prefers it).
+    (load (file-name-sans-extension init-file) nil 'nomessage)
+    (hellmacs-startup)))
+
+(defun hellmacs-startup ()
+  "Run `hellmacs-startup-functions': packages, autoloads, modules, your config.
+As Doom's `doom-startup'."
+  (run-hook-with-args 'hellmacs-startup-functions hellmacs-profile)
+  ;; Hellmacs' notion of "started": every package activated, which with a
+  ;; synced profile is Emacs' own `after-init-hook'.
+  (add-hook 'after-init-hook #'hellmacs--run-packages-ready-h 90))
+
+;; Named, so `hellmacs-reload' re-adding it doesn't stack copies.
+(add-hook 'hellmacs-after-init-hook
+          (defun hellmacs--report-ready-h ()
+            (message "Hellmacs%s ready in %.2fs (%d GCs)"
+                     (if hellmacs-profile (format " [%s]" hellmacs-profile) "")
+                     hellmacs-init-time gcs-done)))
 
 (provide 'hellmacs)
 ;;; hellmacs.el ends here

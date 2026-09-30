@@ -24,7 +24,7 @@
 ;; Visual defaults only: theme, mode-line, line numbers. The cursor is
 ;; Emacs' own block.
 ;;
-;; The theme is Hellmacs' own (themes/hellmacs-inferno-theme.el):
+;; The theme is Hellmacs' own (themes/hellmacs-inferno-theme.el, in this module):
 ;; a charcoal altar, crimson flame, amber and gold, with no
 ;; dependencies. Set `hellmacs-theme' in your init.el to use another one
 ;; -- e.g. `modus-vivendi', built into Emacs -- or nil to load none.
@@ -36,7 +36,8 @@
 (when (eq hellmacs-theme 'hellmacs)
   (setq hellmacs-theme 'hellmacs-inferno))
 
-(add-to-list 'custom-theme-load-path (expand-file-name "themes/" hellmacs-dir))
+(add-to-list 'custom-theme-load-path
+             (expand-file-name "themes/" (hellmacs-module-get hellmacs--current-module :path)))
 
 (column-number-mode 1)
 (size-indication-mode 1)

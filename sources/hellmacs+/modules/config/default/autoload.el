@@ -25,10 +25,23 @@
 
 ;;;###autoload
 (defun hellmacs-reload ()
-  "Reload Hellmacs' init file, and with it your init.el and config.el."
+  "Sync, then reload the profile's init file, and with it your config.
+As Doom's `doom/reload': `bin/hellmacs sync' runs in a child Emacs (its
+output in *hellmacs sync*), so this session never loads the package
+manager; then the new init file loads here."
   (interactive)
-  (with-hellmacs-context 'reload
-    (hellmacs-start)))
+  (let ((buffer (get-buffer-create "*hellmacs sync*")))
+    (with-current-buffer buffer (erase-buffer))
+    (message "Hellmacs: syncing...")
+    (if (zerop (apply #'call-process (expand-file-name "bin/hellmacs" hellmacs-dir) nil buffer t
+                      (append (and hellmacs-profile (list "--profile" hellmacs-profile))
+                              '("sync"))))
+        (progn
+          (with-hellmacs-context 'reload
+            (hellmacs-start))
+          (message "Hellmacs: synced and reloaded"))
+      (pop-to-buffer buffer)
+      (user-error "Sync failed; see *hellmacs sync*"))))
 
 ;;;###autoload
 (defun hellmacs-visit-dir ()

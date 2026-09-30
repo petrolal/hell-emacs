@@ -32,7 +32,8 @@
 ;;
 ;;   packages.el  `package!' declarations only -- what to install --
 ;;                and `depends-on!', the other modules this one needs
-;;   autoload.el  commands and helpers other files may call
+;;   autoload.el  commands and helpers other files may call (or
+;;   autoload/    several files of them, as in Doom)
 ;;   init.el      runs early, before any module's config.el
 ;;   config.el    the module's actual configuration
 ;;   cli.el       extends bin/hellmacs (sync steps, extra commands)
@@ -44,17 +45,17 @@
 ;;              :completion vertico (corfu +tab)
 ;;              :config default)
 ;;
-;; `bin/hellmacs sync' (`hellmacs-sync') reads every enabled module's
-;; packages.el, then yours, installs those packages, and records a
-;; profile of them (see "Synced profile" below). Startup then:
+;; `bin/hellmacs sync' (`hellmacs-sync', lisp/cli/sync.el) reads every
+;; enabled module's packages.el, then yours, installs those packages
+;; through Elpaca, and generates the profile's init file
+;; (lisp/hellmacs-profiles.el), which at startup:
 ;;
-;;   1. activates the packages from that profile -- or, if it's missing
-;;      or out of date, reads the packages.el files and installs and
-;;      activates the packages through Elpaca right away
-;;   2. loads each module's autoload.el and init.el, in order
-;;   3. loads each module's config.el, in order
+;;   1. puts the packages on `load-path' and loads their autoloads
+;;   2. loads the modules' autoloads
+;;   3. loads each module's init.el, in order, then each config.el
 ;;
-;; after which `init.el' at the repo root loads your config.el.
+;; and then your config.el. As in Doom, startup never installs anything:
+;; after changing your `hellmacs!' block or a packages.el, sync again.
 ;;
 ;; Modules in `hellmacs-user-dir'/modules/ take precedence over
 ;; Hellmacs' own, so you can override one by copying it there.
@@ -91,6 +92,25 @@ from the synced profile otherwise.")
 
 (defvar hellmacs-treesit-declarations) ; hellmacs-treesit.el
 (declare-function hellmacs-treesit-apply "hellmacs-treesit")
+
+(defvar hellmacs-unpinned-packages nil
+  "Packages whose `:pin' is ignored: `t' for every package. See `unpin!'.")
+
+(defvar hellmacs-before-modules-init-hook nil
+  "Run before the modules' init.el files load, at startup.")
+
+(defvar hellmacs-after-modules-init-hook nil
+  "Run after every module's init.el has loaded, at startup.")
+
+(defvar hellmacs-before-modules-config-hook nil
+  "Run before the modules' config.el files load, at startup.")
+
+(defvar hellmacs-after-modules-config-hook nil
+  "Run after every module's config.el has loaded, before your config.el.")
+
+(defvar hellmacs--use-compiled nil
+  "Non-nil if modules may load what `bin/hellmacs sync' compiled for them.
+Set at startup, by the profile's init file, when core loaded compiled.")
 
 (defvar hellmacs--current-module nil
   "The (GROUP . NAME) of the module whose files are being loaded.
@@ -306,6 +326,10 @@ config.el. PLIST accepts:
   :disable BOOL   don't install it, and ignore every `use-package'
                   block for it (to switch off a module's package from
                   your own packages.el)
+  :ignore FORM    don't install it, if FORM is non-nil, but keep its
+                  configuration (you installed it some other way)
+  :type TYPE      \\='built-in (as :built-in t), \\='virtual (not a real
+                  package: never installed), or nil, a normal package
   :env ALIST      environment variables, ((\"VAR\" . \"value\") ...), set
                   while packages are built (so the package is compiled
                   with them) and again at every startup. For example,
@@ -324,6 +348,42 @@ one, so your packages.el (read last) can change a module's."
     (when (consp (car-safe env))
       (setq plist (plist-put (copy-sequence plist) :env `',env))))
   `(hellmacs-package-declare ',name (list ,@plist)))
+
+(defmacro disable-packages! (&rest packages)
+  "Disable PACKAGES: as `(package! NAME :disable t)' for each. See `package!'."
+  `(progn ,@(mapcar (lambda (name) `(package! ,name :disable t)) packages)))
+
+(defmacro unpin! (&rest targets)
+  "Install TARGETS at their latest version, ignoring their `:pin'.
+Use it in your packages.el. Each target is a package name, a module
+written (GROUP NAME) or (GROUP) -- every package that module or group
+declares -- or t, for every package.
+
+  (unpin! lsp-mode)
+  (unpin! (:lang java) (:tools))
+  (unpin! t)"
+  `(hellmacs-package-unpin ',targets))
+
+(defun hellmacs-package-unpin (targets)
+  "Record TARGETS as unpinned. See `unpin!'."
+  (dolist (target targets)
+    (cond ((eq target t)
+           (setq hellmacs-unpinned-packages t))
+          ((listp hellmacs-unpinned-packages)
+           (if (symbolp target)
+               (cl-pushnew target hellmacs-unpinned-packages)
+             (pcase-let ((`(,group ,name) target))
+               (pcase-dolist (`(,package . ,plist) hellmacs-packages)
+                 (when (seq-some (lambda (key)
+                                   (and (consp key) (eq (car key) group)
+                                        (or (null name) (eq (cdr key) name))))
+                                 (plist-get plist :modules))
+                   (cl-pushnew package hellmacs-unpinned-packages)))))))))
+
+(defun hellmacs-package-unpinned-p (name)
+  "Non-nil if package NAME's `:pin' is ignored (`unpin!')."
+  (or (eq hellmacs-unpinned-packages t)
+      (memq name hellmacs-unpinned-packages)))
 
 (defun hellmacs-package-declare (name plist)
   "Record PLIST for package NAME in `hellmacs-packages'. See `package!'."
@@ -359,10 +419,13 @@ steps, inherit them."
 Nil means the package shouldn't be installed."
   (let ((built-in (plist-get plist :built-in)))
     (unless (or (plist-get plist :disable)
+                (plist-get plist :ignore)
+                (memq (plist-get plist :type) '(built-in virtual))
                 (eq built-in t)
                 (and (eq built-in 'prefer) (hellmacs-package-built-in-p name)))
       (let ((recipe (copy-sequence (plist-get plist :recipe))))
-        (when-let* ((pin (plist-get plist :pin)))
+        (when-let* ((pin (and (not (hellmacs-package-unpinned-p name))
+                              (plist-get plist :pin))))
           (setq recipe (plist-put recipe :ref pin)))
         (if recipe (cons name recipe) name)))))
 
@@ -390,10 +453,6 @@ in your config leaves you with a working editor to fix it in."
           'hellmacs (format "Error loading %s: %s"
                             (abbreviate-file-name file) (error-message-string err))
           :error))))))
-
-(defvar hellmacs--use-compiled nil
-  "Non-nil if modules may load what `bin/hellmacs sync' compiled for them.
-Set at startup: only with an up-to-date profile, and core compiled too.")
 
 (defconst hellmacs-module--compiled-files '("init.el" "config.el")
   "Module files `bin/hellmacs sync' byte-compiles: the ones every startup loads.")
@@ -427,6 +486,13 @@ startup: one broken module should degrade Hellmacs, not brick it."
               'hellmacs (format "Module %s: error in %s: %s"
                                 (hellmacs-module-key-string key) file (error-message-string err))
               :error))))))))
+
+(defun hellmacs-module-autoload-files (key)
+  "Module KEY's autoload files: its autoload.el and autoload/*.el, as in Doom."
+  (let ((dir (hellmacs-module-get key :path)))
+    (append (and (file-exists-p (expand-file-name "autoload.el" dir))
+                 (list (expand-file-name "autoload.el" dir)))
+            (file-expand-wildcards (expand-file-name "autoload/*.el" dir)))))
 
 (defun hellmacs-module-load (name)
   "Load NAME (like \"+paths\") from the directory of the module being loaded.
@@ -487,6 +553,7 @@ by bin/hellmacs and `hellmacs-sync', never at a normal startup."
 Fills `hellmacs-packages' and `hellmacs-module-dependencies'. A module's
 dependencies (`depends-on!') have their packages.el read before its own."
   (setq hellmacs-packages nil
+        hellmacs-unpinned-packages nil
         hellmacs-module-dependencies nil
         hellmacs-treesit-declarations nil)
   (let ((hellmacs--current-module :core))
@@ -614,133 +681,10 @@ Running the sync again usually finishes the job." (length pending)))
           (elpaca-build-error nil))
       (cancel-timer watchdog))))
 
-;;; Synced profile ---------------------------------------------------------
-;;
-;; `hellmacs-sync' (bin/hellmacs sync) installs every declared package,
-;; then records what startup needs in a profile: the packages' build
-;; directories and autoload files, in dependency order, plus loaddefs
-;; generated from modules' autoload.el files. A startup that finds an
-;; up-to-date profile just replays it, without loading Elpaca or reading
-;; any packages.el.
-;;
-;; The profile is out of date when the enabled modules or their flags
-;; change, when any packages.el or autoload.el involved changes, when a
-;; recorded build directory disappears, or when Emacs is upgraded. Then
-;; startup falls back to installing/activating live through Elpaca, and
-;; warns that a sync is due.
-
-(defun hellmacs-profile-file (name)
-  "Return the path of file NAME in `hellmacs-profile-dir'."
-  (expand-file-name name hellmacs-profile-dir))
-
-(defun hellmacs-profile--modules ()
-  "Describe the enabled modules for staleness checks: key, flags, path."
-  (mapcar (lambda (key)
-            (list key (hellmacs-module-get key :flags) (hellmacs-module-get key :path)))
-          (hellmacs-module-list)))
-
-(defun hellmacs-profile--inputs ()
-  "Return the files a profile depends on, each paired with its mtime.
-The mtime is nil for files that don't exist, so creating one counts
-as a change too."
-  (mapcar (lambda (file)
-            (cons file (when-let* ((attrs (file-attributes file)))
-                         (float-time (file-attribute-modification-time attrs)))))
-          (cl-list* (expand-file-name "packages.el" hellmacs-core-dir)
-                    (expand-file-name "packages.el" hellmacs-user-dir)
-                    (cl-loop for key in (hellmacs-module-list)
-                             for dir = (hellmacs-module-get key :path)
-                             collect (expand-file-name "packages.el" dir)
-                             collect (expand-file-name "autoload.el" dir)))))
-
-(defun hellmacs-profile--stale-reason (profile)
-  "Return why PROFILE doesn't match the current config, or nil if it does."
-  (cond ((not (equal (plist-get profile :emacs-version) emacs-version))
-         (format "Emacs changed from %s to %s" (plist-get profile :emacs-version) emacs-version))
-        ((not (equal (plist-get profile :modules) (hellmacs-profile--modules)))
-         "the enabled modules changed")
-        ((when-let* ((changed (seq-difference (hellmacs-profile--inputs)
-                                              (plist-get profile :inputs))))
-           (format "%s changed" (abbreviate-file-name (car (car changed))))))
-        ((seq-find (lambda (dir) (not (file-directory-p dir))) (plist-get profile :load-path))
-         "an installed package is missing")))
-
-(defun hellmacs-profile-read ()
-  "Return the synced profile's data, or nil if it's missing or unreadable."
-  (let ((file (hellmacs-profile-file "profile.eld")))
-    (when (file-exists-p file)
-      (with-temp-buffer
-        (insert-file-contents file)
-        (ignore-errors (read (current-buffer)))))))
-
-(defun hellmacs-profile-activate ()
-  "Activate packages from the synced profile, if it is up to date.
-Return non-nil on success. On failure, say why (unless there's no
-profile at all) and return nil; the caller activates live instead."
-  (let (profile reason)
-    (cond ((not (file-exists-p (hellmacs-profile-file "profile.eld")))
-           nil)
-          ((not (setq profile (hellmacs-profile-read)))
-           (display-warning 'hellmacs "The synced profile is unreadable; run `bin/hellmacs sync'.")
-           nil)
-          ((setq reason (hellmacs-profile--stale-reason profile))
-           (display-warning
-            'hellmacs
-            (format "Your config changed since the last sync (%s). \
-Packages were activated directly, which is slower and may install \
-packages now. Run `bin/hellmacs sync' to fix." reason))
-           nil)
-          (t
-           (setq hellmacs-packages (plist-get profile :packages)
-                 hellmacs-module-dependencies (plist-get profile :dependencies)
-                 hellmacs-treesit-declarations (plist-get profile :treesit))
-           (hellmacs-packages-apply-env)
-           (dolist (dir (reverse (plist-get profile :load-path)))
-             (add-to-list 'load-path dir))
-           ;; Every package's autoloads and the modules', in one compiled
-           ;; file; a profile from before that loads them one by one.
-           (if (file-exists-p (hellmacs-profile-file "autoloads.el"))
-               (load (hellmacs-profile-file "autoloads") nil 'nomessage)
-             (dolist (file (plist-get profile :autoloads))
-               (load file 'noerror 'nomessage 'nosuffix))
-             (load (hellmacs-profile-file "module-autoloads.el") 'noerror 'nomessage 'nosuffix))
-           t))))
-
-;;; Startup ----------------------------------------------------------------
-
-(defun hellmacs--run-packages-ready-h ()
-  "Run `hellmacs--packages-ready-hook'.
-Each function's errors only warn: one broken function (an error in
-`custom-file', say) mustn't keep the GC reset or `hellmacs-finalize',
-which come after it, from running."
-  (hellmacs-run-hooks 'hellmacs--packages-ready-hook))
-
-(defun hellmacs-modules-startup ()
-  "Activate enabled modules' packages, then load the modules.
-Uses the synced profile when it is up to date; otherwise installs and
-activates packages through Elpaca. See the commentary at the top of
-this file for the order."
-  (let ((synced (hellmacs-profile-activate)))
-    (if synced
-        (add-hook 'after-init-hook #'hellmacs--run-packages-ready-h 90)
-      (hellmacs-modules-install-packages)
-      (add-hook 'elpaca-after-init-hook #'hellmacs--run-packages-ready-h))
-    (setq hellmacs--use-compiled (and synced (bound-and-true-p hellmacs--compiled-core-p)))
-    (hellmacs-modules-check-dependencies)
-    (hellmacs-treesit-apply)
-    (let ((modules (hellmacs-module-list)))
-      (dolist (key modules)
-        ;; A synced profile has these as autoloads already.
-        (unless synced
-          (hellmacs-module--load key "autoload.el"))
-        (hellmacs-module--load key "init.el"))
-      (dolist (key modules)
-        (hellmacs-module--load key "config.el")))))
-
 ;; Used in packages.el files, which a CLI session may read first.
 (autoload 'hellmacs-treesit! "hellmacs-treesit" nil nil 'macro)
 
-(autoload 'hellmacs-sync "hellmacs-sync"
+(autoload 'hellmacs-sync (hellmacs--part-file 'hellmacs-cli 'sync)
   "Install every declared package, then write the synced profile." t)
 
 ;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.

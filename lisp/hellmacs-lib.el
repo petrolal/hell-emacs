@@ -56,7 +56,7 @@ Set by `hellmacs-finalize' in `hellmacs'.")
 ;; (hellmacs-require \='hellmacs-lib \='net), like `doom-require'. Each part
 ;; ends with (hellmacs-provide \='hellmacs-lib \='net).
 
-(defvar hellmacs--compiled-core-p) ; init.el
+(defvar hellmacs--compiled-core-p) ; early-init.el
 (defvar hellmacs-compiled-dir)     ; early-init.el
 (defvar hellmacs-core-dir)         ; early-init.el
 

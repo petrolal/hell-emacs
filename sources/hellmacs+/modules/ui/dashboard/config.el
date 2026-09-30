@@ -32,6 +32,7 @@
 ;;   (setq hellmacs-splash-enable nil)      ; start on *scratch* instead
 
 ;; At compile time too (`bin/hellmacs sync'), for the `require' below.
+;; It lives in this module's directory, as a Doom module keeps its files.
 (eval-and-compile
-  (add-to-list 'load-path (expand-file-name "hellmacs+/modules/ui/" hellmacs-sources-dir)))
+  (add-to-list 'load-path (hellmacs-module-get hellmacs--current-module :path)))
 (require 'hellmacs-dashboard)

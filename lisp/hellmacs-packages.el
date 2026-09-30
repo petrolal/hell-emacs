@@ -28,10 +28,10 @@
 ;; `elpaca-use-package-mode' integration is simple.
 ;;
 ;; Elpaca itself is only loaded when something has to be installed or
-;; built: by `hellmacs-sync', or at a startup that has no up-to-date
-;; synced profile (see `hellmacs-modules-startup'). A synced startup
-;; just adds the recorded build directories to `load-path' and loads
-;; their autoloads -- no package manager involved.
+;; built: by `hellmacs-sync' (bin/hellmacs sync). Startup never loads it:
+;; as in Doom, the profile's generated init file puts the recorded build
+;; directories on `load-path' and loads their autoloads -- no package
+;; manager involved.
 
 ;;; Code:
 

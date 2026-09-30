@@ -23,20 +23,21 @@ To work on Hellmacs itself:
 4. When a change breaks startup, `safe-mode` (in `profiles/`) starts Hellmacs' core with no other module and none of your config:
    ```sh
    ~/src/hellmacs/bin/hellmacs --profile safe-mode sync
-   emacs --init-directory ~/src/hellmacs --profile safe-mode
+   ~/src/hellmacs/bin/hellmacs --profile safe-mode emacs
    ```
 
-There is no `init.el` in the checkout: `bin/hellmacs sync` generates each profile's (from `lisp/hellmacs-start.el`), and until it has, Emacs starts from `lisp/hellmacs-start.el` directly. Run `sync` after changing `lisp/` or a module, or you're running the slower source fallback.
+There is no `init.el` in the checkout: `bin/hellmacs sync` generates each profile's (`lisp/hellmacs-profiles.el`), and until it has, Emacs starts plain and says so, as Doom does. Run `sync` after changing `lisp/`, a module's list of files, its `packages.el` or its autoloads: the init file records them.
 
 ### Where code goes (Doom Emacs v3's layout)
 
 | You're adding | Put it in |
 |---|---|
-| Engine code every session needs | `lisp/hellmacs-*.el` (loaded by `lisp/hellmacs-start.el`) |
+| Engine code every session needs | `lisp/hellmacs-*.el` (required by `hellmacs-initialize`, or by another core file) |
+| A step of the startup itself | A part of the generated init file: a function in `hellmacs-profile-generate-functions` (`lisp/hellmacs-profiles.el`) |
 | A library other code calls on demand | `lisp/lib/NAME.el`, ending with `(hellmacs-provide 'hellmacs-lib 'NAME)`; load it with `(hellmacs-require 'hellmacs-lib 'NAME)` |
 | Code only `bin/hellmacs` needs | `lisp/cli/NAME.el` (`hellmacs-cli` parts), or the command's own file |
 | A `bin/hellmacs` command | `bin/hellmacs-NAME` (executable, `#!/usr/bin/env hellmacsscript`), defining `hellmacs-cli-NAME` |
-| Something every config gets that is user-facing or needs a package | Core's own module, `modules/hellmacs/` |
+| Something every config gets that is user-facing or needs a package (keybinding API included) | Core's own module, `modules/hellmacs/` (`autoload/` for functions other modules call) |
 | An optional feature or a language | A module: `sources/hellmacs+/modules/<group>/<name>/` |
 | A profile Hellmacs ships | `profiles/NAME/` |
 

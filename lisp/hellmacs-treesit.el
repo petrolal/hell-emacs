@@ -225,7 +225,7 @@ Returns non-nil when it is available afterwards."
     (hellmacs-treesit-install lang))
   (hellmacs-treesit-installed-p lang))
 
-(declare-function hellmacs-sync--log "hellmacs-sync")
+(declare-function hellmacs-sync--log "cli/sync")
 
 (defun hellmacs-treesit-sync ()
   "Build the grammars the enabled modules asked for. For `hellmacs-sync-functions'."

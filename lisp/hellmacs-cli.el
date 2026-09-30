@@ -25,11 +25,17 @@
 ;; file, and calls `hellmacs-cli-main' with the command-line arguments.
 ;; Each command is a `hellmacs-cli-COMMAND' function; see `hellmacs-cli-help'.
 ;;
-;; Commands print plain text on stdout and exit 0 on success, 1 on failure.
+;; Commands print plain text on stdout. Exit codes, as `doom's:
+;;   0  success
+;;   1  no error, but the command couldn't complete (a check failed)
+;;   2  an error, inside Hellmacs or the command
+;;   3  a problem with Emacs or the install (bin/hellmacs says which)
+;;   5  no such command
+;;   6  a wrong, missing or extra option
 
 ;;; Code:
 
-(require 'hellmacs-sync)
+(eval-and-compile (hellmacs-require 'hellmacs-cli 'sync))
 (eval-and-compile
   (hellmacs-require 'hellmacs-cli 'bundle)
   (hellmacs-require 'hellmacs-cli 'config)
@@ -100,6 +106,24 @@ An error if it's there without a value."
         (error "%s needs a value" option))
       value)))
 
+(defun hellmacs-cli--flag (args name)
+  "Whether ARGS say --NAME (t), --no-NAME (`no'), or neither (nil), as Doom's
+--flag/--no-flag options."
+  (cond ((member (concat "--no-" name) args) 'no)
+        ((member (concat "--" name) args) t)))
+
+(defun hellmacs-cli-force-p ()
+  "Non-nil if every prompt is to be accepted: `bin/hellmacs -!' (--force)."
+  (member (getenv "HELLMACS_FORCE") '("1" "t" "true" "yes")))
+
+(defun hellmacs-cli--yes-p (prompt &optional default)
+  "Ask PROMPT, a yes-or-no question; return non-nil for yes.
+Without a person to answer (no terminal), return DEFAULT; with
+`bin/hellmacs -!', t."
+  (cond ((hellmacs-cli-force-p) t)
+        ((not (getenv "__HELLMACSTTY")) default)
+        (t (y-or-n-p prompt))))
+
 (defun hellmacs-cli--read-modules (spec)
   "SPEC, the text of a `hellmacs!' block's arguments, as a list."
   (let ((modules (condition-case nil
@@ -120,14 +144,30 @@ release (the tag vMAJOR.MINOR.PATCH), or `main', the development branch.
 
 ;;; Commands: bin/hellmacs-COMMAND ------------------------------------------
 
+(defvar hellmacs-cli-load-path
+  (append (list (expand-file-name "bin/" hellmacs-dir)
+                (expand-file-name "bin/" hellmacs-user-dir))
+          (when-let* ((path (getenv "HELLMACSPATH")))
+            (split-string path path-separator t)))
+  "Directories searched for hellmacs-COMMAND files, in order, as `$PATH' is.
+Hellmacs' bin/, your config's bin/, then $HELLMACSPATH's directories
+\(colon-separated), as Doom's `doom-cli-load-path' and $DOOMPATH.")
+
+(defconst hellmacs-cli-aliases
+  '(("s" . "sync") ("up" . "upgrade") ("doc" . "doctor") ("pf" . "profile")
+    ("h" . "help") ("v" . "version"))
+  "Short names of commands, as `doom's.")
+
 (defun hellmacs-cli-command-file (command)
   "The file defining COMMAND: bin/hellmacs-COMMAND, else its family's
-\(upgrade-self is bin/hellmacs-upgrade's), as Doom v3's bin/doom-COMMAND.
-Nil if there's none."
+\(upgrade-self is bin/hellmacs-upgrade's), as Doom v3's bin/doom-COMMAND,
+in the first of `hellmacs-cli-load-path' that has it. Nil if there's none."
   (when (string-match-p "\\`[a-z][a-z-]*\\'" command)
     (seq-some (lambda (name)
-                (let ((file (expand-file-name (concat "bin/hellmacs-" name) hellmacs-dir)))
-                  (and (file-regular-p file) file)))
+                (seq-some (lambda (dir)
+                            (let ((file (expand-file-name (concat "hellmacs-" name) dir)))
+                              (and (file-regular-p file) file)))
+                          hellmacs-cli-load-path))
               (list command (car (split-string command "-"))))))
 
 (defvar hellmacs-cli--loaded-commands nil
@@ -137,7 +177,8 @@ Nil if there's none."
   "Load the file of each of COMMANDS, once; with none, every command's."
   (dolist (file (if commands
                     (mapcar #'hellmacs-cli-command-file commands)
-                  (file-expand-wildcards (expand-file-name "bin/hellmacs-*" hellmacs-dir))))
+                  (mapcan (lambda (dir) (file-expand-wildcards (expand-file-name "hellmacs-*" dir)))
+                          hellmacs-cli-load-path)))
     (when (and file (not (member file hellmacs-cli--loaded-commands)))
       (push file hellmacs-cli--loaded-commands)
       (load file nil 'nomessage 'nosuffix))))
@@ -147,32 +188,56 @@ Nil if there's none."
 (defun hellmacs-cli-help (&rest _)
   "Print usage."
   (hellmacs-cli--say "\
-Usage: bin/hellmacs [--profile NAME] COMMAND [OPTIONS]
+Usage: bin/hellmacs [OPTIONS] COMMAND [ARGS]
 
---profile NAME (or HELLMACS_PROFILE=NAME) acts on a named profile: a
-separate config (~/.config/hellmacs-NAME) with its own packages. Start
-Emacs on it with `emacs --init-directory DIR --profile NAME'.
+Options (before the command):
+  -p, --profile NAME   Act on a named profile: a separate config
+                       (~/.config/hellmacs-NAME) with its own packages.
+                       Start Emacs on it with `bin/hellmacs -p NAME emacs'.
+  --hellmacsdir DIR    Use the config in DIR instead of ~/.config/hellmacs.
+  -D, --debug          Debug output, and backtraces on errors.
+  -!, --force          Don't ask: accept every prompt.
 
-Commands:
-  install [--env] [--no-config] [--from-bundle FILE]
+Commands (short names in brackets):
+  install [--[no-]config] [--[no-]env] [--[no-]install] [--from-bundle FILE]
              First-time setup: create your config (~/.config/hellmacs), sync,
-             optionally save your shell environment, then run doctor.
+             save your shell environment (it asks, unless --env or --no-env),
+             then run doctor. --no-install: don't sync yet.
              --from-bundle: install from an offline bundle (see `bundle'),
              checking every file's SHA-256, with no network access at all.
-  sync       Install/build every package your modules and packages.el declare,
-             and write the profile Emacs starts from. Run it after changing
-             your hellmacs! block, a packages.el or a module's autoload.el.
-  upgrade [--packages] [--channel stable|main]
+  sync [s]   Install/build every package your modules and packages.el declare,
+             and generate the init file Emacs starts from. Run it after
+             changing your hellmacs! block, a packages.el or a module's
+             autoloads, as `doom sync'.
+  upgrade [up] [--packages] [--channel stable|main]
              Update Hellmacs and every unpinned package, then sync. Hellmacs
              moves to its channel's latest: stable, the latest release (the
              default; `hellmacs-upgrade-channel'), or main, the development
              branch. --packages: only update packages.
-  version    Show Hellmacs' version, its update channel and the Emacs it runs on.
+  emacs [--vanilla] [-- EMACS-ARGS]
+             Start Emacs on this Hellmacs (and --profile). --vanilla: Emacs
+             with no config at all (emacs -Q), to tell Hellmacs' problems
+             from Emacs'.
+  profile [pf] list | sync --all
+             List the profiles there are, and whether each is synced; or sync
+             all of them.
+  doctor [doc]
+             Check Emacs, tools and your config for problems.
+             With --network, also check that the hosts Hellmacs fetches from
+             can be reached (always, when a proxy, CA or mirror is set).
+  info       Print what a bug report needs: Hellmacs, Emacs, system, config.
+  version [v]
+             Show Hellmacs' version, its update channel and the Emacs it runs on.
+  env [--clear]
+             Save your shell's environment (PATH, JAVA_HOME, ...) for Emacs to
+             load at startup; --clear removes it.
+  gc [-n]    Delete installed packages nothing declares any more.
+             -n, --dry-run: only list them.
+  lock       Record the exact commit of every package in
+             ~/.config/hellmacs/packages.lock.eld; later syncs install those.
   verify     Check that every file sync installed is unchanged (its SHA-256),
              and every package at the commit sync installed (and your lock
              file pins). Fails on any difference.
-  lock       Record the exact commit of every package in
-             ~/.config/hellmacs/packages.lock.eld; later syncs install those.
   bundle OUT.tar.zst [--modules SPEC]
              Sync, then pack everything a sync installs (packages, language
              servers, grammars, the lock file) into one archive, for machines
@@ -189,28 +254,24 @@ Commands:
              List the modules on by default that your hellmacs! block misses
              (made from an older template?); --add-defaults adds them, keeping
              a backup of init.el. Then run sync.
-  gc [-n]    Delete installed packages nothing declares any more.
-             -n, --dry-run: only list them.
-  env [--clear]
-             Save your shell's environment (PATH, JAVA_HOME, ...) for Emacs to
-             load at startup; --clear removes it.
-  doctor     Check Emacs, tools and your config for problems.
-             With --network, also check that the hosts Hellmacs fetches from
-             can be reached (always, when a proxy, CA or mirror is set).
   test [REGEXP]
              Run Hellmacs' own test suites (only tests matching REGEXP),
              in temporary directories.
-  help       Show this help.
+  help [h]   Show this help.
+
+More commands: a hellmacs-NAME file in your config's bin/, or in a directory
+on $HELLMACSPATH, is `bin/hellmacs NAME'; and enabled modules add theirs.
 
 Environment: EMACS (Emacs binary), HELLMACSDIR (your config dir),
-XDG_DATA_HOME, XDG_CACHE_HOME, XDG_STATE_HOME."))
+HELLMACS_PROFILE, HELLMACSPATH, DEBUG, XDG_DATA_HOME, XDG_CACHE_HOME,
+XDG_STATE_HOME."))
 
 (defun hellmacs-cli-main ()
   "Run the bin/hellmacs command in `command-line-args-left', then exit."
   (let* ((args (delete "--" (copy-sequence command-line-args-left)))
          (command (pcase (car args)
                     ((or 'nil "-h" "--help") "help")
-                    (c c)))
+                    (c (or (cdr (assoc c hellmacs-cli-aliases)) c))))
          fn)
     (setq command-line-args-left nil)
     ;; early-init.el tuned these for an interactive boot, which a batch
@@ -238,13 +299,18 @@ XDG_DATA_HOME, XDG_CACHE_HOME, XDG_STATE_HOME."))
     (unless (and fn (fboundp fn) (not (string-prefix-p "-" command)))
       (hellmacs-cli--say "bin/hellmacs: unknown command `%s'\n" command)
       (hellmacs-cli-help)
-      (kill-emacs 1))
+      (kill-emacs 5))
     (condition-case err
         (progn (apply fn (cdr args))
                (kill-emacs (if (zerop hellmacs-cli--problems) 0 1)))
+      (user-error
+       (hellmacs-cli--say "Error: %s" (error-message-string err))
+       (kill-emacs 6))
       (error
        (hellmacs-cli--say "Error: %s" (error-message-string err))
-       (kill-emacs 1)))))
+       (when init-file-debug
+         (hellmacs-cli--say "%s" (backtrace-to-string)))
+       (kill-emacs 2)))))
 
 (provide 'hellmacs-cli)
 ;;; hellmacs-cli.el ends here

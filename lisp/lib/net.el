@@ -229,7 +229,7 @@ error saying what's missing (a JDK, its keytool, a readable CA)."
       (when (file-exists-p tmp) (delete-file tmp)))
     hellmacs-net-truststore))
 
-(declare-function hellmacs-sync--log "hellmacs-sync")
+(declare-function hellmacs-sync--log "cli/sync")
 
 (defun hellmacs-net-sync ()
   "Build the JVMs' truststore when `hellmacs-ca-bundle' is set. For `hellmacs-sync-functions'."

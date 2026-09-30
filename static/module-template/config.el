@@ -8,7 +8,7 @@
 ;;
 ;; A module can have any of these files, all optional:
 ;;   packages.el  `package!' declarations (what to install)
-;;   autoload.el  commands/helpers other files may call
+;;   autoload.el  commands/helpers other files may call (or autoload/*.el)
 ;;   init.el      runs before any module's config.el
 ;;   config.el    this file: the actual configuration
 ;;
