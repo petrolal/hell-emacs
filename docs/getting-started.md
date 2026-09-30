@@ -36,6 +36,8 @@ git clone https://github.com/petrolal/hellmacs.git ~/.config/emacs
 git clone https://github.com/petrolal/hellmacs.git ~/hellmacs
 ```
 
+Hellmacs installs the way Doom Emacs does: clone it as your Emacs directory, then run its `bin/` installer. Your own config goes in `~/.config/hellmacs/` (Doom's is `~/.config/doom/`), never in the clone. Don't clone with `--depth 1`: `bin/hellmacs upgrade` follows release tags.
+
 ### 2. Run the installer
 Run `bin/hellmacs install` with `--env` to create your user configuration and save your shell environment (`JAVA_HOME`, `PATH`, etc.):
 
@@ -59,6 +61,11 @@ emacs --init-directory ~/hellmacs
 ```
 
 There's no `init.el` in the Hellmacs checkout: as in Doom Emacs v3, `sync` generates one for your profile, in `~/.local/share/hellmacs/`, and Emacs starts from it.
+
+Add `~/.config/emacs/bin` to your `PATH` to run `hellmacs sync`, `hellmacs doctor` and the rest from anywhere.
+
+### 4. Add modules
+Your `~/.config/hellmacs/init.el` lists every module Hellmacs has, the optional ones commented out. Uncomment one (say `:lang groovy`), then run `hellmacs sync` and restart Emacs. For your own modules, see the [Configuration Guide](configuration.md#creating-private-custom-modules). A plugin manager for third-party modules is planned ([roadmap](roadmap.md), Phase 15).
 
 ### If something breaks
 Start the `safe-mode` profile: Hellmacs' core, with none of your modules or config. If it works, add your modules back one at a time to find the culprit.

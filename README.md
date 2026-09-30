@@ -135,13 +135,26 @@ Every text colour is at least 4.5:1 against the background it's drawn on (`test/
 <details open><summary><b>Quickstart (Linux / macOS)</b></summary>
 <br>
 
-Clone Hellmacs directly into your Emacs configuration directory and run the automated installer:
+Clone Hellmacs directly into your Emacs configuration directory and run the automated installer, as you would Doom Emacs:
 
 ```bash
 git clone https://github.com/petrolal/hellmacs.git ~/.config/emacs
 ~/.config/emacs/bin/hellmacs install --env
 emacs
 ```
+
+It's a good idea to add `~/.config/emacs/bin` to your `PATH`: then `hellmacs sync`, `hellmacs doctor` and each command's own script (`hellmacs-sync`, `hellmacs-doctor`) run from anywhere.
+
+Your config goes in `~/.config/hellmacs/` (Doom's is `~/.config/doom/`). Unlike Doom, don't clone with `--depth 1`: `hellmacs upgrade` follows release tags.
+
+</details>
+
+<details><summary><b>Adding modules and plugins</b></summary>
+<br>
+
+- **A module Hellmacs ships:** uncomment its line in the `hellmacs!` block of `~/.config/hellmacs/init.el` (e.g. `:lang groovy`), then `hellmacs sync`. `hellmacs config --add-defaults` adds every default module your block misses.
+- **Your own module:** create `~/.config/hellmacs/modules/<group>/<name>/` (start from `static/module-template/`), enable `:group name` in your block, then `hellmacs sync`. It wins over a Hellmacs module of the same name.
+- **Third-party modules from a git repository** (a plugin manager: `hellmacs plugins`, `M-x hellmacs-plugins`) are planned: [roadmap](docs/roadmap.md), Phase 15.
 
 </details>
 
