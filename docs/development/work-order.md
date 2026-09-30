@@ -119,7 +119,7 @@ This file only tracks progress. Don't copy specs into it.
 
 - [x] 16.1 `core/` → `lisp/`, `lisp/lib/`, `lisp/cli/` (2026-09-30: `git mv`; `hellmacs.el` (heart) and `hellmacs-emacs.el` (defaults) from `hellmacs-core.el`; lib/ (jdk, net, lsp-status) and cli/ (bundle, compliance, config, verify) off `load-path`, loaded by `hellmacs-require`, Doom's `doom-require`; compiled core mirrors the subdirectories. `test-lib/layout-like-doom`, `test-lib/require-subfeature`; 484 tests, doctor, a real sync (37 files compiled), tty startup 0.027s)
 - [x] 16.2 `modules/hellmacs/`: core's own features as the `:hellmacs` group (2026-09-30: `(:hellmacs . nil)`, enabled after your `hellmacs!` block at depth -100, first; its `packages.el` (compat, gcmh; `lisp/packages.el` now empty, as Doom's), `init.el` (gcmh), `+splash.el` and `+ux.el` from lisp/; `hellmacs-module-key-string`; `test-modules/core-module-like-doom`, `core-module-files`; 486 tests, doctor, sync, tty startup 0.029-0.034s. No `cli/` submodule: Hellmacs has nothing like Doom's commit linter)
-- [ ] 16.3 Module sources: the catalog in `sources/hellmacs+/modules/`
+- [x] 16.3 Module sources: the catalog in `sources/hellmacs+/modules/` (2026-09-30: `git mv` of every group; `hellmacs-sources-dir`; `hellmacs-module-load-path` is yours, `modules/` (only `hellmacs/`), then `sources/hellmacs+/modules/`, as Doom's; tests and budgets find modules with `hellmacs-module-locate-path`; `test-modules/catalog-is-a-source`; 487 tests, doctor, sync, tty startup 0.029-0.031s, shown 0.082-0.087s)
 - [ ] 16.4 `.hellmacs` and `.hellmacsmodule` metadata
 - [ ] 16.5 `bin/hellmacs-<command>`
 - [ ] 16.6 `profiles/` (README, `safe-mode`, implicit profiles)

@@ -50,7 +50,7 @@
     (hellmacs-module--load (cons :lang name) "cli.el")))
 
 (defun test-langs--dir (name)
-  (expand-file-name (format "modules/lang/%s/" name) hellmacs-dir))
+  (expand-file-name (format "sources/hellmacs+/modules/lang/%s/" name) hellmacs-dir))
 
 (defun test-langs--unalias (mode)
   "MODE, or the mode it's an alias of (`xml-mode' is `nxml-mode')."

@@ -59,7 +59,11 @@
 Its library is in lib/ and the CLI's parts in cli/ (see `hellmacs-require').")
 
 (defconst hellmacs-modules-dir (expand-file-name "modules/" hellmacs-dir)
-  "Directory holding user-facing Hellmacs feature modules.")
+  "Hellmacs' own modules/: core's module, hellmacs/ (Doom v3's modules/doom/).")
+
+(defconst hellmacs-sources-dir (expand-file-name "sources/" hellmacs-dir)
+  "Module sources: each holds a modules/ tree. The catalog is hellmacs+/,
+in this repository (Doom v3's sources/doom+/, a submodule there).")
 
 (defconst hellmacs-profile
   (let ((name (or (cadr (member "--profile" command-line-args))

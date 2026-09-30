@@ -4293,7 +4293,7 @@ end of each step; one commit per step.
       `:hellmacs` group, always on, loaded first (depth -100, as `:doom`'s
       -110): its `init.el` (splash, UX, the `C-c` leader, tree-sitter
       grammars, server status), `packages.el`, and `modules/hellmacs/cli/`.
-- [ ] **16.3 Module sources.** The catalog moves to
+- [x] **16.3 Module sources.** (2026-09-30: in-tree, as decided; one source, `hellmacs+`, named in `hellmacs-module-load-path` as Doom names `doom+`.) The catalog moves to
       `sources/hellmacs+/modules/<group>/<name>/`;
       `hellmacs-module-load-path` is your `modules/`, then Hellmacs'
       `modules/`, then each `sources/*/modules/`. A source is where

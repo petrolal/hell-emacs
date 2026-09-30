@@ -240,10 +240,7 @@ spread evenly over the file. Declarations (`void run(') don't count."
 
 (defun budgets--module-exists-p (group item)
   "Non-nil if Hellmacs ships module GROUP ITEM (ITEM as written, flags and all)."
-  (file-directory-p
-   (expand-file-name (format "modules/%s/%s" (substring (symbol-name group) 1)
-                             (if (consp item) (car item) item))
-                     hellmacs-dir)))
+  (hellmacs-module-locate-path group (if (consp item) (car item) item)))
 
 (defun budgets-enterprise-spec ()
   "A `hellmacs!' spec with every module Hellmacs ships on.

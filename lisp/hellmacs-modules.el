@@ -67,9 +67,12 @@
 
 (defvar hellmacs-module-load-path
   (list (expand-file-name "modules/" hellmacs-user-dir)
-        hellmacs-modules-dir)
+        hellmacs-modules-dir
+        (expand-file-name "hellmacs+/modules/" hellmacs-sources-dir))
   "Directories searched for modules, highest priority first.
-Each contains <group>/<name>/ module directories.")
+Each contains <group>/<name>/ module directories: yours, Hellmacs' own
+(core's module), then the sources' (the catalog), as Doom v3's
+`doom-module-load-path'.")
 
 (defvar hellmacs-modules (make-hash-table :test #'equal)
   "Enabled modules: a table of (GROUP . NAME) -> plist.

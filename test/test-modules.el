@@ -91,6 +91,22 @@ keeps the engine."
     (insert-file-contents (expand-file-name "packages.el" hellmacs-core-dir))
     (should-not (re-search-forward "^[^;\n]*(package! " nil t))))
 
+;; Phase 16.3: the catalog is a module source, sources/hellmacs+/modules/,
+;; as Doom v3's is sources/doom+/modules/ (a submodule there, in-tree here).
+
+(ert-deftest test-modules/catalog-is-a-source ()
+  "Modules are found in your modules/, then Hellmacs' modules/ (only core's
+own, hellmacs/), then the sources: sources/hellmacs+/modules/."
+  (should (equal (mapcar #'file-name-as-directory hellmacs-module-load-path)
+                 (list (expand-file-name "modules/" hellmacs-user-dir)
+                       hellmacs-modules-dir
+                       (expand-file-name "hellmacs+/modules/" hellmacs-sources-dir))))
+  (should (equal (directory-files hellmacs-modules-dir nil "\\`[^.]") '("hellmacs")))
+  (should (file-equal-p (hellmacs-module-locate-path :lang 'java)
+                        (expand-file-name "hellmacs+/modules/lang/java/" hellmacs-sources-dir)))
+  (should (file-equal-p (hellmacs-module-locate-path :hellmacs nil)
+                        (expand-file-name "hellmacs/" hellmacs-modules-dir))))
+
 (defvar test-modules--loaded nil)
 
 (ert-deftest test-modules/compiled-file-needs-its-source ()

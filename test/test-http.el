@@ -246,7 +246,7 @@ per file, each holding its whole text."
 
 (ert-deftest test-http/httpyac ()
   "+httpyac: pinned by lockfile; it runs the file or the request at point, in the env chosen."
-  (let ((lock (expand-file-name "modules/tools/http/package-lock.json" hellmacs-dir)))
+  (let ((lock (expand-file-name "sources/hellmacs+/modules/tools/http/package-lock.json" hellmacs-dir)))
     (should (file-exists-p lock))
     (should (string-search (format "\"version\": \"%s\"" hellmacs-http-httpyac-version)
                            (with-temp-buffer (insert-file-contents lock) (buffer-string)))))

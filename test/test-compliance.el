@@ -254,7 +254,7 @@ report."
         pinned)
     (defvar lsp-server-install-dir)
     (unwind-protect
-        (dolist (file (file-expand-wildcards (expand-file-name "modules/*/*/+paths.el" hellmacs-dir)))
+        (dolist (file (file-expand-wildcards (expand-file-name "sources/hellmacs+/modules/*/*/+paths.el" hellmacs-dir)))
           (load file nil t)
           (with-temp-buffer
             (insert-file-contents file)
@@ -310,6 +310,7 @@ proxy, CA and mirrors you set. A call anywhere else fails this test."
   (let ((offenders nil))
     (dolist (file (append (directory-files-recursively (expand-file-name "lisp" hellmacs-dir) "\\.el\\'")
                           (directory-files-recursively (expand-file-name "modules" hellmacs-dir) "\\.el\\'")
+                          (directory-files-recursively (expand-file-name "sources" hellmacs-dir) "\\.el\\'")
                           (list (expand-file-name "init.el" hellmacs-dir)
                                 (expand-file-name "early-init.el" hellmacs-dir))))
       (unless (equal file (expand-file-name "lisp/lib/net.el" hellmacs-dir))
@@ -351,7 +352,7 @@ proxy, CA and mirrors you set. A call anywhere else fails this test."
 (ert-deftest test-compliance/every-grammar-declares-a-license ()
   "Every tree-sitter grammar a module's packages.el declares has a :license."
   (let (grammars)
-    (dolist (file (file-expand-wildcards (expand-file-name "modules/*/*/packages.el" hellmacs-dir)))
+    (dolist (file (file-expand-wildcards (expand-file-name "sources/hellmacs+/modules/*/*/packages.el" hellmacs-dir)))
       (with-temp-buffer
         (insert-file-contents file)
         (while (search-forward "(hellmacs-treesit!" nil t)

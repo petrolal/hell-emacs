@@ -41,7 +41,7 @@ The project rules (`docs/development/vision-and-rules.md`) require running `bin/
 - `sync` also byte-compiles core and each enabled module's `init.el`/`config.el` into `<profile>/compiled/` (`hellmacs-compiled-dir`), and merges all autoloads into one compiled `autoloads.el`. Startup uses compiled core only if no `lisp/**/*.el` is newer than its stamp (all or nothing), and a compiled module file only if it's newer than its source. So code must stay compilable: in module files load siblings with `(hellmacs-module-load "+paths")`, never via `load-file-name` (it points into the profile when compiled); wrap `load-path` changes that a top-level `require` needs in `eval-and-compile`; and in core, `defvar` any special variable a file binds. A file that expands a third-party macro that may not be loaded yet (like `lisp/hellmacs-elpaca.el`'s `elpaca`) must be `no-byte-compile`: compiled, the macro's expansion calls that package's internals before it's loaded. After changing core or a module, run `bin/hellmacs sync` before measuring startup or running the integration scripts, or you're testing the source fallback.
 
 ### Modules (`lisp/hellmacs-modules.el`)
-A module is `modules/<group>/<name>/`, written `:group name`. Every file in it is optional:
+A module is `<group>/<name>/` in a module tree, written `:group name`. Trees are searched in order (`hellmacs-module-load-path`, Doom v3's `doom-module-load-path`): your `$HELLMACS_USER_DIR/modules/`, Hellmacs' `modules/` (only core's own module, `modules/hellmacs/`, `(:hellmacs . nil)`, always on at depth -100: the Altar, themed UX, gcmh, core's packages), then the catalog source `sources/hellmacs+/modules/` (every other module). Every file in a module is optional:
 - `packages.el`: declarations only, read at sync time (and by `doctor`); the synced profile keeps what startup needs from them. That means `(package! ...)`, `(depends-on! :tools lsp)` for modules this one needs, and `(hellmacs-treesit! :grammars ... :remap ...)` under `+tree-sitter` for pinned grammars and mode remaps. Don't hand-write "needs module X" warnings or tree-sitter remap/doctor code in other files.
 - `autoload.el`: commands and helpers that other files may call.
 - `init.el`: runs before any module's `config.el`.
@@ -52,7 +52,7 @@ A module is `modules/<group>/<name>/`, written `:group name`. Every file in it i
 
 User modules in `$HELLMACS_USER_DIR/modules/` fully override core modules with the same name. The user directory is resolved in this order: `$HELLMACSDIR` → `~/.config/hellmacs/` → `~/.hellmacs.d/`. Use `(modulep! +flag)` and `(modulep! :group name +flag)` to gate code on module flags. When there is no user `init.el`, the default module set comes from `static/init.example.el`. That makes it the single source of defaults: register new modules there.
 
-Some larger UI implementations live next to their module directories rather than inside them, and the module's `config.el` requires them. Examples are `modules/ui/hellmacs-modeline.el` and `modules/ui/hellmacs-dashboard.el`. New modules start from `static/module-template/`.
+Some larger UI implementations live next to their module directories rather than inside them, and the module's `config.el` requires them. Examples are `sources/hellmacs+/modules/ui/hellmacs-modeline.el` and `sources/hellmacs+/modules/ui/hellmacs-dashboard.el`. New modules start from `static/module-template/`.
 
 ## Project rules
 

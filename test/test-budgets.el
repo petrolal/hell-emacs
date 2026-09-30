@@ -195,10 +195,7 @@ static/init.example.el lists it (commented or not), with its flags;
       (should (assoc key modules)))
     (dolist (entry modules)
       (let ((key (car entry)))
-        (should (file-directory-p (expand-file-name (format "modules/%s/%s"
-                                                            (substring (symbol-name (car key)) 1)
-                                                            (cdr key))
-                                                    hellmacs-dir)))))
+        (should (hellmacs-module-locate-path (car key) (cdr key)))))
     (should-not (assoc '(:lang . scala) modules)))
   (let ((dir (make-temp-file "hellmacs-bench-user" t)))
     (unwind-protect

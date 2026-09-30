@@ -32,5 +32,5 @@
 
 ;; At compile time too (`bin/hellmacs sync'), for the `require' below.
 (eval-and-compile
-  (add-to-list 'load-path (expand-file-name "ui/" hellmacs-modules-dir)))
+  (add-to-list 'load-path (expand-file-name "hellmacs+/modules/ui/" hellmacs-sources-dir)))
 (require 'hellmacs-modeline)

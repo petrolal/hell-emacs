@@ -1,7 +1,7 @@
 ;;; <group>/<name>/config.el -*- lexical-binding: t; -*-
 
 ;; SCAFFOLD for a new module. Copy this directory to
-;; modules/<group>/<name>/ (or $HELLMACSDIR/modules/<group>/<name>/ for
+;; sources/hellmacs+/modules/<group>/<name>/ (or $HELLMACSDIR/modules/<group>/<name>/ for
 ;; a private one), then enable it in your init.el:
 ;;
 ;;   (hellmacs! ... :<group> <name> ...)
@@ -16,7 +16,7 @@
 ;;
 ;;   - A comment at the top saying what the module does, which leader
 ;;     group (if any) it owns, and what its flags do. See
-;;     modules/completion/corfu/config.el for a real example.
+;;     sources/hellmacs+/modules/completion/corfu/config.el for a real example.
 ;;   - Install with `package!' in packages.el; configure with
 ;;     `use-package' here. Blocks are deferred by default (see
 ;;     `use-package-always-defer'), so load lazily via
