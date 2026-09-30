@@ -8,7 +8,7 @@ Hellmacs is an Emacs distribution (Emacs 29.1+, pure Emacs Lisp with `lexical-bi
 
 ## Commands
 
-All commands go through `bin/hellmacs`, a thin sh wrapper that runs `emacs --batch` with `early-init.el` and dispatches to `hellmacs-cli-main` in `lisp/hellmacs-cli.el`. Set `$EMACS` to use a different Emacs binary.
+All commands go through `bin/hellmacs`, a thin sh wrapper that runs `emacs --batch` with `early-init.el` and dispatches to `hellmacs-cli-main` in `lisp/hellmacs-cli.el`. Each command is its own Elisp file, `bin/hellmacs-COMMAND` (Doom v3's `bin/doom-COMMAND`), loaded when it runs (`hellmacs-cli-load`); with `bin/` on `PATH` it also runs directly through `bin/hellmacsscript`. A new command goes in a new `bin/hellmacs-NAME` defining `hellmacs-cli-NAME` (or in a module's `cli.el`). Set `$EMACS` to use a different Emacs binary.
 
 ```sh
 bin/hellmacs test                 # run all ERT unit tests (test/test-*.el)

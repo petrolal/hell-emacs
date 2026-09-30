@@ -1,0 +1,67 @@
+#!/usr/bin/env hellmacsscript
+;;; bin/hellmacs-licenses --- The license report -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hellmacs licenses' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hellmacs-cli-main' when the command runs, or run directly through
+;; bin/hellmacsscript. Lives outside `load-path'; see `hellmacs-cli-load'.
+
+;;; Code:
+
+(defun hellmacs-cli--component-label (c)
+  "C's name and version, a package's commit shortened, and its kind."
+  (let ((version (or (plist-get c :version) "")))
+    (format "%s %s (%s)" (plist-get c :name)
+            (if (eq (plist-get c :kind) 'package) (truncate-string-to-width version 12) version)
+            (plist-get c :kind))))
+
+(defun hellmacs-cli-licenses (&rest _)
+  "List the license of everything installed; fail if one isn't known."
+  (let* ((components (sort (hellmacs-compliance-components)
+                           (lambda (a b)
+                             (let ((la (or (plist-get a :license) "")) (lb (or (plist-get b :license) "")))
+                               (if (equal la lb)
+                                   (string< (plist-get a :name) (plist-get b :name))
+                                 (string< la lb))))))
+         (known (seq-filter (lambda (c) (plist-get c :license)) components))
+         (width (apply #'max 10 (mapcar (lambda (c) (length (plist-get c :license))) known)))
+         (problems (hellmacs-compliance-license-problems components)))
+    (hellmacs-cli--say "Licenses of what's installed (%d components):" (length components))
+    (dolist (c known)
+      (hellmacs-cli--say "  %s  %s" (string-pad (plist-get c :license) width)
+                         (hellmacs-cli--component-label c)))
+    (hellmacs-cli--say "\nBy license:")
+    (dolist (group (seq-group-by (lambda (c) (or (plist-get c :license) "UNKNOWN")) components))
+      (hellmacs-cli--say "  %s  %d" (string-pad (car group) width) (length (cdr group))))
+    (when problems
+      (hellmacs-cli--say "\nTo look at:")
+      (pcase-dolist (`(,c . ,why) problems)
+        (pcase why
+          ('unknown
+           (hellmacs-cli--check 'error "%s: no license found in its headers, LICENSE file or declaration"
+                                (hellmacs-cli--component-label c)))
+          ('unlisted
+           (hellmacs-cli--check 'warn "%s: %s, not on SPDX's list: check its terms before you ship it"
+                                (hellmacs-cli--component-label c) (plist-get c :license))))))))
+
+;;; hellmacs-licenses ends here

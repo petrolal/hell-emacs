@@ -22,8 +22,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-# Runs Emacs in batch mode against this checkout; the commands live in
-# lisp/hellmacs-cli.el. Set $EMACS to use a different Emacs binary;
+# Runs Emacs in batch mode against this checkout; lisp/hellmacs-cli.el
+# dispatches, and each command is bin/hellmacs-COMMAND (as Doom v3's
+# bin/doom-COMMAND), which bin/hellmacsscript can also run directly. Set $EMACS to use a different Emacs binary;
 # $HELLMACSDIR and the XDG_*_HOME variables are honored exactly as in
 # an interactive session.
 

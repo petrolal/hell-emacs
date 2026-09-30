@@ -1,0 +1,57 @@
+#!/usr/bin/env hellmacsscript
+;;; bin/hellmacs-bundle --- Offline bundles: make one, or install from one -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hellmacs bundle' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hellmacs-cli-main' when the command runs, or run directly through
+;; bin/hellmacsscript. Lives outside `load-path'; see `hellmacs-cli-load'.
+
+;;; Code:
+
+(defun hellmacs-cli-bundle (&rest args)
+  "Sync, then pack everything installed into an offline bundle.
+ARGS: the bundle's file name, and optionally --modules SPEC (read
+before this runs, by `hellmacs-cli-main')."
+  (let* ((spec (hellmacs-cli--option args "--modules"))
+         (files (remove spec (seq-remove (lambda (a) (string-prefix-p "-" a)) args)))
+         (out (car files)))
+    (unless (and out (null (cdr files)))
+      (error "Usage: bin/hellmacs bundle OUT.tar.zst [--modules SPEC]"))
+    (hellmacs-sync)
+    (hellmacs-cli--say "Packing the bundle...")
+    (let ((manifest (hellmacs-bundle-create out)))
+      (hellmacs-cli--say "Bundled %d files (%s before compression) into %s"
+                         (cl-count :file (plist-get manifest :entries) :key #'cadr)
+                         (file-size-human-readable (hellmacs-bundle-size manifest))
+                         (abbreviate-file-name (expand-file-name out)))
+      (hellmacs-cli--say "  For %s, Emacs %s; modules: %s"
+                         (plist-get manifest :platform) emacs-major-version
+                         (mapconcat (lambda (m) (hellmacs-bundle--module-string (car m) (cadr m)))
+                                    (plist-get manifest :modules) ", "))
+      (hellmacs-cli--say "  SHA-256: %s" (hellmacs-file-sha256 out))
+      (hellmacs-cli--say "Install it with:  bin/hellmacs install --from-bundle %s" (file-name-nondirectory out))
+      (when spec
+        (hellmacs-cli--say "\nNote: this machine's profile is now synced for those modules; \
+`bin/hellmacs sync' goes back to yours. (`bin/hellmacs --profile NAME bundle ...' keeps them apart.)")))))
+
+;;; hellmacs-bundle ends here

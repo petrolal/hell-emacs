@@ -1,0 +1,45 @@
+#!/usr/bin/env hellmacsscript
+;;; bin/hellmacs-lock --- Pin every package to its exact commit -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hellmacs lock' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hellmacs-cli-main' when the command runs, or run directly through
+;; bin/hellmacsscript. Lives outside `load-path'; see `hellmacs-cli-load'.
+
+;;; Code:
+
+(defun hellmacs-cli--write-lock ()
+  "Write `hellmacs-lock-file' for every package Elpaca has queued."
+  (defvar elpaca-lock-file-functions)
+  (let ((elpaca-lock-file-functions nil)) ; lock everything, not just init-time orders
+    (make-directory (file-name-directory hellmacs-lock-file) t)
+    (elpaca-write-lock-file hellmacs-lock-file))
+  (hellmacs-cli--say "Locked %d packages in %s"
+                     (length (elpaca--queued)) (abbreviate-file-name hellmacs-lock-file)))
+
+(defun hellmacs-cli-lock (&rest _)
+  "Sync, then record the exact commit of every installed package."
+  (hellmacs-sync)
+  (hellmacs-cli--write-lock))
+
+;;; hellmacs-lock ends here

@@ -1,0 +1,323 @@
+#!/usr/bin/env hellmacsscript
+;;; bin/hellmacs-doctor --- Diagnose your system and config -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hellmacs doctor' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hellmacs-cli-main' when the command runs, or run directly through
+;; bin/hellmacsscript. Lives outside `load-path'; see `hellmacs-cli-load'.
+
+;;; Code:
+
+(defun hellmacs-cli--version (program &rest args)
+  "Return the first line PROGRAM prints for ARGS, or nil if it isn't installed."
+  (when (executable-find program)
+    (car (split-string (cdr (apply #'hellmacs-cli--run program args)) "\n"))))
+
+;; The API a module's doctor.el uses.
+
+(defun hellmacs-doctor-ok (format-string &rest args)
+  "Report a passing check (FORMAT-STRING, ARGS) from a module's doctor.el."
+  (apply #'hellmacs-cli--check 'ok format-string args))
+
+(defun hellmacs-doctor-info (format-string &rest args)
+  "Report a neutral fact (FORMAT-STRING, ARGS) from a module's doctor.el."
+  (apply #'hellmacs-cli--check 'info format-string args))
+
+(defun hellmacs-doctor-warn (format-string &rest args)
+  "Report something optional that's missing (FORMAT-STRING, ARGS)."
+  (apply #'hellmacs-cli--check 'warn format-string args))
+
+(defun hellmacs-doctor-error (format-string &rest args)
+  "Report a problem that breaks the module (FORMAT-STRING, ARGS).
+Makes `bin/hellmacs doctor' exit with a failure."
+  (apply #'hellmacs-cli--check 'error format-string args))
+
+(defun hellmacs-doctor-executable (program why &optional required &rest version-args)
+  "Check that PROGRAM is on the PATH; WHY says what it's needed for.
+If found, show its version (running it with VERSION-ARGS) or its path.
+If missing, warn -- or report an error if REQUIRED is non-nil.
+Returns PROGRAM's path, or nil."
+  (if-let* ((path (executable-find program)))
+      (progn (hellmacs-doctor-ok "%s: %s" program
+                                 (or (and version-args (apply #'hellmacs-cli--version program version-args))
+                                     (abbreviate-file-name path)))
+             path)
+    (funcall (if required #'hellmacs-doctor-error #'hellmacs-doctor-warn)
+             "%s not found -- %s" program why)
+    nil))
+
+(defun hellmacs-doctor-node (why min-major)
+  "Check Node.js and npm, which WHY needs (a server installed with npm).
+MIN-MAJOR is the oldest Node release it runs on. Errors when missing or
+too old: the server can't be installed or started without it."
+  (let ((node (executable-find "node")))
+    (if (not node)
+        (hellmacs-doctor-error "node not found -- %s is an npm package; install Node.js %d+" why min-major)
+      (let* ((version (or (hellmacs-cli--version "node" "--version") ""))
+             (major (and (string-match "\\`v?\\([0-9]+\\)" version)
+                         (string-to-number (match-string 1 version)))))
+        (if (and major (< major min-major))
+            (hellmacs-doctor-error "Node %s is too old for %s (it needs %d+)" version why min-major)
+          (hellmacs-doctor-ok "node: %s" version)))
+      (unless (executable-find "npm")
+        (hellmacs-doctor-error "npm not found -- `bin/hellmacs sync' installs %s with it" why)))))
+
+(cl-defun hellmacs-doctor-pinned (label version valid present &key where stale-note missing-note)
+  "Check the pinned install of LABEL (release VERSION) that sync makes.
+VALID is non-nil if it's the pinned release; PRESENT, if something is
+installed at all. WHERE, the install directory, is shown when it's valid.
+STALE-NOTE and MISSING-NOTE are appended to the error and warning."
+  (cond (valid
+         (if where
+             (hellmacs-doctor-ok "%s %s installed in %s" label version (abbreviate-file-name where))
+           (hellmacs-doctor-ok "%s %s installed" label version)))
+        (present
+         (hellmacs-doctor-error "The installed %s isn't the pinned %s%s; `bin/hellmacs sync' replaces it"
+                                label version (or stale-note "")))
+        (t
+         (hellmacs-doctor-warn "%s isn't installed yet; `bin/hellmacs sync' installs it%s"
+                               label (or missing-note "")))))
+
+;; Hellmacs never installs fonts (it writes only to its own directories),
+;; so a missing Nerd Font is reported with the command that installs one.
+(defun hellmacs-doctor-nerd-font (consequence)
+  "Check that a Nerd Font is installed; CONSEQUENCE says what happens without."
+  (if (not (executable-find "fc-list"))
+      (hellmacs-doctor-info "fc-list not found; can't tell whether a Nerd Font is installed")
+    (if-let* ((families (ignore-errors
+                          (process-lines "fc-list" ":charset=f07b" "family"))))
+        (hellmacs-doctor-ok "Nerd Font glyphs: %s" (car (split-string (car families) ",")))
+      (hellmacs-doctor-warn "No Nerd Font installed: %s. Install one with M-x nerd-icons-install-fonts (into ~/.local/share/fonts), or from your distribution"
+                            consequence))))
+
+(defun hellmacs-doctor-treesit (lang)
+  "Check what building and loading LANG's tree-sitter grammar needs.
+Run for every grammar a module declares (`hellmacs-treesit!')."
+  (if (not (and (fboundp 'treesit-available-p) (treesit-available-p)))
+      (hellmacs-doctor-error "This Emacs has no tree-sitter support, which +tree-sitter needs")
+    (if (hellmacs-treesit-installed-p lang)
+        (hellmacs-doctor-ok "tree-sitter %s grammar: %s" lang
+                            (abbreviate-file-name (hellmacs-treesit-library lang)))
+      (if (file-exists-p (hellmacs-treesit-library lang))
+          (hellmacs-doctor-warn "The tree-sitter %s grammar isn't the pinned commit; `bin/hellmacs sync' rebuilds it" lang)
+        (hellmacs-doctor-warn "The tree-sitter %s grammar isn't built yet; `bin/hellmacs sync' builds it" lang))
+      (unless (executable-find "git")
+        (hellmacs-doctor-error "git is needed to fetch the %s grammar" lang))
+      (unless (seq-some #'executable-find '("cc" "gcc" "clang"))
+        (hellmacs-doctor-error "No C compiler (cc, gcc or clang) to build the %s grammar" lang)))))
+
+;;; The network --------------------------------------------------------------
+
+(declare-function url-host "url-parse")
+
+(defvar hellmacs-cli--probe-network nil
+  "Non-nil while doctor checks that hosts can be reached.
+On with --network, or whenever a proxy, CA bundle or mirror is set.")
+
+(defvar hellmacs-cli--probed nil
+  "(URL . RESULT) of the hosts this doctor run probed, so each is probed once.")
+
+(defun hellmacs-cli--redact (url)
+  "URL without its password."
+  (replace-regexp-in-string "\\(//[^:/@]+\\):[^@/]*@" "\\1:***@" url))
+
+(defun hellmacs-doctor-reachable (url why)
+  "Check that URL's host can be reached; WHY says what it's needed for.
+It is probed as Hellmacs' fetches reach it (`hellmacs-net-probe'): its
+mirror, the proxy, the CAs. Only when doctor checks the network."
+  (when hellmacs-cli--probe-network
+    (require 'url-parse)
+    (let* ((target (hellmacs-net-rewrite url))
+           (host (url-host (url-generic-parse-url target)))
+           (result (if-let* ((cached (assoc target hellmacs-cli--probed)))
+                       (cdr cached)
+                     (cdr (car (push (cons target (hellmacs-net-probe target)) hellmacs-cli--probed)))))
+           (proxy (and (hellmacs-net--proxied-p host) (hellmacs-cli--redact (hellmacs-net-proxy)))))
+      (pcase result
+        ('nil (hellmacs-doctor-ok "Reaches %s%s (%s)" host (if proxy " through the proxy" "") why))
+        (`(tls . ,message)
+         (hellmacs-doctor-error "%s's certificate isn't trusted: %s. %s" host message
+                                (if hellmacs-ca-bundle
+                                    (format "The CA that signs it is missing from `hellmacs-ca-bundle' (%s)"
+                                            (abbreviate-file-name hellmacs-ca-bundle))
+                                  "If your network inspects TLS, set `hellmacs-ca-bundle' to your company's CA (a PEM file)")))
+        (`(proxy . ,message)
+         (hellmacs-doctor-error "Can't reach %s through the proxy %s: %s" host proxy message))
+        (`(,_ . ,message)
+         (hellmacs-doctor-error "Can't reach %s (%s): %s%s" host why message
+                                (if (hellmacs-net-proxy) "" "; behind a proxy, set `hellmacs-proxy'")))))))
+
+(defun hellmacs-cli--package-hosts ()
+  "The hosts the installed packages are fetched from, as \"https://HOST/\" URLs."
+  (let (hosts)
+    (dolist (config (file-expand-wildcards (expand-file-name "*/.git/config" elpaca-sources-directory)))
+      (with-temp-buffer
+        (insert-file-contents config)
+        (when (re-search-forward "^[ \t]*url = \\(https?://[^/\n]+/\\)" nil t)
+          (cl-pushnew (match-string 1) hosts :test #'equal))))
+    (sort hosts #'string<)))
+
+(defun hellmacs-cli--doctor-network ()
+  "Report the proxy, CA and mirrors in use, and check the package hosts."
+  (hellmacs-cli--say "\nNetwork")
+  (if-let* ((proxy (hellmacs-net-proxy)))
+      (progn
+        (hellmacs-doctor-info "Proxy: %s (%s)" (hellmacs-cli--redact proxy)
+                              (if hellmacs-proxy "`hellmacs-proxy'" "from the environment"))
+        (when-let* ((hosts (hellmacs-net-no-proxy)))
+          (hellmacs-doctor-info "Reached directly: %s" (string-join hosts ", "))))
+    (hellmacs-doctor-info "No proxy"))
+  (when hellmacs-ca-bundle
+    (let ((ca (expand-file-name hellmacs-ca-bundle)))
+      (if (not (file-readable-p ca))
+          (hellmacs-doctor-error "`hellmacs-ca-bundle' is %s, which can't be read" (abbreviate-file-name ca))
+        (let ((count (length (hellmacs-net--pem-certificates ca))))
+          (if (zerop count)
+              (hellmacs-doctor-error "`hellmacs-ca-bundle' (%s) holds no PEM certificate" (abbreviate-file-name ca))
+            (hellmacs-doctor-ok "Corporate CA: %s (%d certificate%s)" (abbreviate-file-name ca)
+                                count (if (= count 1) "" "s"))))
+        (if (hellmacs-net-truststore-current-p)
+            (hellmacs-doctor-ok "JVM truststore: %s" (abbreviate-file-name hellmacs-net-truststore))
+          (hellmacs-doctor-warn "The JVM truststore isn't built or is older than your CA; `bin/hellmacs sync' builds it")))))
+  (pcase-dolist (`(,from . ,to) hellmacs-mirrors)
+    (hellmacs-doctor-info "Mirror: %s -> %s" from to))
+  (cond
+   (hellmacs-net-offline
+    (hellmacs-doctor-info "Hosts not checked (an offline install)"))
+   ((not hellmacs-cli--probe-network)
+    (hellmacs-doctor-info "Hosts not checked (no proxy, CA or mirror set); `bin/hellmacs doctor --network' checks them"))
+   (t
+    (dolist (url (or (hellmacs-cli--package-hosts) '("https://github.com/")))
+      (hellmacs-doctor-reachable url "packages")))))
+
+(defun hellmacs-cli--wsl-p ()
+  "Non-nil if running inside Windows Subsystem for Linux (WSL)."
+  (and (eq system-type 'gnu/linux)
+       (or (file-exists-p "/proc/sys/fs/binfmt_misc/WSLInterop")
+           (string-match-p "Microsoft\\|WSL" (or (ignore-errors (operating-system-release)) "")))))
+
+(defun hellmacs-cli--doctor-platform ()
+  "Check and report platform-specific considerations (WSL, macOS, Linux)."
+  (cond
+   ((hellmacs-cli--wsl-p)
+    (hellmacs-cli--check 'ok "Platform: Linux under Windows WSL2")
+    (when (or (string-prefix-p "/mnt/" (expand-file-name hellmacs-dir))
+              (string-prefix-p "/mnt/" (expand-file-name hellmacs-user-dir)))
+      (hellmacs-cli--check 'warn "Hellmacs or config is on a Windows mount (/mnt/...). Store them on the Linux filesystem (~/...) for native performance")))
+   ((eq system-type 'darwin)
+    (hellmacs-cli--check 'ok "Platform: macOS (%s)" (or (and (boundp 'system-configuration) system-configuration) "darwin"))
+    (unless (file-exists-p hellmacs-env-file)
+      (hellmacs-cli--check 'info "macOS GUI launchers need shell PATH; run `bin/hellmacs env' if GUI Emacs can't find tools")))
+   (t
+    (hellmacs-cli--check 'ok "Platform: %s (%s)" (symbol-name system-type) (or (and (boundp 'system-configuration) system-configuration) "unix")))))
+
+(defun hellmacs-cli-doctor (&rest args)
+  "Check Emacs, required and optional tools, and the state of the config.
+With --network in ARGS, also check that the hosts Hellmacs fetches from
+can be reached (always done when a proxy, CA bundle or mirror is set)."
+  (setq hellmacs-cli--problems 0
+        hellmacs-cli--probed nil
+        hellmacs-cli--probe-network (and (not hellmacs-net-offline)
+                                         (or (member "--network" args) (hellmacs-net-proxy)
+                                             hellmacs-ca-bundle hellmacs-mirrors)
+                                         t))
+  (hellmacs-cli--say "Emacs")
+  (if (version< emacs-version "29.1")
+      (hellmacs-cli--check 'error "Emacs %s is too old; Hellmacs needs 29.1+" emacs-version)
+    (hellmacs-cli--check 'ok "Emacs %s" emacs-version))
+  (when (string-match-p "\\.[5-9][0-9]\\'" emacs-version)
+    (hellmacs-cli--check 'warn "This is a development build of Emacs; expect breakage"))
+  (if (and (fboundp 'native-comp-available-p) (native-comp-available-p))
+      (hellmacs-cli--check 'ok "Native compilation available")
+    (hellmacs-cli--check 'info "No native compilation (optional; makes packages faster)"))
+  (hellmacs-cli--doctor-platform)
+
+  (hellmacs-cli--say "\nRequired tools")
+  (if-let* ((git (hellmacs-cli--version "git" "--version")))
+      (hellmacs-cli--check 'ok "%s" git)
+    (hellmacs-cli--check 'error "git not found; it's needed to install packages"))
+
+  (hellmacs-cli--doctor-network)
+
+  ;; Each enabled module checks its own requirements (doctor.el), after
+  ;; the modules it needs (`depends-on!', read from the packages.el
+  ;; files). `hellmacs-cli-main' has read the config already.
+  (hellmacs-modules-read-packages)
+  (dolist (key (hellmacs-module-list))
+    (let ((file (expand-file-name "doctor.el" (hellmacs-module-get key :path)))
+          (missing (hellmacs-module-missing-dependencies key))
+          (grammars (hellmacs-treesit-module-languages key)))
+      (when (or missing grammars (file-exists-p file))
+        (hellmacs-cli--say "\nModule %s" (hellmacs-module-key-string key))
+        (dolist (dep missing)
+          (hellmacs-cli--check 'error "Needs %s; add it to your hellmacs! block"
+                               (hellmacs-module-dependency-string dep)))
+        (when (file-exists-p file)
+          (hellmacs-module--load key "doctor.el"))
+        (dolist (lang grammars)
+          (hellmacs-doctor-treesit lang)))))
+
+  (hellmacs-cli--say "\nConfiguration")
+  (hellmacs-cli--check 'info "Profile: %s" (or hellmacs-profile "default"))
+  (if (file-directory-p hellmacs-user-dir)
+      (hellmacs-cli--check 'ok "Your config: %s" (abbreviate-file-name hellmacs-user-dir))
+    (hellmacs-cli--check 'info "No user config yet (%s); using the defaults. `bin/hellmacs install' creates one"
+                         (abbreviate-file-name hellmacs-user-dir)))
+  (hellmacs-cli--check 'info "Modules: %s"
+                       (mapconcat #'hellmacs-module-key-string (hellmacs-module-list) ", "))
+  (dolist (line (hellmacs-config-report-lines))
+    (hellmacs-cli--check 'info "%s" (string-trim line)))
+  (let* ((profile (hellmacs-profile-read))
+         (reason (and profile (hellmacs-profile--stale-reason profile))))
+    (cond ((null profile)
+           (hellmacs-cli--check 'error "Not synced yet; run `bin/hellmacs sync'"))
+          (reason
+           (hellmacs-cli--check 'error "Out of sync (%s); run `bin/hellmacs sync'" reason))
+          (t (hellmacs-cli--check 'ok "Synced: %d packages" (length (plist-get profile :load-path))))))
+  (cond ((hellmacs-compiled-core-current-p)
+         (hellmacs-cli--check 'ok "Byte-compiled: core and the enabled modules (%s)"
+                              (abbreviate-file-name hellmacs-compiled-dir)))
+        ((file-exists-p (expand-file-name "lisp/stamp" hellmacs-compiled-dir))
+         (hellmacs-cli--check 'info "Core changed since the last sync, so it loads from source (slower) until `bin/hellmacs sync'"))
+        (t (hellmacs-cli--check 'info "Not byte-compiled yet; `bin/hellmacs sync' compiles core and the modules")))
+  (if (file-exists-p hellmacs-lock-file)
+      (hellmacs-cli--check 'ok "Packages locked (%s)" (abbreviate-file-name hellmacs-lock-file))
+    (hellmacs-cli--check 'info "Packages not locked; `bin/hellmacs lock' pins their exact versions"))
+  (if (file-exists-p hellmacs-env-file)
+      (hellmacs-cli--check 'ok "Shell environment saved on %s"
+                           (format-time-string "%F" (file-attribute-modification-time
+                                                     (file-attributes hellmacs-env-file))))
+    (hellmacs-cli--check 'info "No saved shell environment; run `bin/hellmacs env' if Emacs can't find your tools"))
+  (dolist (legacy '("var/" "etc/"))
+    (let ((dir (expand-file-name legacy hellmacs-dir)))
+      (when (file-directory-p dir)
+        (hellmacs-cli--check 'warn "%s is left over from an older Hellmacs; nothing uses it, safe to delete"
+                             (abbreviate-file-name dir)))))
+
+  (hellmacs-cli--say "")
+  (if (zerop hellmacs-cli--problems)
+      (hellmacs-cli--say "No problems found.")
+    ;; `hellmacs-cli-main' turns these into a failing exit code.
+    (hellmacs-cli--say "%d problem(s) found." hellmacs-cli--problems)))
+
+;;; hellmacs-doctor ends here

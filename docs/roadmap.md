@@ -4322,7 +4322,7 @@ end of each step; one commit per step.
     and 4.3s is two of xterm's 2s terminal-query timeouts, so it looks like
     the headless terminal the bench runs in (`script`), not Hellmacs;
     not proven. 16's *Verify* re-measures in a real terminal.
-- [ ] **16.5 `bin/hellmacs-<command>`.** Each command's definition moves
+- [x] **16.5 `bin/hellmacs-<command>`.** (2026-09-30: as below; `bin/hellmacsscript` goes through `bin/hellmacs`, so a script run directly keeps its rules (`--profile`, `test`'s throwaway directories, `upgrade` in two steps).) Each command's definition moves
       to its own file (`bin/hellmacs-sync`, `-doctor`, `-test`, `-install`,
       `-upgrade`, `-bundle`, `-verify`, `-sbom`, ...), dispatched by
       `bin/hellmacs`; `bin/hellmacs.ps1` is not added (Windows is WSL2).

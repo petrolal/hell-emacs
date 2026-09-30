@@ -32,6 +32,39 @@
 (defvar hellmacs-upgrade-channel)
 (defvar hellmacs-upgrade-verify-tags)
 
+;; Phase 16.5: each command is its own file, bin/hellmacs-COMMAND, as Doom
+;; v3's bin/doom-sync etc., loaded when it's run.
+
+(defconst test-cli--commands
+  '("bundle" "config" "doctor" "env" "gc" "install" "licenses" "lock" "sbom"
+    "sync" "test" "upgrade" "verify" "version")
+  "The commands Hellmacs itself defines.")
+
+(ert-deftest test-cli/commands-in-bin-like-doom ()
+  "Every command is bin/hellmacs-COMMAND, an executable Lisp script run by
+bin/hellmacsscript (Doom's doomscript); lisp/hellmacs-cli.el only dispatches."
+  (should (file-executable-p (expand-file-name "bin/hellmacsscript" hellmacs-dir)))
+  (dolist (command test-cli--commands)
+    (let ((file (expand-file-name (concat "bin/hellmacs-" command) hellmacs-dir)))
+      (should (file-executable-p file))
+      (with-temp-buffer
+        (insert-file-contents file)
+        (should (looking-at-p "#!/usr/bin/env hellmacsscript\n"))
+        (should (re-search-forward (format "^(defun hellmacs-cli-%s " command) nil t)))))
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name "hellmacs-cli.el" hellmacs-core-dir))
+    (dolist (command test-cli--commands)
+      (should-not (re-search-forward (format "^(defun hellmacs-cli-%s " command) nil t)))))
+
+(ert-deftest test-cli/command-file ()
+  "A command's file: its own, or its family's (upgrade-self is upgrade's)."
+  (should (equal (hellmacs-cli-command-file "doctor")
+                 (expand-file-name "bin/hellmacs-doctor" hellmacs-dir)))
+  (should (equal (hellmacs-cli-command-file "upgrade-self")
+                 (expand-file-name "bin/hellmacs-upgrade" hellmacs-dir)))
+  (should-not (hellmacs-cli-command-file "no-such-command"))
+  (should-not (hellmacs-cli-command-file "../lisp/hellmacs")))
+
 (ert-deftest test-cli/run-all ()
   "Commands run concurrently; exit codes come back in order."
   (let ((hellmacs-cli-jobs 2))
