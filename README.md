@@ -13,15 +13,7 @@
   ·
   <a href="#-features">Features</a>
   ·
-  <a href="#-documentation">Documentation</a>
-  ·
   <a href="docs/guide.md#2-your-configuration">Setup</a>
-  ·
-  <a href="docs/keybindings.md">Keymaps</a>
-  ·
-  <a href="#-file-structure">Structure</a>
-  ·
-  <a href="docs/roadmap.md#where-hellmacs-stands-against-the-ides">IntelliJ Parity</a>
 </h4>
 
 <p align="center">
@@ -43,7 +35,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 - **JVM Backend Platform**:
   - **Full Java Intelligence** via [lsp-java](https://github.com/emacs-lsp/lsp-java) & Eclipse JDT LS: semantic code completion, workspace symbol search, Lombok bytecode support, diagnostics, and real-time refactorings.
@@ -82,7 +74,7 @@
 
 ---
 
-## 🔥 Look & Feel
+## Look & Feel
 
 Three `:ui` modules, all on by default (`static/init.example.el`):
 
@@ -115,7 +107,7 @@ Every text colour is at least 4.5:1 against the background it's drawn on.
 
 ---
 
-## ⚡ Requirements
+## Requirements
 
 - [GNU Emacs ≥ 29.1](https://www.gnu.org/software/emacs/), with native-comp and tree-sitter recommended
 - [Java JDK ≥ 21](https://adoptium.net/) (to run Eclipse JDTLS; your projects can target Java 8 and up)
@@ -126,7 +118,7 @@ Language servers aren't on this list: `hellmacs sync` installs pinned copies (JD
 
 ---
 
-## 🛠️ Installation
+## Installation
 
 As Doom Emacs: clone it as your Emacs directory, then run its installer.
 
@@ -142,7 +134,7 @@ macOS, WSL2, Docker, companies behind a proxy and offline machines: see the [gui
 
 ---
 
-## ⚙️ Basic Setup
+## Basic Setup
 
 Modules are chosen in `~/.config/hellmacs/init.el`, which lists every one Hellmacs has, the optional ones commented out:
 
@@ -159,70 +151,13 @@ Extra packages go in `packages.el` (`(package! name)`), your own settings in `co
 
 ---
 
-## 🖥️ Platform Support Matrix
-
-CI installs Hellmacs and runs `doctor` on Linux x86_64, with Emacs 29.1 and 30.1.
-
-| Platform | Architecture | Tier / Status | Notes |
-|---|---|:---:|---|
-| **Linux** | `x86_64` | **Tier 1 (Full)** | Native Linux, primary development target |
-| **Linux** | `arm64` | **Tier 1 (Full)** | Pinned downloads for arm64 |
-| **macOS** | Apple Silicon (`arm64`) | **Tier 1 (Full)** | Homebrew / `emacs-plus` / `emacs-mac` supported |
-| **macOS** | Intel (`x86_64`) | **Tier 1 (Full)** | Pinned downloads for Intel Macs |
-| **Windows** | `WSL2` | **Tier 1 (Supported)** | Full Linux emulation with WSLg GUI support |
-
----
-
-## 🔒 Privacy: No Telemetry
-
-Hellmacs sends nothing about you or your code, and turns off the telemetry of what it installs (docker-language-server, SonarLint, clojure-lsp's ClojureDocs download). It only goes online during `hellmacs sync`, `install`, `upgrade` and `doctor --network`, always through your proxy, CA and mirrors. Your build tools still fetch your project's dependencies from the repositories your build names.
-
----
-
-## 📚 Documentation
-
-| Guide | What's in it |
-|---|---|
-| 🏁 **[Guide](docs/guide.md)** | Installing, configuring, modules and packages, updates, profiles, companies (proxy, offline, compliance), when something breaks |
-| ☕ **[JVM Guide](docs/jvm.md)** | Java, Spring Boot, Kotlin, Clojure, Groovy; JDKs; builds, tests, coverage, run configurations, debugging, hot swap; HTTP, databases, containers |
-| ⌨️ **[Keybindings](docs/keybindings.md)** | Every stock key Hellmacs improves, and the `C-c` groups |
-| 💻 **[CLI Reference](docs/cli.md)** | Every `hellmacs` command and option |
-| 🛠️ **[Development](docs/development.md)** | Architecture (as Doom v3's), modules and their API, where code goes, releasing |
-| 🗺️ **[Roadmap](docs/roadmap.md)** | The objective, the rules, IntelliJ parity, what's done and what's next |
-| 🏷️ **[Changelog](CHANGELOG.md)** | What each release changed |
-
----
-
-## 🚀 Contributing
+## Contributing
 
 Contributions are warmly welcomed! Read the [rules](docs/roadmap.md#rules) and the [development guide](docs/development.md), then take the next open item in the [roadmap](docs/roadmap.md#open-work-in-order). CI checks every pull request: it installs Hellmacs, runs `doctor`, and checks every license.
 
 ---
 
-## 📂 File Structure
-
-Laid out as Doom Emacs v3 (`doomemacs/core`):
-
-<pre>
-~/.config/emacs
-├── early-init.el            # Boot: directories, GC, UI; loads core (hellmacs-initialize)
-├── bin/                     # hellmacs, one hellmacs-COMMAND file per command, hellmacsscript, hellmacs.sh
-├── lisp/                    # The engine: hellmacs.el (the heart), -emacs (entry point), -modules, -profiles, -cli, ...
-│   ├── lib/                 # Library (jdk, net, lsp-status)
-│   └── cli/                 # The CLI's parts (sync, bundle, compliance, config, verify)
-├── modules/hellmacs/        # Core's own module, always on: the Altar, themed UX, gcmh, the C-c leader
-├── sources/hellmacs+/modules/   # The module catalog: checkers, completion, config, editor, lang, tools, ui
-├── profiles/safe-mode/      # Hellmacs' core alone, for when something breaks
-├── static/                  # Starter config and the module template
-├── assets/                  # Banner and logos
-└── docs/                    # Guides, development, roadmap
-</pre>
-
-Your config lives outside it, in `~/.config/hellmacs/`, and your own modules in `~/.config/hellmacs/modules/`.
-
----
-
-## ⭐ Credits
+## Credits
 
 Sincere appreciation to the following projects, maintainers, and the GNU Emacs community that make Hellmacs possible:
 
@@ -237,7 +172,7 @@ Sincere appreciation to the following projects, maintainers, and the GNU Emacs c
 
 ---
 
-## 🛡️ License
+## License
 
 Hellmacs is free and open-source software licensed under the **GNU General Public License v3.0 (GPL-3.0-or-later)**.
 

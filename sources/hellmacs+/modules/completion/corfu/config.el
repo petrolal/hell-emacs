@@ -24,10 +24,19 @@
 ;; In-buffer completion: a popup that appears as you type (corfu), fed
 ;; by extra completion sources (cape).
 ;;
+;; Keys: the popup keeps stock keys working. `RET' inserts the candidate
+;; only once you've picked one (`M-n'/`M-p', `<down>'/`<up>', `C-n'/`C-p');
+;; otherwise it's a newline, as ever. `TAB' indents; `C-M-i' completes.
+;; `M-g', `M-h' and `M-t' keep their stock meanings (corfu would take
+;; them for the candidate's location, its documentation and the
+;; documentation popup, which shows by itself after a moment). `M-SPC'
+;; is corfu's, to type a space between orderless components.
+;;
 ;; Flags:
 ;;   +tab  Make TAB complete when there's nothing to indent
-;;         (`tab-always-indent' = complete). Off by default, since
-;;         stock Emacs TAB only indents; `C-M-i' completes either way.
+;;         (`tab-always-indent' = complete), and complete the candidate
+;;         in the popup. Off by default, since stock Emacs TAB only
+;;         indents; `C-M-i' completes either way.
 
 (when (modulep! +tab)
   (setq tab-always-indent 'complete))
@@ -42,7 +51,26 @@
         corfu-preselect 'prompt)
   :config
   (global-corfu-mode 1)
-  (corfu-popupinfo-mode 1))
+  (corfu-popupinfo-mode 1)
+  (hellmacs-corfu--stock-keys))
+
+(defvar corfu-map)
+(defvar corfu-popupinfo-map)
+(defvar corfu--index)
+
+(defun hellmacs-corfu--insert-if-selected (&optional _)
+  "`corfu-insert' when a candidate is selected, else nothing (a menu-item filter).
+Nothing lets the key through to its stock command: RET's newline."
+  (and (>= corfu--index 0) #'corfu-insert))
+
+(defun hellmacs-corfu--stock-keys ()
+  "Give back the stock keys corfu's popup takes (see the Commentary)."
+  (keymap-set corfu-map "RET" '(menu-item "" nil :filter hellmacs-corfu--insert-if-selected))
+  (unless (modulep! +tab)
+    (keymap-unset corfu-map "TAB" t))
+  (dolist (key '("M-g" "M-h"))
+    (keymap-unset corfu-map key t))
+  (keymap-unset corfu-popupinfo-map "M-t" t))
 ;; Terminal (non-GUI) Emacs needs the separate `corfu-terminal' package
 ;; for popups to render (Emacs 31+ doesn't).
 
