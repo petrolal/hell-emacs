@@ -64,6 +64,11 @@ The first tagged release will be 0.9.0. Since the project started
   (which-key pages on `<f5>`); lsp-mode no longer takes `mouse-3` and
   `C-mouse-1`. `C-x C-b` is ibuffer and `M-/` hippie-expand (dabbrev
   first); `(default +repeat)` turns on Emacs' `repeat-mode`.
+- Completion is IntelliSense-like: servers' snippets expand (a method's
+  argument placeholders, JDTLS's templates and postfix completion), through
+  yasnippet used only as lsp-mode's engine; candidates you pick rank first
+  next time (`corfu-history-mode`); documentation shows after 0.5s; and in
+  a terminal on Emacs 29 and 30 the popup is drawn by `corfu-terminal`.
 - Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
   budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
   `licenses` and `sbom`.

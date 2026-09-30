@@ -23,3 +23,6 @@
 
 (package! corfu)
 (package! cape)
+;; The popup in a terminal. Emacs 31 draws it there itself.
+(when (< emacs-major-version 31)
+  (package! corfu-terminal))

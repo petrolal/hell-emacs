@@ -38,10 +38,15 @@ With `(default +repeat)`, Emacs' own `repeat-mode` lets the last key
 repeat a command: `C-x o o o`, `C-x { {`, `M-g n n`. It's off by default,
 because right after `C-x o` a plain `o` then switches windows.
 
-**Two deliberate departures from stock**, both in core: typing replaces
-the selected region (`delete-selection-mode`), and brackets and quotes
-are inserted in pairs (`electric-pair-mode`). Turn either off in your
-`config.el`: `(delete-selection-mode -1)`, `(electric-pair-mode -1)`.
+**Deliberate departures from stock**, for modern editing: typing
+replaces the selected region (`delete-selection-mode`), brackets and
+quotes are inserted in pairs (`electric-pair-mode`), and the completion
+popup opens as you type (`:completion corfu`). While that popup is open,
+the movement keys (`C-n` / `C-p`, the arrows, `M-<` / `M->`, `C-v` /
+`M-v`) move in it; `C-g` closes it and gives them back. Turn any of
+them off in your `config.el`: `(delete-selection-mode -1)`,
+`(electric-pair-mode -1)`, `(setq corfu-auto nil)` (then `C-M-i` opens
+the popup).
 lsp-mode's mouse keys are left out: `mouse-3` and `C-mouse-1` stay
 Emacs' own.
 
@@ -164,6 +169,9 @@ These are the modes' own keys, only in their buffers.
   `C-c C-a` run the request / file with httpyac (`+httpyac`).
 - **SQL (`:tools db`):** `C-c C-c` run the statement at point, `C-c C-b`
   the buffer.
+- **A completed method's placeholders (`:tools lsp`):** `TAB` / `S-TAB`
+  or `M-}` / `M-{` next / previous, `C-g` leaves; only inside the
+  expansion, `TAB` indents everywhere else.
 - **Snippets (`:editor snippets`):** complete a snippet's name with `C-M-i`;
   inside one, `M-}` / `M-{` next / previous field, `ESC ESC ESC` abort.
 - **The Altar:** `TAB` / `S-TAB` move, `RET` opens, `g` redraws, `q` buries.

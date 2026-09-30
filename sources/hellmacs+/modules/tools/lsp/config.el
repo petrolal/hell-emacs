@@ -104,12 +104,30 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
     (lsp-keep-workspace-alive nil)
     (lsp-file-watch-threshold 5000)         ; big multi-module builds
     (lsp-headerline-breadcrumb-enable nil)
-    (lsp-enable-snippet nil)                ; no yasnippet (yet)
+    (lsp-enable-snippet t)                  ; expanded by yasnippet (below)
     (lsp-session-file (hellmacs-state-file "lsp-session"))
     :hook
     (lsp-mode . hellmacs-lsp--which-key-h)
     (lsp-mode . hellmacs-lsp--tune-process-output-h)
     (lsp-completion-mode . hellmacs-lsp--setup-completion-h)))
+
+;; The servers' snippets: completing a method inserts its arguments as
+;; placeholders, and JDTLS's templates (`sysout', `foreach') and postfix
+;; completion (`list.for', `x.nnull') expand. yasnippet expands them, and
+;; only with `yas-minor-mode' on, so it's on where a server runs -- with
+;; its keymap emptied: no `TAB' expansion of its own, no `C-c &' keys,
+;; and no snippet directory read. Inside an expansion only: `TAB' /
+;; `S-TAB' next / previous placeholder (the IDE keys), `M-}' / `M-{' too,
+;; as in `:editor snippets'; `C-g' leaves it.
+(defvar yas-snippet-dirs)
+(defvar yas-keymap)
+(defvar yas-minor-mode-map)
+(setq yas-snippet-dirs nil)
+(add-hook 'lsp-mode-hook #'yas-minor-mode)
+(after! yasnippet
+  (setcdr yas-minor-mode-map nil)
+  (keymap-set yas-keymap "<remap> <forward-paragraph>" #'yas-next-field)
+  (keymap-set yas-keymap "<remap> <backward-paragraph>" #'yas-prev-field))
 
 ;; Diagnostics are flymake's (`lsp-diagnostics-provider' above), so its
 ;; keys are in flymake's map: they work wherever flymake runs, elisp too.

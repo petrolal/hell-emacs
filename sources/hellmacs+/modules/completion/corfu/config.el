@@ -48,10 +48,19 @@
         corfu-auto-delay 0.15
         corfu-auto-prefix 2
         corfu-cycle t
-        corfu-preselect 'prompt)
+        corfu-preselect 'prompt
+        ;; The candidate's documentation beside the popup, about as soon
+        ;; as an IDE shows it; quicker still as you move on.
+        corfu-popupinfo-delay '(0.5 . 0.2))
   :config
   (global-corfu-mode 1)
   (corfu-popupinfo-mode 1)
+  ;; Candidates you pick come first next time, across sessions: it
+  ;; saves itself with savehist, which core turns on.
+  (corfu-history-mode 1)
+  (when (fboundp 'corfu-terminal-mode)
+    ;; Only in terminal frames: graphical ones keep corfu's own popup.
+    (corfu-terminal-mode 1))
   (hellmacs-corfu--stock-keys))
 
 (defvar corfu-map)
@@ -71,8 +80,8 @@ Nothing lets the key through to its stock command: RET's newline."
   (dolist (key '("M-g" "M-h"))
     (keymap-unset corfu-map key t))
   (keymap-unset corfu-popupinfo-map "M-t" t))
-;; Terminal (non-GUI) Emacs needs the separate `corfu-terminal' package
-;; for popups to render (Emacs 31+ doesn't).
+;; In a terminal, Emacs before 31 can't draw corfu's popup (a child
+;; frame): `corfu-terminal' draws it there, and only there.
 
 ;; cape adds completion sources that work anywhere: file names
 ;; everywhere, and words from open buffers in prose. Modes with their

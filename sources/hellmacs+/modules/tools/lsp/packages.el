@@ -32,3 +32,7 @@
 ;; lsp-mode is much faster with plists instead of hash tables, but only
 ;; if it's compiled that way: LSP_USE_PLISTS must be set at build time.
 (package! lsp-mode :env (("LSP_USE_PLISTS" . "true")))
+;; The engine lsp-mode expands the servers' snippets with: a method's
+;; argument placeholders, JDTLS's templates and postfix completion. Only
+;; the engine; no snippet collection, no `yas-minor-mode'.
+(package! yasnippet)

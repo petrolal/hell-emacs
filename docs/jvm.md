@@ -22,6 +22,15 @@ lsp-mode asks once to import the root. The echo area says
 `[FORGE IGNITED]` while JDTLS starts and `[DAEMON READY]` when it's done;
 the mode-line says `JVM:ready`.
 
+**Completion** (every language with a server). The popup opens as you
+type, ranked by the server and then by what you've picked before, with
+each candidate's type and, half a second later, its documentation.
+Picking a method inserts its arguments as placeholders (`TAB` / `S-TAB`
+or `M-}` / `M-{` move between them, `C-g` leaves); picking a class adds
+its import. JDTLS's templates (`sysout`, `foreach`, `fori`) and postfix
+completion (`list.for`, `name.nnull`, `x.var`) expand the same way.
+Parameter hints show in the echo area as you type `(` and `,`.
+
 **Navigation**
 
 | Key | Does |
