@@ -3705,6 +3705,19 @@ pass against what enterprise developers already use.
       released and pinnable, it replaces kotlin-language-server in
       `:lang kotlin` behind the same status and keys, and the matrix's Kotlin
       row is re-checked.
+  - *Checked on 2026-09-30, not switched:* `Kotlin/kotlin-lsp` releases
+    regularly (v263.4702.0, 2026-09-13) as standalone archives per
+    platform on download.jetbrains.com, each with a published SHA-256
+    (Linux x64's matched): 368MB, 1.2GB unpacked, with its own Java
+    runtime; stdio LSP (`bin/intellij-server --stdio`); telemetry
+    `--data-sharing=none` by default. But each build is an EAP with an
+    expiry: `intellij-server license status` said "eap (Valid) ... valid
+    through 2026-10-08 (8 days left)", so a pinned build stops working
+    within weeks. And the binary carries a licensing system (`license
+    login|trial|activate`, `--license-key`, `--license-server`, an
+    `--eula` gate), though this build "does not require a license". Not
+    pinnable in the sense Hellmacs pins things. Switch when a build
+    doesn't expire and its license is stated; re-check at each release.
 - *Verify:* the budget table is filled in from real runs; a regression past
   a budget fails the weekly job.
 
