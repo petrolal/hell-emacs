@@ -4337,7 +4337,7 @@ end of each step; one commit per step.
       `lisp/hellmacs.el` and hands Emacs that file; the root `init.el`
       goes. Without a synced profile, the same parts run from source.
       Startup measured before and after (0.12s budget).
-- [ ] **16.8 Docs and tooling.** CLAUDE.md, `docs/development/`,
+- [x] **16.8 Docs and tooling.** (2026-09-30: as below; the roadmap's own finished items keep their old paths, as history.) CLAUDE.md, `docs/development/`,
       README, the roadmap's paths, `static/module-template/` (with a
       `.hellmacsmodule`), CI, `.gitignore` (Doom's: `/*.el` but
       `early-init.el`).

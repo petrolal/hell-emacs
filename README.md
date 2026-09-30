@@ -302,27 +302,43 @@ Pull requests are verified through unit and integration suites run via `bin/hell
 
 ## 📂 File Structure
 
-Hellmacs is cleanly organized around modular core routines, feature modules, and unified CLI tooling:
+Hellmacs follows Doom Emacs v3's layout (`doomemacs/core`): the engine in
+`lisp/`, core's own module in `modules/`, the module catalog as a source in
+`sources/`, one file per command in `bin/`, and no `init.el` of its own
+(`bin/hellmacs sync` generates each profile's):
 
 <pre>
 ~/.config/emacs
-├── early-init.el            # Pre-frame boot: GC tuning, dir layout, UI chrome suppression
-├── init.el                  # Bootstrap orchestrator: core loader, package manager, modules
+├── early-init.el            # Pre-frame boot: GC tuning, dir layout, UI chrome; hands Emacs the profile's init file
+├── .hellmacs                # The project: name, version, commit style (Doom's .doom)
 ├── bin/
-│   └── hellmacs             # Command-line tool: install, sync, upgrade, lock, gc, doctor, test
-├── core/                    # Engine internals (module loader, lifecycle hooks, keybind helpers)
-├── modules/                 # Feature modules, declaratively enabled via (hellmacs! ...)
-│   ├── completion/          # Corfu, Vertico, Consult, Orderless, Marginalia, Cape
-│   ├── config/              # Default settings, sane defaults, key bindings
-│   ├── editor/              # Undo history, formatting, editing enhancements
-│   ├── lang/                # Java, Kotlin, Clojure language modules
-│   ├── tools/               # LSP, DAP Debugger, Magit, Build runners
-│   └── ui/                  # Dashboard, Hellmacs Modeline, Inferno Themes
-├── docs/                    # Complete user, developer, and AI context documentation
-├── static/                  # Starter templates (init.example.el, config.example.el, packages.example.el)
+│   ├── hellmacs             # Command-line tool: dispatches to bin/hellmacs-COMMAND
+│   ├── hellmacs-sync, -doctor, -install, -upgrade, ...   # One file per command
+│   └── hellmacsscript       # Runs a bin/hellmacs-COMMAND directly (Doom's doomscript)
+├── lisp/                    # The engine: hellmacs.el (the heart), -lib, -modules, -packages, -profiles, -cli, ...
+│   ├── lib/                 # Library parts, loaded with hellmacs-require (jdk, net, lsp-status)
+│   └── cli/                 # The CLI's parts (bundle, compliance, config, verify)
+├── modules/
+│   └── hellmacs/            # Core's own module, :hellmacs, always on: the Altar, themed UX, gcmh
+├── sources/
+│   └── hellmacs+/modules/   # The module catalog, enabled with (hellmacs! ...)
+│       ├── checkers/        # Static analysis: Checkstyle, PMD, SpotBugs, SonarLint
+│       ├── completion/      # Corfu, Vertico, Consult, Orderless, Marginalia, Cape
+│       ├── config/          # Default settings, key bindings
+│       ├── editor/          # Undo history, formatting, snippets, file templates
+│       ├── lang/            # Java, Kotlin, Clojure, Groovy, and the files JVM repos carry
+│       ├── tools/           # LSP, DAP debugger, Magit, builds, runs, tests, HTTP, databases
+│       └── ui/              # Dashboard, modeline, theme, popups
+├── profiles/                # Profiles Hellmacs ships (safe-mode); see profiles/README.md
+├── docs/                    # User, developer and AI context documentation
+├── static/                  # Starter templates (init.example.el, config.example.el, packages.example.el, module-template/)
 ├── test/                    # ERT unit and integration test suites
 └── themes/                  # Custom color themes (hellmacs-inferno-theme.el)
 </pre>
+
+Each module has a `.hellmacsmodule` (Doom's `.doommodule`) naming it. Your own
+modules go in `~/.config/hellmacs/modules/<group>/<name>/` and win over
+Hellmacs' own.
 
 ---
 

@@ -159,4 +159,13 @@ bin/hellmacs --profile work doctor
 emacs --profile work
 ```
 
-Each profile maintains completely isolated configs (`~/.config/hellmacs-work`), packages (`~/.local/share/hellmacs-work`), caches, and state directories.
+Each profile maintains completely isolated configs, packages (`~/.local/share/hellmacs-work`), caches, and state directories. As in Doom v3, a directory is a profile: the config for `--profile work` is `~/.config/hellmacs-work/`, else `profiles/work/` in your config (`~/.config/hellmacs/profiles/work/`), else `profiles/work/` in Hellmacs.
+
+Hellmacs ships one: **`safe-mode`**, its core and none of your modules or config. When something breaks Emacs, start there and add modules back one at a time:
+
+```sh
+bin/hellmacs --profile safe-mode sync
+emacs --profile safe-mode
+```
+
+See [`profiles/README.md`](../profiles/README.md).

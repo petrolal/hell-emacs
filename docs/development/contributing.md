@@ -46,11 +46,12 @@ bin/hellmacs test test-bundle
 
 ## 3. Module System Specification & API Contracts
 
-A module is declared at `modules/<group>/<name>/` (or `~/.config/hellmacs/modules/<group>/<name>/`).
+A module is `<group>/<name>/` in a module tree: Hellmacs' catalog is `sources/hellmacs+/modules/`, core's own module is `modules/hellmacs/`, and yours go in `~/.config/hellmacs/modules/`. Each has a `.hellmacsmodule` (Doom's `.doommodule`): a version string, then `((name :group name))`, plus `(depth . N)` when it must load before or after others.
 
 ### File Contract Schema
 ```
-modules/<group>/<name>/
+sources/hellmacs+/modules/<group>/<name>/
+├── .hellmacsmodule # Its name (and depth), as Doom's .doommodule
 ├── packages.el   # [EVALUATED AT SYNC TIME] Declarations: (package! ...), (depends-on! ...), (hellmacs-treesit! ...)
 ├── init.el       # [BOOT PHASE 1] Evaluated before any config.el is loaded
 ├── config.el     # [BOOT PHASE 2] Evaluated during interactive boot (use-package forms)
@@ -104,17 +105,17 @@ Core and `:tools` modules never hardcode language names; `:lang` modules configu
 
 ## 5. Precedence & Override Rules
 
-1. **User Module Override**: A module at `~/.config/hellmacs/modules/<group>/<name>/` takes precedence over `modules/<group>/<name>/`.
-2. **Evaluation Order (Sync)**: `core/packages.el` $\rightarrow$ Module `packages.el` (in `hellmacs!` order) $\rightarrow$ User `packages.el`.
-3. **Execution Order (Boot)**: `core/` $\rightarrow$ Module `init.el` $\rightarrow$ Module `config.el` $\rightarrow$ User `config.el`.
+1. **User Module Override**: a module at `~/.config/hellmacs/modules/<group>/<name>/` takes precedence over Hellmacs' own (`modules/`, then `sources/hellmacs+/modules/`).
+2. **Evaluation Order (Sync)**: `lisp/packages.el` $\rightarrow$ Module `packages.el` (core's `:hellmacs` first, then in `hellmacs!` order) $\rightarrow$ User `packages.el`.
+3. **Execution Order (Boot)**: `lisp/` $\rightarrow$ Module `init.el` $\rightarrow$ Module `config.el` $\rightarrow$ User `config.el`.
 
 ---
 
 ## 6. Creating a New Module Step-by-Step
 
-1. Copy the template from `static/module-template/` into `modules/<category>/<name>/`:
+1. Copy the template from `static/module-template/` into `sources/hellmacs+/modules/<category>/<name>/`, and set the name in its `.hellmacsmodule`:
    ```sh
-   cp -r static/module-template modules/lang/scala
+   cp -r static/module-template sources/hellmacs+/modules/lang/scala
    ```
 2. Populate `packages.el`, `config.el`, `autoload.el`, and `doctor.el`.
 3. Register the module in `static/init.example.el` and add unit tests in `test/`.
