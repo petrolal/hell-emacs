@@ -311,6 +311,9 @@ extra."
       (let* ((name (car entry))
              (file (expand-file-name name root)))
         (hellmacs-bundle--check-name name)
+        ;; Remade relative to the data directory on install: stays in it.
+        (when (eq (cadr entry) :data-link)
+          (hellmacs-bundle--check-name (nth 2 entry)))
         (puthash name t listed)
         (unless (pcase (cadr entry)
                   (:dir (and (not (file-symlink-p file)) (file-directory-p file)))

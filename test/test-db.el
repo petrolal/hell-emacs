@@ -115,7 +115,9 @@
       (should (string-search (plist-get (hellmacs-db-driver-spec 'postgresql) :file) cp)))
     (should (member "--outputformat=table" command))
     (should (seq-some (lambda (arg) (string-prefix-p "--maxWidth=" arg)) command))
-    (should-not (seq-some (lambda (arg) (string-search "-p" arg)) (cdr (member "sqlline.SqlLine" command))))))
+    (should-not (seq-some (lambda (arg) (string-search "-p" arg)) (cdr (member "sqlline.SqlLine" command))))
+    ;; Its history kept with Hellmacs' state, not in ~/.sqlline.
+    (should (member (concat "--historyfile=" (hellmacs-state-file "sqlline/history")) command))))
 
 (ert-deftest test-db/pins ()
   (dolist (spec (cons (hellmacs-db-jar-spec 'sqlline)
@@ -126,7 +128,9 @@
     (should (string-prefix-p hellmacs-data-dir (plist-get spec :file)))))
 
 (ert-deftest test-db/connect ()
-  "Connecting starts an SQLi buffer and logs in on stdin: the password is never shown."
+  "Connecting starts an SQLi buffer and logs in on stdin: the password is never shown,
+and it answers sqlline's password prompt instead of going on the !connect
+line, which sqlline writes to its history file."
   (test-db--with-tree '(("fake-sqlline" . "#!/bin/sh\nprintf 'sqlline> '\nexec cat >> \"$HELLMACS_TEST_LOG\"\n"))
     (let* ((log (expand-file-name "stdin.log" root))
            (process-environment (cons (concat "HELLMACS_TEST_LOG=" log) process-environment))
@@ -145,7 +149,7 @@
                         (not (and (file-exists-p log)
                                   (string-search "!connect" (with-temp-buffer (insert-file-contents log) (buffer-string))))))
               (accept-process-output nil 0.1)))
-          (should (string-search "!connect jdbc:h2:mem:t sa s3cret"
+          (should (string-search "!connect jdbc:h2:mem:t sa\ns3cret\n"
                                  (with-temp-buffer (insert-file-contents log) (buffer-string))))
           (should-not (string-search "s3cret" (with-current-buffer buffer (buffer-string)))))))))
 
@@ -204,7 +208,7 @@
           (delete-directory tmp t))))))
 
 (ert-deftest test-db/login-quoting ()
-  "An empty password is sent as \"\", or sqlline would take the next line for it."
+  "An empty user is sent as \"\", or sqlline would take the next line for it."
   (should (equal (hellmacs-db--quote "") "\"\""))
   (should (equal (hellmacs-db--quote "s3cret") "s3cret"))
   (should (equal (hellmacs-db--quote "a b\"c") "\"a b\\\"c\"")))

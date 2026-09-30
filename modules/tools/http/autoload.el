@@ -144,29 +144,40 @@ The private file's over the public one's, and NAME's over `$shared''s."
           (unless (assoc (car var) vars) (push var vars))))
       (nreverse vars))))
 
-(defvar hellmacs-http--env-dir nil
-  "The directory whose environment was chosen last, for reloading it.")
+(defvar hellmacs-http--chosen nil
+  "Alist: a directory with http-client.env.json files -> the environment chosen there.
+Every .http file under it uses that one; other projects have their own.")
+
+(defun hellmacs-http--use-environment ()
+  "Give this buffer the environment chosen for its project, read afresh; return its name.
+restclient's variables are set buffer-locally, never for every .http file."
+  (let* ((dir (hellmacs-http--env-dir default-directory))
+         (name (and dir (cdr (assoc (expand-file-name dir) hellmacs-http--chosen)))))
+    (setq-local restclient-current-env-file nil ; restclient's own reload doesn't know the private file
+                restclient-current-env-name name
+                restclient-var-defaults (and name (hellmacs-http-environment-vars default-directory name)))
+    name))
 
 ;;;###autoload
 (defun hellmacs-http-select-environment (name)
-  "Use environment NAME from the http-client.env.json files near this file."
+  "Use environment NAME from the http-client.env.json files near this file.
+For every .http file of the project (under the same env files)."
   (interactive
    (let ((names (or (hellmacs-http-environments default-directory)
                     (user-error "No http-client.env.json here or above"))))
-     (list (completing-read "Environment: " names nil t nil nil restclient-current-env-name))))
-  (setq hellmacs-http--env-dir default-directory
-        restclient-current-env-file nil  ; restclient's own reload doesn't know the private file
-        restclient-current-env-name name
-        restclient-var-defaults (hellmacs-http-environment-vars default-directory name))
+     (list (completing-read "Environment: " names nil t nil nil (hellmacs-http--use-environment)))))
+  (let ((dir (or (hellmacs-http--env-dir default-directory)
+                 (user-error "No http-client.env.json here or above"))))
+    (setf (alist-get (expand-file-name dir) hellmacs-http--chosen nil nil #'equal) name))
+  (hellmacs-http--use-environment)
   (message "Environment \"%s\" (%d variables)" name (length restclient-var-defaults)))
 
 (defun hellmacs-http-reload-environment ()
   "Read the chosen environment's files again."
   (interactive)
-  (unless (and hellmacs-http--env-dir restclient-current-env-name)
-    (user-error "No environment chosen yet (C-c C-e)"))
-  (let ((default-directory hellmacs-http--env-dir))
-    (hellmacs-http-select-environment restclient-current-env-name)))
+  (let ((name (or (hellmacs-http--use-environment)
+                  (user-error "No environment chosen yet (C-c C-e)"))))
+    (message "Environment \"%s\" (%d variables)" name (length restclient-var-defaults))))
 
 ;;; Dynamic variables --------------------------------------------------------------
 
@@ -226,13 +237,20 @@ with +httpyac, `C-c C-l' runs the request with it."
         (column (current-column))
         (dir default-directory)
         (handler (plist-get (hellmacs-http--request-at-point) :handler))
-        (copy (get-buffer-create (format " *http: %s*" (buffer-name)))))
+        (env-name (hellmacs-http--use-environment))
+        (env-vars restclient-var-defaults)
+        ;; One for every file: restclient reads the request from it as it
+        ;; sends, and the response comes back in its own buffer.
+        (copy (get-buffer-create " *http-send*")))
     (unless (fboundp 'restclient-http-send-current) (require 'restclient))
     (with-current-buffer copy
       (let ((inhibit-read-only t))
         (erase-buffer)
         (insert text))
       (setq default-directory dir)  ; for `< file' bodies
+      (setq-local restclient-current-env-file nil
+                  restclient-current-env-name env-name
+                  restclient-var-defaults env-vars)
       (hellmacs-http--strip-handlers)
       (goto-char (point-min))
       (forward-line (1- line))
@@ -262,6 +280,7 @@ with +httpyac, `C-c C-l' runs the request with it."
   (unless (file-executable-p hellmacs-http-httpyac-executable)
     (user-error "httpyac isn't installed yet; `bin/hellmacs sync' installs it"))
   (save-buffer)
+  (hellmacs-http--use-environment)
   (let ((command (mapconcat #'shell-quote-argument (hellmacs-http--httpyac-command buffer-file-name line) " "))
         ;; Your company's CA, for the APIs behind it.
         (process-environment (let ((ca (ignore-errors (hellmacs-net-ca-file))))

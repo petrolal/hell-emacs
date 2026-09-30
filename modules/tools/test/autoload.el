@@ -50,8 +50,8 @@
 ;;; Finding reports ------------------------------------------------------------------
 
 (defconst hellmacs-test--skipped-dirs
-  '(".git" ".hg" ".svn" ".gradle" ".idea" ".mvn" "node_modules" "src" "classes"
-    "libs" "tmp" "generated" "kotlin" "html")
+  (append hellmacs-ignored-dirs
+          '(".gradle" ".mvn" "src" "classes" "libs" "tmp" "generated" "kotlin" "html"))
   "Directories never searched for reports: sources, VCS, compiled classes.")
 
 (defun hellmacs-test--report-files (root regexp)
@@ -422,6 +422,13 @@ An alist: (\"pkg/dir/File.java\" . ((LINE . STATUS) ...)), STATUS being
 (defvar hellmacs-coverage--data nil
   "The coverage shown: ((MODULE-ROOT . PARSED-REPORT) ...).")
 
+(defvar hellmacs-coverage-root-limit 4
+  "How many projects' coverage is kept shown.
+Each holds every covered line of every report in the project.")
+
+(defvar hellmacs-coverage--roots nil
+  "The project roots whose coverage is shown, most recently shown first.")
+
 (defvar-local hellmacs-coverage--saved-margin nil
   "`left-margin-width' before this buffer got margin marks, or nil.")
 
@@ -471,12 +478,15 @@ An alist: (\"pkg/dir/File.java\" . ((LINE . STATUS) ...)), STATUS being
       (save-excursion
         (save-restriction
           (widen)
-          (pcase-dolist (`(,line . ,status) lines)
-            (goto-char (point-min))
-            (when (zerop (forward-line (1- line)))
-              (let ((o (make-overlay (point) (point))))
-                (overlay-put o 'hellmacs-coverage status)
-                (overlay-put o 'before-string (hellmacs-coverage--mark-string status))))))))))
+          (goto-char (point-min))
+          ;; In line order, each from the last: one pass over the buffer.
+          (let ((at 1))
+            (pcase-dolist (`(,line . ,status) (sort (copy-sequence lines) #'car-less-than-car))
+              (when (zerop (forward-line (- line at)))
+                (setq at line)
+                (let ((o (make-overlay (point) (point))))
+                  (overlay-put o 'hellmacs-coverage status)
+                  (overlay-put o 'before-string (hellmacs-coverage--mark-string status)))))))))))
 
 ;;;###autoload
 (defun hellmacs-coverage-show (&optional root)
@@ -494,7 +504,13 @@ In every source buffer of the project, and in those opened later, until
                                   (hellmacs-coverage-parse-jacoco-xml report)))
                           reports)
                   (seq-remove (lambda (entry) (string-prefix-p root (car entry)))
-                              hellmacs-coverage--data)))
+                              hellmacs-coverage--data))
+          hellmacs-coverage--roots (cons root (delete root hellmacs-coverage--roots)))
+    ;; The least recently shown projects' beyond the limit go.
+    (dolist (gone (nthcdr hellmacs-coverage-root-limit hellmacs-coverage--roots))
+      (setq hellmacs-coverage--data
+            (seq-remove (lambda (entry) (string-prefix-p gone (car entry))) hellmacs-coverage--data)))
+    (setq hellmacs-coverage--roots (seq-take hellmacs-coverage--roots hellmacs-coverage-root-limit))
     (add-hook 'find-file-hook #'hellmacs-coverage--mark-buffer)
     (dolist (buffer (buffer-list))
       (when-let* ((file (buffer-file-name buffer)))
@@ -506,7 +522,8 @@ In every source buffer of the project, and in those opened later, until
 (defun hellmacs-coverage-hide ()
   "Remove every coverage mark."
   (interactive)
-  (setq hellmacs-coverage--data nil)
+  (setq hellmacs-coverage--data nil
+        hellmacs-coverage--roots nil)
   (remove-hook 'find-file-hook #'hellmacs-coverage--mark-buffer)
   (dolist (buffer (buffer-list))
     (with-current-buffer buffer

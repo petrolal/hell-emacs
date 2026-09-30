@@ -121,9 +121,11 @@ and hash tables otherwise; this reads either."
 ;;; Sessions -----------------------------------------------------------------------
 
 (defvar hellmacs-lsp-status--sessions (make-hash-table :test #'equal)
-  "(SERVER . PROJECT-ROOT) -> (STATE SINCE BUILD-FAILED).
+  "(SERVER . PROJECT-ROOT) -> (STATE SINCE BUILD-FAILED WORKSPACE).
 STATE is igniting, ready or failed; SINCE when the server started;
-BUILD-FAILED non-nil while the project's last build failed.")
+BUILD-FAILED non-nil while the project's last build failed; WORKSPACE
+the lsp-mode workspace the session is, once it has started (nil for an
+outcome reported before that).")
 
 (defun hellmacs-lsp-status--key (server root)
   (cons server (directory-file-name (file-truename root))))
@@ -140,7 +142,7 @@ BUILD-FAILED non-nil while the project's last build failed.")
 (defun hellmacs-lsp-status--set (key state)
   "Record STATE for session KEY, keeping its start time and build result."
   (let ((session (gethash key hellmacs-lsp-status--sessions)))
-    (puthash key (list state (or (nth 1 session) (float-time)) (nth 2 session))
+    (puthash key (list state (or (nth 1 session) (float-time)) (nth 2 session) (nth 3 session))
              hellmacs-lsp-status--sessions))
   (force-mode-line-update t))
 
@@ -149,15 +151,19 @@ BUILD-FAILED non-nil while the project's last build failed.")
 Returns the text."
   (apply #'hellmacs-announce hellmacs-lsp-status-messages event args))
 
-(defun hellmacs-lsp-status-ignite (server root)
-  "SERVER just started for project ROOT.
+(defun hellmacs-lsp-status-ignite (server root &optional workspace)
+  "SERVER just started for project ROOT, as lsp-mode WORKSPACE.
 An outcome it already reported is kept: this runs once the server has
 answered `initialize', and it may have imported (or failed to) before
-that. A session is removed when its process exits
-\(`hellmacs-lsp-status-banish'), so none is left from an earlier one."
-  (let ((key (hellmacs-lsp-status--key server root)))
-    (unless (memq (car (gethash key hellmacs-lsp-status--sessions)) '(ready failed))
-      (puthash key (list 'igniting (float-time) nil) hellmacs-lsp-status--sessions)))
+that. An outcome of another workspace isn't: on a restart the old
+server may not have exited yet (`hellmacs-lsp-status-banish')."
+  (let* ((key (hellmacs-lsp-status--key server root))
+         (session (gethash key hellmacs-lsp-status--sessions)))
+    (if (and (memq (car session) '(ready failed))
+             (memq (nth 3 session) (list nil workspace)))
+        (puthash key (list (nth 0 session) (nth 1 session) (nth 2 session) workspace)
+                 hellmacs-lsp-status--sessions)
+      (puthash key (list 'igniting (float-time) nil workspace) hellmacs-lsp-status--sessions)))
   (force-mode-line-update t)
   (hellmacs-lsp-status-announce 'ignited (hellmacs-lsp-status--label server)
                                 (abbreviate-file-name root)))
@@ -189,12 +195,17 @@ with RECOVERED, only after its import failed (and the cause was fixed)."
       (hellmacs-lsp-status-announce 'failed (abbreviate-file-name root)
                                     (truncate-string-to-width (string-trim reason) 110 nil nil t)))))
 
-(defun hellmacs-lsp-status-banish (server root)
-  "SERVER's process for ROOT exited."
-  (remhash (hellmacs-lsp-status--key server root) hellmacs-lsp-status--sessions)
-  (force-mode-line-update t)
-  (hellmacs-lsp-status-announce 'banished (hellmacs-lsp-status--label server)
-                                (abbreviate-file-name root)))
+(defun hellmacs-lsp-status-banish (server root &optional workspace)
+  "SERVER's process for ROOT, lsp-mode WORKSPACE, exited.
+Nothing happens when a newer workspace has the session already: the
+old server of a restart exiting after the new one started."
+  (let* ((key (hellmacs-lsp-status--key server root))
+         (owner (nth 3 (gethash key hellmacs-lsp-status--sessions))))
+    (unless (and workspace owner (not (eq owner workspace)))
+      (remhash key hellmacs-lsp-status--sessions)
+      (force-mode-line-update t)
+      (hellmacs-lsp-status-announce 'banished (hellmacs-lsp-status--label server)
+                                    (abbreviate-file-name root)))))
 
 (defun hellmacs-lsp-status-build-result (root ok)
   "A build of project ROOT ended, successfully if OK.
@@ -221,13 +232,13 @@ It gets WORKSPACE's root, then ARGS."
   "For `lsp-after-initialize-hook'."
   (when-let* ((workspace lsp--cur-workspace)
               (server (hellmacs-lsp-status--server workspace)))
-    (hellmacs-lsp-status-ignite server (hellmacs-lsp-status--root workspace))))
+    (hellmacs-lsp-status-ignite server (hellmacs-lsp-status--root workspace) workspace)))
 
 (defun hellmacs-lsp-status--banished-h (workspace)
   "For `lsp-after-uninitialized-functions'."
   (hellmacs-lsp-status--forget-workspace workspace)
   (when-let* ((server (hellmacs-lsp-status--server workspace)))
-    (hellmacs-lsp-status-banish server (hellmacs-lsp-status--root workspace))))
+    (hellmacs-lsp-status-banish server (hellmacs-lsp-status--root workspace) workspace)))
 
 (defun hellmacs-lsp-status--log-a (workspace params)
   "Before lsp-mode shows a log message (PARAMS) from WORKSPACE."

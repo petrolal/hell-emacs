@@ -39,7 +39,10 @@
 ;; The bootstrap block below is Elpaca's official installer (see its
 ;; README's "Installer" section), adapted only to redirect Elpaca's
 ;; own directory into `hellmacs-data-dir' instead of
-;; `user-emacs-directory' (the git checkout).
+;; `user-emacs-directory' (the git checkout), and to pin Elpaca itself:
+;; `:ref' is a commit (it installs every other package, so it's never
+;; fetched from wherever master is), cloned in full (`:depth' nil),
+;; since a shallow clone only holds the branch's tip.
 ;; Do not hand-edit it piecemeal; replace the whole block from
 ;; upstream when updating Elpaca's installer version.
 
@@ -50,7 +53,8 @@
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                               :ref nil :depth 1 :inherit ignore
+                               :ref "78b8e7cc98c198c8dbeb18140649e2d668126712" ; 2026-09-11
+                               :depth nil :inherit ignore
                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                                :build (:not elpaca-activate)))
 (let* ((repo  (expand-file-name "elpaca/" elpaca-sources-directory))

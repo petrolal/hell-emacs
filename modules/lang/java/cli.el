@@ -55,9 +55,17 @@ the directory (java-debug, the test runner) is installed again after."
             (unless (zerop (call-process "tar" nil t nil "-xzf" tarball "-C" server))
               (error "Unpacking JDTLS failed: %s" (buffer-string))))
           (make-directory (expand-file-name "bundles" server)) ; java-debug goes here
+          ;; Marked before it moves into place: whatever's at DIR is either
+          ;; complete and marked, or not taken for the pinned install.
+          (hellmacs-marker-write (expand-file-name (file-name-nondirectory (hellmacs-jvm--jdtls-marker)) server)
+                                 hellmacs-jvm-jdtls-sha256)
           (when (file-directory-p dir) (delete-directory dir t))
-          (rename-file server dir)
-          (hellmacs-marker-write (hellmacs-jvm--jdtls-marker) hellmacs-jvm-jdtls-sha256))
+          (condition-case err
+              (rename-file server dir)
+            ;; Another install (sync, or Emacs on first use) got there first.
+            (file-already-exists
+             (unless (hellmacs-jvm-jdtls-installed-p)
+               (signal (car err) (cdr err))))))
       (delete-directory stage t))))
 
 (defun hellmacs-jvm-sync-install-server ()

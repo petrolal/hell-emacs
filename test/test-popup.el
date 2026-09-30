@@ -120,6 +120,15 @@ never shrinks twice."
     (let ((help (get-buffer-window "*Help*")))
       (should (eq (display-buffer "*Help*") help)))))
 
+(ert-deftest test-popup/other-side-windows-are-left-alone ()
+  "A bottom side window someone else opened stays when a popup opens."
+  (test-popup--with-layout
+    (let ((theirs (display-buffer-in-side-window (make "*their panel*") '((side . bottom) (slot . 1)))))
+      (display-buffer (make "*compilation*"))
+      (should (window-live-p theirs))
+      (should (eq (window-buffer theirs) (get-buffer "*their panel*")))
+      (should (get-buffer-window "*compilation*")))))
+
 (ert-deftest test-popup/quit-restores-the-layout ()
   "`q' (`quit-window') in a popup deletes it: the layout is as it was."
   (test-popup--with-layout

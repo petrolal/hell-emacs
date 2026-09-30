@@ -33,6 +33,7 @@
 
 (defvar restclient-var-defaults)
 (defvar restclient-current-env-name)
+(defvar hellmacs-http--chosen)
 
 (let ((hellmacs-modules (make-hash-table :test #'equal))
       (warning-minimum-log-level :emergency))
@@ -148,6 +149,32 @@ Content-Type: application/json
         (should (equal restclient-current-env-name "dev"))
         (should (equal (cdr (assoc "host" restclient-var-defaults)) "http://localhost:8080"))))))
 
+(ert-deftest test-http/environment-per-project ()
+  "An environment chosen in one project is every .http file's there, and no
+other project's: each has its own http-client.env.json."
+  (test-http--with-tree '(("a/http-client.env.json" . "{\"dev\": {\"host\": \"http://a\"}}")
+                          ("a/one.http" . "GET {{host}}/x\n") ("a/two.http" . "GET {{host}}/y\n")
+                          ("b/http-client.env.json" . "{\"dev\": {\"host\": \"http://b\"}}")
+                          ("b/api.http" . "GET {{host}}/z\n"))
+    (let ((restclient-var-defaults nil) (restclient-current-env-name nil)
+          (hellmacs-http--chosen nil) (sent nil))
+      (cl-letf (((symbol-function 'restclient-http-send-current)
+                 (lambda (&rest _) (push (cons restclient-current-env-name
+                                               (cdr (assoc "host" restclient-var-defaults)))
+                                         sent))))
+        (with-current-buffer (find-file-noselect (expand-file-name "a/one.http" root))
+          (hellmacs-http-select-environment "dev"))
+        (with-current-buffer (find-file-noselect (expand-file-name "a/two.http" root))
+          (goto-char (point-min))
+          (hellmacs-http-send-request))
+        (with-current-buffer (find-file-noselect (expand-file-name "b/api.http" root))
+          (goto-char (point-min))
+          (hellmacs-http-send-request)))
+      (should (equal (reverse sent) '(("dev" . "http://a") (nil . nil))))
+      ;; Nothing global changed.
+      (should-not (default-value 'restclient-var-defaults))
+      (should-not (default-value 'restclient-current-env-name)))))
+
 (ert-deftest test-http/dynamic-variables ()
   "IntelliJ's and REST Client's dynamic variables, fresh for each request."
   (let ((vars (hellmacs-http--dynamic-vars)))
@@ -189,6 +216,25 @@ Content-Type: application/json
         (should (string-prefix-p "Authorization:" (car sent)))
         (should-not (string-search "client.global" (cadr sent)))
         (should (string-search "@base = /api" (cadr sent)))))))
+
+(ert-deftest test-http/send-keeps-one-copy ()
+  "Sending from many .http files keeps one hidden copy to send from, not one
+per file, each holding its whole text."
+  (let ((copies (lambda () (seq-filter (lambda (b) (string-prefix-p " *http" (buffer-name b)))
+                                       (buffer-list))))
+        (buffers nil))
+    (mapc #'kill-buffer (funcall copies))
+    (unwind-protect
+        (cl-letf (((symbol-function 'restclient-http-send-current) #'ignore))
+          (dolist (name '("a.http" "b.http" "c.http"))
+            (with-current-buffer (generate-new-buffer name)
+              (push (current-buffer) buffers)
+              (insert "GET https://example.invalid/\n")
+              (goto-char (point-min))
+              (hellmacs-http-send-request)))
+          (should (= (length (funcall copies)) 1)))
+      (mapc #'kill-buffer buffers)
+      (mapc #'kill-buffer (funcall copies)))))
 
 (ert-deftest test-http/keys-and-files ()
   (should (eq (keymap-lookup hellmacs-http-mode-map "C-c C-c") #'hellmacs-http-send-request))

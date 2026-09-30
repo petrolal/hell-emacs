@@ -27,6 +27,7 @@
 
 (require 'ert)
 (require 'hellmacs-sync)
+(defvar hellmacs-sync--elpaca-functions)
 (or (require 'loaddefs-gen nil t)
     (require 'autoload nil t))
 
@@ -75,6 +76,17 @@ be started from with this sync's autoloads and no compiled files."
             (hellmacs-sync--write-profile))
           (should (plist-get (hellmacs-profile-read) :emacs-version)))
       (delete-directory hellmacs-profile-dir t))))
+
+(ert-deftest test-sync/elpaca-internals-checked ()
+  "Sync relies on some of Elpaca's internals; an Elpaca without one of them
+fails the sync naming it, instead of an obscure error midway."
+  (let ((have (lambda (fns) (lambda (fn) (memq fn fns)))))
+    (cl-letf (((symbol-function 'fboundp) (funcall have hellmacs-sync--elpaca-functions)))
+      (hellmacs-sync--check-elpaca))
+    (cl-letf (((symbol-function 'fboundp)
+               (funcall have (remq 'elpaca--queued hellmacs-sync--elpaca-functions))))
+      (should (string-match-p "elpaca--queued"
+                              (cadr (should-error (hellmacs-sync--check-elpaca))))))))
 
 ;;; npm packages, pinned by their lockfile --------------------------------------
 

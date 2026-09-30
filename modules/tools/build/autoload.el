@@ -82,6 +82,9 @@ or a list of them. BUILD is the build's (TOOL ROOT PROGRAM), if already known."
                  (concat " -Dtest=" (mapconcat #'shell-quote-argument tests ",")
                          " -Dsurefire.failIfNoSpecifiedTests=false")))))))
 
+(defvar-local hellmacs-forge--added-environment nil
+  "The entries `hellmacs-forge-setup-build-h' put in `compilation-environment'.")
+
 ;;;###autoload
 (defun hellmacs-forge-setup-build-h ()
   "Make `compile-command' (and so `C-x p c') the build's own build command.
@@ -90,20 +93,29 @@ Builds started from this buffer get your proxy and CA
 Gradle or Maven build starts reads: the client, the daemon, the tests.
 Gradle builds run on a JDK their Gradle release runs on
 \(`hellmacs-jdk-gradle-environment')."
-  (let ((build (hellmacs-forge-build-tool)))
+  ;; What an earlier run set goes first: the hook runs again on a revert
+  ;; or a mode change, and must replace it, not add to it.
+  (when hellmacs-forge--added-environment
+    (setq-local compilation-environment
+                (seq-remove (lambda (e) (member e hellmacs-forge--added-environment))
+                            compilation-environment)))
+  (let ((build (hellmacs-forge-build-tool))
+        added)
     (when-let* ((command (and build (ignore-errors (hellmacs-forge--command 'build build)))))
       (setq-local compile-command command))
     (when-let* ((env (and (eq (car build) 'gradle) (hellmacs-jdk-gradle-environment (nth 1 build)))))
-      (setq-local compilation-environment (append env (bound-and-true-p compilation-environment)))))
-  (when-let* ((options (hellmacs-net-jvm-options)))
-    ;; compile.el may not be loaded yet (this runs as the file opens): the
-    ;; buffer-local value then simply starts from its default, nil.
-    (setq-local compilation-environment
-                (cons (concat "JAVA_TOOL_OPTIONS="
-                              (string-join (append (split-string (or (getenv "JAVA_TOOL_OPTIONS") "") " " t)
-                                                   options)
-                                           " "))
-                      (bound-and-true-p compilation-environment)))))
+      (setq added (append env added)))
+    (when-let* ((options (hellmacs-net-jvm-options)))
+      (push (concat "JAVA_TOOL_OPTIONS="
+                    (string-join (append (split-string (or (getenv "JAVA_TOOL_OPTIONS") "") " " t)
+                                         options)
+                                 " "))
+            added))
+    (when added
+      ;; compile.el may not be loaded yet (this runs as the file opens): the
+      ;; buffer-local value then simply starts from its default, nil.
+      (setq-local compilation-environment (append added (bound-and-true-p compilation-environment))))
+    (setq-local hellmacs-forge--added-environment added)))
 
 ;;; Running builds and tests -----------------------------------------------------
 
@@ -255,7 +267,7 @@ Returns INDEX."
 (defvar-local hellmacs-forge--project-packages nil
   "This compilation's answers to \"has the project sources in package P?\".")
 
-(defconst hellmacs-forge--ignored-dirs '(".git" "node_modules")
+(defconst hellmacs-forge--ignored-dirs hellmacs-ignored-dirs
   "Directories never searched for source files, besides build output.")
 
 (defconst hellmacs-forge-source-extensions '("java" "kt" "kts" "groovy" "scala")

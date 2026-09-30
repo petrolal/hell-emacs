@@ -326,6 +326,21 @@ arrives; asking again replaces the earlier wait rather than adding one."
         (when (memq #'hellmacs-run--attach-h comint-output-filter-functions) (hellmacs-run--attach-h ""))
         (should (= 1 (length attached)))))))
 
+(ert-deftest test-run/stopped-run-stays-out-of-the-new-one ()
+  "Running again stops the run still going, whose end isn't reported into
+the new run's output."
+  (let ((buf nil))
+    (unwind-protect
+        (progn
+          (setq buf (hellmacs-run--start "restart" '("sleep" "30") temporary-file-directory process-environment))
+          (hellmacs-run--start "restart" '("sh" "-c" "echo second") temporary-file-directory process-environment)
+          (with-timeout (10) (while (process-live-p (get-buffer-process buf)) (accept-process-output nil 0.1)))
+          (accept-process-output nil 0.2)
+          (with-current-buffer buf
+            (should (string-match-p "second" (buffer-string)))
+            (should-not (string-match-p "killed\\|sleep 30" (buffer-string)))))
+      (when buf (let ((kill-buffer-query-functions nil)) (kill-buffer buf))))))
+
 (ert-deftest test-run/new-run-forgets-a-pending-attach ()
   "A debug run that died before listening leaves nothing behind for the next run
 in the same buffer."

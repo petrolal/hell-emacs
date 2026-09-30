@@ -61,7 +61,7 @@
   "The port a build task's application listens on for the debugger.")
 
 (defconst hellmacs-run--skipped-dirs
-  '(".git" ".hg" ".svn" "build" "target" "out" "bin" ".gradle" ".idea" "node_modules")
+  (append hellmacs-ignored-dirs hellmacs-build-output-dirs)
   "Directories never searched for `.launch' files: build output, VCS, IDE state.")
 
 ;;; Reading them ---------------------------------------------------------------------

@@ -71,7 +71,9 @@ Return their exit codes, in order (127 when PROGRAM can't be started)."
                                             (aset codes i (process-exit-status proc))
                                             (cl-decf running))))
                 (cl-incf running))
-            (file-missing (aset codes i 127)))))
+            (file-missing (aset codes i 127))
+            ;; There, but not runnable (permission denied): the shell's code.
+            (file-error (aset codes i 126)))))
       (when (> running 0)
         ;; Exits without output don't end the wait early: keep it short.
         (accept-process-output nil 0.005)))
@@ -177,10 +179,16 @@ before this runs, by `hellmacs-cli-main')."
     "^PWD$" "^OLDPWD$" "^SHLVL$" "^_$" "^HOME$" "^R_SESSION_TMPDIR$"
     ;; Which Hellmacs config the command ran on: saved, it would send any
     ;; bin/hellmacs run from inside Emacs to that one.
-    "^HELLMACS_PROFILE$" "^HELLMACSDIR$")
+    "^HELLMACS_PROFILE$" "^HELLMACSDIR$"
+    ;; Secrets: the file is plain text, and every process Emacs starts
+    ;; would get them.
+    "TOKEN" "SECRET" "PASSWORD" "PASSWD" "PASSPHRASE" "CREDENTIAL"
+    "API_?KEY" "PRIVATE_?KEY")
   "Regexps of variables `bin/hellmacs env' never saves.
 They describe the terminal or session the command ran in, not your
-shell setup, and would be wrong -- or harmful -- inside Emacs later.")
+shell setup, and would be wrong -- or harmful -- inside Emacs later;
+or they look like secrets (tokens, passwords, API keys), which don't
+belong in a saved file. Matched against the name, ignoring case.")
 
 (defun hellmacs-cli-env (&rest args)
   "Save the current shell environment for Emacs to load at startup.
@@ -193,19 +201,24 @@ With --clear in ARGS, delete the saved environment instead."
                            (abbreviate-file-name hellmacs-env-file)))
     (let ((vars (seq-remove
                  (lambda (entry)
-                   (let ((name (car (split-string entry "="))))
+                   (let ((name (car (split-string entry "=")))
+                         (case-fold-search t))
                      (seq-some (lambda (re) (string-match-p re name)) hellmacs-env-deny)))
                  ;; `initial-environment' is what bin/hellmacs was run with,
                  ;; before Emacs (or early-init.el) changed anything.
                  initial-environment)))
       (make-directory (file-name-directory hellmacs-env-file) t)
-      (with-temp-file hellmacs-env-file
-        (insert ";; -*- mode: lisp-data -*-\n"
-                ";; Saved by `bin/hellmacs env' on " (format-time-string "%F %T")
-                ". Re-run it after changing your shell's environment.\n")
-        (let ((print-escape-newlines t))
-          (prin1 (sort vars #'string<) (current-buffer)))
-        (insert "\n"))
+      ;; Yours alone to read, even an older file written before.
+      (when (file-exists-p hellmacs-env-file)
+        (set-file-modes hellmacs-env-file #o600))
+      (with-file-modes #o600
+        (with-temp-file hellmacs-env-file
+          (insert ";; -*- mode: lisp-data -*-\n"
+                  ";; Saved by `bin/hellmacs env' on " (format-time-string "%F %T")
+                  ". Re-run it after changing your shell's environment.\n")
+          (let ((print-escape-newlines t))
+            (prin1 (sort vars #'string<) (current-buffer)))
+          (insert "\n")))
       (hellmacs-cli--say "Saved %d environment variables to %s (PATH has %d entries)"
                          (length vars) (abbreviate-file-name hellmacs-env-file)
                          (length (parse-colon-path (getenv "PATH")))))))
@@ -302,7 +315,8 @@ upgrade' first, so the package update that follows runs the new code."
           (hellmacs-cli--say (if (equal before after)
                                  "Hellmacs is already up to date."
                                (format "Updated Hellmacs %s -> %s"
-                                       (substring before 0 7) (substring after 0 7))))))))))
+                                       (truncate-string-to-width before 7)
+                                       (truncate-string-to-width after 7))))))))))
 
 (defun hellmacs-cli--detached (packages)
   "The Elpaca records among PACKAGES whose git checkout is on a detached HEAD.
@@ -347,6 +361,8 @@ on a detached HEAD, which has no upstream to update from."
 
 (defun hellmacs-cli--upgrade-packages ()
   "Fetch and merge every unpinned package, then write the profile. For `upgrade'."
+  (hellmacs-packages-bootstrap)
+  (hellmacs-sync--check-elpaca)
   ;; Install from the lock first, so upgrading starts from what's locked.
   (hellmacs-modules-install-packages)
   (let ((pinned (cl-loop for (name . plist) in hellmacs-packages

@@ -155,6 +155,15 @@
       (should (string-match-p "^ +build +; build/test" text)))
     (should-not (hellmacs-config-missing-defaults init))))
 
+(ert-deftest test-config/depth-isnt-a-group ()
+  "A module's `:depth' isn't taken for a group: the modules missing from the
+group it's in still go inside the `hellmacs!' form."
+  (test-config--with-init "(hellmacs! :config\n           default\n\n           :lang\n           (java :depth 5))\n"
+    (should (hellmacs-config-add-defaults init))
+    (should-not (hellmacs-config-missing-defaults init))
+    (should (string-match-p "(java :depth 5)"
+                            (with-temp-buffer (insert-file-contents init) (buffer-string))))))
+
 (ert-deftest test-config/cli-command ()
   "`bin/hellmacs config' reports; with --add-defaults it adds and says to sync."
   (test-config--with-init test-config--early-init

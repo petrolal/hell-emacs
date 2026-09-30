@@ -30,6 +30,12 @@
 
 (defvar test-lib--log nil)
 (defvar test-lib--hook nil)
+(defvar hellmacs-forge--ignored-dirs)
+(defvar hellmacs-run--skipped-dirs)
+(defvar hellmacs-spring--skipped-dirs)
+(defvar hellmacs-test--skipped-dirs)
+(defvar hellmacs-static--skipped-dirs)
+(defvar hellmacs-static--build-files)
 (defvar test-lib--setq-hook nil)
 (defvar test-lib--var 1)
 (defvar test-lib--errors-hook nil)
@@ -153,6 +159,38 @@
     (should (equal (hellmacs-platform) "windows-x86_64")))
   (let ((system-type 'berkeley-unix) (system-configuration "x86_64-unknown-freebsd14"))
     (should-not (hellmacs-platform))))
+
+(ert-deftest test-lib/one-list-of-ignored-dirs ()
+  "The modules' directory walks skip VCS, IDE and npm directories from one list,
+and those that never look at build output skip lib's list of it."
+  (require 'hellmacs-modules)
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools build run test :checkers static :lang java))
+    (dolist (key '((:tools . build) (:tools . run) (:tools . test) (:checkers . static) (:lang . java)))
+      (hellmacs-module--load key "autoload.el")))
+  (dolist (list (list hellmacs-forge--ignored-dirs hellmacs-run--skipped-dirs hellmacs-spring--skipped-dirs
+                      hellmacs-test--skipped-dirs hellmacs-static--skipped-dirs))
+    (should (seq-every-p (lambda (d) (member d list)) hellmacs-ignored-dirs)))
+  (dolist (list (list hellmacs-run--skipped-dirs hellmacs-spring--skipped-dirs))
+    (should (seq-every-p (lambda (d) (member d list)) hellmacs-build-output-dirs)))
+  (should (eq hellmacs-static--build-files hellmacs-build-files)))
+
+(ert-deftest test-lib/file-sha256-streams ()
+  "A file's SHA-256 comes from sha256sum or shasum when there's one, which
+streams it, rather than from the whole file read into Emacs; else from Emacs."
+  (let ((file (make-temp-file "hellmacs-test-sha" nil nil "hellmacs\n"))
+        (want (secure-hash 'sha256 "hellmacs\n")))
+    (unwind-protect
+        (progn
+          (skip-unless (or (executable-find "sha256sum") (executable-find "shasum")))
+          (cl-letf (((symbol-function 'insert-file-contents-literally)
+                     (lambda (&rest _) (error "Read into Emacs"))))
+            (should (equal (hellmacs-file-sha256 file) want)))
+          ;; Without either tool.
+          (cl-letf (((symbol-function 'executable-find) #'ignore))
+            (should (equal (hellmacs-file-sha256 file) want))))
+      (delete-file file))))
 
 (ert-deftest test-lib/build-output-regexp ()
   "Build output anywhere in a build under ROOT, but not a package named so under src/.

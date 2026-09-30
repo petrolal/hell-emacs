@@ -37,6 +37,47 @@
                    '(3 0 1 127 1))))
   (should (equal (hellmacs-cli--run-all nil) nil)))
 
+(ert-deftest test-cli/run-all-program-that-cannot-run ()
+  "A program that's there but can't be run is exit code 126, not an error
+that aborts the command."
+  (let ((file (make-temp-file "hellmacs-test-noexec")))
+    (unwind-protect
+        (progn
+          (set-file-modes file #o644)
+          (should (equal (hellmacs-cli--run-all (list (list file) '("true")))
+                         '(126 0))))
+      (delete-file file))))
+
+(ert-deftest test-cli/upgrade-self-short-revisions ()
+  "A revision git prints shorter than 7 characters doesn't crash the report."
+  (let ((heads (list "abc" "def")) said)
+    (cl-letf (((symbol-function 'hellmacs-cli--run)
+               (lambda (_program &rest args)
+                 (pcase (member "rev-parse" args)
+                   ((and `(,_ "HEAD") (guard t)) (cons 0 (pop heads)))
+                   (`(,_ "--git-dir") '(0 . ".git"))
+                   (`(,_ "--abbrev-ref" . ,_) '(0 . "origin/main"))
+                   (_ '(0 . "")))))
+              ((symbol-function 'hellmacs-cli--say)
+               (lambda (fmt &rest args) (push (apply #'format fmt args) said))))
+      (hellmacs-cli-upgrade-self)
+      (should (equal (car said) "Updated Hellmacs abc -> def")))))
+
+(ert-deftest test-cli/env-keeps-secrets-out ()
+  "`bin/hellmacs env' saves your shell's setup, not its secrets, readable by you only."
+  (let* ((dir (make-temp-file "hellmacs-test-env" t))
+         (hellmacs-env-file (expand-file-name "env" dir))
+         (initial-environment '("PATH=/usr/bin" "JAVA_HOME=/opt/jdk"
+                                "GITHUB_TOKEN=ghp_x" "AWS_SECRET_ACCESS_KEY=x" "OPENAI_API_KEY=x"
+                                "DB_PASSWORD=x" "NPM_AUTH_TOKEN=x" "GPG_PASSPHRASE=x")))
+    (unwind-protect
+        (cl-letf (((symbol-function 'hellmacs-cli--say) #'ignore))
+          (hellmacs-cli-env)
+          (should (equal (hellmacs--read-env-file hellmacs-env-file)
+                         '("JAVA_HOME=/opt/jdk" "PATH=/usr/bin")))
+          (should (= (file-modes hellmacs-env-file) #o600)))
+      (delete-directory dir t))))
+
 (ert-deftest test-cli/doctor-reachable ()
   "Each way a host can't be reached gets its own advice; nothing is probed unless asked."
   (let ((hellmacs-proxy nil) (hellmacs-no-proxy nil) (hellmacs-mirrors nil) (hellmacs-ca-bundle nil)

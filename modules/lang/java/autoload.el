@@ -115,7 +115,7 @@ it has already are kept. Returns HANDLERS."
   handlers)
 
 (defconst hellmacs-spring--skipped-dirs
-  '(".git" ".hg" ".svn" "build" "target" "out" "bin" ".gradle" ".idea" "node_modules" "test")
+  (append hellmacs-ignored-dirs hellmacs-build-output-dirs '("test"))
   "Directories never searched for profiles: build output, VCS, IDE state, and
 test sources (src/test/resources isn't on the application's classpath).")
 

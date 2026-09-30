@@ -94,26 +94,35 @@ built-in keys like `C-x o') stays off."
 
 ;;; Hot code replace -------------------------------------------------------------
 
+(defvar hellmacs-debug--swap-pending nil
+  "The debug session whose changed classes to redefine once JDTLS compiled them.")
+
 ;;;###autoload
 (defun hellmacs-debug-hot-swap ()
   "Save the buffer so the debugged JVM picks up the change.
 JDTLS recompiles on save and java-debug then reports the changed
 classes; dap-java redefines them in the running JVM when
 `dap-java-hot-reload' is `always' (the default). Otherwise this asks
-for the redefinition itself, once the compile has had a moment."
+for the redefinition itself, once java-debug says the compile is done
+\(`hellmacs-debug--compiled-h')."
   (interactive)
   (let ((session (or (dap--cur-session) (user-error "No debug session"))))
     (save-buffer)
     (if (eq (bound-and-true-p dap-java-hot-reload) 'always)
         (message "Saved; the JVM swaps in the changed classes once JDTLS has compiled them")
-      (run-with-timer
-       1.5 nil
-       (lambda ()
-         ;; The session may have ended while JDTLS compiled.
-         (when (dap--session-running session)
-           (dap--send-message
-            (dap--make-request "redefineClasses")
-            (lambda (result)
-              (message "Hot-swapped: %s" (or (gethash "changedClasses" result) "nothing changed")))
-            session))))
-      (message "Saved; hot-swapping the changed classes..."))))
+      (setq hellmacs-debug--swap-pending session)
+      (message "Saved; hot-swapping the changed classes once JDTLS has compiled them..."))))
+
+;;;###autoload
+(defun hellmacs-debug--compiled-h (session)
+  "java-debug says SESSION's classes are compiled: redefine them if a save asked.
+Run from its `hotcodereplace' event."
+  (when (and hellmacs-debug--swap-pending (eq session hellmacs-debug--swap-pending))
+    (setq hellmacs-debug--swap-pending nil)
+    ;; The session may have ended while JDTLS compiled.
+    (when (dap--session-running session)
+      (dap--send-message
+       (dap--make-request "redefineClasses")
+       (lambda (result)
+         (message "Hot-swapped: %s" (or (gethash "changedClasses" result) "nothing changed")))
+       session))))

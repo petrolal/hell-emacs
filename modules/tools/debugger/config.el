@@ -49,6 +49,12 @@
   :config
   (dap-auto-configure-mode 1))
 
+;; `C-c h r' with `dap-java-hot-reload' other than `always': redefine the
+;; changed classes when java-debug says JDTLS has compiled them.
+(with-eval-after-load 'dap-java
+  (cl-defmethod dap-handle-event :after ((_event (eql 'hotcodereplace)) session _params)
+    (hellmacs-debug--compiled-h session)))
+
 (defvar-keymap hellmacs-debug-step-map
   :doc "Keys that keep stepping after `C-c d n/i/o/c'."
   "n" #'hellmacs-debug-next

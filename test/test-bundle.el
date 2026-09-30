@@ -174,6 +174,17 @@ Roots already there are replaced whole; everything else is left alone."
   (dolist (name '("elpaca/sources/pkg/.git/HEAD" "a..b/c" ".hidden"))
     (hellmacs-bundle--check-name name)))
 
+(ert-deftest test-bundle/unsafe-data-link-target ()
+  "A link the bundle remakes into the data directory can't lead out of it."
+  (let ((root (make-temp-file "hellmacs-test-bundle" t)))
+    (unwind-protect
+        (progn
+          (make-symbolic-link "anywhere" (expand-file-name "link" root))
+          (hellmacs-bundle-verify '(:entries (("link" :data-link "elpaca/sources/pkg"))) root)
+          (dolist (target '("../../.bashrc" "/etc/passwd" "a/../../x"))
+            (should-error (hellmacs-bundle-verify `(:entries (("link" :data-link ,target))) root))))
+      (delete-directory root t))))
+
 (ert-deftest test-bundle/check ()
   "The format, platform, Emacs major version and module set must fit."
   (test-bundle--with

@@ -37,6 +37,8 @@
 
 (defun test-lsp--capf () nil)
 
+(defvar gcmh-high-cons-threshold)
+
 (ert-deftest test-lsp/completion-keeps-the-buffer-functions ()
   "The server's completion joins the buffer's own; words are the last fallback."
   (dolist (had-dabbrev '(nil t))
@@ -68,13 +70,16 @@
     (let ((hellmacs-modules (make-hash-table :test #'equal))
           (hellmacs-packages nil)
           (lsp-keymap-prefix "s-l")               ; lsp-mode's own default
+          (gcmh-high-cons-threshold (* 64 1024 1024)) ; core's
           (warning-minimum-log-level :emergency))
       (hellmacs--enable-modules '(:tools lsp))
       (hellmacs-modules-read-packages)
       (when disabled (package! lsp-mode :disable t))
       (hellmacs-module--load '(:tools . lsp) "config.el")
       (should (eq (hellmacs-lsp-mode-used-p) (not disabled)))
-      (should (equal lsp-keymap-prefix (if disabled "s-l" "C-c l"))))))
+      (should (equal lsp-keymap-prefix (if disabled "s-l" "C-c l")))
+      ;; Collecting less often is for language servers' allocations.
+      (should (= gcmh-high-cons-threshold (* (if disabled 64 128) 1024 1024))))))
 
 (ert-deftest test-lsp/build-output-not-watched ()
   "A Maven or Gradle workspace's build output isn't watched; other workspaces' is.

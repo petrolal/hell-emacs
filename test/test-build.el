@@ -199,6 +199,20 @@ With FULL, the file is its whole resolved path."
         (hellmacs-forge-setup-build-h)
         (should-not (local-variable-p 'compilation-environment))))))
 
+(ert-deftest test-build/build-environment-set-once ()
+  "The mode hook running again (revert, a mode change) replaces what it set
+before instead of adding to it; entries of your own stay."
+  (test-build--with-tree '("settings.gradle" "gradlew")
+    (with-temp-buffer
+      (setq-local compilation-environment '("MINE=1"))
+      (cl-letf (((symbol-function 'hellmacs-net-jvm-options) (lambda () '("-Dx=1")))
+                ((symbol-function 'hellmacs-jdk-gradle-environment) (lambda (_) '("JAVA_HOME=/jdk/25"))))
+        (hellmacs-forge-setup-build-h)
+        (hellmacs-forge-setup-build-h))
+      (should (= 1 (seq-count (lambda (e) (string-prefix-p "JAVA_TOOL_OPTIONS=" e)) compilation-environment)))
+      (should (= 1 (seq-count (lambda (e) (string-prefix-p "JAVA_HOME=" e)) compilation-environment)))
+      (should (member "MINE=1" compilation-environment)))))
+
 (ert-deftest test-build/source-index-is-kept-and-refreshed-on-a-miss ()
   "The project is walked once across builds; again only for a file that may be new."
   (test-build--with-tree '("pom.xml" "src/main/java/dev/x/Greeter.java")

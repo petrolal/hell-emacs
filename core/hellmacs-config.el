@@ -170,12 +170,14 @@ nil if nothing's missing."
   "(GROUP . POSITION) of each group keyword between START and END, in the buffer.
 POSITION is the start of the keyword's line when the keyword starts it,
 else the keyword itself (as in `(hellmacs! :ui'). Keywords in comments
-and strings don't count."
-  (let (groups)
+and strings, and a module's options (`(java :depth 5)'), don't count."
+  (let ((depth (1+ (car (syntax-ppss start))))   ; the form's own elements
+        groups)
     (save-excursion
       (goto-char start)
       (while (re-search-forward ":\\([a-z]+\\)\\_>" end t)
-        (unless (nth 8 (syntax-ppss))
+        ;; Not a module's option, as in `(java :depth 5)'.
+        (unless (or (nth 8 (syntax-ppss)) (/= (car (syntax-ppss)) depth))
           (let ((keyword (match-beginning 0)))
             (push (cons (intern (concat ":" (match-string 1)))
                         (if (save-excursion (goto-char keyword) (skip-chars-backward " \t") (bolp))

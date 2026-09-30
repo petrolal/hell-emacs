@@ -43,6 +43,21 @@
   "Confirm kill emacs uses the Hellmacs thematic prompt."
   (should (equal hellmacs-ux-kill-prompt "Extinguish the forge and return to the void? ")))
 
+(ert-deftest test-ux/kill-prompt-leaves-yours ()
+  "The thematic quit prompt replaces Hellmacs' own default only: a
+`confirm-kill-emacs' you set in config.el (nil, or your function) stays."
+  (let ((noninteractive nil)
+        (hellmacs-ux-enable t)
+        (command-error-function command-error-function)
+        (hellmacs-ux-jvm-output-hooks nil))
+    (let ((confirm-kill-emacs #'y-or-n-p))       ; core's default
+      (hellmacs-ux-activate)
+      (should (eq confirm-kill-emacs #'hellmacs-ux-confirm-kill-emacs)))
+    (dolist (yours '(nil yes-or-no-p))
+      (let ((confirm-kill-emacs yours))
+        (hellmacs-ux-activate)
+        (should (eq confirm-kill-emacs yours))))))
+
 (ert-deftest test-ux/format-fatality ()
   "Formats unhandled errors with the fatality prefix."
   (let ((hellmacs-ux-enable t))

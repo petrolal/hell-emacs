@@ -142,7 +142,9 @@
                                                       (plist-get profile :driver))))
                         path-separator)
       "sqlline.SqlLine" "--outputformat=table" ,(format "--maxWidth=%d" (max 100 (window-width)))
-      "--color=false" "--incremental=true")))
+      "--color=false" "--incremental=true"
+      ;; With Hellmacs' state, not in ~/.sqlline.
+      ,(concat "--historyfile=" (hellmacs-state-file "sqlline/history")))))
 
 ;;;###autoload
 (defun hellmacs-db--add-product ()
@@ -172,16 +174,21 @@ Returns the buffer; queries from `sql-mode' buffers go there."
     (unless (comint-check-proc buffer)
       (let ((command (hellmacs-db--command profile))
             (password (hellmacs-db--password profile)))
+        (when (string-match-p "[\n\r]" password)
+          (user-error "The password for %s has a line break, which sqlline can't take" name))
         (apply #'make-comint-in-buffer (format "SQL: %s" name) buffer (car command) nil (cdr command))
         (with-current-buffer buffer
           (let ((sql-product 'sqlline)) (sql-interactive-mode))
           (setq-local sql-product 'sqlline
                       truncate-lines t))  ; wide result tables scroll, not wrap
-        ;; Sent, not typed: comint doesn't insert it, and sqlline doesn't echo it.
+        (make-directory (file-name-directory (hellmacs-state-file "sqlline/history")) t)
+        ;; Sent, not typed: comint doesn't insert it, and sqlline doesn't
+        ;; echo it. The password answers sqlline's own prompt: on the
+        ;; !connect line it would be written to sqlline's history file.
         (comint-send-string (get-buffer-process buffer)
-                            (format "!connect %s %s %s\n" (hellmacs-db-connection-url profile)
+                            (format "!connect %s %s\n%s\n" (hellmacs-db-connection-url profile)
                                     (hellmacs-db--quote (or (plist-get profile :user) ""))
-                                    (hellmacs-db--quote password)))))
+                                    password))))
     (when (called-interactively-p 'any) (pop-to-buffer buffer))
     buffer))
 

@@ -147,6 +147,32 @@ or the project waits for a ready that already came."
           (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'igniting)))
       (delete-directory root t))))
 
+(ert-deftest test-lsp-status/restart-outlives-the-old-server ()
+  "On a restart the old server's exit can come after the new one started:
+it mustn't end the new session, nor announce that the server exited."
+  (let ((root (make-temp-file "hellmacs-test-status" t)))
+    (unwind-protect
+        (test-lsp-status--with '((fake-ls :label "Fake"))
+          (let ((old (test-lsp-status--workspace 'test-old 'fake-ls root))
+                (new (test-lsp-status--workspace 'test-new 'fake-ls root)))
+            (let ((lsp--cur-workspace old)) (hellmacs-lsp-status--ignited-h))
+            (hellmacs-lsp-status-ready 'fake-ls root)
+            (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'ready))
+            ;; The new server answers `initialize' before the old one exits:
+            ;; the old one's outcome isn't the new one's.
+            (let ((lsp--cur-workspace new)) (hellmacs-lsp-status--ignited-h))
+            (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'igniting))
+            (setq shown nil)
+            (hellmacs-lsp-status--banished-h old)
+            (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'igniting))
+            (should-not shown)
+            (hellmacs-lsp-status-ready 'fake-ls root)
+            (should (eq (hellmacs-lsp-status-state 'fake-ls root) 'ready))
+            ;; The new server's own exit ends it.
+            (hellmacs-lsp-status--banished-h new)
+            (should-not (hellmacs-lsp-status-state 'fake-ls root))))
+      (delete-directory root t))))
+
 (ert-deftest test-lsp-status/build-result ()
   "A failed build shows every server in that project as failed until a good one."
   (let ((root (make-temp-file "hellmacs-test-status" t))

@@ -183,9 +183,10 @@ Class files have no line for a field, so SpotBugs gives none."
   "Where Maven's and Gradle's Checkstyle, PMD and SpotBugs plugins write XML.")
 
 (defconst hellmacs-static--skipped-dirs
-  '(".git" ".gradle" ".idea" "node_modules" "src" "classes" "test-classes"
-    "generated-sources" "generated-test-sources" "test-results" "surefire-reports"
-    "failsafe-reports" "tmp" "libs" "maven-status")
+  (append hellmacs-ignored-dirs
+          '(".gradle" "src" "classes" "test-classes"
+            "generated-sources" "generated-test-sources" "test-results" "surefire-reports"
+            "failsafe-reports" "tmp" "libs" "maven-status"))
   "Directories that never hold a report, not walked into.")
 
 ;;;###autoload
@@ -196,8 +197,7 @@ Class files have no line for a field, so SpotBugs gives none."
                root "\\.xml\\'" nil
                (lambda (dir) (not (member (file-name-nondirectory dir) hellmacs-static--skipped-dirs))))))
 
-(defconst hellmacs-static--build-files
-  '("pom.xml" "build.gradle" "build.gradle.kts" "settings.gradle" "settings.gradle.kts")
+(defconst hellmacs-static--build-files hellmacs-build-files
   "Files that mark a build's directory.")
 
 (defun hellmacs-static--root (&optional dir)

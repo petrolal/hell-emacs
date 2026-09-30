@@ -351,6 +351,22 @@ would fail the same way. Removing it lets that sync clone again."
     (delete-directory dir t)
     t))
 
+(defconst hellmacs-sync--elpaca-functions
+  '(elpaca-get elpaca-wait elpaca-process-queues elpaca-rebuild elpaca-merge
+    elpaca-write-lock-file elpaca-generate-autoloads elpaca--queued elpaca--dependencies
+    elpaca<-status elpaca<-recipe elpaca<-package elpaca<-id elpaca<-build-dir elpaca<-source-dir)
+  "Elpaca's functions sync and bin/hellmacs use, internal ones included.")
+
+(defun hellmacs-sync--check-elpaca ()
+  "Signal an error naming any of `hellmacs-sync--elpaca-functions' Elpaca lacks.
+Elpaca is pinned (core/hellmacs-elpaca.el), but `upgrade' moves it on,
+and its internals change without notice."
+  (when-let* ((missing (seq-remove #'fboundp hellmacs-sync--elpaca-functions)))
+    (error "This Elpaca lacks %s, which Hellmacs uses; it changed since \
+core/hellmacs-elpaca.el's pin. Reinstall it at the pin (delete %s, then sync)"
+           (mapconcat #'symbol-name missing ", ")
+           (abbreviate-file-name (expand-file-name "elpaca/" elpaca-sources-directory)))))
+
 (defun hellmacs-sync--check-failures ()
   "Signal an error naming every declared package Elpaca didn't finish."
   (let ((failed (cl-loop for (name . plist) in hellmacs-packages
@@ -383,6 +399,8 @@ module's autoload.el. Signals an error if a package fails to install."
 (defun hellmacs-sync--run ()
   "The rest of `hellmacs-sync', once the config is read."
   (hellmacs-modules-load-cli-files)
+  (hellmacs-packages-bootstrap)
+  (hellmacs-sync--check-elpaca)
   (hellmacs-sync--log "Modules: %s"
                       (mapconcat (lambda (m) (format "%s %s" (car (car m)) (cdr (car m))))
                                  (hellmacs-profile--modules) ", "))

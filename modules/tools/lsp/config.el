@@ -46,9 +46,6 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   "Read language-server output in large chunks."
   (setq read-process-output-max hellmacs-lsp-read-process-output-max))
 
-;; Language servers allocate heavily; collect less often (lsp-mode's
-;; performance guide). gcmh still collects when Emacs is idle.
-(setq gcmh-high-cons-threshold (* 128 1024 1024))
 
 ;;; lsp-mode ------------------------------------------------------------------
 
@@ -82,6 +79,10 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
     (lsp-enable-which-key-integration)))
 
 (when (hellmacs-lsp-mode-used-p)
+  ;; Language servers allocate heavily; collect less often (lsp-mode's
+  ;; performance guide). gcmh still collects when Emacs is idle.
+  (setq gcmh-high-cons-threshold (* 128 1024 1024))
+
   (use-package lsp-mode
     ;; Loaded in the background after startup, so the first file that
     ;; needs a server doesn't also wait for lsp-mode itself. Its heavier

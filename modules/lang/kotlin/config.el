@@ -60,10 +60,25 @@
 (defvar hellmacs-kotlin-vmargs '("-Xmx2G" "-Xms128m")
   "JVM options for kotlin-language-server (unless KOTLIN_LANGUAGE_SERVER_OPTS is set).")
 
-(unless (getenv "KOTLIN_LANGUAGE_SERVER_OPTS")
-  (setenv "KOTLIN_LANGUAGE_SERVER_OPTS"
-          ;; With your proxy and CA: it resolves the project's Gradle dependencies.
-          (string-join (append hellmacs-kotlin-vmargs (hellmacs-net-jvm-options)) " ")))
+(defun hellmacs-kotlin--server-environment ()
+  "The server's environment: its JVM options, unless KOTLIN_LANGUAGE_SERVER_OPTS is set.
+Given to its process alone, not to every process Emacs starts."
+  (unless (getenv "KOTLIN_LANGUAGE_SERVER_OPTS")
+    ;; With your proxy and CA: it resolves the project's Gradle dependencies.
+    `(("KOTLIN_LANGUAGE_SERVER_OPTS"
+       . ,(string-join (append hellmacs-kotlin-vmargs (hellmacs-net-jvm-options)) " ")))))
+
+(defvar lsp-clients)
+
+(with-eval-after-load 'lsp-kotlin
+  ;; Its slot looked up by name, now: no `setf' of lsp-mode's struct can
+  ;; be expanded where this file is compiled, before lsp-mode loads.
+  (condition-case err
+      (aset (or (gethash 'kotlin-ls lsp-clients) (error "lsp-kotlin registered no `kotlin-ls' client"))
+            (cl-struct-slot-offset 'lsp--client 'environment-fn)
+            #'hellmacs-kotlin--server-environment)
+    (error (display-warning 'hellmacs (format "Kotlin server options not set (%s); lsp-mode may have changed"
+                                              (error-message-string err))))))
 
 (add-hook! (kotlin-mode kotlin-ts-mode) #'lsp-deferred)
 

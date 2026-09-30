@@ -168,7 +168,14 @@ Returns (FILE . PROFILE-NAME)."
   "Project root -> (STAMP . PROFILE): its Eclipse profile, (FILE . NAME) or nil.
 STAMP is the modification times of the directories a profile may be in,
 and of the profile: the lookup reads every XML file there, once per
-project until one of them changes.")
+project until one of them changes. Kept for the last
+`hellmacs-format-profile-cache-limit' projects.")
+
+(defvar hellmacs-format-profile-cache-limit 16
+  "How many projects' Eclipse profile lookups are remembered.")
+
+(defvar hellmacs-format--profile-roots nil
+  "The roots in `hellmacs-format--project-profiles', most recently used first.")
 
 (defun hellmacs-format--profile-stamp (root profile)
   "What changes when ROOT's Eclipse profile may have: see `hellmacs-format--project-profiles'."
@@ -180,6 +187,11 @@ project until one of them changes.")
   "The Eclipse profile of the project around `default-directory', (FILE . NAME) or nil."
   (let* ((root (hellmacs-format--root))
          (cached (gethash root hellmacs-format--project-profiles)))
+    (setq hellmacs-format--profile-roots (cons root (delete root hellmacs-format--profile-roots)))
+    (dolist (gone (nthcdr hellmacs-format-profile-cache-limit hellmacs-format--profile-roots))
+      (remhash gone hellmacs-format--project-profiles))
+    (setq hellmacs-format--profile-roots
+          (seq-take hellmacs-format--profile-roots hellmacs-format-profile-cache-limit))
     (if (and cached (equal (car cached) (hellmacs-format--profile-stamp root (cdr cached))))
         (cdr cached)
       (let ((profile (hellmacs-format-eclipse-profile-file root)))

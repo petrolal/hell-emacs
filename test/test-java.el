@@ -395,6 +395,40 @@ rather than an error in the middle of loading lsp-java."
           (should (equal (directory-files (expand-file-name "lsp" root) nil "stage") nil)))
       (delete-directory root t))))
 
+(ert-deftest test-java/jdtls-installs-at-once-dont-collide ()
+  "Two installs at once (bin/hellmacs sync, and Emacs installing on first use):
+the one that puts its copy in place second finds the pinned JDTLS there,
+complete with its marker, and leaves it."
+  (skip-unless (executable-find "tar"))
+  (require 'hellmacs-sync)
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp :lang java))
+    (hellmacs-module--load '(:lang . java) "cli.el"))
+  (let* ((root (make-temp-file "hellmacs-test-jdtls" t))
+         (src (expand-file-name "src" root))
+         (tarball (expand-file-name "jdtls.tar.gz" root))
+         (hellmacs-jvm-jdtls-dir (expand-file-name "lsp/eclipse.jdt.ls/" root))
+         (hellmacs-jvm-jdtls-url "https://example.invalid/jdtls.tar.gz")
+         (real-rename (symbol-function 'rename-file)))
+    (unwind-protect
+        (progn
+          (make-directory (expand-file-name "plugins" src) t)
+          (with-temp-file (expand-file-name "plugins/org.eclipse.equinox.launcher_1.0.jar" src) (insert "jar"))
+          (should (zerop (call-process "tar" nil nil nil "-czf" tarball "-C" src ".")))
+          (let ((hellmacs-jvm-jdtls-sha256 (hellmacs-file-sha256 tarball)))
+            (cl-letf (((symbol-function 'url-copy-file) (lambda (_url file &rest _) (copy-file tarball file t)))
+                      ;; The other install gets its copy in place first.
+                      ((symbol-function 'rename-file)
+                       (lambda (from to &rest args)
+                         (when (equal (directory-file-name to) (directory-file-name hellmacs-jvm-jdtls-dir))
+                           (copy-directory from to nil t t))
+                         (apply real-rename from to args))))
+              (hellmacs-jvm--install-jdtls))
+            (should (hellmacs-jvm-jdtls-installed-p))
+            (should (equal (directory-files (expand-file-name "lsp" root) nil "stage") nil))))
+      (delete-directory root t))))
+
 (ert-deftest test-java/update-project-configuration-finds-build-file ()
   "From a source file, the nearest pom.xml or build.gradle is re-imported."
   (test-java--load)

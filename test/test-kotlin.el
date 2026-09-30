@@ -96,6 +96,18 @@ kotlin-mode's own map: `C-c letter' is the user's, not a package's."
   (should (memq #'lsp-deferred kotlin-mode-hook))
   (should (memq #'hellmacs-kotlin--setup-build-h kotlin-mode-hook)))
 
+(ert-deftest test-kotlin/server-options-for-the-server-only ()
+  "The server's JVM options go to its process, not to every process Emacs starts."
+  (test-kotlin--load)
+  (unless (getenv-internal "KOTLIN_LANGUAGE_SERVER_OPTS" initial-environment)
+    (should-not (getenv "KOTLIN_LANGUAGE_SERVER_OPTS")))
+  (let ((process-environment (cons "KOTLIN_LANGUAGE_SERVER_OPTS" process-environment))) ; unset
+    (let ((opts (cdr (assoc "KOTLIN_LANGUAGE_SERVER_OPTS" (hellmacs-kotlin--server-environment)))))
+      (should (string-search "-Xmx2G" opts))))
+  ;; Yours wins.
+  (let ((process-environment (cons "KOTLIN_LANGUAGE_SERVER_OPTS=-Xmx8G" process-environment)))
+    (should-not (hellmacs-kotlin--server-environment))))
+
 (ert-deftest test-kotlin/test-class-and-method ()
   (test-kotlin--load)
   (with-temp-buffer

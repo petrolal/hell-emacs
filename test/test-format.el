@@ -195,6 +195,26 @@
           (should (equal (cdr (hellmacs-format--eclipse-profile)) "HellmacsStyle")))
         (should (= lookups 2))))))
 
+(defvar hellmacs-format-profile-cache-limit)
+
+(ert-deftest test-format/eclipse-profile-cache-is-bounded ()
+  "Profiles are remembered for the last few projects, not every one a session visits."
+  (let ((hellmacs-format--project-profiles (make-hash-table :test #'equal))
+        (hellmacs-format-profile-cache-limit 2)
+        (roots nil))
+    (unwind-protect
+        (progn
+          (dotimes (_ 4)
+            (let ((root (file-name-as-directory (make-temp-file "hellmacs-test-format" t))))
+              (push root roots)
+              (with-temp-file (expand-file-name "pom.xml" root) (insert "<project/>\n"))
+              (let ((default-directory root))
+                (hellmacs-format--eclipse-profile))))
+          (should (= (hash-table-count hellmacs-format--project-profiles) 2))
+          (let ((default-directory (car roots)))
+            (should (gethash (hellmacs-format--root) hellmacs-format--project-profiles))))
+      (mapc (lambda (r) (delete-directory r t)) roots))))
+
 (ert-deftest test-format/profile-file-uri ()
   "The profile's URI is well-formed for POSIX and Windows paths."
   (should (equal (hellmacs-format--file-uri "/p/config/f.xml") "file:///p/config/f.xml"))

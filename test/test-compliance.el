@@ -269,6 +269,20 @@ report."
         (should (plist-get c :license))
         (should (plist-get c :version))))))
 
+(ert-deftest test-compliance/elpaca-bootstrap-is-pinned ()
+  "Elpaca, which installs every other package, is cloned at a pinned commit.
+A full clone: a shallow one only has the branch's tip, and the pin stops
+being one as soon as the branch moves."
+  (let ((order (with-temp-buffer
+                 (insert-file-contents (expand-file-name "hellmacs-elpaca.el" hellmacs-core-dir))
+                 (catch 'found
+                   (while t
+                     (let ((form (read (current-buffer))))
+                       (when (and (eq (car-safe form) 'defvar) (eq (cadr form) 'elpaca-order))
+                         (throw 'found (eval (nth 2 form) t)))))))))
+    (should (string-match-p "\\`[0-9a-f]\\{40\\}\\'" (or (plist-get (cdr order) :ref) "")))
+    (should-not (plist-get (cdr order) :depth))))
+
 (ert-deftest test-compliance/cli-sbom ()
   "`bin/hellmacs sbom FILE' writes the bill of materials there; without FILE, to stdout."
   (require 'hellmacs-cli)

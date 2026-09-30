@@ -211,12 +211,12 @@ in a temporary directory, and only then puts the library in place."
             (hellmacs-treesit--run src "git" "checkout" "--quiet" "FETCH_HEAD")
             (let ((head (hellmacs-treesit--run src "git" "rev-parse" "HEAD")))
               (unless (equal head commit)
-		(error "Grammar `%s' fetched %s, not the pinned %s; not installed" lang head commit)))
+                (error "Grammar `%s' fetched %s, not the pinned %s; not installed" lang head commit)))
             (hellmacs-treesit--build (if directory (expand-file-name directory src) src)
                                      (hellmacs-treesit-library lang))
             ;; Written last: without it the library isn't taken for current.
             (hellmacs-marker-write (hellmacs-treesit--marker lang) commit))
-	(delete-directory tmp t)))))
+        (delete-directory tmp t)))))
 
 (defun hellmacs-treesit-ensure (lang)
   "Make sure LANG's grammar is installed, building it if it isn't.

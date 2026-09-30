@@ -124,6 +124,31 @@
       (with-current-buffer (find-file-noselect (expand-file-name "src/main/java/com/example/App.java" root))
         (should-not (test-cov--marks))))))
 
+(defvar hellmacs-coverage--data)
+(defvar hellmacs-coverage-root-limit)
+
+(ert-deftest test-coverage/kept-for-recent-projects-only ()
+  "Coverage is kept for the last few projects shown: each holds every covered
+line of every report in it."
+  (let ((roots nil) (hellmacs-coverage-root-limit 2))
+    (unwind-protect
+        (progn
+          (dotimes (_ 3)
+            (let ((root (file-name-as-directory (make-temp-file "hellmacs-test-cov" t))))
+              (push root roots)
+              (let ((report (expand-file-name "target/site/jacoco/jacoco.xml" root)))
+                (make-directory (file-name-directory report) t)
+                (with-temp-file report (insert test-cov--report)))
+              (let ((inhibit-message t)) (hellmacs-coverage-show root))))
+          (should (= (length hellmacs-coverage--data) 2))
+          ;; The oldest project's went; the two latest stay.
+          (should-not (seq-some (lambda (e) (string-prefix-p (car (last roots)) (car e)))
+                                hellmacs-coverage--data))
+          (should (seq-some (lambda (e) (string-prefix-p (car roots) (car e)))
+                            hellmacs-coverage--data)))
+      (hellmacs-coverage-hide)
+      (mapc (lambda (r) (delete-directory r t)) roots))))
+
 (ert-deftest test-coverage/fringe-or-margin ()
   "A graphical frame gets fringe marks; a terminal, margin marks."
   (test-cov--with-tree `(("target/site/jacoco/jacoco.xml" . ,test-cov--report)

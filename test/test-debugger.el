@@ -34,6 +34,7 @@
 (defvar dap-java-hot-reload)
 (defvar hellmacs-jvm-java-debug-jar)
 (defvar hellmacs-jvm--sent-requests)
+(defvar hellmacs-debug--swap-pending)
 
 (let ((hellmacs-modules (make-hash-table :test #'equal))
       (warning-minimum-log-level :emergency))
@@ -63,38 +64,45 @@
     (should-not (bound-and-true-p repeat-mode))))
 
 (ert-deftest test-debugger/hot-swap ()
-  "Saves; asks for the redefinition itself unless dap-java does it."
-  (let ((sent nil) (saved 0))
+  "Saves; unless dap-java does it, asks for the redefinition once java-debug
+reports the compile done (its hotcodereplace event), not after a guess."
+  (let ((sent nil) (saved 0) (hellmacs-debug--swap-pending nil))
     (cl-letf (((symbol-function 'dap--cur-session) (lambda () 'session))
               ((symbol-function 'dap--session-running) (lambda (_) t))
               ((symbol-function 'save-buffer) (lambda (&rest _) (cl-incf saved)))
-              ((symbol-function 'run-with-timer) (lambda (_s _r fn &rest _) (funcall fn)))
               ((symbol-function 'dap--make-request) (lambda (name &rest _) name))
               ((symbol-function 'dap--send-message) (lambda (msg &rest _) (push msg sent))))
       (let ((dap-java-hot-reload 'always))
         (hellmacs-debug-hot-swap)
         (should (= saved 1))
+        (hellmacs-debug--compiled-h 'session)
         (should-not sent))
       (let ((dap-java-hot-reload 'never))
         (hellmacs-debug-hot-swap)
         (should (= saved 2))
-        (should (equal sent '("redefineClasses"))))))
-  (cl-letf (((symbol-function 'dap--cur-session) #'ignore))
-    (should-error (hellmacs-debug-hot-swap) :type 'user-error)))
+        (should-not sent)                 ; not before the compile is done
+        (hellmacs-debug--compiled-h 'other-session)
+        (should-not sent)
+        (hellmacs-debug--compiled-h 'session)
+        (should (equal sent '("redefineClasses")))
+        ;; Once per save.
+        (hellmacs-debug--compiled-h 'session)
+        (should (equal sent '("redefineClasses")))))
+    (cl-letf (((symbol-function 'dap--cur-session) #'ignore))
+      (should-error (hellmacs-debug-hot-swap) :type 'user-error))))
 
 (ert-deftest test-debugger/hot-swap-skips-an-ended-session ()
-  "The delayed redefinition isn't sent to a session that ended meanwhile."
-  (let ((sent nil) (timer nil) (running t))
+  "The redefinition isn't sent to a session that ended while JDTLS compiled."
+  (let ((sent nil) (running t) (hellmacs-debug--swap-pending nil))
     (cl-letf (((symbol-function 'dap--cur-session) (lambda () 'session))
               ((symbol-function 'dap--session-running) (lambda (_) running))
               ((symbol-function 'save-buffer) #'ignore)
-              ((symbol-function 'run-with-timer) (lambda (_s _r fn &rest _) (setq timer fn)))
               ((symbol-function 'dap--make-request) (lambda (name &rest _) name))
               ((symbol-function 'dap--send-message) (lambda (msg &rest _) (push msg sent))))
       (let ((dap-java-hot-reload 'never))
         (hellmacs-debug-hot-swap)
         (setq running nil)
-        (funcall timer)
+        (hellmacs-debug--compiled-h 'session)
         (should-not sent)))))
 
 (ert-deftest test-debugger/crucible-calls-the-buffer-reload-function ()

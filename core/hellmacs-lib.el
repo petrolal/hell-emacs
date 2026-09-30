@@ -266,11 +266,21 @@ function or quoted list of functions; then the body."
 ;;; Files --------------------------------------------------------------------
 
 (defun hellmacs-file-sha256 (file)
-  "Return the SHA-256 of FILE's bytes, as a hex string."
-  (with-temp-buffer
-    (set-buffer-multibyte nil)
-    (insert-file-contents-literally file)
-    (secure-hash 'sha256 (current-buffer))))
+  "Return the SHA-256 of FILE's bytes, as a hex string.
+Through sha256sum or shasum when there's one, which streams the file:
+downloads and bundles run to hundreds of megabytes. Else read into Emacs."
+  (let ((file (expand-file-name file)))
+    (or (when-let* ((command (cond ((executable-find "sha256sum") '("sha256sum"))
+                                   ((executable-find "shasum") '("shasum" "-a" "256")))))
+          (with-temp-buffer
+            (and (eql 0 (ignore-errors (apply #'call-process (car command) nil t nil
+                                              (append (cdr command) (list "--" file)))))
+                 (progn (goto-char (point-min)) (looking-at "[0-9a-f]\\{64\\}\\_>"))
+                 (match-string 0))))
+        (with-temp-buffer
+          (set-buffer-multibyte nil)
+          (insert-file-contents-literally file)
+          (secure-hash 'sha256 (current-buffer))))))
 
 (defun hellmacs-marker-current-p (marker value)
   "Non-nil if the file MARKER exists and holds VALUE (whitespace aside).
@@ -310,6 +320,9 @@ nil on an operating system no pinned download is made for."
 (defconst hellmacs-build-files
   '("pom.xml" "build.gradle" "build.gradle.kts" "settings.gradle" "settings.gradle.kts")
   "Files at the root of a Maven or Gradle build.")
+
+(defconst hellmacs-ignored-dirs '(".git" ".hg" ".svn" ".idea" "node_modules")
+  "Directories no walk of a project's files looks in: VCS, IDE state, npm's.")
 
 (defconst hellmacs-build-output-dirs '("build" "bin" "out" "target" ".gradle")
   "Directories Gradle, Maven, IntelliJ (out/) and JDTLS (bin/) write output to.")

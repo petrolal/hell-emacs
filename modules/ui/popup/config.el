@@ -53,7 +53,9 @@ A `display-buffer' action function. Reusing that window would make `q'
 bring back the popup before it instead of closing it."
   (dolist (window (window-list nil 'nomini))
     (when (and (eq (window-parameter window 'window-side) 'bottom)
-               (not (eq (window-buffer window) buffer)))
+               (not (eq (window-buffer window) buffer))
+               ;; A popup's; a side window someone else opened stays.
+               (hellmacs-popup-buffer-p (window-buffer window)))
       (delete-window window)))
   (display-buffer-in-side-window buffer alist))
 
