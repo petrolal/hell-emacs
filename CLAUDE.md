@@ -17,6 +17,7 @@ bin/hellmacs test 'test-build/commands'   # a single test
 bin/hellmacs doctor               # health checks (core + every enabled module's doctor.el)
 bin/hellmacs sync                 # install packages, build tree-sitter grammars, rewrite profile
 bin/hellmacs --profile dev sync   # --profile NAME must come first
+bin/hellmacs --profile safe-mode sync   # profiles/safe-mode: core only, for bisecting a broken config
 emacs --init-directory .          # run this checkout interactively
 ```
 

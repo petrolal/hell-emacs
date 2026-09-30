@@ -4326,7 +4326,7 @@ end of each step; one commit per step.
       to its own file (`bin/hellmacs-sync`, `-doctor`, `-test`, `-install`,
       `-upgrade`, `-bundle`, `-verify`, `-sbom`, ...), dispatched by
       `bin/hellmacs`; `bin/hellmacs.ps1` is not added (Windows is WSL2).
-- [ ] **16.6 `profiles/`.** `profiles/README.md` and a `safe-mode`
+- [x] **16.6 `profiles/`.** (2026-09-30: implicit profiles as below; Doom's `profiles.el` declarations, its `doom profile` command and `.doomprofile` settings aren't mirrored: nothing here needs them yet.) `profiles/README.md` and a `safe-mode`
       profile (Hellmacs' core, no modules, for bisecting a broken config);
       implicit profiles from `profiles/NAME/` in the repo and in your
       config directory.

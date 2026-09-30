@@ -157,8 +157,15 @@ the module name, followed by +flags and an optional `:depth N':
              :completion vertico (corfu +tab)
              :config (default :depth -10))
 
+An empty (hellmacs!) enables none (only core's own module loads), as
+profiles/safe-mode/ does.
+
 See `modulep!' for testing modules and flags from code."
-  `(hellmacs--enable-modules ',modules))
+  `(progn (setq hellmacs--block-read t)
+          (hellmacs--enable-modules ',modules)))
+
+(defvar hellmacs--block-read nil
+  "Non-nil once your init.el ran a `hellmacs!' block, even an empty one.")
 
 (defun hellmacs--enable-modules (spec)
   "Enable every module in SPEC, the argument list of `hellmacs!'."
@@ -439,10 +446,11 @@ Without a user init.el, or without a `hellmacs!' call in it, the
 defaults in static/init.example.el apply; `hellmacs-modules-override'
 wins over both."
   (hellmacs--enable-modules nil)
+  (setq hellmacs--block-read nil)
   (hellmacs-load-user-file "init.el")
   (cond (hellmacs-modules-override
          (hellmacs--enable-modules hellmacs-modules-override))
-        ((zerop (hash-table-count hellmacs-modules))
+        ((not hellmacs--block-read)
          (load (expand-file-name "static/init.example.el" hellmacs-dir) nil 'nomessage 'nosuffix)))
   (hellmacs-modules-enable-core)
   ;; The proxy and CA you set there, for all of Emacs.

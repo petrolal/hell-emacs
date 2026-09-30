@@ -139,6 +139,47 @@ core's module is at -100 because its metadata says so."
   (should (equal (hellmacs-dotfile (list (expand-file-name "hellmacs/" hellmacs-modules-dir) 'module 'depth))
                  -100)))
 
+;; Phase 16.6: profiles/, as Doom v3's.
+
+(ert-deftest test-modules/empty-block-means-no-modules ()
+  "An empty (hellmacs!) enables no module (core's own still loads); only an
+init.el without a `hellmacs!' block gets the defaults."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (hellmacs-user-dir (make-temp-file "test-modules-user" t)))
+    (unwind-protect
+        (progn
+          (with-temp-file (expand-file-name "init.el" hellmacs-user-dir) (insert "(hellmacs!)\n"))
+          (hellmacs-modules-read-config)
+          (should (equal (hellmacs-module-list) '((:hellmacs))))
+          (with-temp-file (expand-file-name "init.el" hellmacs-user-dir) (insert "(setq x 1)\n"))
+          (hellmacs-modules-read-config)
+          (should (hellmacs-module-p :lang 'java)))
+      (delete-directory hellmacs-user-dir t))))
+
+(ert-deftest test-modules/profile-directories ()
+  "A profile's config is ~/.config/hellmacs-NAME/, else your config's
+profiles/NAME/, else Hellmacs' profiles/NAME/ (safe-mode ships there)."
+  (let* ((home (make-temp-file "test-modules-xdg" t))
+         (process-environment (append (list (concat "XDG_CONFIG_HOME=" home) "HELLMACSDIR")
+                                      process-environment)))
+    (unwind-protect
+        (progn
+          (should (file-equal-p (hellmacs--user-dir "safe-mode")
+                                (expand-file-name "profiles/safe-mode/" hellmacs-dir)))
+          ;; Nothing there yet: the profile's own directory, to be created.
+          (should (equal (hellmacs--user-dir "work") (expand-file-name "hellmacs-work/" home)))
+          (make-directory (expand-file-name "hellmacs/profiles/work/" home) t)
+          (should (file-equal-p (hellmacs--user-dir "work")
+                                (expand-file-name "hellmacs/profiles/work/" home)))
+          (make-directory (expand-file-name "hellmacs-work/" home) t)
+          (should (file-equal-p (hellmacs--user-dir "work") (expand-file-name "hellmacs-work/" home)))
+          (should (file-equal-p (hellmacs--user-dir nil) (expand-file-name "hellmacs/" home))))
+      (delete-directory home t)))
+  (should (file-exists-p (expand-file-name "profiles/README.md" hellmacs-dir)))
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name "profiles/safe-mode/init.el" hellmacs-dir))
+    (should (re-search-forward "^(hellmacs!)$" nil t))))
+
 (defvar test-modules--loaded nil)
 
 (ert-deftest test-modules/compiled-file-needs-its-source ()

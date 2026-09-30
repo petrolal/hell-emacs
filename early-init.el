@@ -89,21 +89,37 @@ its own config, packages, caches and history.")
   "Return Hellmacs' subdirectory of $ENVVAR, or of FALLBACK if unset."
   (expand-file-name (concat hellmacs--dir-name "/") (or (getenv-internal envvar) fallback)))
 
-(defvar hellmacs-user-dir
-  (if-let* ((dir (getenv-internal "HELLMACSDIR")))
-      (file-name-as-directory (expand-file-name dir))
-    (let ((xdg (hellmacs--xdg-dir "XDG_CONFIG_HOME" "~/.config")))
-      (if (or hellmacs-profile
-              (file-directory-p xdg)
-              (not (file-directory-p "~/.hellmacs.d/")))
-          xdg
-        (expand-file-name "~/.hellmacs.d/"))))
+(defun hellmacs--user-dir (profile)
+  "The config directory of PROFILE (nil for the default one).
+$HELLMACSDIR if set. Else, for the default profile, the first of
+~/.config/hellmacs/ (under $XDG_CONFIG_HOME) and ~/.hellmacs.d/ that
+exists, ~/.config/hellmacs/ if neither. For a named one, the first of
+~/.config/hellmacs-NAME/, your config's profiles/NAME/ and Hellmacs'
+profiles/NAME/ that exists (Doom v3's implicit profiles), else
+~/.config/hellmacs-NAME/."
+  (let ((config (or (getenv-internal "XDG_CONFIG_HOME") "~/.config")))
+    (if-let* ((dir (getenv-internal "HELLMACSDIR")))
+        (file-name-as-directory (expand-file-name dir))
+      (let ((xdg (expand-file-name "hellmacs/" config)))
+        (if (null profile)
+            (if (or (file-directory-p xdg) (not (file-directory-p "~/.hellmacs.d/")))
+                xdg
+              (expand-file-name "~/.hellmacs.d/"))
+          (let ((own (expand-file-name (format "hellmacs-%s/" profile) config)))
+            (catch 'found
+              (dolist (dir (list own
+                                 (expand-file-name (format "profiles/%s/" profile)
+                                                   (hellmacs--user-dir nil))
+                                 (expand-file-name (format "profiles/%s/" profile) hellmacs-dir)))
+                (when (file-directory-p dir) (throw 'found dir)))
+              own)))))))
+
+(defvar hellmacs-user-dir (hellmacs--user-dir hellmacs-profile)
   "Your private configuration: init.el, config.el and custom.el.
-The first of $HELLMACSDIR, ~/.config/hellmacs/ (or under
-$XDG_CONFIG_HOME) and ~/.hellmacs.d/ that exists; defaults to
-~/.config/hellmacs/. A named profile uses ~/.config/hellmacs-NAME/.
-It's fine for it not to exist -- Hellmacs then runs with its
-defaults. See `hellmacs-init-user-dir'.")
+See `hellmacs--user-dir' for where it is: ~/.config/hellmacs/ by
+default, and for a named profile ~/.config/hellmacs-NAME/, or a
+profiles/NAME/ directory. It's fine for it not to exist -- Hellmacs
+then runs with its defaults. See `hellmacs-init-user-dir'.")
 
 (defconst hellmacs-data-dir (hellmacs--xdg-dir "XDG_DATA_HOME" "~/.local/share")
   "Installed packages and other data Hellmacs needs to run.
