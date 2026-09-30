@@ -147,6 +147,8 @@ wins and the feature finds another way.
 | 12.7, 12.9 (most) | Reference monorepo and tuning; SBOM, licenses, `verify`, no telemetry, releases and channels | 2026-09-30 |
 | 16.1–16.7 | Doom v3's layout: `lisp/`, `modules/hellmacs/`, `sources/hellmacs+/`, `.hellmacsmodule`, `bin/hellmacs-COMMAND`, `profiles/`, the generated init file | 2026-09-30 |
 | 16.8–16.10 | Doom v3's startup, package management, CLI and install (below) | 2026-09-30 |
+| 16.20 | Doom's non-evil key layout on stock keys: `C-c c` code, `C-c l` localleader (`hellmacs-localleader-def`), `C-c t` toggles, Doom's `C-c s` letters; stock keys given back from corfu, which-key and lsp-mode (below) | 2026-09-30 |
+| 16.21 | IntelliSense-style completion: server snippets through yasnippet, ranking by use, docs at 0.5s, the terminal popup; import diagnostics (below) | 2026-09-30 |
 
 ---
 
@@ -178,6 +180,26 @@ check, commands from `$HELLMACSPATH`; `install`'s flags and warnings;
   0.12s budget (Doom loads its init file from source).
 - **Markdown docs**, not Org.
 
+**Keys** (16.20, 2026-09-30: checked in a started profile, key by key
+against `emacs -Q`): the leader groups are Doom's non-evil ones on
+`C-c` (`h` Hellmacs, `c` code with lsp-mode's map on `C-c c l`, `f`, `b`,
+`s`, `t`, `w`, `q`, `o`, `r`, `d`), and `C-c l` is the localleader: the
+current mode's own commands (Java's, Groovy's, tests in JVM sources).
+Every stock key keeps its meaning; packages that took one give it back
+(corfu's `RET`/`TAB`/`M-g`/`M-h`/`M-t`, which-key's `C-h`, lsp-mode's
+mouse keys). Deliberate departures, documented in keybindings.md: the
+completion popup opens as you type, `delete-selection-mode`,
+`electric-pair-mode`.
+
+**Completion** (16.21, 2026-09-30: checked live with JDTLS on a copy of a
+Spring Boot Gradle project: `Str` completed to `String`, `StringBuilder`...;
+a snippet's placeholders stepped with `M-}`): server snippets expand
+(argument placeholders, JDTLS templates and postfix completion) through
+yasnippet as lsp-mode's engine only; `corfu-history-mode`; docs after
+0.5s; `corfu-terminal` before Emacs 31. An import still running after
+90s, a Gradle cache-lock timeout and unresolved dependencies are now
+announced instead of leaving completion silently empty.
+
 **Open:** the 16.x items in "Open work" below.
 
 ---
@@ -203,8 +225,10 @@ check, commands from `$HELLMACSPATH`; `install`'s flags and warnings;
       [CLI](cli.md), [development](development.md) and this roadmap; the
       administrator topics are the guide's "Companies" section, the feature
       matrix is above). Left:
-  - [ ] A cheat sheet from IntelliJ and Eclipse actions to Hellmacs keys,
-        in [keybindings.md](keybindings.md).
+  - [x] A cheat sheet from IntelliJ and Eclipse actions to Hellmacs keys,
+        in [keybindings.md](keybindings.md) (2026-09-30: 57 actions in five
+        tables; every Hellmacs key checked bound in a started profile, every
+        stock one against `emacs -Q`).
   - [ ] A troubleshooting entry for every `doctor` failure, linked from
         `doctor`'s output.
   - [ ] Each guide followed from scratch on a clean machine by someone who
@@ -304,7 +328,9 @@ over its modules: browse, enable, disable and update without editing
       on the stock `C-x t` keys.
 - [ ] 10.6 Phase 10's modules in `static/init.example.el` (the languages
       are 14.7's).
-- [ ] 13.1 A GNU Info manual (`docs/hellmacs.texi`), in `C-h i`, on `C-h H`.
+- [ ] 13.1 A GNU Info manual (`docs/hellmacs.texi`), in `C-h i` (the
+      Info directory) and on `C-c h i`; not on a `C-h` key, which stays
+      Emacs' own.
 - [ ] 13.2 The Altar offers the Emacs tutorial, the guided tour, the
       manual, Dired and Customize, on its stock keys.
 - [ ] 13.3 Hellmacs modules in the `C-h` help commands

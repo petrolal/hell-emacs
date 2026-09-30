@@ -157,6 +157,95 @@ Flymake's, wherever it runs: `C-c ! n` / `C-c ! p` next / previous,
 
 ---
 
+## Coming from IntelliJ IDEA or Eclipse
+
+The same actions, on Hellmacs keys. IntelliJ's column is its default
+keymap on Windows and Linux (macOS uses `Cmd` for most of them). Keys in
+**bold** are stock Emacs; the rest are Hellmacs' `C-c` groups. There is
+no IntelliJ keymap: these are the Emacs ways to do the same thing.
+
+**Finding things**
+
+| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+|---|---|---|---|
+| Any command | `Ctrl+Shift+A` | `Ctrl+3` | **`M-x`** |
+| A file in the project | `Ctrl+Shift+N` | `Ctrl+Shift+R` | **`C-x p f`**, or `C-c h f` |
+| A class or symbol in the project | `Ctrl+N`, `Ctrl+Alt+Shift+N` | `Ctrl+Shift+T` | **`C-M-.`**, or `C-c c j` |
+| Recent files | `Ctrl+E` | — | `C-c f r` |
+| Switch between open files | `Ctrl+Tab` | `Ctrl+E` | **`C-x b`** (with previews) |
+| Structure of this file | `Ctrl+F12` | `Ctrl+O` | **`M-g i`**, or `C-c s i` |
+| Go to line | `Ctrl+G` | `Ctrl+L` | **`M-g g`** |
+| Find in this file | `Ctrl+F` | `Ctrl+F` | **`C-s`**; a list of matches: **`M-s l`**, or `C-c s s` |
+| Find in the project | `Ctrl+Shift+F` | `Ctrl+H` | **`M-s r`**, or `C-c s p` |
+| Replace / in the project | `Ctrl+R` / `Ctrl+Shift+R` | `Ctrl+F` / `Ctrl+H` | **`M-%`** / **`C-x p r`** |
+| Project files as a tree | `Alt+1` | Package Explorer | **`C-x p D`** (Dired) |
+
+**Navigating code**
+
+| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+|---|---|---|---|
+| Go to declaration | `Ctrl+B`, `Ctrl+Click` | `F3` | **`M-.`**, or `C-c c d` |
+| Back | `Ctrl+Alt+Left` | `Alt+Left` | **`M-,`** |
+| Find usages | `Alt+F7` | `Ctrl+Shift+G` | **`M-?`**, or `C-c c D` |
+| Go to implementation | `Ctrl+Alt+B` | `Ctrl+T` | `C-c c i` |
+| Go to type declaration | `Ctrl+Shift+B` | — | `C-c c t` |
+| Type hierarchy | `Ctrl+H` | `F4` | `C-c l h` (Java) |
+| Quick documentation | `Ctrl+Q` | `F2` | `C-c c k`; while typing, in the echo area |
+| Parameter info | `Ctrl+P` | `Ctrl+Shift+Space` | Shown by itself after `(` and `,` |
+| Next / previous error | `F2` / `Shift+F2` | `Ctrl+.` / `Ctrl+,` | `C-c ! n` / `C-c ! p`; jump to one: **`M-g f`** |
+| All errors of the file | `Alt+6` | Problems view | `C-c ! l`, or `C-c c x` |
+| Last edit location | `Ctrl+Shift+Backspace` | `Ctrl+Q` | **`C-u C-SPC`** (back through the marks) |
+| Bookmark / go to one | `F11` / `Shift+F11` | — | **`C-x r m`** / **`C-x r b`** |
+
+**Editing and refactoring**
+
+| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+|---|---|---|---|
+| Completion | `Ctrl+Space` | `Ctrl+Space` | As you type; on demand **`C-M-i`** |
+| Live templates / postfix | `Ctrl+J` / `.for`, `.var`... | Templates | Complete `sysout`, `foreach`, `list.for`, `x.var` like any name |
+| Quick fix, intention actions | `Alt+Enter` | `Ctrl+1` | `C-c c a` |
+| Rename | `Shift+F6` | `Alt+Shift+R` | `C-c c r` |
+| Extract method / variable / constant | `Ctrl+Alt+M` / `V` / `C` | `Alt+Shift+M` / `L` / — | `C-c l m` / `v` / `c` (Java) |
+| Generate getters, `toString`, `equals` | `Alt+Insert` | `Alt+Shift+S` | `C-c l g` / `s` / `e` (Java) |
+| Implement methods | `Ctrl+I` | Quick fix | `C-c l i` (Java) |
+| Optimize imports | `Ctrl+Alt+O` | `Ctrl+Shift+O` | `C-c c o` |
+| Reformat | `Ctrl+Alt+L` | `Ctrl+Shift+F` | `C-c c f` |
+| Comment line | `Ctrl+/` | `Ctrl+/` | **`C-x C-;`**; at the end of a line **`M-;`** |
+| Delete line | `Ctrl+Y` | `Ctrl+D` | **`C-S-<backspace>`** |
+| Duplicate line | `Ctrl+D` | `Ctrl+Alt+Down` | `M-x duplicate-dwim` (no stock key) |
+| Move line | `Ctrl+Shift+Up/Down` | `Alt+Up/Down` | **`C-x C-t`** swaps it with the line above |
+| Undo / redo | `Ctrl+Z` / `Ctrl+Shift+Z` | `Ctrl+Z` / `Ctrl+Y` | **`C-/`** / **`C-?`** (**`C-M-_`** in a terminal) |
+| Save all | `Ctrl+S` | `Ctrl+Shift+S` | **`C-x s`** |
+| Close the file | `Ctrl+F4` | `Ctrl+W` | **`C-x k`**, or `C-c b d` |
+
+**Build, run, test, debug**
+
+| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+|---|---|---|---|
+| Build the project | `Ctrl+F9` | `Ctrl+B` | **`C-x p c`**, or `C-c c c` |
+| Run / debug a configuration | `Shift+F10` / `Shift+F9` | `Ctrl+F11` / `F11` | `C-c r r` / `C-c r d` |
+| Run the last again | `Ctrl+F5` | `Ctrl+F11` | `C-c r l` |
+| Run the test at point / the class | `Ctrl+Shift+F10` | `Alt+Shift+X T` | `C-c l t t` / `C-c l t T` |
+| Test results / rerun failures | `Alt+4` | JUnit view | `C-c l t r` / `C-c l t f` |
+| Coverage | Run with Coverage | — | `C-c l t c` |
+| Debug the test at point | `Ctrl+Shift+F9` | `Alt+Shift+D T` | `C-c d t` |
+| Toggle breakpoint | `Ctrl+F8` | `Ctrl+Shift+B` | `C-c d b` |
+| Step over / into / out | `F8` / `F7` / `Shift+F8` | `F6` / `F5` / `F7` | `C-c d n` / `i` / `o`, then `n`, `i`, `o` alone |
+| Resume | `F9` | `F8` | `C-c d c`, then `c` |
+| Evaluate expression | `Alt+F8` | `Ctrl+Shift+I` | `C-c d E` |
+| Hot-swap changed classes | `Ctrl+F9` while debugging | Save while debugging | `C-c h r` |
+
+**Git and the rest**
+
+| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+|---|---|---|---|
+| Git: status, commit, push | `Alt+9`, `Ctrl+K`, `Ctrl+Shift+K` | Git Staging | **`C-x g`** (Magit), then `c c` commit, `P p` push |
+| Blame / history of this file | Annotate / Show History | Show Annotations / History | **`C-c M-g`**, then `b` / `l` |
+| Terminal | `Alt+F12` | — | **`C-x p s`** (shell) or **`C-x p e`** (eshell), in the project |
+| Split the editor | Split Right | — | **`C-x 3`** / **`C-x 2`** |
+| Close a popup | `Esc` | `Esc` | **`C-g`**, or `q` in it |
+| Settings | `Ctrl+Alt+S` | Preferences | `C-c h u` (your config directory) |
+
 ## Keys inside modes
 
 These are the modes' own keys, only in their buffers.
