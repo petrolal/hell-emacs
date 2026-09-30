@@ -98,7 +98,7 @@ them, the principle wins and the feature finds another way.
 | **Phase 3-5** | Sync Engine & Profiles | **DONE [x]** | Static `profile.eld` generation, `bin/hellmacs` CLI, profile switching |
 | **Phase 6-7** | Java Parity & DAP Debugger | **DONE [x]** | Eclipse JDTLS, DAP stepping, breakpoints, Hot Code Replacement |
 | **Phase 8.1-8.3** | Kotlin, Clojure & Tree-sitter | **DONE [x]** | `kotlin-language-server`, `clojure-lsp`, CIDER REPL, pinned grammars |
-| **Phase 8.4-8.5** | Groovy & Scala | **PLANNED [ ]** | Gradle scripts and Jenkinsfiles (Groovy), Metals (Scala) |
+| **Phase 8.4-8.5** | Groovy & Scala | **IN PROGRESS [/]** (8.4 built, live check left) | Gradle scripts and Jenkinsfiles (Groovy), Metals (Scala) |
 | **Phase 9** | UI, Modeline & Inferno Theme | **DONE [x]** | `hellmacs-inferno`, The Altar dashboard, doom-modeline (9.0-9.4 complete) |
 | **Phase 10** | Daily-Driver Essentials | **PLANNED [ ]** | XML/YAML/JSON, formatters, popups, snippets (nothing started) |
 | **Phase 11** | Consolidation & Tooling | **DONE [x]** | Unified server status, declarations, compiled startup, shared test helpers |
@@ -1635,25 +1635,34 @@ config.el, cli.el, doctor.el), plus Kotlin support in `:tools build`.
   install sbt into a scratch directory with coursier, as 8.3 did for the
   Clojure CLI.
 
-**8.4 `:lang groovy`** (planned): `modules/lang/groovy/` (packages.el,
+**8.4 `:lang groovy`** (in progress, 2026-09-30): `modules/lang/groovy/` (packages.el,
 +paths.el, config.el, cli.el, doctor.el).
-- [ ] `groovy-mode` for Groovy sources, Gradle scripts and Jenkinsfiles
+- [/] `groovy-mode` for Groovy sources, Gradle scripts and Jenkinsfiles
       (its own mappings; a unit test checks that `build.gradle` opens in
       Groovy and `build.gradle.kts` in Kotlin with both modules on).
-- [ ] groovy-language-server through lsp-mode. `bin/hellmacs sync` clones
+- [/] groovy-language-server through lsp-mode. `bin/hellmacs sync` clones
       the pinned commit, builds it with its wrapper, and installs the jar
       into `$XDG_DATA_HOME/hellmacs/lsp/groovy/` with the commit recorded
       beside it. A jar from another commit is rebuilt. `doctor` checks git,
       the JDK and the jar. The classpath is `$GROOVY_HOME/lib` when set,
       otherwise empty (the server bundles Groovy 4).
-- [ ] Status messages through `hellmacs-lsp-status`, from whatever the
+- [/] Status messages through `hellmacs-lsp-status`, from whatever the
       server actually sends (to be found live).
-- [ ] `C-c l g` in Groovy buffers (with `:tools build`): `b` build, `t` test
+- [/] `C-c l g` in Groovy buffers (with `:tools build`): `b` build, `t` test
       at point, `T` the class, with Groovy's `def "a name with spaces"()`
       test methods understood by `:tools build`.
-- [ ] `test/fixtures/groovy/gradle-demo`: Groovy sources, a passing JUnit 5
+- [x] `test/fixtures/groovy/gradle-demo`: Groovy sources, a passing JUnit 5
       test and a `BrokenTest` behind `-Dhellmacs.fail=true`.
-- [ ] Verified live (`test/integration/groovy-e2e.el`) and unit tests.
+- [/] Verified live (`test/integration/groovy-e2e.el`) and unit tests.
+- *Done differently from the plan above (2026-09-30):* the server is built
+  with a pinned Gradle 9.1.0 (SHA-256), not the checkout's wrapper, which
+  carries no checksum, and its dependencies are checked by Gradle's
+  dependency verification (`modules/lang/groovy/verification-metadata.xml`).
+  The classpath isn't `$GROOVY_HOME/lib`: it's asked of the project's build
+  (Gradle through an init script, Maven through the pinned dependency
+  plugin), without which every library import was an error. The server
+  sends no progress: it's ready once it has the classpath. Left: one full
+  live run of `groovy-e2e.el` passing (14 of 16 on the last).
 
 **8.5 `:lang scala`** (planned): `modules/lang/scala/`.
 - [ ] `scala-mode` and `sbt-mode` (`scala-ts-mode` with `+tree-sitter`,

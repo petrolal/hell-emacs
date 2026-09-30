@@ -137,12 +137,12 @@ This file only tracks progress. Don't copy specs into it.
 
 ## Step 10: Phase 8.4 Groovy (roadmap "Phase 8", Groovy)
 
-- [ ] `groovy-mode` for Groovy sources, Gradle scripts and Jenkinsfiles
-- [ ] groovy-language-server through lsp-mode, installed pinned by `bin/hellmacs sync`
-- [ ] Status messages through `hellmacs-lsp-status`
-- [ ] `C-c l g` keys (with `:tools build`)
-- [ ] Fixture `test/fixtures/groovy/gradle-demo`
-- [ ] Verified live (`test/integration/groovy-e2e.el`) and unit tests
+- [/] `groovy-mode` for Groovy sources, Gradle scripts and Jenkinsfiles (2026-09-30: groovy-mode's own mappings plus `*.jenkinsfile` and `Jenkinsfile.NAME`; unit tests. Left: the full live e2e)
+- [/] groovy-language-server through lsp-mode, installed pinned by `bin/hellmacs sync` (2026-09-30: no releases, so sync builds commit `347d098` with a pinned Gradle 9.1.0 (SHA-256) and Gradle dependency verification (`verification-metadata.xml`); the project's classpath is asked of its build and sent to the server. Live: built from a fresh sync in 46s. Left: the full live e2e)
+- [/] Status messages through `hellmacs-lsp-status` (2026-09-30: the server sends no progress; igniting at start, ready once it has the build's classpath, failed with the build's own reason. Live: JVM:ready. Left: the full live e2e)
+- [/] `C-c l g` keys (with `:tools build`) (2026-09-30: b/t/T with :tools build, c asks for the classpath again; JUnit and Spock test at point. Left: the full live e2e)
+- [x] Fixture `test/fixtures/groovy/gradle-demo` (2026-09-30: Groovy 5.0.8, JUnit 5, `BrokenTest` behind `-Dhellmacs.fail=true`; builds and tests on JDK 21 and 25)
+- [/] Verified live (`test/integration/groovy-e2e.el`) and unit tests (2026-09-30: 11 unit tests in `test-groovy`; last live run 14 of 16, references and the syntax-error check failing after the completion check edited a file; that check now runs last. Left: one full live run passing)
 
 ## Step 11: 12.11 Enterprise pilot, then 1.0 (roadmap "12.11 Enterprise pilot and 1.0")
 
