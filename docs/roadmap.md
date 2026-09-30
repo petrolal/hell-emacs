@@ -110,7 +110,7 @@ them, the principle wins and the feature finds another way.
 | **Phase 13** | Hellmacs Manual & Purist Onboarding | **PLANNED [ ]** | GNU Info manual, Vanilla startup actions on The Altar, C-h help suite |
 | **Phase 14** | IntelliJ's Bundled Languages, On by Default | **PLANNED [ ]** | HTML/CSS/templates, JavaScript/TypeScript, SQL, Scala, XSLT, Kubernetes, OpenAPI, Terraform, Protobuf; every language module on |
 | **Phase 15** | Plugins | **PLANNED [ ]** | Plugin manager (`bin/hellmacs plugins`, `M-x hellmacs-plugins`), Python, Go, Ruby, PHP, C/C++, pinned third-party plugins |
-| **Phase 16** | Doom v3 Architecture & Layout | **IN PROGRESS [/]** | `lisp/` (+ `lib/`, `cli/`), `:hellmacs` core modules, `sources/hellmacs+`, `.hellmacsmodule`, `bin/hellmacs-<cmd>`, `profiles/`, generated profile `init.el` |
+| **Phase 16** | Doom v3 Architecture & Layout | **DONE [x]** | `lisp/` (+ `lib/`, `cli/`), `:hellmacs` core modules, `sources/hellmacs+`, `.hellmacsmodule`, `bin/hellmacs-<cmd>`, `profiles/`, generated profile `init.el` |
 
 ---
 
@@ -4250,7 +4250,7 @@ with 14's pattern: findings, pinned server, telemetry off, fixture, e2e)
 - **Toolchains outside Hellmacs** (Go, Ruby, PHP, a C compiler): the
   servers are pinned; the toolchains are the user's, checked by `doctor`.
 
-### Phase 16: Doom v3's architecture and layout (in progress)
+### Phase 16: Doom v3's architecture and layout (done)
 
 **Objective:** Hellmacs' directories and boot follow Doom Emacs v3's
 (`doomemacs/core`, studied at commit `01d68aa`, 2026-09-05), so anyone who
@@ -4344,6 +4344,16 @@ end of each step; one commit per step.
 - *Verify:* unit tests, `doctor`; a fresh `install` in temporary folders;
   startup-bench under 0.12s; java, kotlin and clojure e2e, the telemetry
   check, a bundle installed offline and `verify` on it.
+  - *Passed 2026-09-30:* 498 tests, doctor; a fresh install (77s, no
+    problems) starts on the generated init; tty startup 0.029-0.030s
+    (first frame 0.089-0.092s); java-e2e, kotlin-e2e and clojure-e2e ALL
+    PASSED; the telemetry check ALL PASSED; a bundle built (64s), installed
+    with no network (58s), started offline, and `verify` passed (879 files,
+    52 packages). Found on the way: java-e2e's JDK check still expected
+    every JDK sync finds as a JDTLS runtime, though since 2026-09-28 only
+    those JDTLS knows are given (27 isn't, for JDTLS 1.57); the check now
+    expects `hellmacs-jvm-runtime-jdks`. Open: the ~4.3s first frame seen
+    in headless benches (16.4), for a check in a real terminal.
 
 ### Out of scope
 

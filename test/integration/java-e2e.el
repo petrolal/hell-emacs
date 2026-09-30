@@ -79,10 +79,12 @@
         (cl-some (lambda (i) (string-prefix-p "greet" (lsp-get i :label))) items)))
 
     (e2e--say "\n== 12.3 JDKs for projects")
-    (e2e-check "JDTLS has the JDKs sync found as its runtimes"
+    ;; Those it knows: a JDK newer than JDTLS's newest (27 against 1.57's
+    ;; 25) isn't given to it (`hellmacs-jvm-runtime-jdks').
+    (e2e-check "JDTLS has the JDKs sync found, those it knows, as its runtimes"
       (equal (mapcar (lambda (r) (cons (plist-get r :name) (plist-get r :path)))
                      lsp-java-configuration-runtimes)
-             (or hellmacs-jdks (hellmacs-jdk-read))))
+             (hellmacs-jvm-runtime-jdks (or hellmacs-jdks (hellmacs-jdk-read)))))
     (let ((jdk21 (cdr (assoc "JavaSE-21" (or hellmacs-jdks (hellmacs-jdk-read))))))
       (if (not jdk21)
           (e2e--say "  - skipped: the project compiles against JavaSE-21's JDK (no JDK 21 found)")
