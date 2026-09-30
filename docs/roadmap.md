@@ -4326,12 +4326,16 @@ end of each step; one commit per step.
     needs more. Tests: `test-lib/dotfile-format`, `project-dotfile`,
     `test-modules/every-module-has-metadata`, `depth-from-metadata`; 491
     tests, doctor, sync, tty startup 0.030-0.033s.
-  - *Open:* some tty benches right after a sync showed the first frame at
-    ~4.3s (startup itself 0.03s) in 16.3 and 16.4, then not again with no
-    code change. The CPU profile of one was empty (waiting, not working),
-    and 4.3s is two of xterm's 2s terminal-query timeouts, so it looks like
-    the headless terminal the bench runs in (`script`), not Hellmacs;
-    not proven. 16's *Verify* re-measures in a real terminal.
+  - *Open:* some tty benches showed the first frame at ~4.3s while startup
+    itself stayed 0.03s: right after a sync in 16.3 and 16.4, and on the
+    first starts of a from-scratch install (2026-09-30), then not again with
+    no change. Ruled out by trying to bring it back on that install: package
+    native compilation (its cache emptied), native-comp trampolines (all
+    compiled during `install`, before the slow starts), the state directory
+    (moved away), and xterm's terminal queries (vt100 and xterm alike were
+    fast). An earlier note here said a CPU profile was empty; that was
+    wrong, the profiler never ran. Cause unknown; the bench runs in a
+    headless `script` terminal, so check in a real one.
 - [x] **16.5 `bin/hellmacs-<command>`.** (2026-09-30: as below; `bin/hellmacsscript` goes through `bin/hellmacs`, so a script run directly keeps its rules (`--profile`, `test`'s throwaway directories, `upgrade` in two steps).) Each command's definition moves
       to its own file (`bin/hellmacs-sync`, `-doctor`, `-test`, `-install`,
       `-upgrade`, `-bundle`, `-verify`, `-sbom`, ...), dispatched by
