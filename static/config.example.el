@@ -4,7 +4,7 @@
 ;; here, and configure the packages you declared in packages.el.
 ;;
 ;; Hellmacs' helper macros are available: `after!', `add-hook!',
-;; `setq-hook!', `defadvice!' and `cmd!' (see core/hellmacs-lib.el).
+;; `setq-hook!', `defadvice!' and `cmd!' (see lisp/hellmacs-lib.el).
 
 ;; Settings for a built-in feature:
 ;; (setq fill-column 100)

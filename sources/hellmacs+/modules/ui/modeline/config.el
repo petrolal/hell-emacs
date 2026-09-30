@@ -23,9 +23,10 @@
 
 
 ;; A minimal doom-modeline in the Hellmacs palette. The code is
-;; modules/ui/hellmacs-modeline.el (the file name the Phase 9 spec gives
-;; it); this module puts modules/ui/ on `load-path' and loads it. See
-;; that file for the segments and when it turns on.
+;; ui/hellmacs-modeline.el, beside this module in the catalog (the file
+;; name the Phase 9 spec gives it); this module puts that ui/ directory
+;; on `load-path' and loads it. See that file for the segments and when it
+;; turns on.
 ;;
 ;; Option, in your init.el or config.el:
 ;;   (setq hellmacs-modeline-tty-icons t)  ; icons in a terminal with a Nerd Font

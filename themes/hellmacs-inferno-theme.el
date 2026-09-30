@@ -363,8 +363,8 @@
    `(hellmacs-jvm-ready ((t (:foreground ,venom-green :weight bold))))
    `(hellmacs-jvm-failed ((t (:foreground ,inferno-crimson :weight bold))))
 
-   ;;; Hellmacs' own faces (defined in core/hellmacs-splash.el and
-   ;;; core/hellmacs-ux.el, with these colours as defaults)
+   ;;; Hellmacs' own faces (defined in modules/hellmacs/+splash.el and
+   ;;; modules/hellmacs/+ux.el, with these colours as defaults)
    `(hellmacs-splash-sigil ((t (:foreground ,inferno-crimson :weight bold))))
    `(hellmacs-splash-tagline ((t (:foreground ,reap-gold :weight bold))))
    `(hellmacs-splash-altar ((t (:foreground ,venom-green))))

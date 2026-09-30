@@ -20,7 +20,7 @@ Your personal configuration lives in `~/.config/hellmacs/` (or `$HELLMACSDIR`):
 
 ## Enabling and Disabling Modules (`init.el`)
 
-The `(hellmacs! ...)` block in `~/.config/hellmacs/init.el` dictates which modules are loaded at boot.
+The `(hellmacs! ...)` block in `~/.config/hellmacs/init.el` dictates which modules are loaded at boot. Without a block, you get the defaults (`static/init.example.el`); an empty `(hellmacs!)` loads no module but Hellmacs' own core module (`:hellmacs`: the startup screen, themed prompts), which is always on.
 
 ### Syntax
 ```elisp
@@ -111,9 +111,10 @@ bin/hellmacs sync
 
 ## Creating Private Custom Modules
 
-You can create private modules that override or extend Hellmacs modules:
-1. Create a directory in `~/.config/hellmacs/modules/<category>/<name>/` (e.g. `~/.config/hellmacs/modules/lang/rust/`).
+You can create private modules that override or extend Hellmacs modules. Hellmacs looks for a module in your `~/.config/hellmacs/modules/` first, then in its own (`modules/`, core's; `sources/hellmacs+/modules/`, the catalog), so a module of yours with the same name replaces Hellmacs'.
+1. Create a directory in `~/.config/hellmacs/modules/<category>/<name>/` (e.g. `~/.config/hellmacs/modules/lang/rust/`), or copy Hellmacs' `static/module-template/` there.
 2. Add any of the following optional files:
+   * `.hellmacsmodule`: its name, `"0.9.0" ((name :lang rust))`, and `(depth . N)` if it must load before (negative) or after other modules.
    * `packages.el`: Package declarations (`package! ...`).
    * `config.el`: Main configuration (`use-package ...`).
    * `autoload.el`: Functions to autoload on demand.

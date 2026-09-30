@@ -1,4 +1,4 @@
-;;; test-ux.el --- Tests for lisp/hellmacs-ux.el -*- lexical-binding: t; -*-
+;;; test-ux.el --- Tests for modules/hellmacs/+ux.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

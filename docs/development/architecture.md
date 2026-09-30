@@ -1,6 +1,6 @@
 # System Architecture & Design System
 
-This document details the software architecture, boot lifecycle, directory resolution rules, and aesthetic design system of **Hellmacs**.
+This document details the software architecture, code organization (Doom Emacs v3's layout), boot lifecycle, directory resolution rules, and aesthetic design system of **Hellmacs**.
 
 ---
 
@@ -35,7 +35,42 @@ Hellmacs is structured into four distinct layers:
 
 ---
 
-## 2. Directory Resolution & XDG Compliance
+## 2. Code Organization (Doom Emacs v3's layout)
+
+Since Phase 16, Hellmacs is laid out as Doom Emacs v3 (`doomemacs/core`),
+so anyone who knows Doom finds their way:
+
+| Doom v3 | Hellmacs | What it holds |
+|---|---|---|
+| `early-init.el` | `early-init.el` | Boot, XDG directories, and the hand-off to the profile's init file |
+| *(no root `init.el`)* | *(none)* | `sync` generates each profile's `init.el`; `.gitignore` keeps a root one out |
+| `lisp/doom.el` | `lisp/hellmacs.el` | The heart: lifecycle hooks, GC, directories |
+| `lisp/doom-emacs.el` | `lisp/hellmacs-emacs.el` | Stock Emacs, with saner defaults |
+| `lisp/doom-lib.el` | `lisp/hellmacs-lib.el` | Macros (`after!`, `add-hook!`), `hellmacs-require`, `hellmacs-dotfile` |
+| `lisp/doom-modules.el` | `lisp/hellmacs-modules.el` | `hellmacs!`, `modulep!`, `package!`, module load path and metadata |
+| `lisp/doom-profiles.el` | `lisp/hellmacs-profiles.el` | The profile's generated init file |
+| — | `lisp/hellmacs-start.el` | The startup sequence (part 10 of the generated file; loaded from source when there's none) |
+| `lisp/doom-cli.el` | `lisp/hellmacs-cli.el` | The command dispatcher and the helpers commands share |
+| `lisp/lib/*.el` | `lisp/lib/` (`jdk`, `net`, `lsp-status`) | The library, off `load-path`: `(hellmacs-require 'hellmacs-lib 'net)` |
+| `lisp/cli/*.el` | `lisp/cli/` (`bundle`, `compliance`, `config`, `verify`) | The CLI's parts: `(hellmacs-require 'hellmacs-cli 'verify)` |
+| `modules/doom/` (`:doom`) | `modules/hellmacs/` (`:hellmacs`) | Core's own module, always on, first: core's packages, gcmh, the Altar, themed UX |
+| `sources/doom+/modules/` | `sources/hellmacs+/modules/` | The module catalog (a submodule in Doom, in-tree here) |
+| `.doom`, `.doommodule` | `.hellmacs`, `.hellmacsmodule` | Metadata: a version string, then an alist (`name`, `depth`) |
+| `bin/doom`, `bin/doom-COMMAND`, `bin/doomscript` | `bin/hellmacs`, `bin/hellmacs-COMMAND`, `bin/hellmacsscript` | The CLI: a dispatcher, one file per command, and a script runner |
+| `profiles/` (`safe-mode`) | `profiles/` (`safe-mode`) | Profiles shipped; a directory is a profile |
+
+**Modules are found** in this order (`hellmacs-module-load-path`, Doom's
+`doom-module-load-path`): your `~/.config/hellmacs/modules/`, then
+`modules/`, then `sources/hellmacs+/modules/`. A module's depth comes from
+its `.hellmacsmodule` unless your `hellmacs!` block gives one.
+
+**Not taken from Doom:** straight.el (Elpaca), evil and the `:doom compat`
+module, the shell/Lisp polyglot `bin/doom`, org-format docs, and the `SPC`
+leader: the keybinding policy is unchanged.
+
+---
+
+## 3. Directory Resolution & XDG Compliance
 
 Hellmacs strictly isolates user configurations, installed packages, caches, and session state:
 
@@ -71,7 +106,7 @@ XDG Storage Layout:
 
 ---
 
-## 3. Boot Lifecycle & Speed Optimization
+## 4. Boot Lifecycle & Speed Optimization
 
 Hellmacs achieves **~0.05s startup time** through a two-phase initialization model with static compiled profiles:
 
@@ -116,7 +151,7 @@ sequenceDiagram
 
 ---
 
-## 4. The Design System: *Inferno* Aesthetic
+## 5. The Design System: *Inferno* Aesthetic
 
 Hellmacs features a thematic design language inspired by dark metal, brimstone, and industrial computing:
 

@@ -173,7 +173,7 @@ Used to tell whether a package is built into Emacs (`package!'s
 ;; Emacs runs a GC check on every allocation, which adds up over the
 ;; hundreds of `require'/`load' calls a full startup performs. Raise
 ;; the threshold as high as possible for the duration of boot;
-;; `hellmacs-core' restores a bounded runtime value once startup
+;; `hellmacs' (lisp/hellmacs.el) restores a bounded runtime value once startup
 ;; finishes (see `hellmacs--restore-gc-h' there).
 
 (defvar hellmacs--gc-cons-threshold (* 16 1024 1024)

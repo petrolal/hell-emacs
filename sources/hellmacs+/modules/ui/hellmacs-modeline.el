@@ -21,7 +21,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; The `:ui modeline' module (modules/ui/modeline/ loads this file): a
+;; The `:ui modeline' module (ui/modeline/, beside this file, loads it): a
 ;; minimal doom-modeline, coloured by the theme's `doom-modeline-*'
 ;; faces.
 ;;

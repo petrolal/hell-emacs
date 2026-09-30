@@ -13,7 +13,7 @@
 ;;
 ;; Modules load in the order listed. Comment a line out to disable a
 ;; module; +flags turn on optional behavior, documented at the top of
-;; each module's config.el (modules/<group>/<name>/config.el).
+;; each module's config.el (sources/hellmacs+/modules/<group>/<name>/config.el).
 ;;
 ;; The list below is every module Hellmacs has or could have. Enabled by
 ;; default: what a JVM project needs. Entries marked [planned] are on the

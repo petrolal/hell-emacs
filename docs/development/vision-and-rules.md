@@ -73,6 +73,10 @@ When developing features, extending modules, or writing code for Hellmacs:
    * Implement minimal code to satisfy tests (GREEN), refactor, and verify with `bin/hellmacs test`.
 6. **Work Order & Roadmap Progress**:
    * Pick up work in order of [`work-order.md`](work-order.md) and update checkboxes in both `work-order.md` and `docs/roadmap.md`.
+7. **Respect the Doom v3 Layout** (Phase 16, [`architecture.md`](architecture.md) §2):
+   * Engine code goes in `lisp/`; library parts in `lisp/lib/` and CLI parts in `lisp/cli/`, loaded with `hellmacs-require`, never put on `load-path`.
+   * What every configuration gets and that is user-facing or package-backed goes in core's own module, `modules/hellmacs/`; every other feature is a module in `sources/hellmacs+/modules/<group>/<name>/`, with a `.hellmacsmodule`.
+   * A new `bin/hellmacs` command is a new `bin/hellmacs-COMMAND` file. There is no root `init.el`: the startup sequence is `lisp/hellmacs-start.el`, and `sync` generates each profile's init file from it.
 
 ---
 

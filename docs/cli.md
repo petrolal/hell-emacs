@@ -2,6 +2,8 @@
 
 Hellmacs includes a command-line tool (`bin/hellmacs`) to install, synchronize, upgrade, lock, test, and troubleshoot your installation without launching interactive Emacs.
 
+As in Doom Emacs v3, each command is its own file: `bin/hellmacs` dispatches `bin/hellmacs sync` to `bin/hellmacs-sync`, loaded only when it runs. With `bin/` on your `PATH`, a command also runs on its own (`hellmacs-sync`, `hellmacs-doctor`), through `bin/hellmacsscript`; it goes through `bin/hellmacs` either way, so `--profile` and the rest apply. Enabled modules can add commands in their `cli.el`.
+
 ---
 
 ## Commands
@@ -49,7 +51,8 @@ bin/hellmacs sync
 ```
 * Analyzes all active modules declared in your `init.el` and `packages.el`.
 * Uses Elpaca to fetch missing packages and compile Tree-sitter grammars.
-* Rewrites the static load profile (`profile.eld`) for sub-second startup times: every package's autoloads merged into one compiled file, and core plus each enabled module's `config.el` byte-compiled into the profile's `compiled/` directory. Startup uses the compiled files only while they match their sources; edit a file and it loads from source until the next `sync`.
+* Rewrites the static load profile (`profile.eld`) for sub-second startup times: every package's autoloads merged into one compiled file, and core plus each enabled module's `init.el` and `config.el` byte-compiled into the profile's `compiled/` directory. Startup uses the compiled files only while they match their sources; edit a file and it loads from source until the next `sync`.
+* Generates the profile's own `init.el` (and compiles it), which Emacs starts from: Hellmacs has no `init.el` in its checkout, as Doom v3 hasn't. Until `sync` has run, or after Hellmacs itself changes, Emacs starts from `lisp/hellmacs-start.el` instead, from source.
 
 ---
 
@@ -79,6 +82,22 @@ bin/hellmacs verify
 * Checks that everything `sync` installed is as it left it: every installed file (language servers, jars, grammars, the packages' compiled files) against the SHA-256 sync recorded, and every package's checkout at the commit it installed, with no local changes, and at the commit your lock file pins.
 * Exits 1 and names each difference. To repair one, delete what changed and run `sync`, which reinstalls what's missing; undo a package's local changes with git.
 * Each sync records what it installed in the profile's `installed.eld`.
+
+---
+
+### `sbom`
+```sh
+bin/hellmacs sbom [FILE]
+```
+* Writes a CycloneDX (JSON) software bill of materials of everything installed: every package at its commit, each pinned download (language servers, jars) with its SHA-256, npm dependencies from their lock files, and the tree-sitter grammars. To FILE, or to standard output.
+
+---
+
+### `licenses`
+```sh
+bin/hellmacs licenses
+```
+* Lists each installed component's license, from its package headers, its LICENSE file, or its pin's declaration. Exits 1 on a license it can't tell, and flags one outside the SPDX list, so a new dependency's license is seen before it ships.
 
 ---
 
@@ -152,3 +171,5 @@ bin/hellmacs --profile work sync
 bin/hellmacs --profile work doctor
 bin/hellmacs --profile work upgrade
 ```
+
+A profile's config is `~/.config/hellmacs-NAME/`, else `profiles/NAME/` in your config, else `profiles/NAME/` in Hellmacs; its packages, caches and history are its own. Hellmacs ships `safe-mode`: its core with no other module and none of your config, for finding what broke Emacs (`bin/hellmacs --profile safe-mode sync`, then `emacs --profile safe-mode`). See [`profiles/README.md`](../profiles/README.md).

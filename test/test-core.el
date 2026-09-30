@@ -1,4 +1,4 @@
-;;; test-core.el --- Tests for lisp/hellmacs-core.el and -packages.el -*- lexical-binding: t; -*-
+;;; test-core.el --- Tests for lisp/hellmacs.el, -emacs.el and -packages.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

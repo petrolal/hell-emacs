@@ -21,7 +21,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; The `:ui dashboard' module (modules/ui/dashboard/ loads this file):
+;; The `:ui dashboard' module (ui/dashboard/, beside this file, loads it):
 ;; `dashboard' as the startup screen, in place of the Altar.
 ;;
 ;;   - The sigil banner: a picture in a graphical frame, the ASCII one

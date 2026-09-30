@@ -20,6 +20,27 @@ To work on Hellmacs itself:
    ~/src/hellmacs/bin/hellmacs --profile dev sync
    emacs --init-directory ~/src/hellmacs --profile dev
    ```
+4. When a change breaks startup, `safe-mode` (in `profiles/`) starts Hellmacs' core with no other module and none of your config:
+   ```sh
+   ~/src/hellmacs/bin/hellmacs --profile safe-mode sync
+   emacs --init-directory ~/src/hellmacs --profile safe-mode
+   ```
+
+There is no `init.el` in the checkout: `bin/hellmacs sync` generates each profile's (from `lisp/hellmacs-start.el`), and until it has, Emacs starts from `lisp/hellmacs-start.el` directly. Run `sync` after changing `lisp/` or a module, or you're running the slower source fallback.
+
+### Where code goes (Doom Emacs v3's layout)
+
+| You're adding | Put it in |
+|---|---|
+| Engine code every session needs | `lisp/hellmacs-*.el` (loaded by `lisp/hellmacs-start.el`) |
+| A library other code calls on demand | `lisp/lib/NAME.el`, ending with `(hellmacs-provide 'hellmacs-lib 'NAME)`; load it with `(hellmacs-require 'hellmacs-lib 'NAME)` |
+| Code only `bin/hellmacs` needs | `lisp/cli/NAME.el` (`hellmacs-cli` parts), or the command's own file |
+| A `bin/hellmacs` command | `bin/hellmacs-NAME` (executable, `#!/usr/bin/env hellmacsscript`), defining `hellmacs-cli-NAME` |
+| Something every config gets that is user-facing or needs a package | Core's own module, `modules/hellmacs/` |
+| An optional feature or a language | A module: `sources/hellmacs+/modules/<group>/<name>/` |
+| A profile Hellmacs ships | `profiles/NAME/` |
+
+`lisp/lib/` and `lisp/cli/` are deliberately off `load-path`: `(require 'hellmacs-jdk)` doesn't work, `(hellmacs-require 'hellmacs-lib 'jdk)` does. Wrap it in `eval-and-compile` when the file uses the part's macros (`with-hellmacs-network`), so the byte-compiler sees them.
 
 ---
 
@@ -37,7 +58,16 @@ bin/hellmacs test test-debugger
 bin/hellmacs test test-bundle
 ```
 
+Tests for the layout itself: `test-lib/layout-like-doom`, `test-modules/catalog-is-a-source`, `test-modules/every-module-has-metadata`, `test-cli/commands-in-bin-like-doom` and `test-profiles`.
+
 ### Integration & Parity Checklists
+
+Integration scripts start Hellmacs as a batch session, then load the script:
+
+```sh
+HELLMACS_E2E_FIXTURE=maven-demo emacs --batch -l early-init.el -f hellmacs-start -l test/integration/java-e2e.el
+```
+
 * `test/integration/java-e2e.el`: End-to-end integration test validating JDTLS, compilation, debugger stepping, and hot-code replacement against sample projects.
 * `test/integration/java-parity.el`: Parity runner verifying that IntelliJ/Eclipse daily capabilities function on Maven/Gradle test projects.
 * `test/integration/net-e2e.el`: Validates corporate proxy, custom CA bundle, and offline bundle installations.
@@ -117,6 +147,6 @@ Core and `:tools` modules never hardcode language names; `:lang` modules configu
    ```sh
    cp -r static/module-template sources/hellmacs+/modules/lang/scala
    ```
-2. Populate `packages.el`, `config.el`, `autoload.el`, and `doctor.el`.
+2. Populate `packages.el`, `config.el`, `autoload.el`, and `doctor.el`. Find other modules with `hellmacs-module-locate-path`, and load your module's own files with `(hellmacs-module-load "+paths")`, never by path.
 3. Register the module in `static/init.example.el` and add unit tests in `test/`.
 4. Run `bin/hellmacs sync` and verify with `bin/hellmacs test` and `bin/hellmacs doctor`.

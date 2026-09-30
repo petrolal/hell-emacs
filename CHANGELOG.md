@@ -2,7 +2,7 @@
 
 What changed in each Hellmacs release, newest first. Hellmacs follows
 [Semantic Versioning](https://semver.org/): a release is the git tag
-`vMAJOR.MINOR.PATCH`, and `hellmacs-version` (in `core/hellmacs-lib.el`)
+`vMAJOR.MINOR.PATCH`, and `hellmacs-version` (in `lisp/hellmacs-lib.el`)
 carries its number. Which Emacs versions and platforms each release
 supports, and how long it gets security fixes, is in
 [docs/releases.md](docs/releases.md).
@@ -37,13 +37,32 @@ The first tagged release will be 0.9.0. Since the project started
 - Update channels: `bin/hellmacs upgrade --channel stable|main`, stable
   (the latest release) by default.
 
+### Changed
+
+- Doom Emacs v3's architecture and layout (Phase 16). The engine is in
+  `lisp/` (was `core/`), with `lisp/lib/` and `lisp/cli/` loaded through
+  `hellmacs-require`; core's own features are a module, `modules/hellmacs/`
+  (`:hellmacs`); the module catalog is `sources/hellmacs+/modules/` (was
+  `modules/<group>/`); each command is `bin/hellmacs-COMMAND`; modules carry a
+  `.hellmacsmodule` and the project a `.hellmacs`; `profiles/` ships a
+  `safe-mode` profile, and a directory is a profile.
+- There is no `init.el` in the checkout any more: `sync` generates each
+  profile's, and Emacs starts from `lisp/hellmacs-start.el` until it has.
+  Batch scripts start with `emacs --batch -l early-init.el -f hellmacs-start`
+  instead of `-l init.el`.
+- `(require 'hellmacs-jdk)`, `hellmacs-net`, `hellmacs-lsp-status` and the
+  other moved libraries no longer load that way: use
+  `(hellmacs-require 'hellmacs-lib 'jdk)`.
+- An empty `(hellmacs!)` block now enables no module; only an `init.el`
+  without a block gets the defaults.
+
 ### Security
 
 - Every download is pinned by SHA-256, and packages by commit, Elpaca
   included; the Groovy server's build checks every dependency.
 - No telemetry: docker-language-server's (on by default) is turned off,
   and clojure-lsp no longer downloads ClojureDocs at startup. A test fails
-  if code outside `core/hellmacs-net.el` reaches the network.
+  if code outside `lisp/lib/net.el` reaches the network.
 - `bin/hellmacs env` no longer saves tokens, passwords or API keys, and
   writes the file readable by you only.
 - The JDBC password no longer lands in sqlline's history file.

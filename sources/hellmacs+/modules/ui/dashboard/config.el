@@ -22,9 +22,9 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-;; The startup dashboard. The code is modules/ui/hellmacs-dashboard.el
-;; (the file name the Phase 9 spec gives it); this module puts
-;; modules/ui/ on `load-path' and loads it. See that file for what it
+;; The startup dashboard. The code is ui/hellmacs-dashboard.el, beside this
+;; module in the catalog (the file name the Phase 9 spec gives it); this
+;; module puts that ui/ directory on `load-path' and loads it. See that file for what it
 ;; draws and which keys it keeps.
 ;;
 ;; Options, in your init.el or config.el:

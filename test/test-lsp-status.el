@@ -1,4 +1,4 @@
-;;; test-lsp-status.el --- Tests for lisp/hellmacs-lsp-status.el -*- lexical-binding: t; -*-
+;;; test-lsp-status.el --- Tests for lisp/lib/lsp-status.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

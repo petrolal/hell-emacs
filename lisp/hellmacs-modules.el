@@ -24,8 +24,10 @@
 ;; Modeled on Doom Emacs' module system (`doom!', `modulep!',
 ;; `package!'), minus its v2 compatibility layers.
 ;;
-;; A module is a directory, `modules/<group>/<name>/', written
-;; `:group name' (e.g. `modules/completion/vertico/' is
+;; A module is a directory, `<group>/<name>/' in a module tree (your
+;; modules/, Hellmacs' modules/, then sources/hellmacs+/modules/: see
+;; `hellmacs-module-load-path'), written `:group name' (e.g.
+;; `sources/hellmacs+/modules/completion/vertico/' is
 ;; `:completion vertico'). Every file in it is optional:
 ;;
 ;;   packages.el  `package!' declarations only -- what to install --

@@ -75,7 +75,8 @@
   - All custom Hellmacs leader shortcuts live cleanly under `C-c h`.
 
 - **Enterprise-Grade Reproducibility & CLI**:
-  - Dedicated CLI tool (`bin/hellmacs`) handling `install`, `sync`, `upgrade`, `doctor`, `lock`, `bundle`, and `test`.
+  - Dedicated CLI tool (`bin/hellmacs`) handling `install`, `sync`, `upgrade`, `doctor`, `lock`, `bundle`, `verify`, `sbom`, `licenses`, `config`, `env`, `gc`, `version` and `test`, one file per command (`bin/hellmacs-COMMAND`).
+  - Doom Emacs v3's architecture and layout: the engine in `lisp/`, the module catalog as a source (`sources/hellmacs+/`), module metadata (`.hellmacsmodule`), implicit profiles (with `safe-mode` for when something breaks), and an `init.el` generated per profile by `sync`.
   - Clean XDG directory isolation (`~/.config/emacs`, `~/.config/hellmacs`) and pinned package locks.
   - Offline bundles: `bin/hellmacs bundle` packs packages, language servers and grammars into one archive, and `bin/hellmacs install --from-bundle` installs it with no network access at all, checking every file's SHA-256.
   - Git supremacy via [Magit](https://github.com/magit/magit) — the definitive Git interface.
@@ -241,7 +242,8 @@ Comprehensive guides, module references, and architectural specifications are lo
 | ⚙️ **[Configuration Guide](docs/configuration.md)** | Module system (`hellmacs!`), flags, custom packages, and user profiles |
 | ☕ **[JVM Development](docs/jvm-development.md)** | Java, Kotlin, Clojure, autocompletion, semantic navigation, DAP debugging, and HCR |
 | ⌨️ **[Keybindings Reference](docs/keybindings.md)** | Complete keyboard cheatsheet for standard GNU and `C-c` leader commands |
-| 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `bundle`, `sync`, `upgrade`, `doctor`, `lock`, `test`) |
+| 💻 **[CLI Reference](docs/cli.md)** | `bin/hellmacs` commands (`install`, `bundle`, `sync`, `upgrade`, `doctor`, `verify`, `sbom`, `licenses`, `lock`, `test`, ...) and profiles |
+| 🧭 **[Profiles](profiles/README.md)** | Separate configurations, implicit profiles, and the `safe-mode` profile |
 | 🗺️ **[Enterprise Roadmap](docs/roadmap.md)** | Multi-phase roadmap and IntelliJ/Eclipse feature parity matrix |
 | 🏷️ **[Releases and Support](docs/releases.md)** | Versions, update channels (`stable`, `main`), supported Emacs and platforms, security fixes; see also the [Changelog](CHANGELOG.md) |
 
@@ -291,12 +293,12 @@ Manage packages declaratively in `~/.config/hellmacs/packages.el` and custom hoo
 
 Contributions are warmly welcomed! Please check our development guides before contributing:
 - [Contributing & Module Development](docs/development/contributing.md)
-- [System Architecture & Design System](docs/development/architecture.md)
+- [System Architecture & Design System](docs/development/architecture.md) (with how Hellmacs maps onto Doom Emacs v3's layout)
 - [Vision & Operational Invariants](docs/development/vision-and-rules.md)
 - [Roadmap Work Order](docs/development/work-order.md)
 
 
-Pull requests are verified through unit and integration suites run via `bin/hellmacs test`.
+Pull requests are verified through unit and integration suites run via `bin/hellmacs test`. The [File Structure](#-file-structure) below says where each kind of code goes.
 
 ---
 

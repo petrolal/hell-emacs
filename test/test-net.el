@@ -1,4 +1,4 @@
-;;; test-net.el --- Tests for lisp/hellmacs-net.el -*- lexical-binding: t; -*-
+;;; test-net.el --- Tests for lisp/lib/net.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;

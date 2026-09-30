@@ -58,6 +58,16 @@ emacs
 emacs --init-directory ~/hellmacs
 ```
 
+There's no `init.el` in the Hellmacs checkout: as in Doom Emacs v3, `sync` generates one for your profile, in `~/.local/share/hellmacs/`, and Emacs starts from it.
+
+### If something breaks
+Start the `safe-mode` profile: Hellmacs' core, with none of your modules or config. If it works, add your modules back one at a time to find the culprit.
+
+```sh
+~/.config/emacs/bin/hellmacs --profile safe-mode sync
+emacs --profile safe-mode
+```
+
 ---
 
 ## Platform Guides
@@ -85,7 +95,7 @@ Hellmacs strictly follows the **XDG Base Directory Specification**, keeping your
 | Purpose | Directory Path | Safe to delete? |
 |---|---|---|
 | **User Configuration** | `~/.config/hellmacs/` (or `$HELLMACSDIR`) | **No** — this contains your personal `init.el`, `config.el`, and `packages.el` |
-| **Installed Packages & Profiles** | `~/.local/share/hellmacs/` | **Yes** — regenerated with `bin/hellmacs sync` |
+| **Installed Packages & Profiles** | `~/.local/share/hellmacs/` (each profile's generated `init.el` too) | **Yes** — regenerated with `bin/hellmacs sync` |
 | **Caches & Native Compilations** | `~/.cache/hellmacs/` | **Yes** — automatically rebuilt as needed |
 | **State, History & Undo Sessions** | `~/.local/state/hellmacs/` | **Yes** — but your undo history, recent files, and bookmarks will be reset |
 
