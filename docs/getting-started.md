@@ -20,6 +20,9 @@ Optional tools:
 * `mvn` / `gradle`: Maven / Gradle for building projects without wrapper scripts.
 * `unzip`: Required to install pinned Kotlin / Clojure language servers.
 * `lein` / `clojure` / `bb`: Clojure REPL tooling for CIDER.
+* `direnv`: per-project environments from `.envrc` (`:tools direnv` is on by default; `doctor` warns when it's missing).
+
+Language servers aren't on these lists: `sync` downloads pinned copies (JDTLS, kotlin-language-server, clojure-lsp, ...) and checks each one's SHA-256.
 
 ---
 
@@ -49,7 +52,7 @@ What `install` does:
 1. Creates your isolated user configuration in `~/.config/hellmacs/` from templates in `static/`.
 2. Runs `bin/hellmacs sync` to download and compile all packages declared in enabled modules.
 3. Saves environment variables (`JAVA_HOME`, `PATH`, etc.) into `~/.local/share/hellmacs/env.eld`.
-4. Runs `bin/hellmacs doctor` to verify your environment.
+4. Runs `bin/hellmacs doctor` to verify your environment, then says how to start Emacs: plain `emacs` when Hellmacs is in `~/.config/emacs`, `emacs --init-directory DIR` when it's elsewhere.
 
 ### 3. Start Hellmacs
 Launch Emacs:

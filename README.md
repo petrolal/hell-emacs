@@ -126,7 +126,9 @@ Every text colour is at least 4.5:1 against the background it's drawn on (`test/
 - Optional Tooling:
   - [Clojure CLI / Leiningen](https://clojure.org/) — for Clojure development & CIDER REPL
   - [Maven](https://maven.apache.org/) / [Gradle](https://gradle.org/) — for JVM project builds
-  - [kotlin-language-server](https://github.com/fwcd/kotlin-language-server) — for Kotlin LSP intelligence
+  - [direnv](https://direnv.net/) — per-project environments from `.envrc` (`:tools direnv`, on by default; `doctor` says when it's missing)
+  - `unzip` — to install the pinned Kotlin and Clojure language servers
+- Language servers aren't on this list: `bin/hellmacs sync` installs pinned copies of them (JDTLS, kotlin-language-server, clojure-lsp, ...), each checked by SHA-256.
 
 ---
 
