@@ -112,7 +112,7 @@
            (java +lombok +spring) ; Java: JDTLS, Spring Boot; a JDK 21+ (+lombok, +spring, +tree-sitter)
            kotlin             ; Kotlin: kotlin-language-server; a JDK (+tree-sitter)
            clojure            ; Clojure: CIDER REPL + clojure-lsp (+tree-sitter: Emacs 30.1+)
-           ;;groovy           ; [planned] Groovy, Gradle scripts, Jenkinsfiles: groovy-language-server
+           ;;groovy           ; Groovy, Gradle scripts, Jenkinsfiles: groovy-language-server (built by sync)
            ;;scala            ; [planned] Scala: Metals, sbt (+tree-sitter)
            ;; Everything else. The name after the colon is the language server the
            ;; module would run through :tools lsp.

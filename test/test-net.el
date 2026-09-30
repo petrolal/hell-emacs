@@ -126,6 +126,54 @@
             (should-not (file-exists-p dest))))
       (delete-directory root t))))
 
+(defvar hellmacs-net-curl)
+
+(ert-deftest test-net/downloads-stream-through-curl ()
+  "With curl, a download streams to disk, through the mirror, proxy and CA
+Hellmacs uses; without it, url.el fetches it."
+  (let* ((root (make-temp-file "hellmacs-test-net" t))
+         (log (expand-file-name "args" root))
+         (curl (expand-file-name "curl" root))
+         (ca (expand-file-name "corp.pem" root))
+         (dest (expand-file-name "out.jar" root)))
+    (unwind-protect
+        (progn
+          ;; A curl that records its arguments and writes the file it's told to.
+          (with-temp-file curl
+            (insert "#!/bin/sh\nprintf '%s\\n' \"$@\" > " (shell-quote-argument log) "\n"
+                    "while [ $# -gt 0 ]; do [ \"$1\" = --output ] && printf 'bytes' > \"$2\"; shift; done\n"))
+          (set-file-modes curl #o755)
+          (with-temp-file ca (insert "-----BEGIN CERTIFICATE-----\ncorp\n-----END CERTIFICATE-----\n"))
+          (test-net--with ((hellmacs-net-curl curl)
+                           (hellmacs-mirrors '(("https://repo.invalid/" . "https://mirror.invalid/")))
+                           (hellmacs-proxy "http://proxy.invalid:3128")
+                           (hellmacs-no-proxy '(".corp.invalid" "localhost"))
+                           (hellmacs-ca-bundle ca)
+                           (hellmacs-net-ca-file (expand-file-name "bundle.pem" root)))
+            (cl-letf (((symbol-function 'url-copy-file) (lambda (&rest _) (error "Not through url.el"))))
+              (hellmacs-net-download "https://repo.invalid/tool.jar" dest))
+            (let ((args (with-temp-buffer (insert-file-contents log) (split-string (buffer-string) "\n" t))))
+              (should (equal (car (last args)) "https://mirror.invalid/tool.jar"))
+              (should (equal (cadr (member "--proxy" args)) "http://proxy.invalid:3128"))
+              (should (equal (cadr (member "--noproxy" args)) ".corp.invalid,localhost"))
+              (should (equal (cadr (member "--cacert" args)) hellmacs-net-ca-file))
+              (should (member "--fail" args)))
+            (should (equal (with-temp-buffer (insert-file-contents dest) (buffer-string)) "bytes"))
+            ;; A failing curl is an error, naming the URL.
+            (with-temp-file curl (insert "#!/bin/sh\necho 'curl: (22) 404' >&2\nexit 22\n"))
+            (should (string-match-p "mirror.invalid/tool.jar"
+                                    (cadr (should-error (hellmacs-net-download "https://repo.invalid/tool.jar" dest))))))
+          ;; No curl: url.el.
+          (test-net--with ((hellmacs-net-curl nil))
+            (let (fetched)
+              (cl-letf (((symbol-function 'url-copy-file) (lambda (url file &rest _) (setq fetched (list url file)))))
+                (hellmacs-net-download "https://repo.invalid/tool.jar" dest))
+              (should (equal fetched (list "https://repo.invalid/tool.jar" dest)))))
+          ;; Offline: nothing is fetched.
+          (test-net--with ((hellmacs-net-curl curl) (hellmacs-net-offline t))
+            (should-error (hellmacs-net-download "https://repo.invalid/tool.jar" dest))))
+      (delete-directory root t))))
+
 (ert-deftest test-net/jvm-options ()
   (test-net--with ((hellmacs-net-truststore (make-temp-name "/nonexistent/store")))
     (should-not (hellmacs-net-jvm-options))

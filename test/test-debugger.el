@@ -128,7 +128,7 @@ reports the compile done (its hotcodereplace event), not after a guess."
           (make-directory (file-name-directory jar) t)
           (with-temp-file jar (insert "old bundle"))
           (should-not (hellmacs-jvm-java-debug-jar-valid-p))
-          (cl-letf (((symbol-function 'url-copy-file)
+          (cl-letf (((symbol-function 'hellmacs-net-download)
                      (lambda (_u f &rest _) (with-temp-file f (insert "new bundle"))))
                     ((symbol-function 'hellmacs-sync--log) #'ignore))
             ;; Wrong checksum: the old bundle stays, nothing left over.
@@ -140,7 +140,7 @@ reports the compile done (its hotcodereplace event), not after a guess."
             (let ((hellmacs-jvm-java-debug-sha256 (secure-hash 'sha256 "new bundle")))
               (hellmacs-jvm-sync-install-java-debug)
               (should (hellmacs-jvm-java-debug-jar-valid-p))
-              (cl-letf (((symbol-function 'url-copy-file) (lambda (&rest _) (error "Shouldn't download"))))
+              (cl-letf (((symbol-function 'hellmacs-net-download) (lambda (&rest _) (error "Shouldn't download"))))
                 (hellmacs-jvm-sync-install-java-debug)))))
       (delete-directory dir t))))
 

@@ -76,8 +76,9 @@ step that fetches a pinned tool."
     (make-directory (file-name-directory dest) t)
     (unwind-protect
         (progn
-          ;; Through `hellmacs-mirrors' and the proxy, like every Hellmacs fetch.
-          (with-hellmacs-network (url-copy-file url tmp t))
+          ;; Through `hellmacs-mirrors', the proxy and CAs, like every
+          ;; Hellmacs fetch; streamed to disk when curl is there.
+          (hellmacs-net-download url tmp)
           (unless (equal (hellmacs-file-sha256 tmp) sha256)
             (error "%s download from %s failed its SHA-256 check; not installed" label url))
           (rename-file tmp dest t))

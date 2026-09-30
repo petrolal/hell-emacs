@@ -44,22 +44,118 @@ where stdout is the screen, sets it to `external-debugging-output'.")
         (write-region line nil out 'append 'silent)
       (princ line e2e-output))))
 
+(defvar e2e-deadline
+  (+ (float-time)
+     (if-let* ((secs (getenv "HELLMACS_E2E_DEADLINE")))
+         (string-to-number secs)
+       ;; Room for a parity run's slow steps (a monorepo's import), each up
+       ;; to HELLMACS_PARITY_TIMEOUT: at least four of them, at least 30 min.
+       (max 1800 (* 4 (string-to-number (or (getenv "HELLMACS_PARITY_TIMEOUT") "600"))))))
+  "When the script must be done (`float-time'), or nil for no limit.
+$HELLMACS_E2E_DEADLINE seconds after it starts; by default 30 minutes,
+or four parity steps if that's more. A backstop against a hang: no wait
+goes past it, the checks left aren't run, and `e2e--backstop' exits a
+minute after it if something hangs anyway. What makes a failed run end
+early is `e2e-check''s :needs.")
+
+(defun e2e--time-left ()
+  "Seconds until `e2e-deadline' (negative past it), or nil without one."
+  (and e2e-deadline (- e2e-deadline (float-time))))
+
 (defun e2e--wait (pred secs)
-  "Process output and timers until PRED returns non-nil; nil after SECS seconds."
-  (let ((end (+ (float-time) secs)) result)
+  "Process output and timers until PRED returns non-nil; nil after SECS seconds.
+Never past `e2e-deadline'."
+  (let ((end (min (+ (float-time) secs) (or e2e-deadline most-positive-fixnum))) result)
     (while (and (not (setq result (ignore-errors (funcall pred))))
                 (< (float-time) end))
       (accept-process-output nil 0.2))
     result))
 
+(defvar e2e--skipped 0)
+
+(defvar e2e--not-run 0
+  "Checks skipped for a :needs that didn't pass, or the deadline: they fail the run.
+Unlike `e2e-skip''s, for what this machine doesn't have.")
+
+(defvar e2e--results nil
+  "Alist: a check's :name -> (DESC . OUTCOME), OUTCOME `pass', `fail' or `skip'.")
+
+(defun e2e--unmet (needs)
+  "The descriptions (or names) of NEEDS, check names, that didn't pass."
+  (delq nil (mapcar (lambda (name)
+                      (let ((result (alist-get name e2e--results)))
+                        (and (not (eq (cdr result) 'pass))
+                             (or (car result) (symbol-name name)))))
+                    (ensure-list needs))))
+
+(defun e2e--record (name desc outcome)
+  (when name (setf (alist-get name e2e--results) (cons desc outcome))))
+
 (defmacro e2e-check (desc &rest body)
-  "Run BODY; report DESC as passed if it returns non-nil, failed otherwise."
+  "Run BODY; report DESC as passed if it returns non-nil, failed otherwise.
+BODY may start with keywords:
+  :name NAME    what later checks call this one in their :needs
+  :needs NAMES  checks (a name or a list) this one depends on: if one
+                didn't pass, this one is skipped at once, BODY never run,
+                instead of waiting out its time for what can't come
+Past `e2e-deadline', it's skipped too."
   (declare (indent 1))
-  `(let ((ok (condition-case err (progn ,@body)
-               (error (e2e--say "     %S" err) nil))))
-     (unless ok (cl-incf e2e--failures))
-     (e2e--say "  %s  %s" (if ok "PASS" "FAIL") ,desc)
-     ok))
+  (let (name needs)
+    (while (keywordp (car body))
+      (pcase (pop body)
+        (:name (setq name (pop body)))
+        (:needs (setq needs (pop body)))))
+    `(let ((unmet (e2e--unmet ',needs))
+           (left (e2e--time-left)))
+       (cond
+        (unmet
+         (cl-incf e2e--not-run)
+         (e2e--record ',name ,desc 'skip)
+         (e2e--say "  SKIP  %s (needs: %s)" ,desc (string-join unmet ", "))
+         nil)
+        ((and left (<= left 0))
+         (cl-incf e2e--not-run)
+         (e2e--record ',name ,desc 'skip)
+         (e2e--say "  SKIP  %s (out of time: HELLMACS_E2E_DEADLINE)" ,desc)
+         nil)
+        (t
+         (let ((ok (condition-case err (progn ,@body)
+                     (error (e2e--say "     %S" err) nil))))
+           (unless ok (cl-incf e2e--failures))
+           (e2e--record ',name ,desc (if ok 'pass 'fail))
+           (e2e--say "  %s  %s" (if ok "PASS" "FAIL") ,desc)
+           ok))))))
+
+(defun e2e--passed-p ()
+  (and (zerop e2e--failures) (zerop e2e--not-run)))
+
+(defun e2e--summary ()
+  (concat (if (e2e--passed-p)
+              "ALL PASSED"
+            (string-join (delq nil (list (and (> e2e--failures 0) (format "%d FAILED" e2e--failures))
+                                         (and (> e2e--not-run 0) (format "%d NOT RUN" e2e--not-run))))
+                         ", "))
+          (if (> e2e--skipped 0) (format " (%d skipped)" e2e--skipped) "")))
+
+(defun e2e-finish ()
+  "Report how the checks went and exit: 0 if every one ran and passed, 1 otherwise."
+  (e2e--say "\n%s" (e2e--summary))
+  (kill-emacs (if (e2e--passed-p) 0 1)))
+
+(defun e2e--backstop ()
+  "Something hung a minute past `e2e-deadline': report what ran, and exit 1."
+  (e2e--say "\nStopped: past the deadline (HELLMACS_E2E_DEADLINE), a check hung.")
+  (e2e--say "%s" (e2e--summary))
+  (kill-emacs 1))
+
+;; Timers run while a check waits for output, which is where one hangs.
+(when e2e-deadline
+  (run-at-time (max 0 (+ 60 (e2e--time-left))) nil #'e2e--backstop))
+
+;; At exit, lsp-mode asks each server to shut down and waits for its
+;; answer: a dead or stuck one kept Emacs from exiting for a long while.
+(defvar lsp-response-timeout)
+(add-hook 'kill-emacs-hook (lambda () (setq lsp-response-timeout 3)) -95)
 
 (defun e2e--position-after (regexp)
   "Move point just after the first REGEXP in the buffer."
@@ -87,8 +183,6 @@ where stdout is the screen, sets it to `external-debugging-output'.")
                  (e2e--wait (lambda () finished) 300)
                  finished)
         (remove-hook 'compilation-finish-functions hook)))))
-
-(defvar e2e--skipped 0)
 
 (defmacro e2e-skip (desc why)
   "Report DESC as skipped for WHY."

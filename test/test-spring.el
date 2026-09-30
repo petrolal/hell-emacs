@@ -74,6 +74,39 @@
         ("src/main/resources/logback-dev.xml" . ""))
     (should (equal (hellmacs-spring-discover-profiles root) '("dev" "local")))))
 
+(defvar hellmacs-spring--profile-cache)
+
+(ert-deftest test-spring/profile-discovery-is-remembered ()
+  "The run list asks for the profiles each time; the project is walked again
+only when a directory in it changed (a file added, removed or renamed
+changes its directory's time), so a new profile is never missed."
+  (test-spring--with-tree
+      '(("src/main/resources/application-dev.yml" . "")
+        ("api/src/main/resources/config/application-local.yaml" . ""))
+    (let ((hellmacs-spring--profile-cache (make-hash-table :test #'equal))
+          (touch (lambda (dir)
+                   ;; A second later, whatever the file system's time resolution.
+                   (set-file-times (expand-file-name dir root) (time-add nil 1)))))
+      (should (equal (hellmacs-spring-discover-profiles root) '("dev" "local")))
+      ;; Nothing changed: no directory is listed.
+      (cl-letf (((symbol-function 'directory-files) (lambda (&rest _) (error "Listed a directory")))
+                ((symbol-function 'directory-files-recursively) (lambda (&rest _) (error "Walked the project")))
+                ((symbol-function 'file-name-all-completions) (lambda (&rest _) (error "Listed a directory"))))
+        (should (equal (hellmacs-spring-discover-profiles root) '("dev" "local"))))
+      ;; A profile added next to another.
+      (with-temp-file (expand-file-name "src/main/resources/application-qa.yml" root))
+      (funcall touch "src/main/resources")
+      (should (equal (hellmacs-spring-discover-profiles root) '("dev" "local" "qa")))
+      ;; In a new module.
+      (make-directory (expand-file-name "web/src/main/resources" root) t)
+      (with-temp-file (expand-file-name "web/src/main/resources/application-cloud.properties" root))
+      (funcall touch ".")
+      (should (equal (hellmacs-spring-discover-profiles root) '("cloud" "dev" "local" "qa")))
+      ;; Removed.
+      (delete-file (expand-file-name "src/main/resources/application-dev.yml" root))
+      (set-file-times (expand-file-name "src/main/resources" root) (time-add nil 2))
+      (should (equal (hellmacs-spring-discover-profiles root) '("cloud" "local" "qa"))))))
+
 (ert-deftest test-spring/properties-yaml-completion-hooks ()
   "Verifies association of Spring application properties/yaml files with spring ls."
   (let ((spring-files '("application.properties" "application-dev.yml" "bootstrap.yaml")))

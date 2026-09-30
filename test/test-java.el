@@ -380,7 +380,7 @@ rather than an error in the middle of loading lsp-java."
           ;; An older install, lsp-java's say, with a file of its own.
           (make-directory hellmacs-jvm-jdtls-dir t)
           (with-temp-file (expand-file-name "old.txt" hellmacs-jvm-jdtls-dir) (insert "old"))
-          (cl-letf (((symbol-function 'url-copy-file) (lambda (_url file &rest _) (copy-file tarball file t))))
+          (cl-letf (((symbol-function 'hellmacs-net-download) (lambda (_url file &rest _) (copy-file tarball file t))))
             (let ((hellmacs-jvm-jdtls-sha256 (make-string 64 ?0)))
               (should-error (hellmacs-jvm--install-jdtls))
               ;; Refused: the old install is untouched.
@@ -417,7 +417,7 @@ complete with its marker, and leaves it."
           (with-temp-file (expand-file-name "plugins/org.eclipse.equinox.launcher_1.0.jar" src) (insert "jar"))
           (should (zerop (call-process "tar" nil nil nil "-czf" tarball "-C" src ".")))
           (let ((hellmacs-jvm-jdtls-sha256 (hellmacs-file-sha256 tarball)))
-            (cl-letf (((symbol-function 'url-copy-file) (lambda (_url file &rest _) (copy-file tarball file t)))
+            (cl-letf (((symbol-function 'hellmacs-net-download) (lambda (_url file &rest _) (copy-file tarball file t)))
                       ;; The other install gets its copy in place first.
                       ((symbol-function 'rename-file)
                        (lambda (from to &rest args)
@@ -484,7 +484,7 @@ complete with its marker, and leaves it."
     (hellmacs--enable-modules '(:lang (java +lombok)))
     (hellmacs-module--load '(:lang . java) "cli.el"))
   (test-java--with-temp-lombok
-    (cl-letf (((symbol-function 'url-copy-file)
+    (cl-letf (((symbol-function 'hellmacs-net-download)
                (lambda (_url file &rest _) (with-temp-file file (insert "jar bytes"))))
               ((symbol-function 'hellmacs-sync--log) #'ignore))
       ;; A pin that doesn't match: nothing is installed, no leftovers.
@@ -497,7 +497,7 @@ complete with its marker, and leaves it."
         (hellmacs-jvm-sync-install-lombok)
         (should (file-exists-p jar))
         (should (hellmacs-jvm-lombok-jar-valid-p))
-        (cl-letf (((symbol-function 'url-copy-file) (lambda (&rest _) (error "Shouldn't download"))))
+        (cl-letf (((symbol-function 'hellmacs-net-download) (lambda (&rest _) (error "Shouldn't download"))))
           (hellmacs-jvm-sync-install-lombok))))))
 
 (defvar lsp-java-configuration-runtimes)
@@ -794,7 +794,7 @@ matches its pin, and keeps only what's used."
          (hellmacs-jvm-spring-dir (expand-file-name "lsp/spring-boot/" root))
          (hellmacs-jvm-spring-url "https://example.invalid/boot.vsix"))
     (unwind-protect
-        (cl-letf (((symbol-function 'url-copy-file) (lambda (_url file &rest _) (copy-file vsix file t)))
+        (cl-letf (((symbol-function 'hellmacs-net-download) (lambda (_url file &rest _) (copy-file vsix file t)))
                   ((symbol-function 'hellmacs-sync--log) #'ignore))
           (let ((hellmacs-jvm-spring-sha256 (make-string 64 ?0)))
             (should-error (hellmacs-jvm-sync-install-spring))

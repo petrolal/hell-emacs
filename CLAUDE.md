@@ -27,6 +27,7 @@ emacs --init-directory .          # run this checkout interactively
   HELLMACS_E2E_FIXTURE=maven-demo emacs --batch -l early-init.el -l init.el -l test/integration/java-e2e.el
   ```
   Fixture projects live in `test/fixtures/`.
+- In those scripts, give checks that depend on another (a running server, a first good build) `:needs NAME` in `e2e-check`, so they're reported `SKIP (needs …)` at once instead of each waiting out its time; end with `(e2e-finish)`. `HELLMACS_E2E_DEADLINE` (seconds; 30 minutes by default) caps a whole run. They take minutes: run them in the background, never as a blocking step.
 
 The project rules (`docs/development/vision-and-rules.md`) require running `bin/hellmacs test` and `bin/hellmacs doctor` after any change to the core engine or to modules.
 

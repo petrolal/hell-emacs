@@ -535,5 +535,41 @@ mirrors (`hellmacs-net-environment')."
     (error "Offline install: Hellmacs can't fetch %s; the bundle doesn't carry it" url)))
 (advice-add 'url-retrieve-internal :before #'hellmacs-net--offline-a)
 
+;;; Downloading a file ---------------------------------------------------------
+
+(defvar hellmacs-net-curl 'auto
+  "The curl `hellmacs-net-download' streams downloads with.
+`auto' finds it on the PATH; nil always uses url.el, which holds the
+whole download in memory first.")
+
+(defun hellmacs-net--curl ()
+  (if (eq hellmacs-net-curl 'auto) (executable-find "curl") hellmacs-net-curl))
+
+(defun hellmacs-net-download (url file)
+  "Download URL to FILE, as Hellmacs' fetches go: its mirror, the proxy, the CAs.
+Through curl when there is one, which streams it to disk (JDTLS and the
+Spring server run to tens of megabytes); else url.el's `url-copy-file'.
+An HTTP error status is an error. Refused while `hellmacs-net-offline'."
+  (when hellmacs-net-offline
+    (error "Offline install: Hellmacs can't fetch %s; the bundle doesn't carry it" url))
+  (with-hellmacs-network
+    (if-let* ((curl (hellmacs-net--curl)))
+        (let* ((target (hellmacs-net-rewrite url))
+               (proxy (hellmacs-net-proxy))
+               (no-proxy (and proxy (hellmacs-net-no-proxy)))
+               (ca (hellmacs-net-ca-file)))
+          (with-temp-buffer
+            (unless (zerop (apply #'call-process curl nil t nil
+                                  `("--fail" "--location" "--silent" "--show-error"
+                                    "--retry" "2" "--connect-timeout" "30"
+                                    ,@(and proxy (list "--proxy" proxy))
+                                    ,@(and no-proxy (list "--noproxy" (string-join no-proxy ",")))
+                                    ,@(and ca (list "--cacert" ca))
+                                    "--output" ,(expand-file-name file)
+                                    ,target)))
+              (error "Downloading %s failed: %s" target (string-trim (buffer-string))))))
+      ;; url.el goes to the mirror by itself here (`hellmacs-net--mirror-a').
+      (url-copy-file url file t))))
+
 (provide 'hellmacs-net)
 ;;; hellmacs-net.el ends here

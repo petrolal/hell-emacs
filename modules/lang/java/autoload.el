@@ -119,16 +119,67 @@ it has already are kept. Returns HANDLERS."
   "Directories never searched for profiles: build output, VCS, IDE state, and
 test sources (src/test/resources isn't on the application's classpath).")
 
+;; The run list asks for the profiles every time it opens: remembered per
+;; project, with the time of each directory walked. Adding, removing or
+;; renaming a file changes its directory's time, so while none changed
+;; the answer holds, and checking takes a `stat' per directory, not a walk.
+
+(defvar hellmacs-spring--profile-cache (make-hash-table :test #'equal)
+  "Project root -> (DIR-TIMES . PROFILES): its profiles, and the times of the
+directories they were looked for in.")
+
+(defvar hellmacs-spring--profile-roots nil
+  "The roots in `hellmacs-spring--profile-cache', most recently used first.")
+
+(defvar hellmacs-spring-profile-cache-limit 16
+  "How many projects' profiles are remembered.")
+
+(defconst hellmacs-spring--profile-file-regexp "\\`application-.+\\.\\(?:ya?ml\\|properties\\)\\'"
+  "A profile's config file: application-NAME.yml, .yaml or .properties.")
+
+(defun hellmacs-spring--dir-time (dir)
+  (file-attribute-modification-time (file-attributes dir)))
+
+(defun hellmacs-spring--walk-profiles (root)
+  "(DIR-TIMES . PROFILE-FILES) under ROOT, skipping `hellmacs-spring--skipped-dirs'.
+Links to directories aren't followed."
+  (let (times files)
+    (cl-labels ((walk (dir)
+                  (push (cons dir (hellmacs-spring--dir-time dir)) times)
+                  (dolist (entry (directory-files dir nil directory-files-no-dot-files-regexp t))
+                    (let ((path (expand-file-name entry dir)))
+                      (cond ((file-symlink-p path))
+                            ((file-directory-p path)
+                             (unless (member entry hellmacs-spring--skipped-dirs)
+                               (walk path)))
+                            ((string-match-p hellmacs-spring--profile-file-regexp entry)
+                             (push entry files)))))))
+      (walk (directory-file-name (expand-file-name root))))
+    (cons times files)))
+
 ;;;###autoload
 (defun hellmacs-spring-discover-profiles (root)
   "The Spring profiles the project at ROOT has a config for, sorted.
 From its application-NAME.yml/.yaml/.properties, in any module; `default'
-is left out: it's active when no other profile is."
-  (sort (delete "default"
-                (delete-dups
-                 (mapcar (lambda (file) (substring (file-name-base file) (length "application-")))
-                         (directory-files-recursively
-                          (expand-file-name root) "\\`application-.+\\.\\(?:ya?ml\\|properties\\)\\'" nil
-                          (lambda (dir)
-                            (not (member (file-name-nondirectory dir) hellmacs-spring--skipped-dirs)))))))
-        #'string<))
+is left out: it's active when no other profile is. Remembered until a
+directory in the project changes (`hellmacs-spring--profile-cache')."
+  (let* ((root (directory-file-name (expand-file-name root)))
+         (cached (gethash root hellmacs-spring--profile-cache)))
+    (setq hellmacs-spring--profile-roots (cons root (delete root hellmacs-spring--profile-roots)))
+    (dolist (gone (nthcdr hellmacs-spring-profile-cache-limit hellmacs-spring--profile-roots))
+      (remhash gone hellmacs-spring--profile-cache))
+    (setq hellmacs-spring--profile-roots
+          (seq-take hellmacs-spring--profile-roots hellmacs-spring-profile-cache-limit))
+    (if (and cached
+             (seq-every-p (pcase-lambda (`(,dir . ,time)) (equal (hellmacs-spring--dir-time dir) time))
+                          (car cached)))
+        (copy-sequence (cdr cached))
+      (pcase-let* ((`(,times . ,files) (hellmacs-spring--walk-profiles root))
+                   (profiles (sort (delete "default"
+                                           (delete-dups
+                                            (mapcar (lambda (file)
+                                                      (substring (file-name-base file) (length "application-")))
+                                                    files)))
+                                   #'string<)))
+        (puthash root (cons times profiles) hellmacs-spring--profile-cache)
+        (copy-sequence profiles)))))
