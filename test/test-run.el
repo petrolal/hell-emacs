@@ -195,6 +195,19 @@
       (should (equal (plist-get (car configs) :source) ".hellmacs/run.eld"))
       (should (equal (plist-get (nth 2 configs) :source) "tools/Tool.launch")))))
 
+(ert-deftest test-run/read-asks-once ()
+  "Choosing a configuration prompts once, whichever one is chosen.
+The prompt used to run inside the lookup, once per configuration until
+one matched."
+  (test-run--with-tree
+      '((".hellmacs/run.eld" . "((:name \"A\" :main \"a.A\") (:name \"B\" :main \"b.B\") (:name \"C\" :main \"c.C\"))\n"))
+    (let ((prompts 0))
+      (cl-letf (((symbol-function 'completing-read)
+                 (lambda (&rest _) (cl-incf prompts) "C")))
+        (let ((config (hellmacs-run--read "Run: ")))
+          (should (equal (plist-get config :name) "C"))
+          (should (= prompts 1)))))))
+
 (ert-deftest test-run/spring-profiles ()
   "The run list offers each configuration that starts the application once
 more per Spring profile; builds, and configurations that already choose

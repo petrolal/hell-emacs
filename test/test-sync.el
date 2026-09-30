@@ -54,6 +54,28 @@
   (should (string-prefix-p hellmacs-data-dir hellmacs-profile-dir))
   (should (string-prefix-p hellmacs-profile-dir hellmacs-compiled-dir)))
 
+(ert-deftest test-sync/failed-profile-write-leaves-no-profile ()
+  "A sync that fails while writing the profile leaves none behind.
+Otherwise the last sync's profile.eld, still current by its inputs, would
+be started from with this sync's autoloads and no compiled files."
+  (let* ((hellmacs-profile-dir (file-name-as-directory (make-temp-file "hellmacs-test-profile" t)))
+         (profile (expand-file-name "profile.eld" hellmacs-profile-dir)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'hellmacs-sync--packages) #'ignore)
+                  ((symbol-function 'hellmacs-sync--module-autoloads) #'ignore)
+                  ((symbol-function 'hellmacs-sync--write-autoloads) #'ignore)
+                  ((symbol-function 'hellmacs-sync--log) #'ignore))
+          (with-temp-file profile (insert "(:emacs-version \"old\")\n"))
+          (cl-letf (((symbol-function 'hellmacs-sync--compile)
+                     (lambda () (error "Compiling failed"))))
+            (should-error (hellmacs-sync--write-profile)))
+          (should-not (file-exists-p profile))
+          ;; A sync that gets through writes it.
+          (cl-letf (((symbol-function 'hellmacs-sync--compile) #'ignore))
+            (hellmacs-sync--write-profile))
+          (should (plist-get (hellmacs-profile-read) :emacs-version)))
+      (delete-directory hellmacs-profile-dir t))))
+
 ;;; npm packages, pinned by their lockfile --------------------------------------
 
 (defmacro test-sync--with-npm (&rest body)

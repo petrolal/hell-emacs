@@ -56,6 +56,36 @@ SPEC is a list of (\"group/name/file.el\" . CONTENTS)."
     (should (modulep! :completion vertico -tab))
     (should-not (modulep! :lang java))))
 
+(defvar test-modules--loaded nil)
+
+(ert-deftest test-modules/compiled-file-needs-its-source ()
+  "A module file compiled by sync loads while it's newer than its source,
+and not at all once the source is deleted."
+  (test-modules--with-module-dir
+      '(("tools/probe/config.el" . "(setq test-modules--loaded 'source)\n"))
+    (let ((hellmacs-compiled-dir (file-name-as-directory (make-temp-file "hellmacs-test-compiled" t)))
+          (hellmacs--use-compiled t)
+          (test-modules--loaded nil))
+      (unwind-protect
+          (let ((src (expand-file-name "tools/probe/config.el" root))
+                (elc (hellmacs-module-compiled-file '(:tools . probe) "config.el")))
+            (hellmacs-module-enable :tools 'probe)
+            (make-directory (file-name-directory elc) t)
+            (let ((other (expand-file-name "compiled-probe.el" hellmacs-compiled-dir))
+                  (byte-compile-dest-file-function (lambda (_) elc))
+                  (inhibit-message t))
+              (with-temp-file other
+                (insert ";;; -*- lexical-binding: t -*-\n(setq test-modules--loaded 'compiled)\n"))
+              (byte-compile-file other))
+            (set-file-times src (time-subtract nil 60))
+            (hellmacs-module--load '(:tools . probe) "config.el")
+            (should (eq test-modules--loaded 'compiled))
+            (setq test-modules--loaded nil)
+            (delete-file src)
+            (hellmacs-module--load '(:tools . probe) "config.el")
+            (should-not test-modules--loaded))
+        (delete-directory hellmacs-compiled-dir t)))))
+
 (ert-deftest test-modules/unknown-module-is-skipped ()
   (let ((hellmacs-modules (make-hash-table :test #'equal))
         (warning-minimum-log-level :emergency))

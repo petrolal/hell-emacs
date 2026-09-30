@@ -52,6 +52,21 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
 
 ;;; lsp-mode ------------------------------------------------------------------
 
+;; A Maven or Gradle build's output isn't watched: on Spring Framework,
+;; Gradle's build/ and JDTLS's own bin/ took the watched directories
+;; from 2726 to 6119 after one import and build, past
+;; `lsp-file-watch-threshold', and the next session stopped to ask
+;; (docs/roadmap.md, 12.7 Tuning). lsp-mode asks for the list from a
+;; buffer whose file is under the workspace's root; only a JVM build's
+;; root gets it, since elsewhere bin/ holds scripts.
+(defun hellmacs-lsp--ignore-build-output-a (dirs)
+  "DIRS, and this workspace's build output (`hellmacs-build-output-regexp')."
+  (let ((root (and buffer-file-name (file-name-directory buffer-file-name))))
+    (if (and root (seq-some (lambda (file) (file-exists-p (expand-file-name file root)))
+                            hellmacs-build-files))
+        (cons (hellmacs-build-output-regexp (file-truename root)) dirs)
+      dirs)))
+
 (defun hellmacs-lsp-mode-used-p ()
   "Non-nil if lsp-mode is in use: declared (packages.el) and not disabled."
   (and (assq 'lsp-mode hellmacs-packages)
@@ -109,6 +124,8 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
 (when (hellmacs-lsp-mode-used-p)
   (when (fboundp 'cape-wrap-buster)
     (advice-add 'lsp-completion-at-point :around #'cape-wrap-buster))
+  (advice-add 'lsp-file-watch-ignored-directories :filter-return
+              #'hellmacs-lsp--ignore-build-output-a)
 
   ;; lsp-mode only uses plists if it was *compiled* with LSP_USE_PLISTS
   ;; set; if the variable says plists but the compiled code expects hash

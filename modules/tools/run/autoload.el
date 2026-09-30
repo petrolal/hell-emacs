@@ -509,8 +509,8 @@ dap's own)."
             ,(lambda (name)
                (let ((c (seq-find (lambda (c) (equal (plist-get c :name) name)) configs)))
                  (format "  %s  (%s)" (or (plist-get c :main) (plist-get c :task)) (plist-get c :source)))))))
-    (seq-find (lambda (c) (equal (plist-get c :name) (completing-read prompt names nil t)))
-              configs)))
+    (let ((name (completing-read prompt names nil t)))
+      (seq-find (lambda (c) (equal (plist-get c :name) name)) configs))))
 
 ;;;###autoload
 (defun hellmacs-run (config)

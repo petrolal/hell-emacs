@@ -220,6 +220,15 @@ With FULL, the file is its whole resolved path."
                        '((2 "Added.java" 1))))
         (should (= walks 2))))))
 
+(ert-deftest test-build/source-index-skips-build-output-only ()
+  "Build output isn't walked; a package named build, under src/, is."
+  (test-build--with-tree '("pom.xml" "src/main/java/dev/build/Tool.java"
+                           "build/generated/Gen.java" "core/bin/main/Copy.java" "core/out/Out.java")
+    (let ((index (hellmacs-forge--build-index root)))
+      (should (gethash "Tool.java" index))
+      (dolist (name '("Gen.java" "Copy.java" "Out.java"))
+        (should-not (gethash name index))))))
+
 ;; Kept for the last few build roots only: an index holds every source
 ;; file's path, and a session visits many projects.
 (ert-deftest test-build/source-indexes-kept-for-recent-roots-only ()

@@ -76,6 +76,36 @@
       (should (eq (hellmacs-lsp-mode-used-p) (not disabled)))
       (should (equal lsp-keymap-prefix (if disabled "s-l" "C-c l"))))))
 
+(ert-deftest test-lsp/build-output-not-watched ()
+  "A Maven or Gradle workspace's build output isn't watched; other workspaces' is.
+On Spring Framework Gradle's build/ and JDTLS's bin/ took the watched
+directories from 2726 to 6119 after one import and build, past
+`lsp-file-watch-threshold', so the next session stopped to ask
+(docs/roadmap.md, 12.7 Tuning). lsp-mode asks for the list from a
+buffer whose file is under the workspace's root."
+  (let ((hellmacs-modules (make-hash-table :test #'equal))
+        (warning-minimum-log-level :emergency))
+    (hellmacs--enable-modules '(:tools lsp))
+    (hellmacs-module--load '(:tools . lsp) "config.el"))
+  (let ((root (file-name-as-directory (file-truename (make-temp-file "hellmacs-test-lsp" t)))))
+    (unwind-protect
+        (let ((ignored (lambda ()
+                         (with-temp-buffer
+                           (setq buffer-file-name (expand-file-name "lsp-mode-temp" root))
+                           (hellmacs-lsp--ignore-build-output-a '("[/\\\\]\\.git\\'"))))))
+          ;; Not a JVM build: bin/ holds scripts.
+          (should (equal (funcall ignored) '("[/\\\\]\\.git\\'")))
+          (with-temp-file (expand-file-name "settings.gradle.kts" root))
+          (let ((dirs (funcall ignored)))
+            (should (= (length dirs) 2))
+            (should (seq-some (lambda (re) (string-match-p re (concat root "core/bin"))) dirs))
+            (should-not (seq-some (lambda (re) (string-match-p re (concat root "core/src/main/java/build")))
+                                  dirs))))
+      (delete-directory root t)))
+  ;; No file: left alone.
+  (with-temp-buffer
+    (should (equal (hellmacs-lsp--ignore-build-output-a '("x")) '("x")))))
+
 (defvar flymake-mode-map)
 
 (ert-deftest test-lsp/diagnostic-keys-wherever-flymake-runs ()

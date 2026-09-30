@@ -255,8 +255,8 @@ Returns INDEX."
 (defvar-local hellmacs-forge--project-packages nil
   "This compilation's answers to \"has the project sources in package P?\".")
 
-(defconst hellmacs-forge--ignored-dirs '("build" "target" "out" ".git" ".gradle" "node_modules")
-  "Directories never searched for source files.")
+(defconst hellmacs-forge--ignored-dirs '(".git" "node_modules")
+  "Directories never searched for source files, besides build output.")
 
 (defconst hellmacs-forge-source-extensions '("java" "kt" "kts" "groovy" "scala")
   "Extensions of the JVM source files builds, stack traces and test failures name.")
@@ -277,11 +277,13 @@ outside both, so a `compile' run in ~ never has all of ~ searched."
 
 (defun hellmacs-forge--build-index (root)
   "Walk ROOT for source files; return base name -> paths."
-  (let ((index (make-hash-table :test #'equal)))
+  (let ((index (make-hash-table :test #'equal))
+        (output (hellmacs-build-output-regexp root)))
     (dolist (path (directory-files-recursively
                    root hellmacs-forge--source-regexp nil
-                   (lambda (dir) (not (member (file-name-nondirectory dir)
-                                              hellmacs-forge--ignored-dirs)))))
+                   (lambda (dir) (not (or (member (file-name-nondirectory dir)
+                                                  hellmacs-forge--ignored-dirs)
+                                          (string-match-p output dir))))))
       (push path (gethash (file-name-nondirectory path) index)))
     index))
 

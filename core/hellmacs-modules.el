@@ -375,7 +375,9 @@ startup: one broken module should degrade Hellmacs, not brick it."
          (compiled (and hellmacs--use-compiled
                         (member file hellmacs-module--compiled-files)
                         (hellmacs-module-compiled-file key file))))
-    (when (and compiled (file-newer-than-file-p compiled path))
+    ;; Only while the source exists: a deleted file stays deleted, though
+    ;; the last sync compiled it.
+    (when (and compiled (file-exists-p path) (file-newer-than-file-p compiled path))
       (setq path compiled))
     (when (file-exists-p path)
       (let ((hellmacs--current-module key))

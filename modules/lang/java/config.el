@@ -164,6 +164,14 @@ refusing annotation processing is worked around: imported again without it."
              (setq hellmacs-jvm--reimported (delete root hellmacs-jvm--reimported))
              (hellmacs-lsp-status-fail 'jdtls root (hellmacs-jvm--import-failure-reason message)))))))
 
+(defun hellmacs-jvm--forget-reimport-h (server root)
+  "SERVER is ready for ROOT: an import of ROOT being tried again is over.
+For `hellmacs-lsp-status-ready-functions'."
+  (when (eq server 'jdtls)
+    (setq hellmacs-jvm--reimported (delete root hellmacs-jvm--reimported))))
+
+(add-hook 'hellmacs-lsp-status-ready-functions #'hellmacs-jvm--forget-reimport-h)
+
 (defun hellmacs-jvm-import-settled-p (root)
   "Non-nil once ROOT's import has an outcome: ready, or failed for good.
 Not while a failed import is being tried again."
@@ -210,27 +218,6 @@ proxy and CA come last (`hellmacs-net-jvm-options')."
               (display-warning
                'hellmacs "+lombok: the Lombok jar isn't installed; run `bin/hellmacs sync'")
               nil))))
-
-;; Build output isn't watched: on Spring Framework, Gradle's build/ and
-;; JDTLS's own bin/ took the watched directories from 2726 to 6119 after
-;; one import and build, past `lsp-file-watch-threshold', and the next
-;; session stopped to ask (docs/roadmap.md, 12.7 Tuning). Maven's target/
-;; is in lsp-mode's own list.
-(defconst hellmacs-jvm-build-output-regexp
-  ;; Any directories but src (a package named build is source), from
-  ;; the first, which may be a drive letter.
-  (rx bos (* (or "" (seq (not (any "s/")) (* (not "/")))
-                 "s" (seq "s" (not (any "r/")) (* (not "/")))
-                 "sr" (seq "sr" (not (any "c/")) (* (not "/")))
-                 (seq "src" (+ (not "/"))))
-             "/")
-      (or "build" "bin") eos)
-  "Matches Gradle's build/ and JDTLS's bin/ output directories, outside src/.")
-
-(defvar lsp-file-watch-ignored-directories)
-
-(after! lsp-mode
-  (add-to-list 'lsp-file-watch-ignored-directories hellmacs-jvm-build-output-regexp))
 
 ;; A missing JDTLS is installed with sync's pinned installer: lsp-java's
 ;; runs Maven on an unpinned pom.xml (docs/roadmap.md, 12.1).

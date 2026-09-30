@@ -305,6 +305,27 @@ nil on an operating system no pinned download is made for."
   (and (file-exists-p file)
        (equal (hellmacs-file-sha256 file) sha256)))
 
+;;; Build output -----------------------------------------------------------
+
+(defconst hellmacs-build-files
+  '("pom.xml" "build.gradle" "build.gradle.kts" "settings.gradle" "settings.gradle.kts")
+  "Files at the root of a Maven or Gradle build.")
+
+(defconst hellmacs-build-output-dirs '("build" "bin" "out" "target" ".gradle")
+  "Directories Gradle, Maven, IntelliJ (out/) and JDTLS (bin/) write output to.")
+
+(defun hellmacs-build-output-regexp (root)
+  "Matches a directory of `hellmacs-build-output-dirs' in any module under ROOT.
+But not one under a src/ directory: a package named build is source.
+Only the part after ROOT counts, so a project kept under ~/src is too."
+  (rx bos (literal (directory-file-name root))
+      ;; Any directories but src.
+      (* "/" (or (seq (not (any "s/")) (* (not "/")))
+                 "s" (seq "s" (not (any "r/")) (* (not "/")))
+                 "sr" (seq "sr" (not (any "c/")) (* (not "/")))
+                 (seq "src" (+ (not "/")))))
+      "/" (regexp (regexp-opt hellmacs-build-output-dirs)) eos))
+
 ;;; Components -------------------------------------------------------------
 
 (defvar hellmacs-components nil

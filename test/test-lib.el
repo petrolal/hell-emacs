@@ -154,5 +154,19 @@
   (let ((system-type 'berkeley-unix) (system-configuration "x86_64-unknown-freebsd14"))
     (should-not (hellmacs-platform))))
 
+(ert-deftest test-lib/build-output-regexp ()
+  "Build output anywhere in a build under ROOT, but not a package named so under src/.
+ROOT is matched as given, so a project kept under ~/src is no exception."
+  (let ((re (hellmacs-build-output-regexp "/home/u/src/app/")))
+    (dolist (dir '("build" "core/build" "core/bin" "core/out" "target" ".gradle"
+                   "srcx/build" "buildSrc/build"))
+      (should (string-match-p re (concat "/home/u/src/app/" dir))))
+    (dolist (dir '("buildSrc" "core/binaries" "core/src/main/java/org/acme/build"
+                   "core/src/test/resources/bin" "build/tmp"))
+      (should-not (string-match-p re (concat "/home/u/src/app/" dir))))
+    ;; Only under ROOT.
+    (should-not (string-match-p re "/home/u/src/other/build")))
+  (should (string-match-p (hellmacs-build-output-regexp "c:/work/app") "c:/work/app/build")))
+
 (provide 'test-lib)
 ;;; test-lib.el ends here

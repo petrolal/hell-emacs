@@ -174,6 +174,31 @@ The import isn't settled until that second import reports."
           (should (hellmacs-jvm-import-settled-p root)))
       (delete-directory root t))))
 
+(ert-deftest test-java/recovered-reimport-is-forgotten ()
+  "Once the import without annotation processing succeeds, the project is no
+longer being imported again: a later failure (a new session, the same
+Gradle 9 refusal) is announced and settles, instead of being taken for
+the retry's repeat forever."
+  (test-java--load)
+  (let* ((root (make-temp-file "hellmacs-test-java" t))
+         (hellmacs-lsp-status--sessions (make-hash-table :test #'equal))
+         (hellmacs-jvm--reimported (list root))
+         (lsp-java-import-gradle-annotation-processing-enabled nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'message) #'ignore))
+          (hellmacs-lsp-status-ignite 'jdtls root)
+          (hellmacs-lsp-status-fail 'jdtls root "first attempt")
+          (hellmacs-jvm--note-notification root "language/status" '(:type "ProjectStatus" :message "OK"))
+          (should (eq (hellmacs-jvm-state root) 'ready))
+          (should-not (member root hellmacs-jvm--reimported))
+          ;; The server restarts, and the same refusal comes back.
+          (hellmacs-lsp-status-banish 'jdtls root)
+          (hellmacs-lsp-status-ignite 'jdtls root)
+          (hellmacs-jvm--note-log root test-java--gradle9-apt-log)
+          (should (eq (hellmacs-jvm-state root) 'failed))
+          (should (hellmacs-jvm-import-settled-p root)))
+      (delete-directory root t))))
+
 (ert-deftest test-java/reimport-that-fails-again-is-settled ()
   "If the import without annotation processing fails too, that's the verdict."
   (test-java--load)
@@ -303,19 +328,6 @@ turn them back on."
     (let ((setting (assq 'use-package (get var 'theme-value))))
       (should setting)
       (should-not (eval (cadr setting) t)))))
-
-(ert-deftest test-java/build-output-not-watched ()
-  "Gradle's build/ and JDTLS's bin/ output aren't watched; sources are.
-On Spring Framework they took the watched directories from 2726 to 6119
-after one import and build, past `lsp-file-watch-threshold', so the next
-session stopped to ask (docs/roadmap.md, 12.7 Tuning). A package named
-build or bin, under src/, is source and still watched."
-  (test-java--load)
-  (dolist (dir '("/p/build" "/p/core/build" "/p/core/bin" "/p/srcx/build" "c:/work/app/build"))
-    (should (string-match-p hellmacs-jvm-build-output-regexp dir)))
-  (dolist (dir '("/p/buildSrc" "/p/core/binaries" "/p/core/src/main/java/org/acme/build"
-                 "/p/core/src/test/resources/bin" "c:/work/app/src/build"))
-    (should-not (string-match-p hellmacs-jvm-build-output-regexp dir))))
 
 (defvar lsp-clients)
 
