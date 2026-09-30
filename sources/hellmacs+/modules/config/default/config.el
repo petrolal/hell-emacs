@@ -27,6 +27,16 @@
 ;; (windows), all built-in commands. Feature modules fill their own
 ;; groups, e.g. `:completion vertico' owns `C-c f', `C-c b' and `C-c s',
 ;; and `C-c l' is the localleader (`hellmacs-localleader-def').
+;;
+;; Stock keys get better built-in commands in place: `C-x C-b' is
+;; ibuffer, `M-/' hippie-expand (dabbrev first, as before, then file
+;; names, abbrevs and Lisp symbols).
+;;
+;; Flags:
+;;   +repeat  Emacs' own `repeat-mode': after `C-x o', `C-x {', `M-g n',
+;;            `C-x u' and the like, the last key alone repeats them
+;;            (`C-x o o o'). Off by default: right after `C-x o', a plain
+;;            `o' then switches windows instead of typing an `o'.
 
 ;; Emacs' own prefix keys that come without a name, so which-key would
 ;; show them as "+prefix". Names only; the keys are Emacs'. Some exist
@@ -97,10 +107,34 @@
   :init
   (setq which-key-idle-delay 0.4
         which-key-sort-order 'which-key-key-order-alpha
-        which-key-add-column-padding 1)
+        which-key-add-column-padding 1
+        ;; `C-h' after a prefix stays Emacs' `describe-prefix-bindings';
+        ;; which-key's pages are on `which-key-paging-key' (<f5>).
+        which-key-use-C-h-commands nil)
   :config
   (which-key-mode 1)
   (hellmacs-default--name-stock-prefixes))
+
+;;; Stock keys, better built-in commands -----------------------------------------
+
+(keymap-global-set "<remap> <list-buffers>" #'ibuffer)
+(keymap-global-set "<remap> <dabbrev-expand>" #'hippie-expand)
+
+;; What stock `M-/' does comes first, so it still expands as it did;
+;; the rest only when dabbrev runs out. No whole-line or list
+;; expansions: those replace far more than the word at point.
+(setq hippie-expand-try-functions-list
+      '(try-expand-dabbrev
+        try-expand-dabbrev-all-buffers
+        try-expand-dabbrev-from-kill
+        try-complete-file-name-partially
+        try-complete-file-name
+        try-expand-all-abbrevs
+        try-complete-lisp-symbol-partially
+        try-complete-lisp-symbol))
+
+(when (modulep! +repeat)
+  (add-hook 'hellmacs-first-input-hook #'repeat-mode))
 
 ;;; C-c h -- the infernal meta map ---------------------------------------------
 ;;
@@ -174,7 +208,8 @@
 ;;
 ;; Built-in commands only. The defaults (`C-x 2', `C-x 3', `C-x 0',
 ;; `C-x 1', `C-x o') still work; this group gathers them in one place
-;; and adds directional movement and window-layout undo.
+;; and adds directional movement and window-layout undo (winner-mode's
+;; own `C-c <left>' / `C-c <right>' work too).
 
 (add-hook 'hellmacs-first-input-hook #'winner-mode)
 

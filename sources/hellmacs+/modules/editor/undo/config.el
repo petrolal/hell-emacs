@@ -21,7 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Undo is Emacs' own: `C-/' undoes, `C-?' (`undo-redo') redoes, and
+;; Undo is Emacs' own: `C-/' undoes, `C-?' (`undo-redo') redoes (`C-M-_'
+;; in a terminal, which can't send `C-?'), and
 ;; `undo' in an active region undoes only within it.
 ;; `undo-fu-session' adds what Emacs lacks: undo history that survives
 ;; closing a file or restarting Emacs.

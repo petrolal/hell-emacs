@@ -4,10 +4,13 @@ Hellmacs keeps **every stock GNU Emacs key** with its usual meaning, and
 adds nothing modal: no Evil, no `SPC` leader. Its own commands live under
 `C-c`, the prefix Emacs reserves for users, and packages improve the
 default commands in place (`C-x b` switches buffers with previews). `C-h`
-is untouched, and which-key shows what follows any prefix.
+is untouched, after a prefix too (`C-c C-h` lists its keys), and
+which-key shows what follows any prefix (`<f5>` pages through it).
 
 `TAB` indents, as in stock Emacs; `C-M-i` completes (`(corfu +tab)` makes
-`TAB` complete too).
+`TAB` complete too). The completion popup keeps stock keys: `RET` inserts
+a candidate only once you've picked one (`M-n` / `M-p`, the arrows),
+otherwise it starts a new line; `M-g`, `M-h` and `M-t` keep their meanings.
 
 ---
 
@@ -17,6 +20,8 @@ is untouched, and which-key shows what follows any prefix.
 |---|---|---|
 | `C-x b` / `C-x 4 b` / `C-x 5 b` / `C-x t b` | `consult-buffer` (with previews), here / other window / frame / tab | `:completion vertico` |
 | `C-x p b` | `consult-project-buffer` | vertico |
+| `C-x C-b` | `ibuffer` (built in) | `:config default` |
+| `M-/` | `hippie-expand`: dabbrev as before, then file names, abbrevs, Lisp symbols | `:config default` |
 | `M-y` | `consult-yank-pop` | vertico |
 | `M-g g` / `M-g i` | `consult-goto-line` / `consult-imenu` | vertico |
 | `M-g f` / `M-g o` | Jump to a diagnostic / a heading (free `M-g` keys) | vertico |
@@ -27,6 +32,18 @@ is untouched, and which-key shows what follows any prefix.
 | `C-x p c` | Build the project with its wrapper; errors clickable with `M-g n` / `M-g p` | `:tools build` |
 | `C-x g` / `C-x M-g` / `C-c M-g` | Magit status / dispatch / file actions | `:tools magit` |
 | `C-x v [` `]` / `*` / `n` / `S` | Previous, next changed hunk / show / revert / stage it | `:ui vc-gutter` |
+| `C-/` / `C-?` (`C-M-_` in a terminal) | Undo / redo, Emacs' own; history kept across restarts | `:editor undo` |
+
+With `(default +repeat)`, Emacs' own `repeat-mode` lets the last key
+repeat a command: `C-x o o o`, `C-x { {`, `M-g n n`. It's off by default,
+because right after `C-x o` a plain `o` then switches windows.
+
+**Two deliberate departures from stock**, both in core: typing replaces
+the selected region (`delete-selection-mode`), and brackets and quotes
+are inserted in pairs (`electric-pair-mode`). Turn either off in your
+`config.el`: `(delete-selection-mode -1)`, `(electric-pair-mode -1)`.
+lsp-mode's mouse keys are left out: `mouse-3` and `C-mouse-1` stay
+Emacs' own.
 
 ---
 
@@ -103,7 +120,7 @@ buffers they belong to, unbound elsewhere.
 | `C-c w s` / `C-c w v` | Split below / right |
 | `C-c w d` / `C-c w m` / `C-c w o` / `C-c w =` | Delete / maximize / other window / balance |
 | `C-c w b` `f` `p` `n` | Move to the window left, right, up, down |
-| `C-c w u` / `C-c w r` | Undo / redo the window layout |
+| `C-c w u` / `C-c w r` | Undo / redo the window layout (also winner's own `C-c <left>` / `C-c <right>`) |
 | `C-c w t` | Hide or bring back the bottom popup (`:ui popup`) |
 | `C-c q q` / `C-c q r` | Quit / restart Emacs |
 

@@ -48,6 +48,8 @@
 (setq global-auto-revert-non-file-buffers t
       auto-revert-avoid-polling t)     ; file notifications, not a 5s stat of every buffer
 (global-auto-revert-mode 1)
+;; The two departures from stock behaviour (docs/keybindings.md): typing
+;; replaces the region, and brackets and quotes come in pairs.
 (delete-selection-mode 1)
 (electric-pair-mode 1)
 

@@ -124,7 +124,12 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   (keymap-set lsp-mode-map "C-c c f" (cons "format buffer" #'lsp-format-buffer))
   (keymap-set lsp-mode-map "C-c c i" (cons "find implementations" #'lsp-find-implementation))
   (keymap-set lsp-mode-map "C-c c t" (cons "find type definition" #'lsp-find-type-definition))
-  (keymap-set lsp-mode-map "C-c c k" (cons "documentation at point" #'lsp-describe-thing-at-point)))
+  (keymap-set lsp-mode-map "C-c c k" (cons "documentation at point" #'lsp-describe-thing-at-point))
+  ;; lsp-mode's mouse keys take stock ones: mouse-3 is Emacs' own
+  ;; (`mouse-save-then-kill', or the context menu), C-mouse-1 the buffer
+  ;; menu. `M-.' goes to a definition; lsp-mode's menu is in the menu bar.
+  (dolist (key '("<mouse-3>" "C-<mouse-1>" "C-<down-mouse-1>"))
+    (keymap-unset lsp-mode-map key t)))
 
 (defvar flymake-mode-map)
 (after! flymake

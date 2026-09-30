@@ -57,6 +57,13 @@ The first tagged release will be 0.9.0. Since the project started
   `M-s f` became consult's `M-s d`; `M-g f` / `M-g o` jump to a
   diagnostic / heading, and `C-x 5 b` / `C-x t b` preview like `C-x b`.
   This also ends Groovy's `C-c l g` shadowing lsp-mode's goto keys.
+- Stock keys stay stock where packages took them: the completion popup no
+  longer swallows `RET` (it inserts only a picked candidate) or `TAB`
+  (it indents; `C-M-i` completes, `+tab` as before), nor `M-g`, `M-h`,
+  `M-t`; `C-h` after a prefix is Emacs' `describe-prefix-bindings` again
+  (which-key pages on `<f5>`); lsp-mode no longer takes `mouse-3` and
+  `C-mouse-1`. `C-x C-b` is ibuffer and `M-/` hippie-expand (dabbrev
+  first); `(default +repeat)` turns on Emacs' `repeat-mode`.
 - Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
   budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
   `licenses` and `sbom`.
