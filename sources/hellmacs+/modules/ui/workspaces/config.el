@@ -130,5 +130,4 @@
 
 (keymap-set global-map "C-c w" hellmacs-workspace-map)
 
-(hellmacs-provide 'hellmacs-module :ui 'workspaces)
 ;;; config.el ends here
