@@ -56,6 +56,11 @@
   "Face for the splash screen's fallback ASCII sigil."
   :group 'hellmacs-splash)
 
+(defface hellmacs-splash-title
+  '((t (:foreground "#ff5555" :weight bold)))
+  "Face for the primary banner title on the Altar."
+  :group 'hellmacs-splash)
+
 (defface hellmacs-splash-tagline
   '((t (:foreground "#ffb86c" :weight bold)))
   "Face for the splash screen's tagline."
@@ -403,25 +408,28 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
         (let* ((img-size (image-size img))
                (img-cols (ceiling (car img-size)))
                (img-lines (ceiling (cdr img-size)))
-               (content-height (+ img-lines (if compact-p 16 22)))
+               (content-height (+ img-lines (if compact-p 18 24)))
                (top-margin (if compact-p 0 (max 0 (min 3 (/ (- height content-height) 3)))))
                (left-margin (max 0 (/ (- width img-cols) 2))))
           (when (> top-margin 0)
             (insert (make-string top-margin ?\n)))
           (insert (make-string left-margin ?\s))
           (insert-image img)
+          (insert "\n")
+          (hellmacs-splash--insert-centered "HELLMACS: THE INFERNAL JVM HACKING ENVIRONMENT" 'hellmacs-splash-title width)
+          (hellmacs-splash--insert-centered "BYTECODE SUBJUGATED // REPL FIRED" 'hellmacs-splash-tagline width)
           (insert sep))
       ;; Fallback ASCII Sigil
       (let* ((ascii-lines (hellmacs-splash--ascii-lines))
              (sigil-width (apply #'max (mapcar #'string-width ascii-lines)))
              (sigil-indent (make-string (max 0 (/ (- width sigil-width) 2)) ?\s))
-             (content-height (+ (length ascii-lines) (if compact-p 16 22)))
+             (content-height (+ (length ascii-lines) (if compact-p 18 24)))
              (top-margin (if compact-p 0 (max 0 (min 3 (/ (- height content-height) 3))))))
         (when (> top-margin 0)
           (insert (make-string top-margin ?\n)))
         (dolist (line ascii-lines)
           (insert sigil-indent (propertize line 'face 'hellmacs-splash-sigil) "\n"))
-        (insert (if compact-p "\n" "\n\n"))))
+        (insert sep)))
 
     ;; 2. Interactive SVG Sprite Action Buttons Bar
     (let* ((all-buttons
@@ -526,14 +534,25 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
           (insert sep))))
 
     ;; 4. Dynamic GC & Benchmarking Footer
-    (hellmacs-splash--insert-centered hellmacs-splash-tagline 'hellmacs-splash-tagline width)
-    (hellmacs-splash--insert-centered (hellmacs-splash-startup-line) 'hellmacs-splash-altar width)
+    (let ((tag (if (and (boundp 'hellmacs-profile) hellmacs-profile)
+                   (format "HELLMACS [%s] // [ JVM FORGE IGNITED ]" (upcase hellmacs-profile))
+                 "HELLMACS // [ JVM FORGE IGNITED ]")))
+      (hellmacs-splash--insert-centered tag 'hellmacs-splash-tagline width)
+      (hellmacs-splash--insert-centered "Heavy metal syntax. Bytecode subjugated." 'hellmacs-splash-hint width)
+      (hellmacs-splash--insert-centered (hellmacs-splash-startup-line) 'hellmacs-splash-altar width))
     (insert "\n")
 
     ;; 5. Key Navigation Hint
-    (hellmacs-splash--insert-centered
-     "TAB/S-TAB navigate · RET select · C-x C-f find file · C-c h i manual · q/ESC dismiss"
-     'hellmacs-splash-hint width)
+    (if (>= width 86)
+        (hellmacs-splash--insert-centered
+         "TAB/S-TAB navigate · RET select · C-x C-f find file · C-c h i manual · q/ESC dismiss"
+         'hellmacs-splash-hint width)
+      (hellmacs-splash--insert-centered
+       "TAB/S-TAB navigate · RET select · q/ESC dismiss"
+       'hellmacs-splash-hint width)
+      (hellmacs-splash--insert-centered
+       "C-x C-f find file · C-c h i manual · C-c h k keys"
+       'hellmacs-splash-hint width))
 
     ;; Ensure viewport starts at line 1 and first button is focused
     (goto-char (point-min))
