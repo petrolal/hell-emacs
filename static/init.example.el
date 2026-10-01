@@ -25,7 +25,7 @@
 
 (hellmacs! :ui
            theme              ; the Hellmacs theme, line numbers, current line
-           ;;dashboard        ; [optional] dashboard feed with recent files/bookmarks
+           dashboard          ; infernal dashboard with quick actions and recent lists, C-c h s
            modeline           ; minimal doom-modeline in the Hellmacs palette
            ;;emoji            ; [idea] emoji input and display
            ;;hl-todo          ; highlight TODO/FIXME/HACK/NOTE in comments; M-x hl-todo-next, hl-todo-occur

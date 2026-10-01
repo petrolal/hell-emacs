@@ -21,18 +21,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-;; The startup dashboard. The code is ui/hellmacs-dashboard.el, beside this
-;; module in the catalog (the file name the Phase 9 spec gives it); this
-;; module puts that ui/ directory on `load-path' and loads it. See that file for what it
-;; draws and which keys it keeps.
-;;
-;; Options, in your init.el or config.el:
-;;   (setq hellmacs-dashboard-tty-icons t)  ; icons in a terminal with a Nerd Font
-;;   (setq hellmacs-splash-enable nil)      ; start on *scratch* instead
-
-;; At compile time too (`bin/hellmacs sync'), for the `require' below.
-;; It lives in this module's directory, as a Doom module keeps its files.
-(eval-and-compile
-  (add-to-list 'load-path (hellmacs-module-get hellmacs--current-module :path)))
-(require 'hellmacs-dashboard)
+(let ((dir (if hellmacs--current-module
+               (hellmacs-module-get hellmacs--current-module :path)
+             (file-name-directory (or load-file-name buffer-file-name)))))
+  (when dir
+    (add-to-list 'load-path dir)
+    (load (expand-file-name "hellmacs-dashboard" dir) nil 'nomessage)))

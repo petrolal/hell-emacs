@@ -21,73 +21,48 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; The `:ui dashboard' module (ui/dashboard/, beside this file, loads it):
-;; `dashboard' as the startup screen, in place of the Altar.
-;;
-;;   - The sigil banner: a picture in a graphical frame, the ASCII one
-;;     in a terminal, dashboard's own text logo if a file is missing
-;;     (`hellmacs-dashboard-banner').
-;;   - The title, the "[ALTAR] Bound in ..." line, recent files (5),
-;;     projects (5, from project.el) and bookmarks (3), and a footer
-;;     that changes each time the dashboard is drawn.
-;;   - Icons from nerd-icons in a graphical frame that has a font with
-;;     them; plain text in a terminal unless `hellmacs-dashboard-tty-icons'.
-;;
-;; Keys are the stock ones: TAB and S-TAB move between items, RET opens
-;; one, `g' redraws, `q' buries the buffer, and C-n/C-p/C-f/C-b move as
-;; anywhere else. dashboard's own single-letter jumps (j, k, r, m, p,
-;; 1-9, { }) and its "remove item" on DEL are taken out. `C-c h s' goes
-;; back to it.
-;;
-;; Every state file it reads (recentf, bookmarks, the project list) is
-;; already in the state directory (lisp/hellmacs.el).
-
-;;; Code:
+;; Custom Infernal Startup Dashboard powered by emacs-dashboard and nerd-icons:
+;; - Crimson & Dark Slate palette (#15161b, #ff5555, #ffb86c, #bd93f9)
+;; - Graphical banner framing and centering
+;; - Quick-action navigator buttons (Ignite File, Summon Project, Recent Grimoires, Hell Shell)
+;; - Recent files, projects, and bookmarks with nerd-icons
+;; - Dynamic telemetry footer with garbage collection statistics
 
 (require 'hellmacs-splash (expand-file-name "hellmacs/+splash" hellmacs-modules-dir))
+(require 'subr-x)
 
 (defvar dashboard-mode-map)
 (defvar dashboard-buffer-name)
 (defvar dashboard-startup-banner)
 (defvar dashboard-footer-messages)
 (defvar dashboard-footer-icon)
+(defvar dashboard-navigator-buttons)
 (declare-function dashboard-insert-startupify-lists "dashboard")
-(declare-function nerd-icons-sucicon "nerd-icons")
+(declare-function dashboard-setup-startup-hook "dashboard")
+(declare-function nerd-icons-faicon "nerd-icons")
+(declare-function nerd-icons-octicon "nerd-icons")
+(declare-function nerd-icons-codicon "nerd-icons")
 
 (defgroup hellmacs-dashboard nil
   "The Hellmacs startup dashboard."
   :group 'hellmacs)
 
 (defcustom hellmacs-dashboard-tty-icons nil
-  "Whether to draw nerd-icons in a terminal frame.
-A terminal can't tell Emacs which font it uses, so this is off: turn
-it on if your terminal's font is a Nerd Font."
-  :type 'boolean)
-
-(defconst hellmacs-dashboard-title "HELLMACS: THE INFERNAL JVM HACKING ENVIRONMENT"
-  "The line under the banner.")
-
-(defconst hellmacs-dashboard-footers
-  '("BYTECODE SUBJUGATED // REPL FIRED"
-    "MAMMON FORGE: HEAP CONSUMED, CODES SMELTED"
-    "THE JVM ALTAR STANDS READY")
-  "The footer lines, shown in turn: a different one each time it is drawn.")
-
-(defvar hellmacs-dashboard--footer-index -1
-  "Index in `hellmacs-dashboard-footers' of the footer last drawn.")
+  "Whether to draw nerd-icons in a terminal frame."
+  :type 'boolean
+  :group 'hellmacs-dashboard)
 
 (defconst hellmacs-dashboard-assets-dir (expand-file-name "assets/" hellmacs-dir)
   "Where the banner files are.")
 
-(defconst hellmacs-dashboard-images '("banner-960.png" "banner.png" "banner.svg")
-  "Graphical banners, in order of preference.
-banner-960.png is banner.png scaled down: decoding the full 2816x1536
-file takes 75-100ms, the copy 7ms (docs/roadmap.md, 9.2).")
+(defconst hellmacs-dashboard-images
+  '("banners/hellmacs-altar.png" "banner-960.png" "banner.png" "banner.svg")
+  "Graphical banners, in order of preference.")
 
 (defconst hellmacs-dashboard-text-banner "banner-ascii.txt"
   "The banner drawn in a terminal.")
 
-;;; Choosing the banner -----------------------------------------------------
+;;; Banner resolution --------------------------------------------------------
 
 (defun hellmacs-dashboard--asset (name)
   "The absolute path of asset NAME, or nil if it doesn't exist."
@@ -104,100 +79,135 @@ file takes 75-100ms, the copy 7ms (docs/roadmap.md, 9.2).")
             hellmacs-dashboard-images))
 
 (defun hellmacs-dashboard-banner (&optional frame)
-  "The `dashboard-startup-banner' value for FRAME (default: the selected one).
-A graphical frame gets the picture (and the text banner as a
-fallback), a terminal the text banner; with neither file, dashboard's
-own ASCII logo. It never signals an error, even with no assets."
+  "The `dashboard-startup-banner' value for FRAME (default: the selected one)."
   (condition-case nil
       (let ((image (and (display-graphic-p frame) (hellmacs-dashboard--image)))
             (text (hellmacs-dashboard--asset hellmacs-dashboard-text-banner)))
         (if (and image text) (cons image text) (or image text 'ascii)))
     (error 'ascii)))
 
-;;; What is drawn --------------------------------------------------------------
+;;; Dynamic Footer & Navigator -----------------------------------------------
 
-(defun hellmacs-dashboard--next-footer ()
-  "Advance to the next footer and return it."
-  (setq hellmacs-dashboard--footer-index
-        (% (1+ hellmacs-dashboard--footer-index) (length hellmacs-dashboard-footers)))
-  (nth hellmacs-dashboard--footer-index hellmacs-dashboard-footers))
+(defun hellmacs-dashboard-footer-message ()
+  "Construct dynamic infernal footer referencing benchmark telemetry."
+  (let ((init-sec (or hellmacs-init-time
+                      (and (boundp 'after-init-time) (boundp 'before-init-time)
+                           after-init-time before-init-time
+                           (float-time (time-subtract after-init-time before-init-time)))
+                      0.10))
+        (gcs (or (bound-and-true-p hellmacs-splash--init-gcs) gcs-done)))
+    (format "HELLMACS // [ JVM FORGE IGNITED ] // Heavy metal syntax. Bytecode subjugated.\n[ALTAR] Bound in %.2f seconds with %d garbage collection%s."
+            init-sec gcs (if (= gcs 1) "" "s"))))
+
+(defun hellmacs-dashboard--navigator ()
+  "Construct the infernal navigator quick-access buttons."
+  (let ((has-icons (and (display-graphic-p) (require 'nerd-icons nil t))))
+    `(((,(if has-icons
+             (nerd-icons-faicon "nf-fa-fire" :face '(:foreground "#ff5555"))
+           "🔥")
+        "Ignite File"
+        "Find file in altar"
+        (lambda (&rest _) (call-interactively #'find-file))
+        'nerd-icons-red)
+       (,(if has-icons
+             (nerd-icons-octicon "nf-oct-repo" :face '(:foreground "#ffb86c"))
+           "📁")
+        "Summon Project"
+        "Open registered project"
+        (lambda (&rest _)
+          (if (fboundp 'consult-projectile)
+              (call-interactively #'consult-projectile)
+            (if (fboundp 'projectile-switch-project)
+                (call-interactively #'projectile-switch-project)
+              (call-interactively #'project-switch-project))))
+        'nerd-icons-orange)
+       (,(if has-icons
+             (nerd-icons-faicon "nf-fa-skull" :face '(:foreground "#bd93f9"))
+           "💀")
+        "Recent Grimoires"
+        "Switch to recent buffer or grimoire"
+        (lambda (&rest _)
+          (if (fboundp 'consult-buffer)
+              (call-interactively #'consult-buffer)
+            (call-interactively #'switch-to-buffer)))
+        'nerd-icons-purple)
+       (,(if has-icons
+             (nerd-icons-codicon "nf-cod-terminal_bash" :face '(:foreground "#50fa7b"))
+           "⚡")
+        "Hell Shell"
+        "Open vterm / eshell terminal"
+        (lambda (&rest _)
+          (cond ((fboundp 'vterm) (vterm))
+                (t (eshell))))
+        'nerd-icons-green)))))
 
 (defun hellmacs-dashboard-icons-p (&optional frame)
-  "Non-nil if FRAME (default: the selected one) should show icons.
-See `hellmacs-icons-p' and `hellmacs-dashboard-tty-icons'."
+  "Non-nil if FRAME (default: the selected one) should show icons."
   (hellmacs-icons-p hellmacs-dashboard-tty-icons frame))
 
 (defun hellmacs-dashboard--prepare-h ()
-  "Set what depends on the frame and on the moment, before each drawing."
+  "Configure dynamic values before drawing dashboard."
   (let ((icons (and (hellmacs-dashboard-icons-p) (require 'nerd-icons nil t))))
-    ;; Decided once per drawing: dashboard asks for every heading and item.
     (setq dashboard-display-icons-p (and icons t)
           dashboard-startup-banner (hellmacs-dashboard-banner)
-          dashboard-footer-messages (list (hellmacs-dashboard--next-footer))
-          ;; nerd-icons is loaded only for a frame that draws icons: a
-          ;; plain `setq', since the option's setter would load it.
+          dashboard-footer-messages (list (hellmacs-dashboard-footer-message))
           dashboard-icon-type (and icons 'nerd-icons)
-          dashboard-footer-icon
-          (if icons
-              (nerd-icons-sucicon "nf-custom-emacs" :face 'dashboard-footer-icon-face)
-            (propertize ">" 'face 'dashboard-footer-icon-face)))))
+          dashboard-navigator-buttons (hellmacs-dashboard--navigator))))
 
 ;;; Keys ---------------------------------------------------------------------
 
 (defconst hellmacs-dashboard-removed-keys
   '("j" "k" "{" "}" "1" "2" "3" "4" "5" "6" "7" "8" "9"
     "C-n" "C-p" "<up>" "<down>" "DEL" "<backspace>" "<delete>")
-  "Keys dashboard binds that Hellmacs takes out of `dashboard-mode-map'.
-Single-letter jumps aren't stock Emacs keys, C-n/C-p and the arrows
-go back to their global commands, and DEL removed the item at point.")
+  "Keys dashboard binds that Hellmacs takes out of `dashboard-mode-map'.")
 
 (defun hellmacs-dashboard--vanilla-keys ()
   "Take the non-stock keys out of `dashboard-mode-map'."
   (dolist (key hellmacs-dashboard-removed-keys)
     (keymap-unset dashboard-mode-map key t)))
 
-;;; Showing it -----------------------------------------------------------------
+;;; Dashboard Configuration --------------------------------------------------
 
 (use-package dashboard
   :defer t
   :init
-  ;; Set before dashboard loads: several of its defaults are computed
-  ;; when it does. `dashboard-icon-type' stays nil until a frame draws
-  ;; icons (see `hellmacs-dashboard--prepare-h'): its setter loads
-  ;; nerd-icons (18ms), which a terminal never uses.
-  (setq dashboard-icon-type nil
-        dashboard-heading-icons '((recents . "nf-oct-history")
-                                  (bookmarks . "nf-oct-bookmark")
-                                  (projects . "nf-oct-rocket"))
-        dashboard-display-icons-p nil   ; set per drawing, see above
-        dashboard-set-heading-icons t
-        dashboard-set-file-icons t
-        dashboard-footer-icon ">"
-        dashboard-banner-logo-title
-        (if (and (boundp 'hellmacs-profile) hellmacs-profile)
-            (format "HELLMACS [%s]: THE INFERNAL JVM HACKING ENVIRONMENT (ISOLATED)"
-                    (upcase hellmacs-profile))
-          hellmacs-dashboard-title)
-        dashboard-init-info #'hellmacs-splash-startup-line
+  (setq dashboard-banner-logo-title nil
+        dashboard-startup-banner (hellmacs-dashboard-banner)
+        dashboard-image-banner-max-height 280
         dashboard-image-banner-max-width 480
-        dashboard-image-banner-max-height 320
         dashboard-center-content t
-        dashboard-vertically-center-content t
-        dashboard-items '((recents . 5) (projects . 5) (bookmarks . 3))
-        dashboard-projects-backend 'project-el
-        dashboard-item-shortcuts nil    ; no r/p/m jump keys
-        dashboard-show-shortcuts nil)
+        dashboard-vertically-center-content nil
+        dashboard-show-shortcuts t
+        dashboard-display-icons-p t
+        dashboard-icon-type 'nerd-icons
+        dashboard-set-file-icons t
+        dashboard-set-heading-icons t
+        dashboard-heading-icons '((recents   . "nf-oct-history")
+                                  (bookmarks . "nf-oct-bookmark")
+                                  (projects  . "nf-oct-rocket")
+                                  (agenda    . "nf-oct-calendar"))
+        dashboard-items '((recents   . 5)
+                          (projects  . 4)
+                          (bookmarks . 3))
+        dashboard-projects-backend (if (modulep! :tools projectile) 'projectile 'project-el)
+        dashboard-footer-icon ""
+        dashboard-footer-messages (list (hellmacs-dashboard-footer-message))
+        dashboard-navigator-buttons (hellmacs-dashboard--navigator))
   :config
   (hellmacs-dashboard--vanilla-keys)
-  (add-hook 'dashboard-before-initialize-hook #'hellmacs-dashboard--prepare-h))
+  (add-hook 'dashboard-before-initialize-hook #'hellmacs-dashboard--prepare-h)
+  ;; Custom infernal face styling
+  (custom-set-faces
+   '(dashboard-heading ((t (:foreground "#ff5555" :weight bold :height 1.1))))
+   '(dashboard-items-face ((t (:foreground "#f8f8f2"))))
+   '(dashboard-footer ((t (:foreground "#ffb86c" :height 0.9))))
+   '(dashboard-no-items-face ((t (:foreground "#6272a4"))))))
 
 (defvar hellmacs-dashboard--window-setup-done nil
   "Non-nil once startup's `window-setup-hook' has run.")
 
 (defun hellmacs-dashboard-buffer ()
-  "Return the dashboard buffer, drawn for the selected frame.
-During startup it is only drawn once it is in a window (from
-`window-setup-hook'), where it can center itself: one drawing, not two."
+  "Return the dashboard buffer, drawn for the selected frame."
   (require 'dashboard)
   (let ((buffer (get-buffer-create dashboard-buffer-name)))
     (with-current-buffer buffer
@@ -213,13 +223,10 @@ During startup it is only drawn once it is in a window (from
   (interactive)
   (require 'dashboard)
   (switch-to-buffer (get-buffer-create dashboard-buffer-name))
-  ;; Drawn once it's in a window, so it centers itself in it.
   (dashboard-insert-startupify-lists t))
 
 (defun hellmacs-dashboard--startup-buffer ()
-  "The startup screen: the dashboard, or the Altar if it fails.
-Also used for each new `emacsclient -c' frame, so the banner and icons
-suit that frame; `hellmacs-splash--initial-buffer' decides when."
+  "The startup screen: the dashboard, or the Altar if it fails."
   (condition-case err
       (hellmacs-dashboard-buffer)
     (error
@@ -229,20 +236,17 @@ suit that frame; `hellmacs-splash--initial-buffer' decides when."
 
 (setq hellmacs-splash-buffer-function #'hellmacs-dashboard--startup-buffer)
 
-;; `C-c h s' (`hellmacs-splash', in :config default) goes to the dashboard.
+;; `C-c h s' goes to the dashboard
 (keymap-set global-map "<remap> <hellmacs-splash>" #'hellmacs-dashboard)
 
 (defun hellmacs-dashboard--redraw-h (&rest _)
-  "Redraw the dashboard where it is shown, e.g. now that startup time is known."
+  "Redraw the dashboard where it is shown."
   (when-let* ((name (bound-and-true-p dashboard-buffer-name))
               (buffer (get-buffer name))
               (window (get-buffer-window buffer t)))
     (with-selected-window window
       (dashboard-insert-startupify-lists t))))
 
-;; Startup time is known once every package is activated, which can be
-;; after the dashboard is first drawn; the first window it lands in is
-;; only known after startup too.
 (add-hook 'hellmacs-after-init-hook #'hellmacs-dashboard--redraw-h)
 (add-hook 'window-setup-hook
           (defun hellmacs-dashboard--window-setup-h ()
