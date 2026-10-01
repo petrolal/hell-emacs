@@ -116,19 +116,32 @@
           (propertize text 'face face)
           "\n"))
 
+(defun hellmacs-splash--ascii-lines ()
+  "Return lines of the ASCII banner from assets/banner-ascii.txt."
+  (let ((file (expand-file-name "assets/banner-ascii.txt" hellmacs-dir)))
+    (if (file-readable-p file)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (split-string (buffer-string) "\n" t))
+      hellmacs-splash-sigil)))
+
 (defun hellmacs-splash--banner-image ()
-  "Return graphical banner image object if available and display is graphical."
-  (when (and (display-graphic-p) (image-type-available-p 'png))
+  "Return graphical banner image object if available and display is graphical.
+Prioritizes vector banner.svg, then PNG renders."
+  (when (display-graphic-p)
     (let* ((assets-dir (expand-file-name "assets/" hellmacs-dir))
-           (candidates '("banner-960.png" "banner.png" "banner.svg"))
+           (candidates '("banner.svg" "banner-960.png" "banner.png"))
            (file (seq-some (lambda (f)
-                             (let ((path (expand-file-name f assets-dir)))
-                               (and (file-readable-p path) path)))
+                             (let* ((path (expand-file-name f assets-dir))
+                                    (type (if (string-suffix-p ".svg" f) 'svg 'png)))
+                               (and (file-readable-p path)
+                                    (image-type-available-p type)
+                                    path)))
                            candidates)))
       (when file
         (create-image file (if (string-suffix-p ".svg" file) 'svg 'png) nil
                       :max-width 540
-                      :max-height 280)))))
+                      :max-height 270)))))
 
 (defun hellmacs-splash--button (label action help &optional icon)
   "Insert an interactive button showing LABEL and ICON that calls ACTION."
@@ -168,12 +181,13 @@
           (insert-image img)
           (insert "\n\n"))
       ;; Fallback ASCII Sigil
-      (let* ((sigil-width (apply #'max (mapcar #'string-width hellmacs-splash-sigil)))
+      (let* ((ascii-lines (hellmacs-splash--ascii-lines))
+             (sigil-width (apply #'max (mapcar #'string-width ascii-lines)))
              (sigil-indent (make-string (max 0 (/ (- width sigil-width) 2)) ?\s))
-             (content-height (+ (length hellmacs-splash-sigil) 8))
+             (content-height (+ (length ascii-lines) 8))
              (top-margin (max 0 (/ (- height content-height) 3))))
         (insert (make-string top-margin ?\n))
-        (dolist (line hellmacs-splash-sigil)
+        (dolist (line ascii-lines)
           (insert sigil-indent (propertize line 'face 'hellmacs-splash-sigil) "\n"))
         (insert "\n")))
 
