@@ -143,15 +143,63 @@ bin/hellmacs -p dev doctor
 @node Daily JVM Workflow
 @chapter Daily JVM Workflow
 
-Hellmacs provides deep language support for the complete JVM ecosystem.
+Hellmacs provides deep language support, debugging, and building for the complete JVM ecosystem.
 
 @section Java (@code{:lang java})
 Powered by Eclipse JDTLS, java-debug, and Spring Boot Tools:
 @itemize @bullet
 @item @strong{Code Completion}: Semantic member completion, type hints, Lombok annotations.
-@item @strong{Refactoring}: Extract method (@kbd{C-c l m}), extract variable (@kbd{C-c l v}), extract constant (@kbd{C-c l c}), generate getters/setters (@kbd{C-c l g}).
+@item @strong{Refactoring & Code Actions}: Press @kbd{C-c l a} or @kbd{M-RET} for quick fixes and intentions. Rename across project with @kbd{C-c l r}.
+@item @strong{Navigation}: @kbd{M-.} jumps to definition, @kbd{M-?} finds all usages across the project, and @kbd{M-,} returns.
 @item @strong{Spring Boot}: Bean navigation, application properties completion, `@code{@@Autowired}` cross-references.
-@item @strong{Testing}: Run JUnit test at point (@kbd{C-c l t t}) or test class (@kbd{C-c l t T}).
+@item @strong{Testing}: Run JUnit test at point (@kbd{C-c t t} or @kbd{C-c l t t}), current file (@kbd{C-c t f}), or full test suite (@kbd{C-c t p}).
+@end itemize
+
+@section Debugging with DAP (@code{:tools debugger})
+Native Debug Adapter Protocol integration via @code{dap-mode} and Eclipse @code{java-debug}:
+@table @kbd
+@item C-c d d
+Start a new debugging session (@code{dap-debug}).
+@item C-c d b
+Toggle breakpoint on current line (@code{dap-breakpoint-toggle}).
+@item C-c d n
+Step Over next instruction (@code{dap-next}).
+@item C-c d i
+Step Into method call (@code{dap-step-in}).
+@item C-c d o
+Step Out of current method (@code{dap-step-out}).
+@item C-c d c
+Continue execution until next breakpoint (@code{dap-continue}).
+@item C-c d r
+Restart current debug frame (@code{dap-restart-frame}).
+@item C-c d q
+Disconnect and stop debugging session (@code{dap-disconnect}).
+@item C-c d E
+Evaluate expression in current execution frame (@code{dap-eval}).
+@end table
+
+@section Build & Test Systems (@code{:tools build} & @code{:tools test})
+Direct invocation of project wrappers and tools without leaving Emacs:
+@table @kbd
+@item C-c b b
+Build project via Gradle or Maven wrapper (@code{hellmacs-build}).
+@item C-c b c
+Clean build output directory (@code{hellmacs-build-clean}).
+@item C-c t t
+Run test at point.
+@item C-c t f
+Run all tests in current file.
+@item C-c t p
+Run entire project test suite.
+@item C-c r
+Execute project Run Configuration (@file{.hellmacs/run.eld}, @file{.run/*.xml}).
+@end table
+
+@section JDK Discovery & Multi-Version Management
+Hellmacs automatically locates every JDK installed on the machine:
+@itemize @bullet
+@item Scans SDKMAN! (@file{~/.sdkman/candidates/java/*}), system paths (@file{/usr/lib/jvm/*}), Mise, ASDF, and @env{JAVA_HOME}.
+@item Runtimes are mapped directly to JDTLS, allowing different projects to target Java 8, 17, 21, or 25 simultaneously while the language server executes on modern Java.
 @end itemize
 
 @section Kotlin, Clojure, Groovy, and Scala
@@ -161,6 +209,14 @@ Powered by Eclipse JDTLS, java-debug, and Spring Boot Tools:
 @item @strong{Groovy} (@code{:lang groovy}): Groovy Language Server built from pinned Gradle verification.
 @item @strong{Scala} (@code{:lang scala}): Metals language server and sbt build tool integration.
 @end itemize
+
+@section Interactive Help & Shortcuts Hub
+Access the interactive JVM Help and Cheatsheet Hub at any time:
+@example
+M-x hellmacs-help
+@end example
+Shortcut: @kbd{C-c h h} or @kbd{C-c h ?}.
+Displays live language server status, debugger readiness, discovered JDK paths, and full keybinding tables.
 
 @c -----------------------------------------------------------------------------
 @node IntelliJ Parity & Key Finder
