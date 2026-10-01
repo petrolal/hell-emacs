@@ -182,14 +182,50 @@ files a module can have are in [development.md](development.md#modules).
 
 ---
 
-## 3. Staying up to date
+## 3. Staying up to date & Updating Production
 
-| Command | Does |
-|---|---|
-| `hellmacs sync` | Install what your config declares; regenerate the startup file |
-| `hellmacs upgrade` | Update Hellmacs, then every unpinned package, then sync |
-| `hellmacs upgrade --packages` | Only the packages |
-| `hellmacs version` | Version, commit, update channel, Emacs |
+Hellmacs provides dedicated commands to upgrade core, update packages, apply configuration changes, and freeze dependencies for production environments:
+
+### Common Update Workflows
+
+| Scenario | Command | What happens |
+|---|---|---|
+| **Full Production Upgrade** | `hellmacs upgrade` | Updates Hellmacs repository to latest release, updates packages, recompiles bytecode, and runs health checks |
+| **Update Packages Only** | `hellmacs upgrade --packages` | Updates installed packages without altering Hellmacs core version |
+| **Apply Config Changes** | `hellmacs sync` | Run after editing `init.el` or `packages.el` (or press `C-c h S` / `C-c h R` in Emacs) |
+| **Lock Dependencies** | `hellmacs lock` | Generates `packages.lock.eld` pinning exact commit SHAs for zero-drift deployments |
+| **Clean Unused Packages** | `hellmacs gc` | Purges orphaned packages no longer declared by your active modules |
+| **Version Inspection** | `hellmacs version` | Prints current version, commit hash, channel, and Emacs build info |
+
+---
+
+### Step-by-Step Production Maintenance
+
+#### 1. Upgrading to a New Hellmacs Release
+```sh
+hellmacs upgrade
+```
+`upgrade` is fully automated and safe to run on production machines:
+1. Fetches the latest signed release tag on your chosen channel (`stable` by default).
+2. Updates packages to their declared pins.
+3. Automatically runs `sync` in a clean sub-process, byte-compiling core libraries and modules.
+4. Executes `doctor` to ensure zero regressions before you restart Emacs.
+
+#### 2. Updating After Editing Your Config
+Whenever you add/remove modules in `~/.config/hellmacs/init.el` or add packages in `~/.config/hellmacs/packages.el`:
+- **From CLI**: `hellmacs sync`
+- **From GUI/Terminal Emacs**: Press `C-c h S` (background sync) or `C-c h R` (sync and live reload).
+
+#### 3. Enterprise Reproducibility & Locking
+To guarantee identical, immutable environments across a whole team or CI/CD pipelines:
+```sh
+hellmacs lock
+```
+This writes `~/.config/hellmacs/packages.lock.eld`. When you commit and share this lockfile, every teammate's `hellmacs sync` will install the exact same commit for every package.
+
+---
+
+### Releases, Channels, and Support
 
 **Versions.** A release is a signed tag `vMAJOR.MINOR.PATCH`
 ([Semantic Versioning](https://semver.org/)); the [CHANGELOG](../CHANGELOG.md)
