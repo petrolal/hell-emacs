@@ -1,0 +1,363 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename hellmacs.info
+@settitle Hellmacs Manual
+@documentencoding UTF-8
+@c %**end of header
+
+@copying
+This manual documents Hellmacs, an enterprise-grade JVM hacking environment
+built on stock GNU Emacs.
+
+Copyright @copyright{} 2026 petrolal <petrolalucas@@gmail.com>
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+@end quotation
+@end copying
+
+@dircategory Emacs
+@direntry
+* Hellmacs: (hellmacs).    The Infernal JVM Development Environment for GNU Emacs.
+@end direntry
+
+@titlepage
+@title Hellmacs Manual
+@subtitle The Infernal Enterprise JVM Development Environment
+@author petrolal <petrolalucas@@gmail.com>
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top Hellmacs: The Infernal JVM Environment
+
+Hellmacs is an enterprise-grade alternative to IntelliJ IDEA Ultimate,
+Eclipse, and VS Code for Java and JVM developers, built on top of stock
+GNU Emacs.
+
+@insertcopying
+@end ifnottex
+
+@menu
+* Overview::                     What is Hellmacs and why it exists.
+* The 40-Year Purist Guarantee:: Stock Emacs keychords and non-modal editing.
+* Installation and Profiles::    Installing, profiles, and initial setup.
+* Daily JVM Workflow::           Java, Kotlin, Clojure, Groovy, Scala, and Spring.
+* IntelliJ Parity & Key Finder:: Finding your way from IntelliJ shortcuts.
+* Enhanced Dired & Projectile::  File and project management.
+* Workspaces::                   Native tab-bar project workspace isolation.
+* Modules and Configuration::    Configuring modules, flags, and packages.
+* Enterprise & Team Layer::      Team configurations, proxies, CAs, and offline mirrors.
+* CLI Reference::                The @command{bin/hellmacs} toolchain commands.
+* Diagnostics and Doctor::       Validating system health and troubleshooting.
+* Concept Index::                Index of concepts and features.
+* Key Index::                    Index of keybindings.
+@end menu
+
+@c -----------------------------------------------------------------------------
+@node Overview
+@chapter Overview
+
+Hellmacs is designed for developers who write enterprise software on the
+JVM (Spring Boot, Maven, Gradle, multi-module enterprise codebases) and want
+a rock-solid, ultra-fast environment that respects GNU Emacs traditions.
+
+Key objectives:
+@enumerate
+@item
+@strong{Daily JVM Parity}: Deep code completion, refactoring, navigation,
+diagnostics, test runners, debugging, and Spring Boot integration.
+@item
+@strong{Strict Startup Budget}: Starts in under 0.12 seconds with 60+ packages
+byte-compiled ahead of time.
+@item
+@strong{Enterprise Ready}: Full support for corporate proxies, custom CA
+truststores, internal artifact mirrors (Artifactory, Nexus), and 100% offline bundles.
+@item
+@strong{Zero Modal Hijacking}: Stock Emacs keybindings are preserved
+completely. No modal editing, no Evil mode, no @kbd{SPC} leader hijacks.
+@end enumerate
+
+@c -----------------------------------------------------------------------------
+@node The 40-Year Purist Guarantee
+@chapter The 40-Year Purist Guarantee
+
+Every stock GNU Emacs keychord works exactly as documented in the official
+GNU Emacs manual:
+@itemize @bullet
+@item @kbd{C-x C-f} finds files, @kbd{C-x b} switches buffers, @kbd{C-s} searches.
+@item @kbd{M-x} executes commands, @kbd{C-g} cancels, @kbd{C-h} provides help.
+@item @kbd{TAB} indents, @kbd{C-M-i} invokes completion-at-point.
+@item @kbd{C-x 2}, @kbd{C-x 3}, @kbd{C-x 0}, @kbd{C-x 1}, @kbd{C-x o} manage windows.
+@item @kbd{C-x t} manages tabs and workspaces.
+@end itemize
+
+Custom Hellmacs commands are grouped strictly under @kbd{C-c}, the prefix
+reserved by GNU Emacs conventions for users:
+@table @kbd
+@item C-c h
+Hellmacs core commands (@kbd{C-c h s} Altar, @kbd{C-c h f} Forge, @kbd{C-c h k} IntelliJ Finder, @kbd{C-c h i} Info manual).
+@item C-c c
+Code and compilation commands (@kbd{C-c c c} compile, @kbd{C-c c a} code actions, @kbd{C-c c r} rename).
+@item C-c l
+The Localleader: mode-specific commands (Java imports, refactorings, test runners).
+@item C-c w
+Workspace and tab management (@kbd{C-c w p} open project tab, @kbd{C-c w w} switch tab).
+@item C-c t
+Toggles (@kbd{C-c t w} tab-bar, @kbd{C-c t l} line numbers, @kbd{C-c t f} flymake).
+@end table
+
+@c -----------------------------------------------------------------------------
+@node Installation and Profiles
+@chapter Installation and Profiles
+
+Hellmacs is installed via the @command{bin/hellmacs-install} script:
+@example
+git clone https://github.com/petrolal/hellmacs.git ~/.config/emacs
+bin/hellmacs install
+@end example
+
+@section Profiles
+Hellmacs supports isolated profiles:
+@itemize @bullet
+@item @strong{default}: The primary configuration located at @file{~/.config/hellmacs/}.
+@item @strong{dev}: Isolated development testing profile in @file{profiles/dev/}.
+@item @strong{safe-mode}: Clean baseline profile with only built-in packages.
+@end itemize
+
+Run commands on specific profiles using @code{-p NAME}:
+@example
+bin/hellmacs -p dev sync
+bin/hellmacs -p dev doctor
+@end example
+
+@c -----------------------------------------------------------------------------
+@node Daily JVM Workflow
+@chapter Daily JVM Workflow
+
+Hellmacs provides deep language support for the complete JVM ecosystem.
+
+@section Java (@code{:lang java})
+Powered by Eclipse JDTLS, java-debug, and Spring Boot Tools:
+@itemize @bullet
+@item @strong{Code Completion}: Semantic member completion, type hints, Lombok annotations.
+@item @strong{Refactoring}: Extract method (@kbd{C-c l m}), extract variable (@kbd{C-c l v}), extract constant (@kbd{C-c l c}), generate getters/setters (@kbd{C-c l g}).
+@item @strong{Spring Boot}: Bean navigation, application properties completion, `@code{@@Autowired}` cross-references.
+@item @strong{Testing}: Run JUnit test at point (@kbd{C-c l t t}) or test class (@kbd{C-c l t T}).
+@end itemize
+
+@section Kotlin, Clojure, Groovy, and Scala
+@itemize @bullet
+@item @strong{Kotlin} (@code{:lang kotlin}): Kotlin Language Server with Gradle/Maven support.
+@item @strong{Clojure} (@code{:lang clojure}): CIDER REPL integration with @code{clojure-lsp}.
+@item @strong{Groovy} (@code{:lang groovy}): Groovy Language Server built from pinned Gradle verification.
+@item @strong{Scala} (@code{:lang scala}): Metals language server and sbt build tool integration.
+@end itemize
+
+@c -----------------------------------------------------------------------------
+@node IntelliJ Parity & Key Finder
+@chapter IntelliJ Parity & Key Finder
+
+For developers migrating from JetBrains IntelliJ IDEA, Hellmacs includes the
+interactive IntelliJ Key Finder:
+@example
+M-x hellmacs-where-is-intellij
+@end example
+Shortcut: @kbd{C-c h k} or @kbd{C-c h ?}.
+
+Type any IntelliJ shortcut (e.g. @kbd{Shift-F6}, @kbd{Ctrl-Alt-L}, @kbd{Double Shift}, @kbd{Ctrl-N})
+to immediately see the equivalent GNU Emacs keychord and execute the command.
+
+@c -----------------------------------------------------------------------------
+@node Enhanced Dired & Projectile
+@chapter Enhanced Dired & Projectile
+
+@section Enhanced Dired (@code{:emacs dired})
+File management in Hellmacs is enhanced with:
+@itemize @bullet
+@item Colored filetype glyphs via @code{nerd-icons-dired}.
+@item Batch file renaming as editable text: press @kbd{r} or @kbd{C-x C-q} in Dired to enter @code{wdired-mode}.
+@item Quick sorting menu: press @kbd{S} in Dired to sort by name, size, date, or extension.
+@item Automatic reuse of Dired buffers to keep buffer lists clean.
+@end itemize
+
+@section Projectile (@code{:tools projectile})
+Fast project exploration and buffer management:
+@itemize @bullet
+@item @kbd{C-c p f}: Find file in project with fuzzy search.
+@item @kbd{C-c p s r}: Ripgrep search across project.
+@item @kbd{C-c p b}: Switch between project-specific buffers.
+@end itemize
+
+@c -----------------------------------------------------------------------------
+@node Workspaces
+@chapter Workspaces
+
+The @code{:ui workspaces} module provides clean project workspace isolation
+using Emacs' native @code{tab-bar-mode}:
+@table @kbd
+@item C-x t 2
+Open a new workspace tab.
+@item C-x t 0
+Close current workspace tab.
+@item C-x t o
+Cycle to next workspace tab.
+@item C-x t p
+Open or switch to a project in its own dedicated workspace tab.
+@item C-x t r
+Rename workspace tab.
+@item C-x t b
+Switch workspace tab by fuzzy search.
+@item C-c t w
+Toggle workspace tab bar visibility.
+@end table
+
+Each tab automatically formats with project indicators and nerd-icons glyphs.
+
+@c -----------------------------------------------------------------------------
+@node Modules and Configuration
+@chapter Modules and Configuration
+
+Your personal configuration lives in @file{~/.config/hellmacs/init.el}:
+@example
+(hellmacs! :ui
+           theme
+           dashboard
+           modeline
+           workspaces
+           popup
+
+           :editor
+           undo
+
+           :completion
+           vertico
+           corfu
+
+           :emacs
+           dired
+
+           :tools
+           build
+           debugger
+           direnv
+           lsp
+           magit
+           projectile
+           run
+           test
+
+           :lang
+           java
+           kotlin
+           clojure
+           groovy
+           scala
+           data
+           docker
+           javascript
+           json
+           markdown
+           openapi
+           protobuf
+           sh
+           sql
+           terraform
+           web
+           yaml
+
+           :config
+           default)
+@end example
+
+After editing, run @command{bin/hellmacs sync} (or @kbd{C-c h S}) to compile and activate.
+
+@c -----------------------------------------------------------------------------
+@node Enterprise & Team Layer
+@chapter Enterprise & Team Layer
+
+Hellmacs is built for corporate network requirements.
+
+@section Team Layer
+Share configuration across your engineering team with @code{$HELLMACS_TEAM_DIR}:
+@example
+export HELLMACS_TEAM_DIR="/path/to/shared/company-hellmacs-layer"
+@end example
+Or install directly from git:
+@example
+bin/hellmacs install --team https://git.internal.corp/team-hellmacs.git
+@end example
+
+@section Proxies and Custom CAs
+In @file{init.el}:
+@example
+(setq hellmacs-net-proxy "http://proxy.corp.internal:8080"
+      hellmacs-net-ca-file "/etc/pki/ca-trust/source/anchors/corp-root.crt")
+@end example
+
+@section Offline Bundles
+Install on air-gapped systems with zero internet access:
+@example
+bin/hellmacs install --from-bundle /path/to/hellmacs-bundle.tar.gz
+@end example
+
+@c -----------------------------------------------------------------------------
+@node CLI Reference
+@chapter CLI Reference
+
+The @command{bin/hellmacs} CLI provides complete environment management:
+@table @command
+@item sync
+Download, build, and byte-compile all active packages and language servers.
+@item upgrade
+Pull latest Hellmacs git commits/tags, update packages, and re-sync.
+@item config
+Inspect and add newly introduced default modules (@command{config --add-defaults}).
+@item doctor
+Comprehensive health verification of Emacs, SDKs, JDKs, servers, and tools.
+@item profile
+List and sync multi-profile environments (@command{profile list}, @command{profile sync --all}).
+@item plugins
+Manage community and third-party modules (@command{plugins list}, @command{plugins enable}).
+@item bundle
+Create self-contained offline deployment packages.
+@item doctor --network
+Validate connectivity through configured proxies, mirrors, and corporate CAs.
+@end table
+
+@c -----------------------------------------------------------------------------
+@node Diagnostics and Doctor
+@chapter Diagnostics and Doctor
+
+Run @command{bin/hellmacs doctor} at any time to verify system health:
+@example
+bin/hellmacs doctor
+@end example
+
+Doctor checks:
+@itemize @bullet
+@item GNU Emacs version (30.1+, 31.1+) and native compilation support.
+@item Installed JDKs (via SDKMAN!, system PATH, or asdf) and JDTLS compatibility.
+@item Build systems (Gradle wrappers, Maven daemon, Maven wrappers).
+@item Language server binaries (Eclipse JDTLS, Kotlin LS, Clojure LSP, Groovy LS, LemMinX, Docker LS, Marksman, etc.).
+@item Tree-sitter ABI grammars and font icon availability.
+@end itemize
+
+@c -----------------------------------------------------------------------------
+@node Concept Index
+@unnumbered Concept Index
+@printindex cp
+
+@node Key Index
+@unnumbered Key Index
+@printindex ky
+
+@bye

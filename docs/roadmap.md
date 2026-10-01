@@ -398,15 +398,20 @@ iconography (`nerd-icons`):
       under `sources/hellmacs+/modules/ui/workspaces/` with smart project-aware
       tab naming, nerd-icons, inferno theming, doctor checks, and stock `C-x t` /
       `C-c w` keychords).
-- [ ] 10.6 Phase 10's modules in `static/init.example.el` (the languages
-      are 14.7's).
-- [ ] 13.1 A GNU Info manual (`docs/hellmacs.texi`), in `C-h i` (the
+- [x] 10.6 Phase 10's modules in `static/init.example.el` (the languages
+      are 14.7's) (2026-09-30: reviewed and populated default template with
+      enhanced Dired, Projectile, workspaces, and full IntelliJ bundled language suites).
+- [x] 13.1 A GNU Info manual (`docs/hellmacs.texi`), in `C-h i` (the
       Info directory) and on `C-c h i`; not on a `C-h` key, which stays
-      Emacs' own.
-- [ ] 13.2 The Altar offers the Emacs tutorial, the guided tour, the
-      manual, Dired and Customize, on its stock keys.
-- [ ] 13.3 Hellmacs modules in the `C-h` help commands
-      (`hellmacs-describe-module`).
+      Emacs' own (2026-09-30: wrote `docs/hellmacs.texi`, compiled `docs/hellmacs.info`
+      and `docs/dir`, added `docs/` to Info directories, and bound `C-c h i`).
+- [x] 13.2 The Altar offers the Emacs tutorial, the guided tour, the
+      manual, Dired and Customize, on its stock keys (2026-09-30: updated
+      `modules/hellmacs/+splash.el` with dual-row quick navigation hub).
+- [x] 13.3 Hellmacs modules in the `C-h` help commands
+      (`hellmacs-describe-module`) (2026-09-30: created `lisp/lib/help.el`
+      with interactive module inspector, components, packages, docs, and
+      actions on `C-c h d` / `C-c h m`).
 - Ideas, only if asked for: `treesit-fold` folding, multiple cursors on
   stock keys, Forge pull requests, Quarkus and Micronaut templates,
   `:tools lookup`, `:tools llm`, `:ui treemacs`, lsp-ui.

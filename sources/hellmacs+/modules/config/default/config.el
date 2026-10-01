@@ -156,12 +156,16 @@
   "R" (cons "forge/reload-config" #'hellmacs-reload)
   "S" (cons "forge/sync" #'hellmacs-sync-child)
   "u" (cons "forge/user-config" #'hellmacs-visit-user-dir)
-  "v" (cons "forge/hellmacs-dir" #'hellmacs-visit-dir)
-  "m" (cons "forge/modules" #'hellmacs-list-modules)
+  "i" (cons "forge/manual" #'hellmacs-info-manual)
+  "d" (cons "forge/describe-module" #'hellmacs-describe-module)
+  "m" (cons "forge/describe-module" #'hellmacs-describe-module)
+  "M" (cons "forge/modules-list" #'hellmacs-list-modules)
   "p" (cons "forge/plugins" #'hellmacs-plugins)
   "k" (cons "forge/where-is-intellij" #'hellmacs-where-is-intellij)
   "?" (cons "forge/where-is-intellij" #'hellmacs-where-is-intellij))
 
+(autoload 'hellmacs-info-manual "lib/help" "Open Hellmacs Info manual." t)
+(autoload 'hellmacs-describe-module "lib/help" "Describe Hellmacs module." t)
 (autoload 'hellmacs-plugins "hellmacs-plugins" "Open Hellmacs plugins manager." t)
 (autoload 'hellmacs-where-is-intellij "lib/intellij" "Look up IntelliJ IDEA keys in Hellmacs." t)
 
