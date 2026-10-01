@@ -58,7 +58,7 @@
            corfu              ; in-buffer completion popup (+tab: TAB completes)
 
            :emacs
-           ;;dired            ; [idea] dired tweaks (dired-x, wdired, icons)
+           dired              ; enhanced dired (nerd-icons, wdired, dired-quick-sort)
            ;;electric         ; [idea] smarter electric indentation
            ;;eww              ; [idea] the built-in web browser
            ;;ibuffer          ; [idea] ibuffer grouped by project
@@ -81,7 +81,9 @@
            debugger           ; debug via dap-mode, C-c d (Java: breakpoints, tests, hot swap)
            direnv             ; per-project environments from .envrc (JAVA_HOME, MAVEN_OPTS...); needs direnv
            lsp                ; code intelligence via lsp-mode, C-c c (lsp-mode's map on C-c c l)
+           ;;eglot            ; zero-overhead native LSP alternative (Emacs 29+)
            magit              ; Git via Magit: C-x g status, C-x M-g dispatch, C-c M-g file
+           projectile         ; project management via Projectile + Consult-Projectile (C-c p)
            run                ; run configurations (.hellmacs/run.eld, IntelliJ .run/, Eclipse .launch), C-c r
            test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c l t (+watch)
            ;;ansible          ; [idea] Ansible playbooks
