@@ -412,9 +412,25 @@ iconography (`nerd-icons`):
       (`hellmacs-describe-module`) (2026-09-30: created `lisp/lib/help.el`
       with interactive module inspector, components, packages, docs, and
       actions on `C-c h d` / `C-c h m`).
-- Ideas, only if asked for: `treesit-fold` folding, multiple cursors on
-  stock keys, Forge pull requests, Quarkus and Micronaut templates,
-  `:tools lookup`, `:tools llm`, `:ui treemacs`, lsp-ui.
+### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
+
+- [ ] 18.1 **Structural Code Folding (`:editor fold`)**:
+      Tree-sitter AST-aware code folding for classes, methods, imports, and docblocks
+      (`treesit-fold` / `ts-fold` with fallback to `hideshow`).
+      Keys: stock `C-c @` chords (`C-c @ C-c` toggle, `C-c @ C-a` unfold all, `C-c @ C-t` fold all).
+- [ ] 19.1 **Multi-Cursor & Simultaneous Refactoring (`:editor multiple-cursors`)**:
+      In-buffer concurrent multi-cursor editing and variable renaming (`multiple-cursors` / `iedit`).
+      Keys: `C-c m e` (simultaneous symbol edit), `C->` / `C-<` (mark next/previous), `C-c m a` (mark all).
+- [ ] 20.1 **Cloud-Native JVM Frameworks (`:tools templates`)**:
+      Project starters and live development integration for Quarkus and Micronaut.
+      Quarkus RESTEasy/Panache and Micronaut HTTP service templates, auto-hooking into `:tools build`.
+- [ ] 21.1 **Git Forge Pull Requests & Issues (`:tools forge`)**:
+      Native Magit extension (`forge.el`) for GitHub and GitLab Enterprise PR reviews, issue management,
+      and code discussion inside `C-x g`, authenticated through `~/.authinfo.gpg`.
+- [ ] 22.1 **AI & LLM Pair Programming (`:tools llm`)**:
+      Native, privacy-first AI companion (`gptel` / `ellama`) with support for local offline models
+      (Ollama, llama.cpp) and corporate/cloud APIs (Gemini, Claude, OpenAI).
+      In-buffer code explanation, test generation, and AST-aware refactoring. 100% opt-in with zero background telemetry.
 
 ---
 
