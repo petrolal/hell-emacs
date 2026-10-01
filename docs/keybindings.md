@@ -32,6 +32,7 @@ otherwise it starts a new line; `M-g`, `M-h` and `M-t` keep their meanings.
 | `C-x p c` | Build the project with its wrapper; errors clickable with `M-g n` / `M-g p` | `:tools build` |
 | `C-x g` / `C-x M-g` / `C-c M-g` | Magit status / dispatch / file actions | `:tools magit` |
 | `C-x v [` `]` / `*` / `n` / `S` | Previous, next changed hunk / show / revert / stage it | `:ui vc-gutter` |
+| `C-x t 2` / `0` / `o` / `p` | New tab / close / next / open project tab | `:ui workspaces` |
 | `C-/` / `C-?` (`C-M-_` in a terminal) | Undo / redo, Emacs' own; history kept across restarts | `:editor undo` |
 
 With `(default +repeat)`, Emacs' own `repeat-mode` lets the last key

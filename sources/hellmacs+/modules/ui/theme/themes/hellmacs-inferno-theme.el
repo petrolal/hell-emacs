@@ -139,6 +139,13 @@
    `(mode-line-emphasis ((t (:foreground ,inferno-crimson :weight bold))))
    `(mode-line-highlight ((t (:box (:line-width 1 :color ,reap-gold)))))
 
+   ;;; Tab-bar / Workspaces (:ui workspaces)
+   `(tab-bar ((t (:background ,bg-deep :foreground ,forge-gray-hi))))
+   `(tab-bar-tab ((t (:background ,bg-alt :foreground ,reap-gold :weight bold :box (:line-width (1 . 1) :color ,ember-amber)))))
+   `(tab-bar-tab-inactive ((t (:background ,bg-deep :foreground ,forge-gray-hi :box (:line-width (1 . 1) :color ,bg-deep)))))
+   `(tab-bar-tab-group-current ((t (:inherit tab-bar-tab))))
+   `(tab-bar-tab-group-inactive ((t (:inherit tab-bar-tab-inactive))))
+
    ;;; Font-lock
    `(font-lock-keyword-face ((t (:foreground ,ember-amber :weight bold))))
    `(font-lock-builtin-face ((t (:foreground ,ember-amber))))

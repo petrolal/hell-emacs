@@ -39,7 +39,7 @@
            ;;unicode          ; [idea] fallback fonts for every script
            ;;vc-gutter        ; changed lines in the fringe or terminal margin (diff-hl), C-x v [ ] * n S
            ;;window-select    ; [idea] pick a window by number (ace-window)
-           ;;workspaces       ; [planned] tab-bar workspaces, one per project
+           ;;workspaces       ; tab-bar workspaces, one per project on C-x t and C-c w
            ;;zen              ; [idea] distraction-free writing (olivetti)
 
            :editor

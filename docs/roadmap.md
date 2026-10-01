@@ -393,8 +393,11 @@ iconography (`nerd-icons`):
 
 ### Later
 
-- [ ] 10.5 `:ui workspaces`: the built-in `tab-bar`, one tab per project,
-      on the stock `C-x t` keys.
+- [x] 10.5 `:ui workspaces`: the built-in `tab-bar`, one tab per project,
+      on the stock `C-x t` keys (2026-09-30: created `:ui workspaces` module
+      under `sources/hellmacs+/modules/ui/workspaces/` with smart project-aware
+      tab naming, nerd-icons, inferno theming, doctor checks, and stock `C-x t` /
+      `C-c w` keychords).
 - [ ] 10.6 Phase 10's modules in `static/init.example.el` (the languages
       are 14.7's).
 - [ ] 13.1 A GNU Info manual (`docs/hellmacs.texi`), in `C-h i` (the
