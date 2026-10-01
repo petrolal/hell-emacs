@@ -92,7 +92,7 @@ official GNU Emacs manual:
 reserved by GNU Emacs conventions for users:
 ‘C-c h’
      Hellmacs core commands (‘C-c h s’ Altar, ‘C-c h f’ Forge, ‘C-c h k’
-     IntelliJ Finder, ‘C-c h i’ Info manual).
+     IntelliJ Finder, ‘C-c h i’ Info manual, ‘C-c h p’ Relic Chamber).
 ‘C-c c’
      Code and compilation commands (‘C-c c c’ compile, ‘C-c c a’ code
      actions, ‘C-c c r’ rename).
@@ -447,17 +447,17 @@ Tag Table:
 Node: Top641
 Node: Overview2327
 Node: The 40-Year Purist Guarantee3267
-Node: Installation and Profiles4631
-Node: Daily JVM Workflow5403
-Node: IntelliJ Parity & Key Finder9131
-Node: Enhanced Dired & Projectile9703
-Node: Workspaces10664
-Node: Modules and Configuration11389
-Node: Enterprise & Team Layer12698
-Node: CLI Reference13611
-Node: Diagnostics and Doctor14628
-Node: Concept Index15316
-Node: Key Index15449
+Node: Installation and Profiles4660
+Node: Daily JVM Workflow5432
+Node: IntelliJ Parity & Key Finder9160
+Node: Enhanced Dired & Projectile9732
+Node: Workspaces10693
+Node: Modules and Configuration11418
+Node: Enterprise & Team Layer12727
+Node: CLI Reference13640
+Node: Diagnostics and Doctor14657
+Node: Concept Index15345
+Node: Key Index15478
 
 End Tag Table
 

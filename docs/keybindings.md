@@ -64,6 +64,9 @@ groups gather stock commands in one place; the stock keys keep working.
 |---|---|
 | `C-c h s` | The Altar (the startup dashboard) |
 | `C-c h f` | The Forge: find a file in the project (or pick a project first) |
+| `C-c h i` | Grimoire Manual (open Hellmacs native Info manual) |
+| `C-c h k` | IntelliJ Exorcism (Rosetta Stone / IntelliJ key finder) |
+| `C-c h p` | Relic Chamber (Hellmacs plugin & module manager) |
 | `C-c h r` | The Crucible: hot-swap changed classes into the debugged JVM, or reload into the Clojure REPL |
 | `C-c h c` | The Reaper: collect garbage now, and say how much memory is in use |
 | `C-c h S` | Sync (install what your config declares) |

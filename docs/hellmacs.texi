@@ -104,7 +104,7 @@ Custom Hellmacs commands are grouped strictly under @kbd{C-c}, the prefix
 reserved by GNU Emacs conventions for users:
 @table @kbd
 @item C-c h
-Hellmacs core commands (@kbd{C-c h s} Altar, @kbd{C-c h f} Forge, @kbd{C-c h k} IntelliJ Finder, @kbd{C-c h i} Info manual).
+Hellmacs core commands (@kbd{C-c h s} Altar, @kbd{C-c h f} Forge, @kbd{C-c h k} IntelliJ Finder, @kbd{C-c h i} Info manual, @kbd{C-c h p} Relic Chamber).
 @item C-c c
 Code and compilation commands (@kbd{C-c c c} compile, @kbd{C-c c a} code actions, @kbd{C-c c r} rename).
 @item C-c l

@@ -167,10 +167,9 @@ files a module can have are in [development.md](development.md#modules).
   `(setq hellmacs-theme 'modus-vivendi)` in `init.el` uses another; `nil`,
   none.
 - **The Altar (`*hellmacs*`)**: the native, dependency-free startup screen:
-  emblem banner, SVG action buttons, architecture diagram, and GC benchmarking telemetry.
+  emblem banner (`assets/banners/`), 6 Workspace Core Action Buttons (`[Ignite File]`, `[Summon Project]`, `[Grimoires]`, `[Hell Shell]`, `[Grimoire Manual]`, `[IntelliJ Exorcism]`), stabilized dual columns for Recent Sacrifices & Active Forges, External Sanctums & Portals (`[Relic Chamber]`, `[Forge Source]`, `[Issue Sanctum]`, `[Release Grimoires]`, `[Dark Beacon]`), and GC benchmarking telemetry.
   `TAB`/`S-TAB` move between buttons, `RET` activates, `g` redraws, `q`/`ESC` dismisses,
   `C-c h s` brings it back. `(setq hellmacs-splash-enable nil)` starts on `*scratch*`.
-- **`:ui dashboard`**: [optional/deprecated] third-party dashboard package feed.
 - **`:ui modeline`**: the buffer and position; the language server's state
   (`JVM:ready`, `JVM:purgatory`), the debugger, the mode, the Git branch,
   flymake's counts.
