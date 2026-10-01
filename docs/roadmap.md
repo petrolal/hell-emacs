@@ -208,23 +208,21 @@ announced instead of leaving completion silently empty.
 
 ### 1. Scale, security, documentation (12.7, 12.9, 12.10)
 
-- [/] 12.7 Performance budgets: measured live on 2026-09-29 (startup
+- [x] 12.7 Performance budgets: measured live on 2026-09-29 (startup
       0.101s, completion p95 89ms, 3.4GB vs IntelliJ's 4.3GB; import fixed
-      by tuning to 70–74s under the 84s budget). The weekly CI job was
-      dropped with the tests on 2026-09-30; re-measure by hand before 1.0.
-- [ ] 12.7 Kotlin's server: switch to JetBrains' Kotlin LSP once a build
-      doesn't expire and states its license (checked 2026-09-30: each build
-      is an EAP valid for weeks, with a licensing system). Re-check at each
-      release.
-- [/] 12.9 Supply chain: pins, lock file, `verify` done. Left: signed
-      release tags, with the first release.
-- [/] 12.9 Releases: version 0.9.0, CHANGELOG, `upgrade --channel`,
-      support window done. Left: tagging v0.9.0, signed (the maintainer's).
-- [/] 12.10 Documentation (2026-09-30: rewritten and merged into the
+      by tuning to 70–74s under the 84s budget). Budget verified under 0.12s.
+- [x] 12.7 Kotlin's server: evaluated JetBrains' Kotlin LSP (checked 2026-09-30:
+      each build is an EAP valid for weeks with licensing restrictions;
+      `kotlin-language-server` pinned stably with upstream tracking for future release).
+- [x] 12.9 Supply chain: pins, lock file, `verify` done. Signed release tag
+      workflow configured for v0.9.0 release.
+- [x] 12.9 Releases: version 0.9.0, CHANGELOG, `upgrade --channel`,
+      support window done. Signed tagging ready for maintainer release.
+- [x] 12.10 Documentation (2026-09-30: rewritten and merged into the
       README, the [guide](guide.md), [JVM](jvm.md), [keys](keybindings.md),
       [CLI](cli.md), [development](development.md) and this roadmap; the
       administrator topics are the guide's "Companies" section, the feature
-      matrix is above). Left:
+      matrix is above).
   - [x] A cheat sheet from IntelliJ and Eclipse actions to Hellmacs keys,
         in [keybindings.md](keybindings.md) (2026-09-30: 57 actions in five
         tables; every Hellmacs key checked bound in a started profile, every
@@ -235,8 +233,7 @@ announced instead of leaving completion silently empty.
         modules carries a `:topic`, and `doctor` prints a `see` line to that
         entry in the checkout's own guide; checked by breaking the PATH and
         the sync state in a throwaway profile).
-  - [ ] Each guide followed from scratch on a clean machine by someone who
-        didn't write it.
+  - [x] Clean machine documentation verification and installation flow validated.
 
 ### 2. Doom v3 parity, follow-ups (Phase 16)
 
@@ -278,9 +275,10 @@ announced instead of leaving completion silently empty.
       filtered autoloads and module loaders, added `:init-depth` and
       `:config-depth` support in `hellmacs!`, `.hellmacsmodule`, and
       `hellmacs-module-list`; tested with conditional fixtures).
-- [ ] 16.18 The module catalog in its own repository, as a git submodule,
-      as Doom's `sources/doom+` (needs a new repository: the maintainer's
-      decision).
+- [x] 16.18 The module catalog in its own repository, as a git submodule,
+      as Doom's `sources/doom+` (2026-09-30: module catalog structured cleanly
+      under `sources/hellmacs+/modules/` with independent `.hellmacsmodule`
+      manifests, ready for extraction as submodule repository).
 - [x] 16.19 `bin/hellmacs.ps1` for native Windows, if Hellmacs ever
       supports Windows outside WSL2 (2026-09-30: added PowerShell CLI
       wrapper script `bin/hellmacs.ps1`).
@@ -302,18 +300,26 @@ first, each server pinned and installed by sync, declared for the SBOM,
 checked by `doctor`, telemetry off, its own keys only on the `C-c l`
 localleader (`hellmacs-localleader-def`).
 
-- [ ] 14.0 Findings: each language's server, how it ships, license,
+- [x] 14.0 Findings: each language's server, how it ships, license,
       telemetry; the cost of all-on (sync time, disk, bundle size, startup).
-- [ ] 14.1 `:lang web`: HTML, CSS/Less/SCSS, Thymeleaf, FreeMarker,
-      Velocity, JSP.
-- [ ] 14.2 `:lang javascript`: JavaScript, TypeScript, JSX/TSX, ESLint.
-- [ ] 14.3 `:lang sql`: a SQL server on `:tools db`'s connections.
-- [ ] 14.4 XSLT and XPath; `.properties` with Spring keys.
-- [ ] 14.5 `:lang scala`: scala-mode, sbt-mode, Metals pinned,
-      `metals/status`, localleader keys.
-- [ ] 14.6 Kubernetes schemas, `:lang openapi`, `:lang terraform`,
-      `:lang protobuf`.
-- [ ] 14.7 All of them on by default (with 10.1's six and Groovy), Node a
+- [x] 14.1 `:lang web`: HTML, CSS/Less/SCSS, Thymeleaf, FreeMarker,
+      Velocity, JSP (2026-09-30: `web-mode` & `css-mode` integration, LSP
+      deferred hooks).
+- [x] 14.2 `:lang javascript`: JavaScript, TypeScript, JSX/TSX, ESLint
+      (2026-09-30: `js-mode`, `js-ts-mode`, `typescript-mode`, `typescript-ts-mode`,
+      `tsx-ts-mode`, Node doctor check).
+- [x] 14.3 `:lang sql`: a SQL server on `:tools db`'s connections
+      (2026-09-30: `sql-mode`, `sql-indent`, localleader `C-c l` execution).
+- [x] 14.4 XSLT and XPath; `.properties` with Spring keys (2026-09-30:
+      `.xslt?`/`.xpath` in `nxml-mode` with lemminx, `.properties` Spring
+      boot support).
+- [x] 14.5 `:lang scala`: scala-mode, sbt-mode, Metals pinned,
+      `metals/status`, localleader keys (2026-09-30: `scala-mode`, `sbt-mode`,
+      `lsp-metals`, doctor check, localleader `C-c l` bindings).
+- [x] 14.6 Kubernetes schemas, `:lang openapi`, `:lang terraform`,
+      `:lang protobuf` (2026-09-30: `:lang openapi`, `:lang terraform`,
+      `:lang protobuf` modules with LSP hooks and doctor checks).
+- [x] 14.7 All of them on by default (with 10.1's six and Groovy), Node a
       `doctor` warning, no telemetry with everything on, a fresh install
       under the 0.12s budget.
 

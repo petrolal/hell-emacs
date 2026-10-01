@@ -49,9 +49,11 @@
 ;; Installed with sync's installer, not lsp-mode's own, if it's missing.
 (hellmacs-lsp-pin-installer 'xmlls '(:lang . data) 'hellmacs-xml-sync-install-server)
 
-;; Maven's other XML files.
+;; Maven's other XML files, and XSLT/XPath schemas.
 (add-to-list 'auto-mode-alist '("\\.pom\\'" . nxml-mode))
 (add-to-list 'auto-mode-alist '("/\\.classpath\\'" . nxml-mode))
 (add-to-list 'auto-mode-alist '("\\.launch\\'" . nxml-mode))
+(add-to-list 'auto-mode-alist '("\\.xslt?\\'" . nxml-mode))
+(add-to-list 'auto-mode-alist '("\\.xpath\\'" . nxml-mode))
 
 (add-hook! nxml-mode #'lsp-deferred)

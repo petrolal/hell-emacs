@@ -113,7 +113,7 @@
            kotlin             ; Kotlin: kotlin-language-server; a JDK (+tree-sitter)
            clojure            ; Clojure: CIDER REPL + clojure-lsp (+tree-sitter: Emacs 30.1+)
            ;;groovy           ; Groovy, Gradle scripts, Jenkinsfiles: groovy-language-server (built by sync)
-           ;;scala            ; [planned] Scala: Metals, sbt (+tree-sitter)
+           ;;scala            ; Scala: Metals, sbt (+tree-sitter)
            ;; Everything else. The name after the colon is the language server the
            ;; module would run through :tools lsp.
            ;;agda             ; [idea] Agda: agda-mode (no LSP)
@@ -125,7 +125,7 @@
            ;;crystal          ; [idea] Crystal: crystalline
            ;;csharp           ; [idea] C#: csharp-ls (Roslyn)
            ;;dart             ; [idea] Dart and Flutter: the Dart analysis server
-           ;;data             ; XML (pom.xml, Spring XML): lemminx, pinned jar on a JDK
+           ;;data             ; XML, XSLT, XPath: lemminx, pinned jar on a JDK
            ;;dhall            ; [idea] Dhall: dhall-lsp-server
            ;;docker           ; Dockerfile and Compose: docker-language-server (+tree-sitter)
            ;;elixir           ; [idea] Elixir: Expert (elixir-ls)
@@ -142,7 +142,7 @@
            ;;graphviz         ; [idea] Graphviz dot files (no LSP)
            ;;haskell          ; [idea] Haskell: haskell-language-server
            ;;janet            ; [idea] Janet: janet-lsp
-           ;;javascript       ; [planned] JavaScript, TypeScript, JSX: vtsls (typescript-language-server)
+           ;;javascript       ; JavaScript, TypeScript, JSX/TSX: typescript-language-server
            ;;json             ; JSON: vscode-json-language-server; needs Node (+tree-sitter)
            ;;julia            ; [idea] Julia: LanguageServer.jl
            ;;latex            ; [idea] LaTeX: texlab, AUCTeX
@@ -152,13 +152,13 @@
            ;;markdown         ; Markdown: marksman
            ;;nim              ; [idea] Nim: nimlangserver
            ;;nix              ; [idea] Nix: nixd (nil)
-           ;;openapi          ; [planned] OpenAPI and Swagger: pinned schemas
+           ;;openapi          ; OpenAPI and Swagger: schema validation for YAML/JSON
            ;;ocaml            ; [idea] OCaml: ocaml-lsp-server
            ;;odin             ; [idea] Odin: ols
            ;;org              ; [idea] Org mode (no LSP)
            ;;php              ; [planned] PHP: phpactor (intelephense)
            ;;plantuml         ; [idea] PlantUML diagrams (no LSP)
-           ;;protobuf         ; [planned] Protocol Buffers: buf
+           ;;protobuf         ; Protocol Buffers: protobuf-mode, protoc / bufls
            ;;purescript       ; [idea] PureScript: purescript-language-server
            ;;python           ; [planned] Python: basedpyright, ruff
            ;;racket           ; [idea] Racket: racket-langserver
@@ -169,11 +169,11 @@
            ;;sh               ; Shell scripts, gradlew/mvnw: bash-language-server; needs Node (+tree-sitter)
            ;;sml              ; [idea] Standard ML: millet
            ;;solidity         ; [idea] Solidity: nomicfoundation-solidity-language-server
-           ;;sql              ; [planned] SQL: sqls
+           ;;sql              ; SQL: sql-mode, sql-indent, JDBC connections
            ;;swift            ; [idea] Swift: sourcekit-lsp
-           ;;terraform        ; [planned] Terraform and HCL: terraform-ls
+           ;;terraform        ; Terraform and HCL: terraform-ls
            ;;toml             ; [idea] TOML: taplo
-           ;;web              ; [planned] HTML and CSS: vscode-html/css-language-server
+           ;;web              ; HTML, CSS, Less, SCSS, Thymeleaf, Velocity, FreeMarker, JSP
            ;;yaml             ; YAML: yaml-language-server; needs Node (+tree-sitter)
            ;;zig              ; [idea] Zig: zls
 
