@@ -114,22 +114,40 @@
            (java +lombok +spring) ; Java: JDTLS, Spring Boot; a JDK 21+ (+lombok, +spring, +tree-sitter)
            kotlin             ; Kotlin: kotlin-language-server; a JDK (+tree-sitter)
            clojure            ; Clojure: CIDER REPL + clojure-lsp (+tree-sitter: Emacs 30.1+)
-           ;;groovy           ; Groovy, Gradle scripts, Jenkinsfiles: groovy-language-server (built by sync)
-           ;;scala            ; Scala: Metals, sbt (+tree-sitter)
-           ;; Everything else. The name after the colon is the language server the
-           ;; module would run through :tools lsp.
+           groovy             ; Groovy, Gradle scripts, Jenkinsfiles: groovy-language-server (built by sync)
+           scala              ; Scala: Metals, sbt (+tree-sitter)
+
+           ;; Web, Data, Cloud & DevOps (bundled by default, matching IntelliJ IDEA Ultimate)
+           data               ; XML, XSLT, XPath, .properties: lemminx on a JDK
+           docker             ; Dockerfile and Compose: docker-language-server (+tree-sitter)
+           javascript         ; JavaScript, TypeScript, JSX/TSX: typescript-language-server
+           json               ; JSON: vscode-json-language-server; needs Node (+tree-sitter)
+           markdown           ; Markdown: marksman
+           openapi            ; OpenAPI and Swagger: schema validation for YAML/JSON
+           protobuf           ; Protocol Buffers: protobuf-mode, protoc / bufls
+           sh                 ; Shell scripts, gradlew/mvnw: bash-language-server; needs Node (+tree-sitter)
+           sql                ; SQL: sql-mode, sql-indent, JDBC connections
+           terraform          ; Terraform and HCL: terraform-ls
+           web                ; HTML, CSS, Less, SCSS, Thymeleaf, Velocity, FreeMarker, JSP
+           yaml               ; YAML: yaml-language-server; needs Node (+tree-sitter)
+
+           ;; Plugin languages (manage via `bin/hellmacs plugins' or uncomment below)
+           ;;cc               ; C, C++, Objective-C: clangd
+           ;;go               ; Go: gopls
+           ;;php              ; PHP: phpactor (intelephense)
+           ;;python           ; Python: basedpyright, ruff
+           ;;ruby             ; Ruby: ruby-lsp
+
+           ;; Additional language modules
            ;;agda             ; [idea] Agda: agda-mode (no LSP)
            ;;beancount        ; [idea] Beancount: beancount-language-server
-           ;;cc               ; [planned] C, C++, Objective-C: clangd
            ;;cmake            ; [idea] CMake: neocmakelsp
            ;;common-lisp      ; [idea] Common Lisp: SLY (REPL, no LSP)
            ;;coq              ; [idea] Rocq/Coq: coq-lsp, Proof General
            ;;crystal          ; [idea] Crystal: crystalline
            ;;csharp           ; [idea] C#: csharp-ls (Roslyn)
            ;;dart             ; [idea] Dart and Flutter: the Dart analysis server
-           ;;data             ; XML, XSLT, XPath: lemminx, pinned jar on a JDK
            ;;dhall            ; [idea] Dhall: dhall-lsp-server
-           ;;docker           ; Dockerfile and Compose: docker-language-server (+tree-sitter)
            ;;elixir           ; [idea] Elixir: Expert (elixir-ls)
            ;;elm              ; [idea] Elm: elm-language-server
            ;;emacs-lisp       ; [idea] Emacs Lisp extras: macrostep, elisp-demos (no LSP)
@@ -139,44 +157,30 @@
            ;;fsharp           ; [idea] F#: fsautocomplete
            ;;gdscript         ; [idea] Godot GDScript: the Godot editor's server
            ;;gleam            ; [idea] Gleam: gleam lsp
-           ;;go               ; [planned] Go: gopls
            ;;graphql          ; [idea] GraphQL: graphql-lsp
            ;;graphviz         ; [idea] Graphviz dot files (no LSP)
            ;;haskell          ; [idea] Haskell: haskell-language-server
            ;;janet            ; [idea] Janet: janet-lsp
-           ;;javascript       ; JavaScript, TypeScript, JSX/TSX: typescript-language-server
-           ;;json             ; JSON: vscode-json-language-server; needs Node (+tree-sitter)
            ;;julia            ; [idea] Julia: LanguageServer.jl
            ;;latex            ; [idea] LaTeX: texlab, AUCTeX
            ;;lean             ; [idea] Lean 4: the Lean server
            ;;ledger           ; [idea] Ledger accounting (no LSP)
            ;;lua              ; [idea] Lua: lua-language-server
-           ;;markdown         ; Markdown: marksman
            ;;nim              ; [idea] Nim: nimlangserver
            ;;nix              ; [idea] Nix: nixd (nil)
-           ;;openapi          ; OpenAPI and Swagger: schema validation for YAML/JSON
            ;;ocaml            ; [idea] OCaml: ocaml-lsp-server
            ;;odin             ; [idea] Odin: ols
            ;;org              ; [idea] Org mode (no LSP)
-           ;;php              ; [planned] PHP: phpactor (intelephense)
            ;;plantuml         ; [idea] PlantUML diagrams (no LSP)
-           ;;protobuf         ; Protocol Buffers: protobuf-mode, protoc / bufls
            ;;purescript       ; [idea] PureScript: purescript-language-server
-           ;;python           ; [planned] Python: basedpyright, ruff
            ;;racket           ; [idea] Racket: racket-langserver
            ;;rst              ; [idea] reStructuredText: esbonio
-           ;;ruby             ; [planned] Ruby: ruby-lsp
            ;;rust             ; [idea] Rust: rust-analyzer
            ;;scheme           ; [idea] Scheme: Geiser (no LSP)
-           ;;sh               ; Shell scripts, gradlew/mvnw: bash-language-server; needs Node (+tree-sitter)
            ;;sml              ; [idea] Standard ML: millet
            ;;solidity         ; [idea] Solidity: nomicfoundation-solidity-language-server
-           ;;sql              ; SQL: sql-mode, sql-indent, JDBC connections
            ;;swift            ; [idea] Swift: sourcekit-lsp
-           ;;terraform        ; Terraform and HCL: terraform-ls
            ;;toml             ; [idea] TOML: taplo
-           ;;web              ; HTML, CSS, Less, SCSS, Thymeleaf, Velocity, FreeMarker, JSP
-           ;;yaml             ; YAML: yaml-language-server; needs Node (+tree-sitter)
            ;;zig              ; [idea] Zig: zls
 
            :app
