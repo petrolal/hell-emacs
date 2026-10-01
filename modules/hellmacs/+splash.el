@@ -23,11 +23,13 @@
 
 ;; Replaces the GNU splash screen with the Altar: a pure, dependency-free
 ;; GNU Emacs native startup hub displaying our infernal altar artwork,
-;; interactive SVG sprite action buttons, centered architecture diagram,
-;; and dynamic GC benchmark telemetry.
+;; interactive SVG sprite action buttons, dynamic two-column sacrifices
+;; & forges dashboard, and dynamic GC benchmark telemetry.
 
 (require 'button)
 (require 'image)
+(require 'project)
+(require 'recentf)
 (require 'subr-x)
 
 (defvar hellmacs-dir)
@@ -62,27 +64,17 @@
 
 (defface hellmacs-splash-hint
   '((t (:foreground "#6272a4")))
-  "Face for the splash screen's key hints."
+  "Face for the splash screen's key hints and secondary paths."
   :group 'hellmacs-splash)
 
 (defface hellmacs-splash-border
   '((t (:foreground "#ff5555" :weight bold)))
-  "Face for box drawing borders in the architecture diagram."
+  "Face for separator lines in the dashboard."
   :group 'hellmacs-splash)
 
-(defface hellmacs-splash-diagram-heading
+(defface hellmacs-splash-section-heading
   '((t (:foreground "#ffb86c" :weight bold)))
-  "Face for section headings in the architecture diagram."
-  :group 'hellmacs-splash)
-
-(defface hellmacs-splash-diagram-text
-  '((t (:foreground "#f8f8f2")))
-  "Face for main component text in the architecture diagram."
-  :group 'hellmacs-splash)
-
-(defface hellmacs-splash-diagram-detail
-  '((t (:foreground "#6272a4")))
-  "Face for explanatory notes in the architecture diagram."
+  "Face for section headings in the two-column dashboard."
   :group 'hellmacs-splash)
 
 (defface hellmacs-splash-button
@@ -90,7 +82,7 @@
         :background "#1c1e24"
         :foreground "#f8f8f2"
         :weight bold)))
-  "Face for interactive quick-start buttons on the Altar."
+  "Face for interactive quick-start sprite buttons on the Altar."
   :group 'hellmacs-splash)
 
 (defface hellmacs-splash-button-active
@@ -98,7 +90,17 @@
         :background "#282a36"
         :foreground "#ff79c6"
         :weight bold)))
-  "Face for active/focused buttons on the Altar."
+  "Face for active/focused sprite buttons on the Altar."
+  :group 'hellmacs-splash)
+
+(defface hellmacs-splash-item
+  '((t (:foreground "#f8f8f2")))
+  "Face for file and project items in the two-column dashboard."
+  :group 'hellmacs-splash)
+
+(defface hellmacs-splash-item-active
+  '((t (:foreground "#ff79c6" :underline t :weight bold)))
+  "Face for hovered/focused file and project items in the two-column dashboard."
   :group 'hellmacs-splash)
 
 (defconst hellmacs-splash-buffer-name "*hellmacs*"
@@ -229,26 +231,114 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
          (call-interactively #'eshell))
         (t (call-interactively #'shell))))
 
-(defun hellmacs-splash--diagram-lines ()
-  "Return the formatted, color-coded Golden-Age architectural diagram lines."
-  (let ((b (lambda (s) (propertize s 'face 'hellmacs-splash-border)))
-        (h (lambda (s) (propertize s 'face 'hellmacs-splash-diagram-heading)))
-        (t-fn (lambda (s) (propertize s 'face 'hellmacs-splash-diagram-text)))
-        (d (lambda (s) (propertize s 'face 'hellmacs-splash-diagram-detail))))
-    (list
-     (funcall b "┌────────────────────────────────────────────────────────┐")
-     (concat (funcall b "│") "                   " (funcall h "MINIBUFFER / DISCOVERY") "               " (funcall b "│"))
-     (concat (funcall b "│") "     " (funcall t-fn "Vertico + Orderless + Marginalia + Consult") "         " (funcall b "│"))
-     (concat (funcall b "│") "   " (funcall d "(Enhances completing-read without popup frameworks)") "  " (funcall b "│"))
-     (funcall b "├───────────────────────────┬────────────────────────────┤")
-     (concat (funcall b "│") "     " (funcall h "PROJECT & FILES") "       " (funcall b "│") "        " (funcall h "INTELLIGENCE") "        " (funcall b "│"))
-     (concat (funcall b "│") "    " (funcall t-fn "Native project.el") "      " (funcall b "│") "     " (funcall t-fn "Native eglot + xref") "    " (funcall b "│"))
-     (concat (funcall b "│") "  " (funcall t-fn "+ Enhanced Dired / Icons") " " (funcall b "│") "   " (funcall d "(Flymake in raw buffers)") " " (funcall b "│"))
-     (funcall b "├───────────────────────────┴────────────────────────────┤")
-     (concat (funcall b "│") "                      " (funcall h "CORE SYNTAX") "                       " (funcall b "│"))
-     (concat (funcall b "│") "           " (funcall t-fn "Native treesit.el (Emacs C-Core)") "             " (funcall b "│"))
-     (concat (funcall b "│") "        " (funcall d "(Exact AST highlighting & navigation)") "           " (funcall b "│"))
-     (funcall b "└────────────────────────────────────────────────────────┘"))))
+;;; Dynamic Sacrifices & Forges Data -----------------------------------------
+
+(defun hellmacs-splash--get-recents (&optional limit)
+  "Return up to LIMIT recent file paths."
+  (unless recentf-mode
+    (recentf-mode 1))
+  (let ((lim (or limit 5)))
+    (seq-take (seq-filter (lambda (f) (and (stringp f) (file-exists-p f)))
+                          (bound-and-true-p recentf-list))
+              lim)))
+
+(defun hellmacs-splash--get-projects (&optional limit)
+  "Return up to LIMIT known project paths."
+  (let ((lim (or limit 5))
+        (projects (cond ((and (bound-and-true-p projectile-known-projects)
+                              (featurep 'projectile))
+                         projectile-known-projects)
+                        ((fboundp 'project-known-project-roots)
+                         (project-known-project-roots))
+                        (t nil))))
+    (seq-take (seq-filter (lambda (p) (and (stringp p) (file-exists-p p)))
+                          projects)
+              lim)))
+
+(defun hellmacs-splash--file-icon (file)
+  "Return nerd-icons or unicode icon for FILE."
+  (if (and (display-graphic-p) (fboundp 'nerd-icons-icon-for-file))
+      (condition-case nil
+          (nerd-icons-icon-for-file file :height 0.9)
+        (error "📄"))
+    "📄"))
+
+(defun hellmacs-splash--project-icon (dir)
+  "Return nerd-icons or unicode icon for project DIR."
+  (if (and (display-graphic-p) (fboundp 'nerd-icons-octicon))
+      (condition-case nil
+          (nerd-icons-octicon "nf-oct-rocket" :height 0.9)
+        (error "🚀"))
+    "🚀"))
+
+(defun hellmacs-splash--truncate-str (str max-len)
+  "Truncate STR to MAX-LEN columns with ellipsis if needed."
+  (if (> (string-width str) max-len)
+      (concat (substring str 0 (max 0 (- max-len 1))) "…")
+    str))
+
+(defun hellmacs-splash--format-file-entry (path max-width)
+  "Format PATH with icon, filename, and directory within MAX-WIDTH."
+  (let* ((icon (hellmacs-splash--file-icon path))
+         (abbrev (abbreviate-file-name path))
+         (fname (file-name-nondirectory abbrev))
+         (dir (file-name-directory abbrev))
+         (dir-str (if dir (hellmacs-splash--truncate-str dir (max 8 (- max-width (string-width fname) 6))) ""))
+         (base (format "%s %s" icon fname)))
+    (if (and dir-str (not (string-empty-p dir-str)))
+        (let* ((total-str (format "%s  %s" base (propertize dir-str 'face 'hellmacs-splash-hint))))
+          (if (<= (string-width total-str) max-width)
+              total-str
+            (hellmacs-splash--truncate-str total-str max-width)))
+      (hellmacs-splash--truncate-str base max-width))))
+
+(defun hellmacs-splash--format-project-entry (path max-width)
+  "Format project root PATH with icon, name, and directory within MAX-WIDTH."
+  (let* ((icon (hellmacs-splash--project-icon path))
+         (clean-path (directory-file-name path))
+         (abbrev (abbreviate-file-name clean-path))
+         (pname (file-name-nondirectory abbrev))
+         (dir (file-name-directory abbrev))
+         (dir-str (if dir (hellmacs-splash--truncate-str dir (max 8 (- max-width (string-width pname) 6))) ""))
+         (base (format "%s %s" icon pname)))
+    (if (and dir-str (not (string-empty-p dir-str)))
+        (let* ((total-str (format "%s  %s" base (propertize dir-str 'face 'hellmacs-splash-hint))))
+          (if (<= (string-width total-str) max-width)
+              total-str
+            (hellmacs-splash--truncate-str total-str max-width)))
+      (hellmacs-splash--truncate-str base max-width))))
+
+(defun hellmacs-splash--insert-file-button (path max-width)
+  "Insert an interactive button for opening file PATH formatted to MAX-WIDTH."
+  (let* ((formatted (hellmacs-splash--format-file-entry path max-width))
+         (len (string-width formatted)))
+    (insert-text-button formatted
+                        'action (lambda (_) (find-file path))
+                        'follow-link t
+                        'help-echo (format "Open %s" path)
+                        'face 'hellmacs-splash-item
+                        'mouse-face 'hellmacs-splash-item-active)
+    (when (< len max-width)
+      (insert (make-string (- max-width len) ?\s)))))
+
+(defun hellmacs-splash--insert-project-button (path max-width)
+  "Insert an interactive button for switching to project PATH formatted to MAX-WIDTH."
+  (let* ((formatted (hellmacs-splash--format-project-entry path max-width))
+         (len (string-width formatted)))
+    (insert-text-button formatted
+                        'action (lambda (_)
+                                  (if (and (fboundp 'projectile-switch-project-by-name)
+                                           (featurep 'projectile))
+                                      (projectile-switch-project-by-name path)
+                                    (project-switch-project path)))
+                        'follow-link t
+                        'help-echo (format "Summon project %s" path)
+                        'face 'hellmacs-splash-item
+                        'mouse-face 'hellmacs-splash-item-active)
+    (when (< len max-width)
+      (insert (make-string (- max-width len) ?\s)))))
+
+;;; Splash Rendering ---------------------------------------------------------
 
 (defun hellmacs-splash--render ()
   "Draw the native splash screen into the current buffer, centered in its window."
@@ -263,7 +353,7 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
         (let* ((img-size (image-size img))
                (img-cols (ceiling (car img-size)))
                (img-lines (ceiling (cdr img-size)))
-               (content-height (+ img-lines 22))
+               (content-height (+ img-lines 20))
                (top-margin (max 0 (/ (- height content-height) 3)))
                (left-margin (max 0 (/ (- width img-cols) 2))))
           (insert (make-string top-margin ?\n))
@@ -274,7 +364,7 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
       (let* ((ascii-lines (hellmacs-splash--ascii-lines))
              (sigil-width (apply #'max (mapcar #'string-width ascii-lines)))
              (sigil-indent (make-string (max 0 (/ (- width sigil-width) 2)) ?\s))
-             (content-height (+ (length ascii-lines) 22))
+             (content-height (+ (length ascii-lines) 20))
              (top-margin (max 0 (/ (- height content-height) 3))))
         (insert (make-string top-margin ?\n))
         (dolist (line ascii-lines)
@@ -287,7 +377,6 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
                       ("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
                       ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡")))
            (gap "   ")
-           ;; Visual width approximation for centering: 4 chars padding + icon + label
            (total-btn-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) buttons))
                                (* (string-width gap) (1- (length buttons)))))
            (left-pad (make-string (max 0 (/ (- width total-btn-width) 2)) ?\s)))
@@ -296,15 +385,55 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
         (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
         (unless (eq b (car (last buttons)))
           (insert gap)))
-      (insert "\n\n"))
+      (insert "\n\n\n")) ; 2 empty lines of breathing room
 
-    ;; 3. Centered Golden-Age Architecture Diagram
-    (let* ((diagram-lines (hellmacs-splash--diagram-lines))
-           (diag-width 58)
-           (diag-indent (make-string (max 0 (/ (- width diag-width) 2)) ?\s)))
-      (dolist (line diagram-lines)
-        (insert diag-indent line "\n"))
-      (insert "\n"))
+    ;; 3. Dynamic Two-Column Utility Core (Recents & Projects)
+    (let* ((col-width (max 32 (min 38 (/ (- width 8) 2))))
+           (gap "    ")
+           (gap-len (string-width gap))
+           (table-width (+ (* col-width 2) gap-len))
+           (table-indent (make-string (max 0 (/ (- width table-width) 2)) ?\s))
+           (recents (hellmacs-splash--get-recents 5))
+           (projects (hellmacs-splash--get-projects 5))
+           (max-rows (max 1 (max (length recents) (length projects)))))
+
+      ;; Headers
+      (insert table-indent
+              (propertize (truncate-string-to-width "RECENT SACRIFICES" col-width nil ?\s)
+                          'face 'hellmacs-splash-section-heading)
+              gap
+              (propertize (truncate-string-to-width "ACTIVE FORGES" col-width nil ?\s)
+                          'face 'hellmacs-splash-section-heading)
+              "\n")
+      ;; Underlines
+      (insert table-indent
+              (propertize (make-string col-width ?─) 'face 'hellmacs-splash-border)
+              gap
+              (propertize (make-string col-width ?─) 'face 'hellmacs-splash-border)
+              "\n")
+
+      ;; Rows
+      (dotimes (i max-rows)
+        (let ((file (nth i recents))
+              (proj (nth i projects)))
+          (insert table-indent)
+          ;; Left Column (Recents)
+          (if file
+              (hellmacs-splash--insert-file-button file col-width)
+            (if (= i 0)
+                (insert (propertize (truncate-string-to-width "No sacrifices recorded yet" col-width nil ?\s)
+                                    'face 'hellmacs-splash-hint))
+              (insert (make-string col-width ?\s))))
+          (insert gap)
+          ;; Right Column (Projects)
+          (if proj
+              (hellmacs-splash--insert-project-button proj col-width)
+            (if (= i 0)
+                (insert (propertize (truncate-string-to-width "No forges discovered yet" col-width nil ?\s)
+                                    'face 'hellmacs-splash-hint))
+              (insert (make-string col-width ?\s))))
+          (insert "\n")))
+      (insert "\n\n"))
 
     ;; 4. Dynamic GC & Benchmarking Footer
     (hellmacs-splash--insert-centered hellmacs-splash-tagline 'hellmacs-splash-tagline width)
@@ -363,8 +492,8 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
                   (list "  "
                         (propertize (format " [%s] " (upcase hellmacs-profile))
                                     'face '(:foreground "#16171d" :background "#ff5555" :weight bold))
-                        "  Altar (Hellmacs)")
-                nil))
+                        "  Hellmacs Altar")
+                "  Hellmacs Altar"))
   (add-hook 'window-size-change-functions #'hellmacs-splash--resize-h nil t))
 
 (defun hellmacs-splash--resize-h (window)
