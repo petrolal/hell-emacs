@@ -1,35 +1,73 @@
-# Dotfiles at the root: only Hellmacs' own, as Doom's .gitignore.
+# Dotfiles at the root: only Hellmacs' own, matching Doom & Centaur Emacs conventions.
 /.*
 !/.hellmacs
 !/.dir-locals.el
 !/.gitignore
 !/.github
 
-# Where older Hellmacs versions kept packages and state, before it moved
-# to the XDG directories. Nothing writes here any more; safe to delete.
+# Where older Hellmacs versions or local runs keep packages, state, and caches.
 /var/
 /etc/
 /.local*/
+/elpaca/
+/cache/
+/eln-cache/
+/auto-save-list/
 
-# Your config, if $HELLMACSDIR is this checkout: as in Doom v3, Hellmacs
-# has no init.el of its own (sync generates the profile's), so a root .el
-# other than early-init.el, and these directories, are yours.
+# User config in root if $HELLMACSDIR is this checkout.
 /*.el
 !/early-init.el
 /user-lisp/
 /themes/
 /snippets/
+/templates/
 /modules/*/
 !/modules/hellmacs/
 /sources/*/
 !/sources/hellmacs+/
 
-# Byte-compiled / native-compiled artifacts, wherever they land.
+# Compilation artifacts & shared libraries (native-comp, tree-sitter grammars).
 *.elc
 *.eln
-eln-cache/
+*.so
+*.dll
+*.dylib
 
-# Editor/OS cruft.
+# Editor, auto-save, lock files, and backups.
 *~
 \#*\#
+.\#*
+*.bak
+*.orig
+*.swp
+*.swo
+
+# Runtime state, caches, and custom files.
+custom.el
+custom-*.el
+packages.lock.eld
+recentf*
+bookmarks*
+places*
+history*
+tramp*
+url/
+ido.last
+projectile.cache
+.projectile
+.cpcache/
+.bloop/
+.metals/
+.bsp/
+.idea/
+.vscode/
+
+# Package & backup archives.
+*.tar.gz
+*.tar.xz
+*.tar.zst
+*.zip
+
+# OS metadata.
 .DS_Store
+Thumbs.db

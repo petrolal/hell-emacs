@@ -1,0 +1,97 @@
+#!/usr/bin/env hellmacsscript
+;;; bin/hellmacs-plugins --- Plugin and module manager CLI -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+(require 'hellmacs-plugins)
+
+(defcli! plugins (&optional subcmd &rest args)
+  "Browse, enable, disable, and update Hellmacs modules and plugins.
+
+Usage:
+  bin/hellmacs plugins list
+  bin/hellmacs plugins search QUERY
+  bin/hellmacs plugins enable MODULE...
+  bin/hellmacs plugins disable MODULE...
+  bin/hellmacs plugins update"
+  (pcase (or subcmd "list")
+    ("list"
+     (let ((plugins (hellmacs-plugins-all)))
+       (hellmacs-cli--say "Available Hellmacs modules and plugins:\n")
+       (dolist (p plugins)
+         (let ((status (if (plist-get p :enabled) "[✓ enabled]" "[  disabled]"))
+               (group (plist-get p :group))
+               (name (plist-get p :name))
+               (desc (plist-get p :desc)))
+           (hellmacs-cli--say "  %-12s :%-10s %-16s %s"
+                              status group name desc)))
+       (hellmacs-cli--say "\nUse `bin/hellmacs plugins enable MODULE' to enable a module.")))
+
+    ("search"
+     (let* ((query (or (car args) (error "Usage: bin/hellmacs plugins search QUERY")))
+            (plugins (hellmacs-plugins-all))
+            (matches (seq-filter (lambda (p)
+                                   (let ((text (format "%s %s %s"
+                                                       (plist-get p :group)
+                                                       (plist-get p :name)
+                                                       (plist-get p :desc))))
+                                     (string-match-p (regexp-quote query) text)))
+                                 plugins)))
+       (if (null matches)
+           (hellmacs-cli--say "No modules found matching '%s'" query)
+         (hellmacs-cli--say "Search results for '%s':\n" query)
+         (dolist (p matches)
+           (let ((status (if (plist-get p :enabled) "[✓ enabled]" "[  disabled]"))
+                 (group (plist-get p :group))
+                 (name (plist-get p :name))
+                 (desc (plist-get p :desc)))
+             (hellmacs-cli--say "  %-12s :%-10s %-16s %s" status group name desc))))))
+
+    ("enable"
+     (unless args
+       (error "Usage: bin/hellmacs plugins enable MODULE..."))
+     (dolist (mod args)
+       (let* ((parts (split-string mod "/"))
+              (name (intern (car (last parts))))
+              (group (if (cdr parts) (intern (car parts)) 'lang)))
+         (hellmacs-plugin-enable group name))))
+
+    ("disable"
+     (unless args
+       (error "Usage: bin/hellmacs plugins disable MODULE..."))
+     (dolist (mod args)
+       (let* ((parts (split-string mod "/"))
+              (name (intern (car (last parts))))
+              (group (if (cdr parts) (intern (car parts)) 'lang)))
+         (hellmacs-plugin-disable group name))))
+
+    ("update"
+     (hellmacs-cli--say "Checking for plugin updates...")
+     (if (= (hash-table-count hellmacs-third-party-plugins) 0)
+         (hellmacs-cli--say "No third-party plugins declared. All core modules are synchronized.")
+       (maphash (lambda (name plist)
+                  (hellmacs-cli--say "Updating plugin %s from %s..." name (plist-get plist :repo)))
+                hellmacs-third-party-plugins)
+       (hellmacs-cli--say "Done updating plugins. Run `bin/hellmacs sync' to apply.")))
+
+    (other
+     (error "Unknown plugins subcommand '%s'. See `bin/hellmacs help plugins'" other))))

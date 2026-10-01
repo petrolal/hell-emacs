@@ -91,5 +91,7 @@
      (format "`use-package %s :ensure' is ignored. Declare it with `(package! %s)' \
 in packages.el, then run `bin/hellmacs sync'." name name))))
 
+(autoload 'plugin! "hellmacs-plugins" "Declare a third-party Hellmacs plugin." nil t)
+
 (provide 'hellmacs-packages)
 ;;; hellmacs-packages.el ends here

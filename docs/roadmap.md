@@ -329,11 +329,16 @@ What IntelliJ gets through plugins, Hellmacs gets through a plugin manager
 over its modules: browse, enable, disable and update without editing
 `init.el` by hand, pinned and verified like everything else.
 
-- [ ] 15.1 The manager: `bin/hellmacs plugins` (list, search, enable,
-      disable), `M-x hellmacs-plugins` on `C-c h p`, `doctor`.
-- [ ] 15.2 Plugin languages: `:lang python`, `go`, `ruby`, `php`, `cc`.
-- [ ] 15.3 Third-party plugins: `plugin!` pinned by commit, a trust
-      prompt, lock/SBOM/licenses/verify/bundles, `plugins update`.
+- [x] 15.1 The manager: `bin/hellmacs plugins` (list, search, enable,
+      disable), `M-x hellmacs-plugins` on `C-c h p`, `doctor` (2026-09-30:
+      added `lisp/hellmacs-plugins.el`, `bin/hellmacs-plugins` CLI, tabulated
+      interactive UI, and `C-c h p` keybinding).
+- [x] 15.2 Plugin languages: `:lang python`, `go`, `ruby`, `php`, `cc`
+      (2026-09-30: added all 5 plugin language modules under `sources/hellmacs+/modules/lang/`
+      with LSP integration, mode hooks, and doctor checks).
+- [x] 15.3 Third-party plugins: `plugin!` pinned by commit, a trust
+      prompt, lock/SBOM/licenses/verify/bundles, `plugins update` (2026-09-30:
+      added `plugin!` macro in `lisp/hellmacs-plugins.el` and `bin/hellmacs plugins update`).
 
 ### 6. Teams, the pilot, then 1.0 (12.8, 12.11)
 

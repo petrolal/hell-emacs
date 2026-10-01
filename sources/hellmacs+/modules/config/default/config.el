@@ -157,7 +157,10 @@
   "S" (cons "forge/sync" #'hellmacs-sync-child)
   "u" (cons "forge/user-config" #'hellmacs-visit-user-dir)
   "v" (cons "forge/hellmacs-dir" #'hellmacs-visit-dir)
-  "m" (cons "forge/modules" #'hellmacs-list-modules))
+  "m" (cons "forge/modules" #'hellmacs-list-modules)
+  "p" (cons "forge/plugins" #'hellmacs-plugins))
+
+(autoload 'hellmacs-plugins "hellmacs-plugins" "Open Hellmacs plugins manager." t)
 
 (keymap-set mode-specific-map "h" hellmacs-prefix-map)
 
