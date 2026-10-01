@@ -166,10 +166,11 @@ files a module can have are in [development.md](development.md#modules).
 - **`:ui theme`**: `hellmacs-inferno`, Hellmacs' own theme.
   `(setq hellmacs-theme 'modus-vivendi)` in `init.el` uses another; `nil`,
   none.
-- **`:ui dashboard`**: the Altar, the startup screen: the sigil, the
-  startup time, recent files, projects and bookmarks. `TAB`/`S-TAB` move,
-  `RET` opens, `g` redraws, `q` buries it, `C-c h s` brings it back.
-  `(setq hellmacs-splash-enable nil)` starts on `*scratch*`.
+- **The Altar (`*hellmacs*`)**: the native, dependency-free startup screen:
+  emblem banner, SVG action buttons, architecture diagram, and GC benchmarking telemetry.
+  `TAB`/`S-TAB` move between buttons, `RET` activates, `g` redraws, `q`/`ESC` dismisses,
+  `C-c h s` brings it back. `(setq hellmacs-splash-enable nil)` starts on `*scratch*`.
+- **`:ui dashboard`**: [optional/deprecated] third-party dashboard package feed.
 - **`:ui modeline`**: the buffer and position; the language server's state
   (`JVM:ready`, `JVM:purgatory`), the debugger, the mode, the Git branch,
   flymake's counts.

@@ -147,8 +147,7 @@
 
 (defvar-keymap hellmacs-prefix-map
   :doc "Hellmacs' own commands, on `C-c h'."
-  ;; `:ui dashboard' remaps `hellmacs-splash' to itself.
-  "s" (cons (if (modulep! :ui dashboard) "altar/dashboard" "altar/return") #'hellmacs-splash)
+  "s" (cons "altar/splash" #'hellmacs-splash)
   "c" (cons "altar/reap" #'hellmacs-reap)
   ;; Outside a project, `project-find-file' asks for one first.
   "f" (cons "forge/find-file" #'project-find-file)
