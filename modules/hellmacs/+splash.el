@@ -96,6 +96,11 @@
   "Face for subtle footer separator lines."
   :group 'hellmacs-splash)
 
+(defface hellmacs-splash-column-separator
+  '((t (:foreground "#44475a")))
+  "Face for the vertical separator between recent sacrifices and active forges."
+  :group 'hellmacs-splash)
+
 (defface hellmacs-splash-button
   '((t (:box (:line-width (1 . 1) :color "#3a1c28")
         :background "#1c1e24"
@@ -156,13 +161,13 @@
 
 (defun hellmacs-splash-startup-line ()
   "Return dynamic startup benchmark statistics."
-  (let* ((init-time (or hellmacs-init-time
-                        (and (boundp 'after-init-time) after-init-time before-init-time
+  (let* ((init-time (or (bound-and-true-p hellmacs-init-time)
+                        (and (boundp 'after-init-time) (bound-and-true-p after-init-time) (bound-and-true-p before-init-time)
                              (float-time (time-subtract after-init-time before-init-time)))
-                        (and before-init-time
+                        (and (bound-and-true-p before-init-time)
                              (float-time (time-subtract (current-time) before-init-time)))
                         0.08))
-         (gcs (or (bound-and-true-p hellmacs-splash--init-gcs) gcs-done 0)))
+         (gcs (or (bound-and-true-p hellmacs-splash--init-gcs) (and (boundp 'gcs-done) gcs-done) 0)))
     (format "[ALTAR] Bound in %.2f seconds with %d collections."
             init-time gcs)))
 
@@ -197,9 +202,9 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
            (file (seq-some (lambda (f)
                              (let* ((path (expand-file-name (concat "assets/" f) hellmacs-dir))
                                     (type (if (string-suffix-p ".svg" f) 'svg 'png)))
-                               (and (file-readable-p path)
-                                    (image-type-available-p type)
-                                    path)))
+                                (and (file-readable-p path)
+                                     (image-type-available-p type)
+                                     path)))
                            candidates)))
       (when file
         (create-image file (if (string-suffix-p ".svg" file) 'svg 'png) nil
@@ -222,7 +227,7 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
 (defun hellmacs-splash--insert-button (label action help svg-file fallback-glyph)
   "Insert an interactive text button for ACTION with SVG-FILE icon or FALLBACK-GLYPH."
   (let* ((icon (hellmacs-splash--button-icon svg-file fallback-glyph))
-         (display-text (format " %s %s " icon label)))
+          (display-text (format " %s %s " icon label)))
     (insert-text-button display-text
                         'action (lambda (_) (call-interactively action))
                         'follow-link t
@@ -289,7 +294,8 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
 (defun hellmacs-splash--get-recents (&optional limit)
   "Return up to LIMIT recent file paths."
   (unless recentf-mode
-    (recentf-mode 1))
+    (let ((inhibit-message t))
+      (recentf-mode 1)))
   (let ((lim (or limit 5)))
     (seq-take (seq-filter (lambda (f) (and (stringp f) (file-exists-p f)))
                           (bound-and-true-p recentf-list))
@@ -426,7 +432,7 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
          (sep (if compact-p "\n" "\n\n")))
     (erase-buffer)
 
-    ;; 1. Banner Emblem
+    ;; 1. Banner Emblem & Infernal Tagline
     (if img
         (let* ((img-size (image-size img))
                (img-cols (ceiling (car img-size)))
@@ -454,22 +460,25 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
           (insert sigil-indent (propertize line 'face 'hellmacs-splash-sigil) "\n"))
         (insert sep)))
 
-    ;; 2. Interactive SVG Sprite Action Buttons Bar (Core Actions)
-    (let* ((top-buttons
+    ;; 2. Workspace Core Action Buttons
+    (let* ((core-buttons
             `(("Ignite File" find-file "Find file (C-x C-f)" "ignite.svg" "🔥")
               ("Summon Project" hellmacs-splash--action-project "Switch project (C-x p p)" "forge.svg" "⚙")
               ("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
               ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡")
-              ("Relic Chamber" hellmacs-splash--action-plugins "Plugin and module manager (C-c h p)" "marketplace.svg" "📦")
               ("Grimoire Manual" hellmacs-info-manual "Hellmacs Info manual (C-c h i)" "manual.svg" "📖")
               ("IntelliJ Exorcism" hellmacs-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg" "💡")))
            (gap (if (< width 80) "  " "   "))
            (gap-len (string-width gap))
            (button-rows
-            (if (>= width 72)
-                (list (seq-subseq top-buttons 0 4)
-                      (seq-subseq top-buttons 4))
-              (hellmacs-splash--split-buttons-into-rows top-buttons (max 36 (- width 4)) gap-len))))
+            (cond
+             ((>= width 115)
+              (list core-buttons))
+             ((>= width 68)
+              (list (seq-subseq core-buttons 0 3)
+                    (seq-subseq core-buttons 3)))
+             (t
+              (hellmacs-splash--split-buttons-into-rows core-buttons (max 36 (- width 4)) gap-len)))))
       (dolist (row button-rows)
         (let* ((row-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) row))
                              (* gap-len (1- (length row)))))
@@ -481,33 +490,35 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
               (insert gap)))
           (insert (if compact-p "\n" "\n\n"))))
       (unless compact-p
-        (insert "\n"))) ; Breathing room before utility lists
+        (insert "\n")))
 
-    ;; 3. Dynamic Utility Core (Recents & Projects)
+    ;; 3. Dual Columns ("Recent Sacrifices" & "Active Forges")
     (let* ((item-limit (cond (tight-p 2) (compact-p 3) (t 5)))
            (recents (hellmacs-splash--get-recents item-limit))
            (projects (hellmacs-splash--get-projects item-limit))
-           (dual-column-p (>= width 68)))
+           (dual-column-p (>= width 76)))
       (if dual-column-p
-          ;; Dual Column Layout
-          (let* ((col-width (max 28 (min 38 (/ (- width 8) 2))))
-                 (gap "    ")
-                 (gap-len (string-width gap))
-                 (table-width (+ (* col-width 2) gap-len))
+          ;; Dual Column Layout with Vertical Separator Rule
+          (let* ((col-width (if (>= width 86)
+                                (max 38 (min 44 (/ (- width 10) 2)))
+                              34))
+                 (vsep (propertize " │ " 'face 'hellmacs-splash-column-separator))
+                 (vsep-len 3)
+                 (table-width (+ (* col-width 2) vsep-len))
                  (table-indent (make-string (max 0 (/ (- width table-width) 2)) ?\s))
                  (max-rows (max 1 (max (length recents) (length projects)))))
             ;; Headers
             (insert table-indent
                     (propertize (truncate-string-to-width "RECENT SACRIFICES" col-width nil ?\s)
                                 'face 'hellmacs-splash-section-heading)
-                    gap
+                    vsep
                     (propertize (truncate-string-to-width "ACTIVE FORGES" col-width nil ?\s)
                                 'face 'hellmacs-splash-section-heading)
                     "\n")
             ;; Underlines
             (insert table-indent
                     (propertize (make-string col-width ?─) 'face 'hellmacs-splash-border)
-                    gap
+                    (propertize "─┼─" 'face 'hellmacs-splash-column-separator)
                     (propertize (make-string col-width ?─) 'face 'hellmacs-splash-border)
                     "\n")
             ;; Rows
@@ -522,7 +533,7 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
                       (insert (propertize (truncate-string-to-width "No sacrifices recorded yet" col-width nil ?\s)
                                           'face 'hellmacs-splash-hint))
                     (insert (make-string col-width ?\s))))
-                (insert gap)
+                (insert vsep)
                 ;; Right Column (Projects)
                 (if proj
                     (hellmacs-splash--insert-project-button proj col-width)
@@ -533,11 +544,11 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
                 (insert "\n")))
             (insert sep))
 
-        ;; Single Column Stacked Layout (Narrow / Minimized Screen)
+        ;; Single Column Stacked Layout (Narrow Screen fallback)
         (let* ((col-width (- width 4))
                (indent "  "))
           (insert indent (propertize "RECENT SACRIFICES" 'face 'hellmacs-splash-section-heading) "\n")
-          (insert indent (propertize (make-string (min col-width 36) ?─) 'face 'hellmacs-splash-border) "\n")
+          (insert indent (propertize (make-string (min col-width 38) ?─) 'face 'hellmacs-splash-border) "\n")
           (if recents
               (dolist (file recents)
                 (insert indent)
@@ -545,7 +556,7 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
                 (insert "\n"))
             (insert indent (propertize "No sacrifices recorded yet\n" 'face 'hellmacs-splash-hint)))
           (insert "\n" indent (propertize "ACTIVE FORGES" 'face 'hellmacs-splash-section-heading) "\n")
-          (insert indent (propertize (make-string (min col-width 36) ?─) 'face 'hellmacs-splash-border) "\n")
+          (insert indent (propertize (make-string (min col-width 38) ?─) 'face 'hellmacs-splash-border) "\n")
           (if projects
               (dolist (proj projects)
                 (insert indent)
@@ -554,42 +565,26 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
             (insert indent (propertize "No forges discovered yet\n" 'face 'hellmacs-splash-hint)))
           (insert sep))))
 
-    ;; 4. Dynamic GC & Benchmarking Footer
-    (let ((tag (if (and (boundp 'hellmacs-profile) hellmacs-profile)
-                   (format "HELLMACS [%s] // [ JVM FORGE IGNITED ]" (upcase hellmacs-profile))
-                 "HELLMACS // [ JVM FORGE IGNITED ]")))
-      (hellmacs-splash--insert-centered tag 'hellmacs-splash-tagline width)
-      (hellmacs-splash--insert-centered "Heavy metal syntax. Bytecode subjugated." 'hellmacs-splash-hint width)
-      (hellmacs-splash--insert-centered (hellmacs-splash-startup-line) 'hellmacs-splash-altar width))
-    (insert "\n")
-
-    ;; 5. Key Navigation Hint
-    (if (>= width 86)
-        (hellmacs-splash--insert-centered
-         "TAB/S-TAB navigate · RET select · C-x C-f find file · C-c h i manual · q/ESC dismiss"
-         'hellmacs-splash-hint width)
-      (hellmacs-splash--insert-centered
-       "TAB/S-TAB navigate · RET select · q/ESC dismiss"
-       'hellmacs-splash-hint width)
-      (hellmacs-splash--insert-centered
-       "C-x C-f find file · C-c h i manual · C-c h k keys"
-       'hellmacs-splash-hint width))
-
-    ;; 6. External Sanctums & Portals (Bottom Section)
+    ;; 4. External Portals Bar (below dual columns)
     (let* ((external-links
-            `(("Forge Source" hellmacs-splash--action-github "Open Hellmacs GitHub repository" "github.svg" "🐙")
+            `(("Relic Chamber" hellmacs-splash--action-plugins "Plugin and module manager (C-c h p)" "marketplace.svg" "📦")
+              ("Forge Source" hellmacs-splash--action-github "Open Hellmacs GitHub repository" "github.svg" "🐙")
               ("Issue Sanctum" hellmacs-splash--action-issues "Report an issue or discuss in the Forge" "github.svg" "⚡")
               ("Release Grimoires" hellmacs-splash--action-releases "View Hellmacs changelog and release notes" "manual.svg" "📜")
               ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Visit official Dark Beacon portal" "website.svg" "🔮")))
-           (header-text "── EXTERNAL SANCTUMS & PORTALS ──")
+           (header-text "─── EXTERNAL SANCTUMS & PORTALS ───")
            (header-pad (make-string (max 0 (/ (- width (string-width header-text)) 2)) ?\s))
            (bgap (if (< width 80) "  " "   "))
            (bgap-len (string-width bgap))
-           (rows (if (>= width 92)
-                     (list external-links)
-                   (list (seq-subseq external-links 0 2)
-                         (seq-subseq external-links 2)))))
-      (insert "\n" header-pad (propertize header-text 'face 'hellmacs-splash-external-heading) "\n\n")
+           (rows (cond
+                  ((>= width 108)
+                   (list external-links))
+                  ((>= width 72)
+                   (list (seq-subseq external-links 0 3)
+                         (seq-subseq external-links 3)))
+                  (t
+                   (hellmacs-splash--split-buttons-into-rows external-links (max 36 (- width 4)) bgap-len)))))
+      (insert header-pad (propertize header-text 'face 'hellmacs-splash-external-heading) "\n\n")
       (dolist (row rows)
         (let* ((row-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) row))
                              (* bgap-len (1- (length row)))))
@@ -599,13 +594,37 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
             (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
             (unless (eq b (car (last row)))
               (insert bgap)))
-          (insert "\n\n"))))
+          (insert (if compact-p "\n" "\n\n"))))
+      (unless compact-p
+        (insert "\n")))
 
-    ;; Ensure viewport starts at line 1 and first button is focused
+    ;; 5. Telemetry & Benchmark Footer
+    (let ((telemetry-line
+           (if (and (boundp 'hellmacs-profile) hellmacs-profile)
+               (format "HELLMACS [%s] // [ JVM FORGE IGNITED ] // Bytecode subjugated." (upcase hellmacs-profile))
+             "HELLMACS // [ JVM FORGE IGNITED ] // Bytecode subjugated.")))
+      (hellmacs-splash--insert-centered telemetry-line 'hellmacs-splash-tagline width)
+      (hellmacs-splash--insert-centered (hellmacs-splash-startup-line) 'hellmacs-splash-altar width))
+    (insert "\n")
+
+    ;; 6. Navigation Micro-Hints at the final edge
+    (if (>= width 80)
+        (hellmacs-splash--insert-centered
+         "TAB/S-TAB navigate · RET select · C-x C-f find file · q/ESC dismiss"
+         'hellmacs-splash-hint width)
+      (hellmacs-splash--insert-centered
+       "TAB/S-TAB navigate · RET select · q/ESC dismiss"
+       'hellmacs-splash-hint width)
+      (hellmacs-splash--insert-centered
+       "C-x C-f find file · C-c h i manual · C-c h k keys"
+       'hellmacs-splash-hint width))
+
+    ;; Ensure viewport starts at line 1, first button is focused, and echo area is pristine
     (goto-char (point-min))
     (when window
       (set-window-start window (point-min) t))
-    (forward-button 1 nil nil t)))
+    (forward-button 1 nil nil t)
+    (message nil)))
 
 ;;; Keybindings & Mode Definition --------------------------------------------
 
@@ -703,7 +722,8 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
   (when-let* ((buffer (get-buffer hellmacs-splash-buffer-name)))
     (with-current-buffer buffer
       (when (derived-mode-p 'hellmacs-splash-mode)
-        (hellmacs-splash--render)))))
+        (hellmacs-splash--render))))
+  (message nil))
 
 (add-hook 'hellmacs-after-init-hook #'hellmacs-splash--refresh-h 100)
 (add-hook 'window-setup-hook #'hellmacs-splash--refresh-h 100)

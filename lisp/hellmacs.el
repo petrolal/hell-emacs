@@ -274,6 +274,11 @@ idle seconds. Features already loaded by then are skipped."
 ;; the bookmarks file.
 (defvar recentf-exclude)
 (with-eval-after-load 'recentf
+  (setq recentf-auto-cleanup 'never)
+  (advice-add 'recentf-cleanup :around
+              (lambda (orig-fn &rest args)
+                (let ((inhibit-message t))
+                  (apply orig-fn args))))
   (dolist (dir (hellmacs--own-dirs))
     (add-to-list 'recentf-exclude (concat "\\`" (regexp-quote (file-truename dir))))
     (add-to-list 'recentf-exclude (concat "\\`" (regexp-quote (abbreviate-file-name dir))))))
@@ -281,7 +286,7 @@ idle seconds. Features already loaded by then are skipped."
 ;; None of these are needed until the user actually does something, so
 ;; start them lazily instead of paying their file IO at boot.
 (add-hook 'hellmacs-first-input-hook #'savehist-mode)
-(add-hook 'hellmacs-first-file-hook #'recentf-mode)
+(add-hook 'hellmacs-first-file-hook (lambda () (let ((inhibit-message t)) (recentf-mode 1))))
 (add-hook 'hellmacs-first-file-hook #'save-place-mode)
 
 ;;; Shell environment ------------------------------------------------------
