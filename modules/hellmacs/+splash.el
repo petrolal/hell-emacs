@@ -36,6 +36,10 @@
 (defvar hellmacs-profile)
 (defvar hellmacs-init-time)
 
+(autoload 'hellmacs-info-manual "lib/help" nil t)
+(autoload 'hellmacs-plugins "hellmacs-plugins" nil t)
+(autoload 'hellmacs-where-is-intellij "lib/intellij" nil t)
+
 (defgroup hellmacs-splash nil
   "The Hellmacs startup screen."
   :group 'hellmacs)
@@ -231,6 +235,23 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
          (call-interactively #'eshell))
         (t (call-interactively #'shell))))
 
+(defun hellmacs-splash--action-plugins ()
+  "Interactive action for Relic Chamber."
+  (interactive)
+  (if (fboundp 'hellmacs-plugins)
+      (call-interactively #'hellmacs-plugins)
+    (call-interactively #'list-packages)))
+
+(defun hellmacs-splash--action-github ()
+  "Open the official Hellmacs repository on GitHub."
+  (interactive)
+  (browse-url "https://github.com/petrolal/hellmacs"))
+
+(defun hellmacs-splash--action-beacon ()
+  "Display the official Dark Beacon portal status."
+  (interactive)
+  (message "[ALTAR] Beacon portal under construction..."))
+
 ;;; Dynamic Sacrifices & Forges Data -----------------------------------------
 
 (defun hellmacs-splash--get-recents (&optional limit)
@@ -338,6 +359,25 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
     (when (< len max-width)
       (insert (make-string (- max-width len) ?\s)))))
 
+(defun hellmacs-splash--split-buttons-into-rows (buttons max-width gap-len)
+  "Partition BUTTONS into balanced rows such that no row exceeds MAX-WIDTH."
+  (let (rows current-row (current-width 0))
+    (dolist (b buttons)
+      (let* ((label (nth 0 b))
+             (b-width (+ (string-width label) 6)))
+        (if (and current-row (> (+ current-width gap-len b-width) max-width))
+            (progn
+              (push (nreverse current-row) rows)
+              (setq current-row (list b)
+                    current-width b-width))
+          (push b current-row)
+          (setq current-width (if (= (length current-row) 1)
+                                  b-width
+                                (+ current-width gap-len b-width))))))
+    (when current-row
+      (push (nreverse current-row) rows))
+    (nreverse rows)))
+
 ;;; Splash Rendering ---------------------------------------------------------
 
 (defun hellmacs-splash--render ()
@@ -353,7 +393,7 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
         (let* ((img-size (image-size img))
                (img-cols (ceiling (car img-size)))
                (img-lines (ceiling (cdr img-size)))
-               (content-height (+ img-lines 20))
+               (content-height (+ img-lines 22))
                (top-margin (max 0 (/ (- height content-height) 3)))
                (left-margin (max 0 (/ (- width img-cols) 2))))
           (insert (make-string top-margin ?\n))
@@ -364,7 +404,7 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
       (let* ((ascii-lines (hellmacs-splash--ascii-lines))
              (sigil-width (apply #'max (mapcar #'string-width ascii-lines)))
              (sigil-indent (make-string (max 0 (/ (- width sigil-width) 2)) ?\s))
-             (content-height (+ (length ascii-lines) 20))
+             (content-height (+ (length ascii-lines) 22))
              (top-margin (max 0 (/ (- height content-height) 3))))
         (insert (make-string top-margin ?\n))
         (dolist (line ascii-lines)
@@ -372,20 +412,30 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
         (insert "\n")))
 
     ;; 2. Interactive SVG Sprite Action Buttons Bar
-    (let* ((buttons `(("Ignite File" find-file "Find file (C-x C-f)" "ignite.svg" "🔥")
-                      ("Summon Project" hellmacs-splash--action-project "Switch project (C-x p p)" "forge.svg" "⚙")
-                      ("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
-                      ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡")))
+    (let* ((all-buttons
+            `(("Ignite File" find-file "Find file (C-x C-f)" "ignite.svg" "🔥")
+              ("Summon Project" hellmacs-splash--action-project "Switch project (C-x p p)" "forge.svg" "⚙")
+              ("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
+              ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡")
+              ("Relic Chamber" hellmacs-splash--action-plugins "Plugin and module manager (C-c h p)" "marketplace.svg" "📦")
+              ("Grimoire Manual" hellmacs-info-manual "Hellmacs Info manual (C-c h i)" "manual.svg" "📖")
+              ("IntelliJ Exorcism" hellmacs-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg" "💡")
+              ("Forge Source" hellmacs-splash--action-github "Hellmacs GitHub repository" "github.svg" "🐙")
+              ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Official portal (WIP)" "website.svg" "🔮")))
            (gap "   ")
-           (total-btn-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) buttons))
-                               (* (string-width gap) (1- (length buttons)))))
-           (left-pad (make-string (max 0 (/ (- width total-btn-width) 2)) ?\s)))
-      (insert left-pad)
-      (dolist (b buttons)
-        (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
-        (unless (eq b (car (last buttons)))
-          (insert gap)))
-      (insert "\n\n\n")) ; 2 empty lines of breathing room
+           (gap-len (string-width gap))
+           (button-rows (hellmacs-splash--split-buttons-into-rows all-buttons (max 70 (- width 4)) gap-len)))
+      (dolist (row button-rows)
+        (let* ((row-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) row))
+                             (* gap-len (1- (length row)))))
+               (left-pad (make-string (max 0 (/ (- width row-width) 2)) ?\s)))
+          (insert left-pad)
+          (dolist (b row)
+            (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
+            (unless (eq b (car (last row)))
+              (insert gap)))
+          (insert "\n\n")))
+      (insert "\n")) ; Breathing room before utility lists
 
     ;; 3. Dynamic Two-Column Utility Core (Recents & Projects)
     (let* ((col-width (max 32 (min 38 (/ (- width 8) 2))))
@@ -478,6 +528,7 @@ Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banne
   "C-x b" #'switch-to-buffer
   "C-c h i" #'hellmacs-info-manual
   "C-c h k" #'hellmacs-where-is-intellij
+  "C-c h p" #'hellmacs-plugins
   "C-h t" #'help-with-tutorial)
 
 (define-derived-mode hellmacs-splash-mode special-mode "Altar"

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" shape-rendering="crispEdges">
+  <!-- Tome Cover -->
+  <rect x="4" y="3" width="16" height="18" fill="#3a1c28" rx="1"/>
+  <rect x="4" y="3" width="3" height="18" fill="#ff5555"/>
+  <!-- Golden Corner Brackets -->
+  <rect x="17" y="3" width="3" height="2" fill="#ffb86c"/>
+  <rect x="18" y="5" width="2" height="2" fill="#ffb86c"/>
+  <rect x="17" y="19" width="3" height="2" fill="#ffb86c"/>
+  <rect x="18" y="17" width="2" height="2" fill="#ffb86c"/>
+  <!-- Runed Eye/Seal -->
+  <rect x="9" y="11" width="8" height="2" fill="#ffb86c"/>
+  <rect x="11" y="9" width="4" height="6" fill="#ffb86c"/>
+  <rect x="12" y="10" width="2" height="4" fill="#ff5555"/>
+  <rect x="12" y="11" width="2" height="2" fill="#15161b"/>
+  <!-- Bookmark Ribbon -->
+  <rect x="10" y="19" width="2" height="4" fill="#50fa7b"/>
+</svg>
