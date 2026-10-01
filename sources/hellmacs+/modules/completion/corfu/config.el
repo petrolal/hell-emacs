@@ -63,6 +63,11 @@
     (corfu-terminal-mode 1))
   (hellmacs-corfu--stock-keys))
 
+(use-package nerd-icons-corfu
+  :after corfu
+  :init
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
 (defvar corfu-map)
 (defvar corfu-popupinfo-map)
 (defvar corfu--index)

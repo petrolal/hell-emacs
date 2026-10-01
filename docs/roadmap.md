@@ -364,20 +364,25 @@ A modern, high-performance IDE experience anchored strictly in traditional GNU
 Emacs conventions, non-modal keychords, buffer workflows, and clean visual
 iconography (`nerd-icons`):
 
-- [ ] 17.1 Visual Minibuffer: `nerd-icons-completion` for `marginalia` and
+- [x] 17.1 Visual Minibuffer: `nerd-icons-completion` for `marginalia` and
       `vertico`, enriching `consult-buffer`, `consult-find`, and `consult-ripgrep`
-      with file/mode/directory glyphs.
-- [ ] 17.2 Native Tree-sitter & AST navigation: `treesit-auto` integration for
-      transparent `ts-mode` fallback with pinned offline grammar management,
-      preserving standard navigation chords (`C-M-f`, `C-M-b`, `C-M-a`, `C-M-e`, `C-M-k`).
-- [ ] 17.3 In-Buffer Completion Icons: `nerd-icons-corfu` integration in `:completion corfu`
-      displaying semantic kind glyphs (Method, Class, Field, Snippet) in the popup.
-- [ ] 17.4 Project Management (`:tools projectile`): `projectile` + `consult-projectile`
-      with icon-annotated project/file/buffer discovery and seamless `project.el` interoperability.
-- [ ] 17.5 Enhanced Dired (`:emacs dired`): `wdired` for batch renaming (`r` / `C-x C-q`),
-      `dired-quick-sort`, and `nerd-icons-dired` for inline file/folder icons.
-- [ ] 17.6 Native Code Intelligence (`:tools eglot`): zero-overhead LSP engine using
-      Emacs 29+ `eglot.el` with built-in `flymake`, `xref`, `eldoc`, and `corfu` integration.
+      with file/mode/directory glyphs (2026-09-30: configured `nerd-icons-completion`
+      on `marginalia-mode-hook`).
+- [x] 17.2 Native Tree-sitter & AST navigation: transparent `ts-mode` fallback
+      with pinned offline grammar management, preserving standard navigation chords
+      (`C-M-f`, `C-M-b`, `C-M-a`, `C-M-e`, `C-M-k`) (2026-09-30: enhanced `hellmacs-treesit.el`).
+- [x] 17.3 In-Buffer Completion Icons: `nerd-icons-corfu` integration in `:completion corfu`
+      displaying semantic kind glyphs (Method, Class, Field, Snippet) in the popup
+      (2026-09-30: configured `corfu-margin-formatters` with `nerd-icons-corfu`).
+- [x] 17.4 Project Management (`:tools projectile`): `projectile` + `consult-projectile`
+      with icon-annotated project/file/buffer discovery and seamless `project.el` interoperability
+      (2026-09-30: added `:tools projectile` module under `sources/hellmacs+/modules/tools/projectile/`).
+- [x] 17.5 Enhanced Dired (`:emacs dired`): `wdired` for batch renaming (`r` / `C-x C-q`),
+      `dired-quick-sort`, and `nerd-icons-dired` for inline file/folder icons
+      (2026-09-30: added `:emacs dired` module under `sources/hellmacs+/modules/emacs/dired/`).
+- [x] 17.6 Native Code Intelligence (`:tools eglot`): zero-overhead LSP engine using
+      Emacs 29+ `eglot.el` with built-in `flymake`, `xref`, `eldoc`, and `corfu` integration
+      (2026-09-30: added `:tools eglot` module under `sources/hellmacs+/modules/tools/eglot/`).
 
 ### Later
 

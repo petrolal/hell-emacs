@@ -1,4 +1,4 @@
-;;; completion/vertico/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; tools/eglot/config.el -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -21,8 +21,19 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-(package! vertico)
-(package! orderless)
-(package! marginalia)
-(package! nerd-icons-completion)
-(package! consult)
+;; Zero-overhead native LSP client via Emacs 29+ built-in `eglot'.
+;; Integrates with `flymake', `xref', `eldoc', and `corfu'.
+
+(use-package eglot
+  :ensure nil
+  :commands (eglot eglot-ensure)
+  :init
+  (setq eglot-autoshutdown t
+        eglot-sync-connect nil
+        eglot-events-buffer-size 0
+        eglot-stay-out-of '(company))
+  :config
+  (hellmacs-leader-def
+    "c a" '("code action" . eglot-code-actions)
+    "c r" '("rename symbol" . eglot-rename)
+    "c f" '("format buffer" . eglot-format)))

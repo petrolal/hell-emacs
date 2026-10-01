@@ -62,6 +62,12 @@
   :config
   (marginalia-mode 1))
 
+(use-package nerd-icons-completion
+  :after marginalia
+  :hook (marginalia-mode . nerd-icons-completion-marginalia-setup)
+  :config
+  (nerd-icons-completion-mode 1))
+
 (use-package consult
   ;; consult is big; load it while idle so the first C-x b is instant.
   :defer-incrementally t

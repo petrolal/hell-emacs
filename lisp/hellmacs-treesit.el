@@ -238,5 +238,17 @@ Returns non-nil when it is available afterwards."
                lang (abbreviate-file-name (hellmacs-treesit-library lang))))
       (hellmacs-sync--log "tree-sitter %s grammar installed (commit pinned)" lang))))
 
+(defun hellmacs-treesit-setup-navigation ()
+  "Configure standard AST navigation chords for tree-sitter buffers:
+C-M-f, C-M-b, C-M-a, C-M-e, and C-M-k."
+  (when (and (fboundp 'treesit-available-p) (treesit-available-p))
+    (when (boundp 'treesit-mode-map)
+      (when (fboundp 'treesit-beginning-of-defun)
+        (keymap-set treesit-mode-map "C-M-a" #'treesit-beginning-of-defun))
+      (when (fboundp 'treesit-end-of-defun)
+        (keymap-set treesit-mode-map "C-M-e" #'treesit-end-of-defun)))))
+
+(add-hook 'hellmacs-first-file-hook #'hellmacs-treesit-setup-navigation)
+
 (provide 'hellmacs-treesit)
 ;;; hellmacs-treesit.el ends here
