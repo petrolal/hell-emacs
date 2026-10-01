@@ -431,24 +431,22 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
           (insert sigil-indent (propertize line 'face 'hellmacs-splash-sigil) "\n"))
         (insert sep)))
 
-    ;; 2. Interactive SVG Sprite Action Buttons Bar
-    (let* ((all-buttons
+    ;; 2. Interactive SVG Sprite Action Buttons Bar (Core Actions)
+    (let* ((top-buttons
             `(("Ignite File" find-file "Find file (C-x C-f)" "ignite.svg" "🔥")
               ("Summon Project" hellmacs-splash--action-project "Switch project (C-x p p)" "forge.svg" "⚙")
               ("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
               ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡")
               ("Relic Chamber" hellmacs-splash--action-plugins "Plugin and module manager (C-c h p)" "marketplace.svg" "📦")
               ("Grimoire Manual" hellmacs-info-manual "Hellmacs Info manual (C-c h i)" "manual.svg" "📖")
-              ("IntelliJ Exorcism" hellmacs-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg" "💡")
-              ("Forge Source" hellmacs-splash--action-github "Hellmacs GitHub repository" "github.svg" "🐙")
-              ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Official portal (WIP)" "website.svg" "🔮")))
-           (gap (if (< width 90) "  " "   "))
+              ("IntelliJ Exorcism" hellmacs-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg" "💡")))
+           (gap (if (< width 80) "  " "   "))
            (gap-len (string-width gap))
            (button-rows
-            (if (>= width 86)
-                (list (seq-subseq all-buttons 0 5)
-                      (seq-subseq all-buttons 5))
-              (hellmacs-splash--split-buttons-into-rows all-buttons (max 38 (- width 4)) gap-len))))
+            (if (>= width 72)
+                (list (seq-subseq top-buttons 0 4)
+                      (seq-subseq top-buttons 4))
+              (hellmacs-splash--split-buttons-into-rows top-buttons (max 36 (- width 4)) gap-len))))
       (dolist (row button-rows)
         (let* ((row-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) row))
                              (* gap-len (1- (length row)))))
@@ -553,6 +551,22 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
       (hellmacs-splash--insert-centered
        "C-x C-f find file · C-c h i manual · C-c h k keys"
        'hellmacs-splash-hint width))
+
+    ;; 6. External Links & Portals (Bottom Row)
+    (let* ((bottom-buttons
+            `(("Forge Source" hellmacs-splash--action-github "Hellmacs GitHub repository" "github.svg" "🐙")
+              ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Official portal (WIP)" "website.svg" "🔮")))
+           (bgap "    ")
+           (bgap-len (string-width bgap))
+           (brow-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) bottom-buttons))
+                          (* bgap-len (1- (length bottom-buttons)))))
+           (bleft-pad (make-string (max 0 (/ (- width brow-width) 2)) ?\s)))
+      (insert "\n" bleft-pad)
+      (dolist (b bottom-buttons)
+        (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
+        (unless (eq b (car (last bottom-buttons)))
+          (insert bgap)))
+      (insert "\n"))
 
     ;; Ensure viewport starts at line 1 and first button is focused
     (goto-char (point-min))
