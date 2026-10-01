@@ -95,7 +95,6 @@
 ;; Configure tab-bar-mode
 (setq tab-bar-show hellmacs-workspaces-show
       tab-bar-close-button-show nil
-      tab-bar-new-button-show nil
       tab-bar-tab-hints t
       tab-bar-tab-name-function #'hellmacs-workspaces-tab-name
       tab-bar-select-tab-modifiers '(meta)

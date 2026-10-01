@@ -159,9 +159,11 @@
             "\n")))
 
 (defun hellmacs-splash--ascii-lines ()
-  "Return lines of the ASCII banner from assets/banner-ascii.txt."
-  (let ((file (expand-file-name "assets/banner-ascii.txt" hellmacs-dir)))
-    (if (file-readable-p file)
+  "Return lines of the ASCII banner from assets/ascii/banner-ascii.txt."
+  (let ((file (or (let ((f (expand-file-name "assets/ascii/banner-ascii.txt" hellmacs-dir)))
+                    (and (file-readable-p f) f))
+                  (expand-file-name "assets/banner-ascii.txt" hellmacs-dir))))
+    (if (and file (file-readable-p file))
         (with-temp-buffer
           (insert-file-contents file)
           (split-string (buffer-string) "\n" t))
@@ -169,9 +171,11 @@
 
 (defun hellmacs-splash--banner-image ()
   "Return graphical banner image object if available and display is graphical.
-Prefers hellmacs-altar.png, falling back to banner-960.png, banner.png, or banner.svg."
+Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banners/."
   (when (display-graphic-p)
-    (let* ((candidates '("banners/hellmacs-altar.png"
+    (let* ((candidates '("banners/banner-960.png"
+                         "banners/banner.png"
+                         "banners/banner.svg"
                          "banner-960.png"
                          "banner.png"
                          "banner.svg"))

@@ -216,7 +216,7 @@
      :intellij "Services / Kubernetes" :eclipse "—" :key "C-c o k" :command kubel
      :category "Git & Tools" :doc "Inspect pods, logs, deployments, and port-forwards.")
     (:action "Settings / Preferences"
-     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-c h u" :command hellmacs-open-user-dir
+     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-c h u" :command hellmacs-visit-user-dir
      :category "Editor & UI" :doc "Open user configuration directory (~/.config/hellmacs/)."))
   "Complete registry of IntelliJ IDEA / Eclipse actions and their Hellmacs key equivalents.")
 
@@ -265,9 +265,11 @@ Selecting a candidate displays full documentation and offers to run the command.
           (call-interactively cmd))))))
 
 (defun hellmacs-open-user-dir ()
-  "Open `hellmacs-user-dir' in Dired."
+  "Open `hellmacs-user-dir' in Dired (alias for `hellmacs-visit-user-dir')."
   (interactive)
-  (dired hellmacs-user-dir))
+  (if (fboundp 'hellmacs-visit-user-dir)
+      (call-interactively #'hellmacs-visit-user-dir)
+    (dired hellmacs-user-dir)))
 
 (hellmacs-provide 'hellmacs-lib 'intellij)
 

@@ -24,9 +24,16 @@
 
 ;; Checked by `bin/hellmacs doctor'.
 
-(dolist (name '("banner-960.png" "banner.png" "banner.svg" "banner-ascii.txt"))
-  (if (file-readable-p (expand-file-name (concat "assets/" name) hellmacs-dir))
-      (hellmacs-doctor-ok "Banner assets/%s" name)
-    (hellmacs-doctor-warn :topic 'checkout "assets/%s is missing; the dashboard falls back to the next banner" name)))
+(dolist (item '(("banners/banner-960.png" "banner-960.png")
+                ("banners/banner.png" "banner.png")
+                ("banners/banner.svg" "banner.svg")
+                ("ascii/banner-ascii.txt" "banner-ascii.txt")))
+  (let* ((primary (car item))
+         (fallback (cadr item))
+         (found (or (and (file-readable-p (expand-file-name (concat "assets/" primary) hellmacs-dir)) primary)
+                    (and (file-readable-p (expand-file-name (concat "assets/" fallback) hellmacs-dir)) fallback))))
+    (if found
+        (hellmacs-doctor-ok "Banner assets/%s" found)
+      (hellmacs-doctor-warn :topic 'checkout "assets/%s is missing; the dashboard falls back to the next banner" primary))))
 
 (hellmacs-doctor-nerd-font "the dashboard shows no icons")

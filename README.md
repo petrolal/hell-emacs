@@ -1,6 +1,6 @@
 <div align="center">
 
-![Hellmacs Banner](assets/banner-960.png)
+![Hellmacs Banner](assets/banners/banner-960.png)
 
 </div>
 
@@ -101,7 +101,7 @@ Every text colour is at least 4.5:1 against the background it's drawn on.
 **Icons and fonts.** The dashboard and the mode-line draw [nerd-icons](https://github.com/rainstormstudio/nerd-icons.el) when the frame has a [Nerd Font](https://www.nerdfonts.com/font-downloads). Without one they fall back to plain text. `bin/hellmacs doctor` says whether one is installed, and `M-x nerd-icons-install-fonts` installs one into `~/.local/share/fonts`.
 
 **In a terminal** (`emacs -nw`, `emacsclient -t`):
-- The dashboard shows the ASCII sigil (`assets/banner-ascii.txt`) instead of the picture.
+- The dashboard shows the ASCII sigil (`assets/ascii/banner-ascii.txt`) instead of the picture.
 - Both modules draw text instead of icons, because a terminal can't tell Emacs which font it uses. If your terminal's font is a Nerd Font, `(setq hellmacs-dashboard-tty-icons t hellmacs-modeline-tty-icons t)` turns icons on.
 - Each frame decides for itself, so a GUI frame and an `emacsclient -t` frame of the same Emacs each get what they can draw.
 

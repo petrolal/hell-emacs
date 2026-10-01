@@ -56,10 +56,10 @@
   "Where the banner files are.")
 
 (defconst hellmacs-dashboard-images
-  '("banners/hellmacs-altar.png" "banner-960.png" "banner.png" "banner.svg")
+  '("banners/banner-960.png" "banners/banner.png" "banners/banner.svg" "banner-960.png" "banner.png" "banner.svg")
   "Graphical banners, in order of preference.")
 
-(defconst hellmacs-dashboard-text-banner "banner-ascii.txt"
+(defconst hellmacs-dashboard-text-banner "ascii/banner-ascii.txt"
   "The banner drawn in a terminal.")
 
 ;;; Banner resolution --------------------------------------------------------
