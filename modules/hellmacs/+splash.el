@@ -79,7 +79,10 @@
 and a vent-grille jaw. Plain ASCII, so it renders in any font.")
 
 (defconst hellmacs-splash-tagline
-  "HELLMACS // [ JVM FORGE IGNITED ] // Heavy metal syntax. Bytecode subjugated."
+  (if (and (boundp 'hellmacs-profile) hellmacs-profile)
+      (format "HELLMACS [%s] // [ JVM FORGE IGNITED ] // Heavy metal syntax. Bytecode subjugated."
+              (upcase hellmacs-profile))
+    "HELLMACS // [ JVM FORGE IGNITED ] // Heavy metal syntax. Bytecode subjugated.")
   "The line under the sigil.")
 
 (defvar hellmacs-splash--init-gcs nil

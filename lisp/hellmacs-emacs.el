@@ -57,6 +57,11 @@
 (set-default-coding-systems 'utf-8)
 (prefer-coding-system 'utf-8)
 
+(setq frame-title-format
+      (if (and (boundp 'hellmacs-profile) hellmacs-profile)
+          (list (format "Hellmacs [%s] — " hellmacs-profile) '(buffer-file-name "%f" "%b"))
+        (list "Hellmacs — " '(buffer-file-name "%f" "%b"))))
+
 ;;; Entry point -----------------------------------------------------------
 ;;
 ;; As in Doom's doom-emacs.el, this takes over Emacs' init file loader:

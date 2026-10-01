@@ -173,7 +173,11 @@ go back to their global commands, and DEL removed the item at point.")
         dashboard-set-heading-icons t
         dashboard-set-file-icons t
         dashboard-footer-icon ">"
-        dashboard-banner-logo-title hellmacs-dashboard-title
+        dashboard-banner-logo-title
+        (if (and (boundp 'hellmacs-profile) hellmacs-profile)
+            (format "HELLMACS [%s]: THE INFERNAL JVM HACKING ENVIRONMENT (ISOLATED)"
+                    (upcase hellmacs-profile))
+          hellmacs-dashboard-title)
         dashboard-init-info #'hellmacs-splash-startup-line
         dashboard-image-banner-max-width 480
         dashboard-image-banner-max-height 320

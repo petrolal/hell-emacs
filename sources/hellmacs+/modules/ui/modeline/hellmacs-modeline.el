@@ -61,7 +61,7 @@ it on if your terminal's font is a Nerd Font."
   :type 'boolean)
 
 (defconst hellmacs-modeline-segments
-  '((bar buffer-info buffer-position)
+  '((bar hellmacs-profile buffer-info buffer-position)
     (misc-info debug major-mode vcs check))
   "The left and right segments of the Hellmacs mode-line.")
 
@@ -94,6 +94,11 @@ rebuilds its cached icons each time it is set."
         doom-modeline-time nil
         doom-modeline-buffer-file-name-style 'truncate-upto-project)
   :config
+  (doom-modeline-def-segment hellmacs-profile
+    (when (and (boundp 'hellmacs-profile) hellmacs-profile)
+      (propertize (format " [%s] " (upcase hellmacs-profile))
+                  'face '(:foreground "#16171d" :background "#da8548" :weight bold))))
+
   ;; Replace doom-modeline's main mode-line (the one every file buffer
   ;; uses) with the Hellmacs one. Its other mode-lines (dired, Magit,
   ;; the dashboard, ...) keep their own shapes and the same faces.
