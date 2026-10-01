@@ -96,10 +96,14 @@ as a change too."
           (cl-list* (expand-file-name "packages.el" hellmacs-core-dir)
                     (expand-file-name "init.el" hellmacs-user-dir)
                     (expand-file-name "packages.el" hellmacs-user-dir)
-                    (cl-loop for key in (hellmacs-module-list)
-                             for dir = (hellmacs-module-get key :path)
-                             collect (expand-file-name "packages.el" dir)
-                             append (hellmacs-module-autoload-files key)))))
+                    (append
+                     (when (bound-and-true-p hellmacs-team-dir)
+                       (list (expand-file-name "init.el" hellmacs-team-dir)
+                             (expand-file-name "packages.el" hellmacs-team-dir)))
+                     (cl-loop for key in (hellmacs-module-list)
+                              for dir = (hellmacs-module-get key :path)
+                              collect (expand-file-name "packages.el" dir)
+                              append (hellmacs-module-autoload-files key))))))
 
 (defun hellmacs-profile--stale-reason (profile)
   "Return why PROFILE doesn't match the current config, or nil if it does.
@@ -193,11 +197,15 @@ the file without its extension)."
     #'file-name-base)))
 
 (defun hellmacs-profile--generate-user-init-loader (_data)
-  "Part 20: your init.el, for its settings. The modules its `hellmacs!'
-block enables are the ones part 80 loads, as recorded at sync time."
+  "Part 20: team init.el (if any) and user init.el, for their settings.
+The modules its `hellmacs!' block enables are the ones part 80 loads,
+as recorded at sync time."
   (hellmacs-profile--write-part
    "20-user.init.el"
-   `((hellmacs-load-user-file "init.el")
+   `((when (and (bound-and-true-p hellmacs-team-dir)
+                (file-exists-p (expand-file-name "init.el" hellmacs-team-dir)))
+       (load (expand-file-name "init.el" hellmacs-team-dir) nil 'nomessage))
+     (hellmacs-load-user-file "init.el")
      ;; The proxy and CA you set there, for all of Emacs.
      (hellmacs-net-setup))))
 
@@ -241,7 +249,7 @@ and their Info manuals."
        (add-hook 'hellmacs-startup-functions #'hellmacs--startup-loaddefs-packages 70)))))
 
 (defun hellmacs-profile--generate-module-loader (_data)
-  "Part 80: the enabled modules, as sync saw them, then your config.el."
+  "Part 80: the enabled modules, as sync saw them, then team and your config.el."
   (let ((init-modules (hellmacs-module-list :init))
         (config-modules (hellmacs-module-list :config)))
     (hellmacs-profile--write-part
@@ -264,6 +272,9 @@ and their Info manuals."
                       if (and (file-exists-p path) (hellmacs-file-active-p path))
                       collect `(hellmacs-module--load ',key "config.el"))
            (hellmacs-run-hooks 'hellmacs-after-modules-config-hook))
+         (when (and (bound-and-true-p hellmacs-team-dir)
+                    (file-exists-p (expand-file-name "config.el" hellmacs-team-dir)))
+           (load (expand-file-name "config.el" hellmacs-team-dir) nil 'nomessage))
          (hellmacs-load-user-file "config.el"))
        (add-hook 'hellmacs-startup-functions #'hellmacs--startup-modules 80)))))
 

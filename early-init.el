@@ -168,6 +168,14 @@ default, and for a named profile ~/.config/hellmacs-NAME/, or a
 profiles/NAME/ directory. It's fine for it not to exist -- Hellmacs
 then runs with its defaults. See `hellmacs-init-user-dir'.")
 
+(defconst hellmacs-team-dir
+  (let ((env (getenv-internal "HELLMACS_TEAM_DIR")))
+    (cond (env (file-name-as-directory (expand-file-name env)))
+          ((file-directory-p (expand-file-name "team/" hellmacs-user-dir))
+           (file-name-as-directory (expand-file-name "team/" hellmacs-user-dir)))
+          (t nil)))
+  "Directory containing shared enterprise team configuration, or nil.")
+
 (defconst hellmacs-data-dir (hellmacs--xdg-dir "XDG_DATA_HOME" "~/.local/share")
   "Installed packages and other data Hellmacs needs to run.
 Deleting it forces every package to be reinstalled on the next start.")

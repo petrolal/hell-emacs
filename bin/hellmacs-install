@@ -38,18 +38,21 @@ Options:
   --[no-]env          Save or skip saving your shell environment for Emacs
   --[no-]install      Sync immediately or skip syncing packages and profile
   --aot               Native-compile installed packages ahead of time
+  --team URL          Configure shared team layer from git repository or directory URL
   --from-bundle FILE  Install from an offline bundle, with no network access
 
   1. create your config (`hellmacs-user-dir', ~/.config/hellmacs) with
      starter init.el, config.el and packages.el (static/*.example.el),
      unless it exists or --no-config;
-  2. offer to save your shell environment (`env'); --env and --no-env
+  2. if --team, clone or copy the shared enterprise team layer;
+  3. offer to save your shell environment (`env'); --env and --no-env
      answer for you;
-  3. sync: install the packages your modules declare, and generate the
+  4. sync: install the packages your modules declare, and generate the
      init file (--no-install skips it; run `sync' later);
-  4. if --aot, native-compile packages ahead of time;
-  5. run `doctor'."
+  5. if --aot, native-compile packages ahead of time;
+  6. run `doctor'."
   (let* ((bundle (hellmacs-cli--option args "--from-bundle"))
+         (team (hellmacs-cli--option args "--team"))
          (config (hellmacs-cli--flag args "config"))
          (env (hellmacs-cli--flag args "env"))
          (install (hellmacs-cli--flag args "install"))
@@ -76,6 +79,17 @@ start Emacs with `%s', or move ~/.emacs.d away"
         (hellmacs-cli--say "  %s your config in %s"
                            (if existed "Kept" "Created")
                            (abbreviate-file-name hellmacs-user-dir))))
+    (when team
+      (let ((team-dir (expand-file-name "team/" hellmacs-user-dir)))
+        (hellmacs-cli--say "  - Configuring team layer from %s..." team)
+        (if (file-directory-p team)
+            (progn
+              (make-directory (file-name-directory (directory-file-name team-dir)) t)
+              (copy-directory team team-dir t t t))
+          (unless (zerop (call-process "git" nil nil nil "clone" "--depth" "1" team team-dir))
+            (error "Failed to clone team repository %s" team)))
+        (setq hellmacs-team-dir team-dir)
+        (hellmacs-cli--say "  ✓ Team layer configured in %s" (abbreviate-file-name team-dir))))
     (when bundle
       ;; Without a config directory, there's nowhere for the lock file:
       ;; the packages stay at the bundle's commits anyway.

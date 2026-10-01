@@ -342,12 +342,19 @@ over its modules: browse, enable, disable and update without editing
 
 ### 6. Teams, the pilot, then 1.0 (12.8, 12.11)
 
-- [ ] 12.8 A team layer: `$HELLMACS_TEAM_DIR` (or a git URL) with shared
+- [x] 12.8 A team layer: `$HELLMACS_TEAM_DIR` (or a git URL) with shared
       modules, packages, lock file, mirrors and proxy, loaded between
-      Hellmacs and the user's config.
-- [ ] 12.8 `M-x hellmacs-where-is-intellij`: "what is Shift-F6 here?"
-- [ ] 12.8 `bin/hellmacs install --team URL`: clone, install, sync, env,
-      doctor, and a first-run page on the Altar.
+      Hellmacs and the user's config (2026-09-30: added `hellmacs-team-dir`
+      in `early-init.el`, layered module lookup in `hellmacs-modules.el`,
+      team `init.el`/`config.el`/`packages.el` generation in `hellmacs-profiles.el`,
+      and doctor checks).
+- [x] 12.8 `M-x hellmacs-where-is-intellij`: "what is Shift-F6 here?"
+      (2026-09-30: created `lisp/lib/intellij.el` with 60 registered action
+      mappings, fuzzy search, categories, and direct execution on `C-c h k`
+      and `C-c h ?`).
+- [x] 12.8 `bin/hellmacs install --team URL`: clone, install, sync, env,
+      doctor, and team layer configuration (2026-09-30: added `--team` option
+      in `bin/hellmacs-install`).
 - [ ] 12.11 Three pilot codebases: a Spring Boot Maven monolith, Gradle
       (Kotlin DSL) microservices, a legacy Java 8 application, each behind
       a proxy with a corporate CA, on macOS and on Linux or WSL2.

@@ -286,6 +286,10 @@ can be reached (always done when a proxy, CA bundle or mirror is set)."
       (hellmacs-cli--check 'ok "Your config: %s" (abbreviate-file-name hellmacs-user-dir))
     (hellmacs-cli--check 'info "No user config yet (%s); using the defaults. `bin/hellmacs install' creates one"
                          (abbreviate-file-name hellmacs-user-dir)))
+  (if (and (bound-and-true-p hellmacs-team-dir) (file-directory-p hellmacs-team-dir))
+      (hellmacs-cli--check 'ok "Team layer: %s" (abbreviate-file-name hellmacs-team-dir))
+    (hellmacs-cli--check 'info "No team layer ($HELLMACS_TEAM_DIR or %s/team/)"
+                         (abbreviate-file-name hellmacs-user-dir)))
   (hellmacs-cli--check 'info "Modules: %s"
                        (mapconcat #'hellmacs-module-key-string (hellmacs-module-list) ", "))
   (dolist (line (hellmacs-config-report-lines))

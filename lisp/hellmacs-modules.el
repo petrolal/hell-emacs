@@ -69,12 +69,15 @@
 ;;; Variables --------------------------------------------------------------
 
 (defvar hellmacs-module-load-path
-  (list (expand-file-name "modules/" hellmacs-user-dir)
-        hellmacs-modules-dir
-        (expand-file-name "hellmacs+/modules/" hellmacs-sources-dir))
+  (append (list (expand-file-name "modules/" hellmacs-user-dir))
+          (when (and (bound-and-true-p hellmacs-team-dir)
+                     (file-directory-p (expand-file-name "modules/" hellmacs-team-dir)))
+            (list (expand-file-name "modules/" hellmacs-team-dir)))
+          (list hellmacs-modules-dir
+                (expand-file-name "hellmacs+/modules/" hellmacs-sources-dir)))
   "Directories searched for modules, highest priority first.
-Each contains <group>/<name>/ module directories: yours, Hellmacs' own
-(core's module), then the sources' (the catalog), as Doom v3's
+Each contains <group>/<name>/ module directories: yours, team layer's (if configured),
+Hellmacs' own (core's module), then the sources' (the catalog), as Doom v3's
 `doom-module-load-path'.")
 
 (defvar hellmacs-modules (make-hash-table :test #'equal)
@@ -579,7 +582,7 @@ by bin/hellmacs and `hellmacs-sync', never at a normal startup."
         (hellmacs-module--load key "cli.el")))))
 
 (defun hellmacs-modules-read-packages ()
-  "Read lisp/packages.el, every enabled module's packages.el, then the user's.
+  "Read lisp/packages.el, every enabled module's packages.el, team packages, then the user's.
 Fills `hellmacs-packages' and `hellmacs-module-dependencies'. A module's
 dependencies (`depends-on!') have their packages.el read before its own."
   (setq hellmacs-packages nil
@@ -591,13 +594,21 @@ dependencies (`depends-on!') have their packages.el read before its own."
   (let ((hellmacs--packages-read nil))
     (dolist (key (hellmacs-module-list))
       (hellmacs-module--read-packages key)))
+  (when (and (bound-and-true-p hellmacs-team-dir)
+             (file-exists-p (expand-file-name "packages.el" hellmacs-team-dir)))
+    (load (expand-file-name "packages.el" hellmacs-team-dir) nil 'nomessage 'nosuffix))
   (hellmacs-load-user-file "packages.el"))
 
-(defvar hellmacs-lock-file (expand-file-name "packages.lock.eld" hellmacs-user-dir)
+(defvar hellmacs-lock-file
+  (let ((user-lock (expand-file-name "packages.lock.eld" hellmacs-user-dir)))
+    (if (or (file-exists-p user-lock) (not (bound-and-true-p hellmacs-team-dir)))
+        user-lock
+      (let ((team-lock (expand-file-name "packages.lock.eld" hellmacs-team-dir)))
+        (if (file-exists-p team-lock) team-lock user-lock))))
   "Exact commits of every installed package, written by `bin/hellmacs lock'.
 When it exists, packages are installed at these commits instead of the
 latest ones, so a config can be reproduced on another machine. It sits
-next to your config so you can version it together. `bin/hellmacs
+next to your config (or in the team layer) so you can version it together. `bin/hellmacs
 upgrade' rewrites it after updating.")
 
 (defun hellmacs-modules-install-packages (&optional ignore-lock)

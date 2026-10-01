@@ -1,0 +1,274 @@
+;;; lisp/lib/intellij.el --- IntelliJ IDEA and Eclipse keyfinder -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hellmacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hellmacs.
+;;
+;; Hellmacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hellmacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; IntelliJ IDEA and Eclipse to Hellmacs cheat sheet and interactive
+;; search tool (`M-x hellmacs-where-is-intellij' on `C-c h k' or `C-c h ?').
+;;
+;; Loaded on demand through `(hellmacs-require 'hellmacs-lib 'intellij)'.
+
+;;; Code:
+
+(defconst hellmacs-intellij-actions
+  '(;; Finding things
+    (:action "Any command / Action search"
+     :intellij "Ctrl+Shift+A" :eclipse "Ctrl+3" :key "M-x" :command execute-extended-command
+     :category "Finding" :doc "Run any Emacs or Hellmacs command by name with fuzzy completion.")
+    (:action "Find file in project"
+     :intellij "Ctrl+Shift+N" :eclipse "Ctrl+Shift+R" :key "C-x p f" :command project-find-file
+     :category "Finding" :doc "Fuzzy find and open any file in the current project (or C-c h f / C-c p f).")
+    (:action "Find class / symbol in project"
+     :intellij "Ctrl+N, Ctrl+Alt+Shift+N" :eclipse "Ctrl+Shift+T" :key "C-M-." :command xref-find-apropos
+     :category "Finding" :doc "Search for classes, interfaces, and symbols across workspace (or C-c c j).")
+    (:action "Recent files"
+     :intellij "Ctrl+E" :eclipse "—" :key "C-c f r" :command consult-recent-file
+     :category "Finding" :doc "Switch to a recently visited file across projects.")
+    (:action "Switch buffer / open file"
+     :intellij "Ctrl+Tab" :eclipse "Ctrl+E" :key "C-x b" :command consult-buffer
+     :category "Finding" :doc "Switch buffer with live preview (also C-x p b for project buffers).")
+    (:action "File structure / Imenu"
+     :intellij "Ctrl+F12" :eclipse "Ctrl+O" :key "M-g i" :command consult-imenu
+     :category "Finding" :doc "Jump to any method, field, or symbol in the current buffer (or C-c s i).")
+    (:action "Go to line"
+     :intellij "Ctrl+G" :eclipse "Ctrl+L" :key "M-g g" :command consult-goto-line
+     :category "Finding" :doc "Jump directly to line number with live preview.")
+    (:action "Find in current file"
+     :intellij "Ctrl+F" :eclipse "Ctrl+F" :key "C-s" :command isearch-forward
+     :category "Finding" :doc "Incremental search forward (M-s l for line overview, C-c s s).")
+    (:action "Find in project (Ripgrep)"
+     :intellij "Ctrl+Shift+F" :eclipse "Ctrl+H" :key "M-s r" :command consult-ripgrep
+     :category "Finding" :doc "Fast ripgrep search across all project files (or C-c s p).")
+    (:action "Replace / Project replace"
+     :intellij "Ctrl+R / Ctrl+Shift+R" :eclipse "Ctrl+F / Ctrl+H" :key "M-% / C-x p r" :command query-replace
+     :category "Finding" :doc "Query replace in buffer (M-%) or across project (C-x p r).")
+    (:action "Project file tree / Dired"
+     :intellij "Alt+1" :eclipse "Package Explorer" :key "C-x p D" :command project-dired
+     :category "Finding" :doc "Open project root in Dired with icons and batch editing (wdired).")
+
+    ;; Navigating code
+    (:action "Go to declaration / definition"
+     :intellij "Ctrl+B, Ctrl+Click" :eclipse "F3" :key "M-." :command xref-find-definitions
+     :category "Navigation" :doc "Jump to definition of symbol at point (or C-c c d).")
+    (:action "Back to previous location"
+     :intellij "Ctrl+Alt+Left" :eclipse "Alt+Left" :key "M-," :command xref-go-back
+     :category "Navigation" :doc "Jump back to where you were before following definition.")
+    (:action "Find usages / references"
+     :intellij "Alt+F7" :eclipse "Ctrl+Shift+G" :key "M-?" :command xref-find-references
+     :category "Navigation" :doc "List all references to symbol across the workspace (or C-c c D).")
+    (:action "Go to implementation"
+     :intellij "Ctrl+Alt+B" :eclipse "Ctrl+T" :key "C-c c i" :command lsp-find-implementation
+     :category "Navigation" :doc "Jump to implementations of the interface or abstract method.")
+    (:action "Go to type declaration"
+     :intellij "Ctrl+Shift+B" :eclipse "—" :key "C-c c t" :command lsp-find-type-definition
+     :category "Navigation" :doc "Jump to definition of the type of the symbol at point.")
+    (:action "Type hierarchy"
+     :intellij "Ctrl+H" :eclipse "F4" :key "C-c l h" :command lsp-java-type-hierarchy
+     :category "Navigation" :doc "Inspect supertypes and subtypes hierarchy in Java buffers.")
+    (:action "Quick documentation / Hover"
+     :intellij "Ctrl+Q" :eclipse "F2" :key "C-c c k" :command eldoc-doc-buffer
+     :category "Navigation" :doc "Show documentation and signature at point (or lsp-describe-thing-at-point).")
+    (:action "Next error / diagnostic"
+     :intellij "F2" :eclipse "Ctrl+." :key "C-c ! n" :command flymake-goto-next-error
+     :category "Navigation" :doc "Jump to next compiler error or linter warning (or M-g f).")
+    (:action "Previous error / diagnostic"
+     :intellij "Shift+F2" :eclipse "Ctrl+," :key "C-c ! p" :command flymake-goto-prev-error
+     :category "Navigation" :doc "Jump to previous compiler error or linter warning.")
+    (:action "Problems view / error list"
+     :intellij "Alt+6" :eclipse "Problems View" :key "C-c ! l" :command flymake-show-buffer-diagnostics
+     :category "Navigation" :doc "Open buffer diagnostics popup (or C-c c x).")
+    (:action "Last edit location"
+     :intellij "Ctrl+Shift+Backspace" :eclipse "Ctrl+Q" :key "C-u C-SPC" :command set-mark-command
+     :category "Navigation" :doc "Cycle backward through the global mark ring.")
+    (:action "Toggle bookmark / jump"
+     :intellij "F11 / Shift+F11" :eclipse "—" :key "C-x r m / C-x r b" :command bookmark-set
+     :category "Navigation" :doc "Set named bookmark (C-x r m) or jump to one (C-x r b / C-c s m).")
+
+    ;; Editing and refactoring
+    (:action "Code completion"
+     :intellij "Ctrl+Space" :eclipse "Ctrl+Space" :key "C-M-i" :command completion-at-point
+     :category "Refactoring" :doc "In-buffer completion popup (automatic as you type, or C-M-i on demand).")
+    (:action "Quick fix / Intention actions"
+     :intellij "Alt+Enter" :eclipse "Ctrl+1" :key "C-c c a" :command lsp-execute-code-action
+     :category "Refactoring" :doc "Apply quick-fix, auto-import, or intention action at point.")
+    (:action "Rename symbol"
+     :intellij "Shift+F6" :eclipse "Alt+Shift+R" :key "C-c c r" :command lsp-rename
+     :category "Refactoring" :doc "Workspace-wide semantic rename of class, method, or variable.")
+    (:action "Extract method"
+     :intellij "Ctrl+Alt+M" :eclipse "Alt+Shift+M" :key "C-c l m" :command lsp-java-extract-method
+     :category "Refactoring" :doc "Extract selected code into a new method (Java).")
+    (:action "Extract variable"
+     :intellij "Ctrl+Alt+V" :eclipse "Alt+Shift+L" :key "C-c l v" :command lsp-java-extract-to-local-variable
+     :category "Refactoring" :doc "Extract selected expression into a local variable (Java).")
+    (:action "Extract constant"
+     :intellij "Ctrl+Alt+C" :eclipse "—" :key "C-c l c" :command lsp-java-extract-to-constant
+     :category "Refactoring" :doc "Extract selected expression into a static constant (Java).")
+    (:action "Generate getters and setters"
+     :intellij "Alt+Insert" :eclipse "Alt+Shift+S" :key "C-c l g" :command lsp-java-generate-getters-and-setters
+     :category "Refactoring" :doc "Generate getters, setters, toString, equals/hashCode (C-c l s / C-c l e).")
+    (:action "Implement methods"
+     :intellij "Ctrl+I" :eclipse "Quick Fix" :key "C-c l i" :command lsp-java-override-methods
+     :category "Refactoring" :doc "Implement or override interface/superclass methods (Java).")
+    (:action "Organize imports"
+     :intellij "Ctrl+Alt+O" :eclipse "Ctrl+Shift+O" :key "C-c c o" :command lsp-organize-imports
+     :category "Refactoring" :doc "Sort imports, add missing, and remove unused imports.")
+    (:action "Reformat code"
+     :intellij "Ctrl+Alt+L" :eclipse "Ctrl+Shift+F" :key "C-c c f" :command lsp-format-buffer
+     :category "Refactoring" :doc "Format buffer using project code style (or google-java-format).")
+    (:action "Comment line / region"
+     :intellij "Ctrl+/" :eclipse "Ctrl+/" :key "C-x C-;" :command comment-line
+     :category "Refactoring" :doc "Toggle comment on current line or active region (M-; at end of line).")
+    (:action "Delete line"
+     :intellij "Ctrl+Y" :eclipse "Ctrl+D" :key "C-S-<backspace>" :command kill-whole-line
+     :category "Refactoring" :doc "Kill entire line without leaving blank lines.")
+    (:action "Duplicate line"
+     :intellij "Ctrl+D" :eclipse "Ctrl+Alt+Down" :key "M-x duplicate-dwim" :command duplicate-dwim
+     :category "Refactoring" :doc "Duplicate current line or region below.")
+    (:action "Move line up/down"
+     :intellij "Ctrl+Shift+Up/Down" :eclipse "Alt+Up/Down" :key "C-x C-t" :command transpose-lines
+     :category "Refactoring" :doc "Transpose and swap lines.")
+    (:action "Undo / Redo"
+     :intellij "Ctrl+Z / Ctrl+Shift+Z" :eclipse "Ctrl+Z / Ctrl+Y" :key "C-/ / C-?" :command undo-only
+     :category "Refactoring" :doc "Persistent undo/redo history (C-M-_ in terminal).")
+    (:action "Save all buffers"
+     :intellij "Ctrl+S" :eclipse "Ctrl+Shift+S" :key "C-x s" :command save-some-buffers
+     :category "Refactoring" :doc "Prompt to save all modified file buffers.")
+
+    ;; Build, run, test, debug
+    (:action "Build project"
+     :intellij "Ctrl+F9" :eclipse "Ctrl+B" :key "C-x p c" :command project-compile
+     :category "Build & Debug" :doc "Build project using Maven/Gradle wrapper with clickable errors (or C-c c c).")
+    (:action "Run configuration"
+     :intellij "Shift+F10" :eclipse "Ctrl+F11" :key "C-c r r" :command hellmacs-run
+     :category "Build & Debug" :doc "Run a saved run configuration (.run/, .launch, or .hellmacs/run.eld).")
+    (:action "Debug configuration"
+     :intellij "Shift+F9" :eclipse "F11" :key "C-c r d" :command hellmacs-run-debug
+     :category "Build & Debug" :doc "Debug run configuration under DAP debugger.")
+    (:action "Rerun last configuration"
+     :intellij "Ctrl+F5" :eclipse "Ctrl+F11" :key "C-c r l" :command hellmacs-run-last
+     :category "Build & Debug" :doc "Rerun the last launched configuration.")
+    (:action "Run test at point / class"
+     :intellij "Ctrl+Shift+F10" :eclipse "Alt+Shift+X T" :key "C-c l t t" :command hellmacs-test-at-point
+     :category "Build & Debug" :doc "Run the test method at point (or C-c l t T for entire test class).")
+    (:action "View test results / Rerun failures"
+     :intellij "Alt+4" :eclipse "JUnit View" :key "C-c l t r" :command hellmacs-test-results
+     :category "Build & Debug" :doc "Open JUnit test results view (C-c l t f to rerun failures).")
+    (:action "Run with coverage"
+     :intellij "Run with Coverage" :eclipse "—" :key "C-c l t c" :command hellmacs-test-coverage
+     :category "Build & Debug" :doc "Execute tests with JaCoCo coverage gutters (C-c l t s to show).")
+    (:action "Toggle breakpoint"
+     :intellij "Ctrl+F8" :eclipse "Ctrl+Shift+B" :key "C-c d b" :command dap-breakpoint-toggle
+     :category "Build & Debug" :doc "Toggle breakpoint on current line (C-c d B for conditional).")
+    (:action "Step over"
+     :intellij "F8" :eclipse "F6" :key "C-c d n" :command dap-next
+     :category "Build & Debug" :doc "Step over next line in debugger (then press n to repeat).")
+    (:action "Step into"
+     :intellij "F7" :eclipse "F5" :key "C-c d i" :command dap-step-in
+     :category "Build & Debug" :doc "Step into method at point (then press i to repeat).")
+    (:action "Step out"
+     :intellij "Shift+F8" :eclipse "F7" :key "C-c d o" :command dap-step-out
+     :category "Build & Debug" :doc "Step out of current method (then press o to repeat).")
+    (:action "Resume execution"
+     :intellij "F9" :eclipse "F8" :key "C-c d c" :command dap-continue
+     :category "Build & Debug" :doc "Resume program execution until next breakpoint (then press c to repeat).")
+    (:action "Evaluate expression"
+     :intellij "Alt+F8" :eclipse "Ctrl+Shift+I" :key "C-c d E" :command dap-eval
+     :category "Build & Debug" :doc "Evaluate expression in current debug frame (or C-c d e for point).")
+    (:action "Hot-swap / Reload classes"
+     :intellij "Ctrl+F9 (while debugging)" :eclipse "Save (debugging)" :key "C-c h r" :command hellmacs-crucible-reload
+     :category "Build & Debug" :doc "The Crucible: hot-swap changed bytecode into the debugged JVM.")
+
+    ;; Git and Tools
+    (:action "Git status / Commit / Push"
+     :intellij "Alt+9, Ctrl+K, Ctrl+Shift+K" :eclipse "Git Staging" :key "C-x g" :command magit-status
+     :category "Git & Tools" :doc "Magit status buffer: c c commit, P p push, F p pull, l l log.")
+    (:action "Git file blame / history"
+     :intellij "Annotate / Show History" :eclipse "Show Annotations" :key "C-c M-g" :command magit-file-dispatch
+     :category "Git & Tools" :doc "Magit file actions: b for blame, l for file log.")
+    (:action "Open terminal in project"
+     :intellij "Alt+F12" :eclipse "—" :key "C-x p s" :command project-shell
+     :category "Git & Tools" :doc "Open shell buffer in project root (or C-x p e for eshell).")
+    (:action "Database connections (JDBC)"
+     :intellij "Database Tool Window" :eclipse "DTP" :key "C-c o d" :command hellmacs-db
+     :category "Git & Tools" :doc "Connect to database over JDBC, execute SQL, and inspect tables.")
+    (:action "Docker / Containers"
+     :intellij "Services / Docker" :eclipse "Docker Tooling" :key "C-c o d" :command docker
+     :category "Git & Tools" :doc "Inspect containers, images, volumes, and logs.")
+    (:action "Kubernetes clusters"
+     :intellij "Services / Kubernetes" :eclipse "—" :key "C-c o k" :command kubel
+     :category "Git & Tools" :doc "Inspect pods, logs, deployments, and port-forwards.")
+    (:action "Settings / Preferences"
+     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-c h u" :command hellmacs-open-user-dir
+     :category "Editor & UI" :doc "Open user configuration directory (~/.config/hellmacs/)."))
+  "Complete registry of IntelliJ IDEA / Eclipse actions and their Hellmacs key equivalents.")
+
+(defun hellmacs-intellij--format-candidate (entry max-action max-intellij max-key)
+  "Format an ENTRY with aligned columns."
+  (let* ((action (plist-get entry :action))
+         (intellij (plist-get entry :intellij))
+         (key (plist-get entry :key))
+         (category (plist-get entry :category)))
+    (format "%-*s  │ %-*s │ %-*s │ %s"
+            max-action action
+            max-intellij intellij
+            max-key key
+            category)))
+
+;;;###autoload
+(defun hellmacs-where-is-intellij (&optional query)
+  "Look up any IntelliJ IDEA or Eclipse key/action and discover its Hellmacs shortcut.
+When invoked interactively, opens a searchable fuzzy prompt.
+Selecting a candidate displays full documentation and offers to run the command."
+  (interactive)
+  (let* ((max-action 38)
+         (max-intellij 28)
+         (max-key 20)
+         (table
+          (mapcar (lambda (entry)
+                    (cons (hellmacs-intellij--format-candidate entry max-action max-intellij max-key)
+                          entry))
+                  hellmacs-intellij-actions))
+         (prompt (if query (format "Hellmacs key for [%s]: " query) "Where is IntelliJ action / key: "))
+         (choice (completing-read prompt (mapcar #'car table) nil t query))
+         (entry (cdr (assoc choice table))))
+    (when entry
+      (let* ((action (plist-get entry :action))
+             (intellij (plist-get entry :intellij))
+             (eclipse (plist-get entry :eclipse))
+             (key (plist-get entry :key))
+             (cmd (plist-get entry :command))
+             (doc (plist-get entry :doc))
+             (category (plist-get entry :category))
+             (msg (format "[%s] %s\n  • Hellmacs Key:   %s\n  • Command:        %s\n  • IntelliJ Key:   %s\n  • Eclipse Key:    %s\n\n%s"
+                          category action (propertize key 'face 'highlight) cmd intellij eclipse doc)))
+        (message "%s" msg)
+        (when (and (fboundp cmd)
+                   (y-or-n-p (format "Run `%s' now? " cmd)))
+          (call-interactively cmd))))))
+
+(defun hellmacs-open-user-dir ()
+  "Open `hellmacs-user-dir' in Dired."
+  (interactive)
+  (dired hellmacs-user-dir))
+
+(hellmacs-provide 'hellmacs-lib 'intellij)
+
+;;; intellij.el ends here

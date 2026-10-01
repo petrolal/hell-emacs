@@ -158,9 +158,12 @@
   "u" (cons "forge/user-config" #'hellmacs-visit-user-dir)
   "v" (cons "forge/hellmacs-dir" #'hellmacs-visit-dir)
   "m" (cons "forge/modules" #'hellmacs-list-modules)
-  "p" (cons "forge/plugins" #'hellmacs-plugins))
+  "p" (cons "forge/plugins" #'hellmacs-plugins)
+  "k" (cons "forge/where-is-intellij" #'hellmacs-where-is-intellij)
+  "?" (cons "forge/where-is-intellij" #'hellmacs-where-is-intellij))
 
 (autoload 'hellmacs-plugins "hellmacs-plugins" "Open Hellmacs plugins manager." t)
+(autoload 'hellmacs-where-is-intellij "lib/intellij" "Look up IntelliJ IDEA keys in Hellmacs." t)
 
 (keymap-set mode-specific-map "h" hellmacs-prefix-map)
 
