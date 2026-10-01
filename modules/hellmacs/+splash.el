@@ -171,7 +171,13 @@ redraws, `q' buries the buffer.
   (setq-local revert-buffer-function (lambda (&rest _) (hellmacs-splash--render))
               cursor-type nil
               truncate-lines t
-              mode-line-format nil
+              mode-line-format
+              (if (and (boundp 'hellmacs-profile) hellmacs-profile)
+                  (list "  "
+                        (propertize (format " [%s] " (upcase hellmacs-profile))
+                                    'face '(:foreground "#16171d" :background "#da8548" :weight bold))
+                        "  Altar (Hellmacs)")
+                nil)
               buffer-undo-list t)
   (setq-local display-line-numbers nil)
   ;; Stay centered when the window is resized, and draw properly the

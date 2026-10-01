@@ -100,11 +100,18 @@ rebuilds its cached icons each time it is set."
                   'face '(:foreground "#16171d" :background "#da8548" :weight bold))))
 
   ;; Replace doom-modeline's main mode-line (the one every file buffer
-  ;; uses) with the Hellmacs one. Its other mode-lines (dired, Magit,
-  ;; the dashboard, ...) keep their own shapes and the same faces.
+  ;; uses) with the Hellmacs one.
   (eval `(doom-modeline-def-modeline 'main
            ',(car hellmacs-modeline-segments)
            ',(cadr hellmacs-modeline-segments))
+        t)
+  (eval `(doom-modeline-def-modeline 'dashboard
+           '(bar hellmacs-profile buffer-info)
+           '(misc-info))
+        t)
+  (eval `(doom-modeline-def-modeline 'special
+           '(bar hellmacs-profile buffer-info buffer-position)
+           '(major-mode))
         t))
 
 (defun hellmacs-modeline-enable ()
@@ -121,6 +128,7 @@ rebuilds its cached icons each time it is set."
 (add-function :after after-focus-change-function #'hellmacs-modeline--update-icons)
 
 (add-hook 'hellmacs-first-buffer-hook #'hellmacs-modeline-enable)
+(add-hook 'dashboard-mode-hook #'hellmacs-modeline-enable)
 
 (provide 'hellmacs-modeline)
 ;;; hellmacs-modeline.el ends here
