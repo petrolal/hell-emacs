@@ -86,6 +86,16 @@
   "Face for section headings in the two-column dashboard."
   :group 'hellmacs-splash)
 
+(defface hellmacs-splash-external-heading
+  '((t (:foreground "#6272a4" :weight bold :slant italic)))
+  "Face for the external portals section heading."
+  :group 'hellmacs-splash)
+
+(defface hellmacs-splash-external-border
+  '((t (:foreground "#44475a")))
+  "Face for subtle footer separator lines."
+  :group 'hellmacs-splash)
+
 (defface hellmacs-splash-button
   '((t (:box (:line-width (1 . 1) :color "#3a1c28")
         :background "#1c1e24"
@@ -256,10 +266,23 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
   (interactive)
   (browse-url "https://github.com/petrolal/hellmacs"))
 
+(defun hellmacs-splash--action-issues ()
+  "Open the official Hellmacs issue tracker and forge discussions on GitHub."
+  (interactive)
+  (browse-url "https://github.com/petrolal/hellmacs/issues"))
+
+(defun hellmacs-splash--action-releases ()
+  "Open the Hellmacs changelog and release notes."
+  (interactive)
+  (let ((changelog (expand-file-name "CHANGELOG.md" hellmacs-dir)))
+    (if (file-readable-p changelog)
+        (view-file changelog)
+      (browse-url "https://github.com/petrolal/hellmacs/releases"))))
+
 (defun hellmacs-splash--action-beacon ()
   "Display the official Dark Beacon portal status."
   (interactive)
-  (message "[ALTAR] Beacon portal under construction..."))
+  (message "[ALTAR] Dark Beacon portal under construction: https://hellmacs.org"))
 
 ;;; Dynamic Sacrifices & Forges Data -----------------------------------------
 
@@ -552,21 +575,31 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
        "C-x C-f find file · C-c h i manual · C-c h k keys"
        'hellmacs-splash-hint width))
 
-    ;; 6. External Links & Portals (Bottom Row)
-    (let* ((bottom-buttons
-            `(("Forge Source" hellmacs-splash--action-github "Hellmacs GitHub repository" "github.svg" "🐙")
-              ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Official portal (WIP)" "website.svg" "🔮")))
-           (bgap "    ")
+    ;; 6. External Sanctums & Portals (Bottom Section)
+    (let* ((external-links
+            `(("Forge Source" hellmacs-splash--action-github "Open Hellmacs GitHub repository" "github.svg" "🐙")
+              ("Issue Sanctum" hellmacs-splash--action-issues "Report an issue or discuss in the Forge" "github.svg" "⚡")
+              ("Release Grimoires" hellmacs-splash--action-releases "View Hellmacs changelog and release notes" "manual.svg" "📜")
+              ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Visit official Dark Beacon portal" "website.svg" "🔮")))
+           (header-text "── EXTERNAL SANCTUMS & PORTALS ──")
+           (header-pad (make-string (max 0 (/ (- width (string-width header-text)) 2)) ?\s))
+           (bgap (if (< width 80) "  " "   "))
            (bgap-len (string-width bgap))
-           (brow-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) bottom-buttons))
-                          (* bgap-len (1- (length bottom-buttons)))))
-           (bleft-pad (make-string (max 0 (/ (- width brow-width) 2)) ?\s)))
-      (insert "\n" bleft-pad)
-      (dolist (b bottom-buttons)
-        (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
-        (unless (eq b (car (last bottom-buttons)))
-          (insert bgap)))
-      (insert "\n"))
+           (rows (if (>= width 92)
+                     (list external-links)
+                   (list (seq-subseq external-links 0 2)
+                         (seq-subseq external-links 2)))))
+      (insert "\n" header-pad (propertize header-text 'face 'hellmacs-splash-external-heading) "\n\n")
+      (dolist (row rows)
+        (let* ((row-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) row))
+                             (* bgap-len (1- (length row)))))
+               (left-pad (make-string (max 0 (/ (- width row-width) 2)) ?\s)))
+          (insert left-pad)
+          (dolist (b row)
+            (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
+            (unless (eq b (car (last row)))
+              (insert bgap)))
+          (insert "\n\n"))))
 
     ;; Ensure viewport starts at line 1 and first button is focused
     (goto-char (point-min))
