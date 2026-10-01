@@ -127,10 +127,10 @@
 
 (defun hellmacs-splash--banner-image ()
   "Return graphical banner image object if available and display is graphical.
-Prioritizes vector banner.svg, then PNG renders."
+Uses banner.png / banner-960.png."
   (when (display-graphic-p)
     (let* ((assets-dir (expand-file-name "assets/" hellmacs-dir))
-           (candidates '("banner.svg" "banner-960.png" "banner.png"))
+           (candidates '("banner-960.png" "banner.png" "banner.svg"))
            (file (seq-some (lambda (f)
                              (let* ((path (expand-file-name f assets-dir))
                                     (type (if (string-suffix-p ".svg" f) 'svg 'png)))
@@ -140,8 +140,8 @@ Prioritizes vector banner.svg, then PNG renders."
                            candidates)))
       (when file
         (create-image file (if (string-suffix-p ".svg" file) 'svg 'png) nil
-                      :max-width 540
-                      :max-height 270)))))
+                      :max-width 480
+                      :max-height 320)))))
 
 (defun hellmacs-splash--button (label action help &optional icon)
   "Insert an interactive button showing LABEL and ICON that calls ACTION."
