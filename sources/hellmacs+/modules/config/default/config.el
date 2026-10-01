@@ -159,6 +159,7 @@
   "d" (cons "forge/describe-module" #'hellmacs-describe-module)
   "m" (cons "forge/describe-module" #'hellmacs-describe-module)
   "M" (cons "forge/modules-list" #'hellmacs-list-modules)
+  "p" (cons "forge/plugins" #'hellmacs-plugins)
   "h" (cons "forge/help" #'hellmacs-help)
   "?" (cons "forge/help" #'hellmacs-help)
   "k" (cons "forge/where-is-intellij" #'hellmacs-where-is-intellij))
