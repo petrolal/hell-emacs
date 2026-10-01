@@ -373,8 +373,14 @@
    ;;; modules/hellmacs/+ux.el, with these colours as defaults)
    `(hellmacs-splash-sigil ((t (:foreground ,inferno-crimson :weight bold))))
    `(hellmacs-splash-tagline ((t (:foreground ,reap-gold :weight bold))))
-   `(hellmacs-splash-altar ((t (:foreground ,venom-green))))
+   `(hellmacs-splash-altar ((t (:foreground ,venom-green :weight bold))))
    `(hellmacs-splash-hint ((t (:foreground ,forge-gray-hi))))
+   `(hellmacs-splash-border ((t (:foreground ,inferno-crimson :weight bold))))
+   `(hellmacs-splash-diagram-heading ((t (:foreground ,ember-amber :weight bold))))
+   `(hellmacs-splash-diagram-text ((t (:foreground ,fg-main))))
+   `(hellmacs-splash-diagram-detail ((t (:foreground ,forge-gray-hi))))
+   `(hellmacs-splash-button ((t (:box (:line-width (1 . 1) :color ,bg-alt) :background ,bg-alt :foreground ,fg-main :weight bold))))
+   `(hellmacs-splash-button-active ((t (:box (:line-width (1 . 1) :color ,inferno-crimson) :background ,bg-hl :foreground ,reap-gold :weight bold))))
    `(hellmacs-fatality ((t (:foreground ,inferno-crimson :weight bold))))))
 
 ;;;###autoload
