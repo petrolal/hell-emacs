@@ -25,6 +25,8 @@
 !/modules/hellmacs/
 /sources/*/
 !/sources/hellmacs+/
+/profiles/*/
+!/profiles/safe-mode/
 
 # Compilation artifacts & shared libraries (native-comp, tree-sitter grammars).
 *.elc
