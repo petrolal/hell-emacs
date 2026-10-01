@@ -139,9 +139,13 @@ implicit profiles), else ~/.config/hellmacs-NAME/."
         (file-name-as-directory (expand-file-name dir))
       (let ((xdg (expand-file-name "hellmacs/" config)))
         (if (null profile)
-            (if (or (file-directory-p xdg) (not (file-directory-p "~/.hellmacs.d/")))
-                xdg
-              (expand-file-name "~/.hellmacs.d/"))
+            (cond ((and (boundp 'hellmacs-dir)
+                        (file-regular-p (expand-file-name "init.el" hellmacs-dir))
+                        (not (file-symlink-p (expand-file-name "init.el" hellmacs-dir))))
+                   hellmacs-dir)
+                  ((file-directory-p xdg) xdg)
+                  ((file-directory-p "~/.hellmacs.d/") (expand-file-name "~/.hellmacs.d/"))
+                  (t xdg))
           (let* ((default-dir (if (or (file-directory-p xdg) (not (file-directory-p "~/.hellmacs.d/")))
                                   xdg
                                 (expand-file-name "~/.hellmacs.d/")))
