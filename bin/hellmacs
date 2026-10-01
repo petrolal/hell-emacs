@@ -44,6 +44,7 @@ command -v "$EMACS" >/dev/null 2>&1 || [ -x "$EMACS" ] || {
   exit 3
 }
 
+ARGS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     -p|--profile)
@@ -60,9 +61,11 @@ while [ $# -gt 0 ]; do
       DEBUG=1; export DEBUG; shift ;;
     -!|--force)
       HELLMACS_FORCE=1; export HELLMACS_FORCE; shift ;;
-    *) break ;;
+    *)
+      ARGS+=("$1"); shift ;;
   esac
 done
+set -- "${ARGS[@]}"
 
 # As `doom': running as root is almost never what you want -- the files it
 # writes would be root's -- unless this checkout is root's own.

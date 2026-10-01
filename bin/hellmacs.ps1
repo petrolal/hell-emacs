@@ -59,11 +59,7 @@ while ($i -lt $ScriptArgs.Count) {
             $env:HELLMACS_FORCE = "1"
         }
         default {
-            while ($i -lt $ScriptArgs.Count) {
-                $RemainingArgs.Add($ScriptArgs[$i])
-                $i++
-            }
-            break
+            $RemainingArgs.Add($arg)
         }
     }
     $i++

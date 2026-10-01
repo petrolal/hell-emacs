@@ -138,9 +138,10 @@ An error if it's there without a value."
   (cond ((member (concat "--no-" name) args) 'no)
         ((member (concat "--" name) args) t)))
 
-(defun hellmacs-cli-force-p ()
+(defun hellmacs-cli-force-p (&optional args)
   "Non-nil if every prompt is to be accepted: `bin/hellmacs -!' (--force)."
-  (member (getenv "HELLMACS_FORCE") '("1" "t" "true" "yes")))
+  (or (member (getenv "HELLMACS_FORCE") '("1" "t" "true" "yes"))
+      (and args (or (member "-!" args) (member "--force" args)))))
 
 (defun hellmacs-cli--yes-p (prompt &optional default)
   "Ask PROMPT, a yes-or-no question; return non-nil for yes.
