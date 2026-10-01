@@ -212,21 +212,42 @@ petrolalucas@gmail.com, not in an issue.
 ---
 
 ## 4. Profiles
-
-A profile is a separate configuration with its own packages, caches and
-history. As in Doom, a directory is a profile: for `--profile NAME`,
-Hellmacs uses the first that exists of `~/.config/hellmacs-NAME/`,
-`~/.config/hellmacs/profiles/NAME/`, and `profiles/NAME/` in Hellmacs.
-
-```sh
-hellmacs -p work sync        # set up the "work" profile
-hellmacs -p work emacs       # start Emacs on it (or: emacs --profile work)
-hellmacs profile list        # every profile, and whether it's synced
-```
-
-Its files are `~/.local/share/hellmacs-NAME/` and so on, never your default
-profile's. Hellmacs ships **`safe-mode`**: its core and nothing else, for
-finding what broke (see below).
+ 
+ A profile is a separate configuration with its own packages, caches and
+ history. As in Doom, a directory is a profile: for `--profile NAME`,
+ Hellmacs uses the first that exists of `~/.config/hellmacs-NAME/`,
+ `~/.config/hellmacs/profiles/NAME/`, and `profiles/NAME/` in Hellmacs.
+ 
+-```sh
+-hellmacs -p work sync        # set up the "work" profile
+-hellmacs -p work emacs       # start Emacs on it (or: emacs --profile work)
+-hellmacs profile list        # every profile, and whether it's synced
+-```
+-
+-Its files are `~/.local/share/hellmacs-NAME/` and so on, never your default
+-profile's. Hellmacs ships **`safe-mode`**: its core and nothing else, for
+-finding what broke (see below).
++### Profile Commands
++
++| Command | Description |
++|---|---|
++| `hellmacs profile list` | List every profile, sync status, and config path |
++| `hellmacs profile create NAME [--in-tree]` | Create a profile with starter template files |
++| `hellmacs profile sync NAME` / `sync --all` | Sync a specific profile or all profiles |
++| `hellmacs profile delete NAME [-!]` | Delete a profile and its isolated data/cache directories |
++| `hellmacs profile path NAME` | Print the resolved directory path of a profile |
++
++```sh
++hellmacs profile create work --in-tree # create in-tree profile in profiles/work/
++hellmacs -p work sync                  # sync packages and generate startup file
++hellmacs -p work emacs                 # start Emacs on it (or: emacs --profile work)
++```
++
++Its files are `~/.local/share/hellmacs-NAME/`, `~/.cache/hellmacs-NAME/`, and
++`~/.local/state/hellmacs-NAME/`, completely isolated from your default profile.
++
++Hellmacs ships **`safe-mode`**: its core and nothing else, for finding what
++broke (see below). For in-depth developer workflows, see [development.md](development.md#development-environments--workflows).
 
 ---
 

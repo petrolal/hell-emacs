@@ -13,5 +13,12 @@ one here:
   hellmacs -p safe-mode emacs
   ```
 
+To create a new in-tree profile directly inside this directory:
+
+```sh
+bin/hellmacs profile create dev --in-tree
+bin/hellmacs -p dev emacs
+```
+
 How profiles are found, and how to make your own: the
-[guide](../docs/guide.md#4-profiles).
+[guide](../docs/guide.md#4-profiles) and [development guide](../docs/development.md#development-environments--workflows).

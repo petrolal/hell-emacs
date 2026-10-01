@@ -207,23 +207,129 @@ inside `with-hellmacs-network`; packages only through `package!`, never
 
 ## Working on Hellmacs
 
-```sh
-git clone https://github.com/petrolal/hellmacs.git ~/src/hellmacs
-~/src/hellmacs/bin/hellmacs -p dev sync       # a profile of its own
-~/src/hellmacs/bin/hellmacs -p dev emacs
+### Development Environments & Workflows
+
+When developing Hellmacs itself, adding new modules, or testing configurations, you should **never use symlinks** (e.g. symlinking `~/.config/hellmacs` to your repository or vice-versa). Symlinks often cause unexpected canonical path resolutions, break relative path lookups, trigger duplicate file warnings, and pollute git tracking.
+
+Instead, Hellmacs natively provides **three clean development workflows**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Workflow 1: In-Tree Root Configuration                                 │
+│ ∙ Real `init.el`, `config.el`, `packages.el` at repository root        │
+│ ∙ Automatically detected by `early-init.el`                             │
+│ ∙ Zero git noise: root `/*.el` (except `early-init.el`) is .gitignored  │
+│ ∙ Run: `bin/hellmacs sync`, `bin/hellmacs doctor`, `bin/hellmacs emacs` │
+└──────────────────────────────────┬──────────────────────────────────────┘
+                                   │
+┌──────────────────────────────────▼──────────────────────────────────────┐
+│ Workflow 2: Named & In-Tree Profiles                                    │
+│ ∙ Completely isolated configs, packages, caches, history, and state    │
+│ ∙ In-tree profiles: `profiles/NAME/` (e.g. `profiles/dev/`)            │
+│ ∙ XDG profiles: `~/.config/hellmacs-NAME/`                              │
+│ ∙ Create: `bin/hellmacs profile create dev --in-tree`                   │
+│ ∙ Run: `bin/hellmacs -p dev sync` / `bin/hellmacs -p dev emacs`         │
+└──────────────────────────────────┬──────────────────────────────────────┘
+                                   │
+┌──────────────────────────────────▼──────────────────────────────────────┐
+│ Workflow 3: Ephemeral Sandbox Mode                                      │
+│ ∙ 100% clean, throwaway temporary directory in `/tmp/`                  │
+│ ∙ Perfect for debugging clean installs and reproducible testing        │
+│ ∙ Run: `bin/hellmacs emacs --sandbox`                                   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Checking a change.** Hellmacs has no test suites. Sync against throwaway
-directories so your own config is never touched, try the change, run
-`doctor`:
+---
+
+#### Workflow 1: In-Tree Root Configuration (Fastest Local Development)
+
+This is the recommended workflow when developing Hellmacs or testing new features directly in your cloned repository checkout.
+
+1. **Place your configuration files at the root of the repository**:
+   ```sh
+   cp static/init.example.el init.el
+   cp static/config.example.el config.el
+   cp static/packages.example.el packages.el
+   ```
+2. **How it works**:
+   - When you run `bin/hellmacs` or start Emacs pointing to the repo (`emacs --init-directory ~/hellmacs`), `early-init.el` checks if a real `init.el` exists at the root of the checkout (`hellmacs-dir`).
+   - If present, `hellmacs-user-dir` automatically resolves to the repository root instead of `~/.config/hellmacs/`.
+   - Hellmacs' `.gitignore` explicitly ignores `/*.el` (except `early-init.el`), keeping your `git status` completely clean without uncommitted changes.
+3. **Daily workflow**:
+   ```sh
+   bin/hellmacs sync          # sync packages and compile modules
+   bin/hellmacs doctor        # verify configuration health
+   bin/hellmacs emacs         # launch Hellmacs
+   ```
+
+---
+
+#### Workflow 2: Named & In-Tree Profiles (Isolated Environments)
+
+Named profiles let you run completely isolated instances of Hellmacs side-by-side with separate package trees, caches, native-comp outputs, bookmarks, and undo histories.
+
+1. **Creating a Profile**:
+   - **In-Tree Profile** (inside repo under `profiles/NAME/`):
+     ```sh
+     bin/hellmacs profile create dev --in-tree
+     ```
+   - **XDG Named Profile** (in `~/.config/hellmacs-NAME/`):
+     ```sh
+     bin/hellmacs profile create dev
+     ```
+2. **Managing and Inspecting Profiles**:
+   ```sh
+   bin/hellmacs profile list          # list all profiles, sync state, and paths
+   bin/hellmacs profile path dev      # print resolved config path
+   bin/hellmacs profile sync dev      # sync specific profile
+   bin/hellmacs profile sync --all    # sync all discovered profiles
+   bin/hellmacs profile delete dev -! # delete profile and associated data
+   ```
+3. **Running a Profile**:
+   ```sh
+   bin/hellmacs -p dev sync
+   bin/hellmacs -p dev doctor
+   bin/hellmacs -p dev emacs          # (or: emacs --profile dev)
+   ```
+4. **Data Isolation**:
+   | Profile Component | Path for profile `NAME` |
+   |---|---|
+   | Configuration | `profiles/NAME/` (in-tree) or `~/.config/hellmacs-NAME/` |
+   | Installed Packages | `~/.local/share/hellmacs-NAME/` |
+   | Cache & Native Comp | `~/.cache/hellmacs-NAME/` |
+   | State & History | `~/.local/state/hellmacs-NAME/` |
+
+---
+
+#### Workflow 3: Ephemeral Sandbox Mode
+
+For testing fresh installations, verifying isolated behaviors, or diagnosing configuration issues without touching any existing profile:
 
 ```sh
-T=$(mktemp -d)
-export XDG_CONFIG_HOME=$T/config XDG_DATA_HOME=$T/data \
-       XDG_CACHE_HOME=$T/cache XDG_STATE_HOME=$T/state HELLMACSDIR=$T/config/hellmacs
-bin/hellmacs install --no-env     # creates the config, syncs, runs doctor
-bin/hellmacs emacs                # try it; *Messages* says the startup time
+bin/hellmacs emacs --sandbox
 ```
+
+This allocates an isolated temporary directory in `/tmp/hellmacs-sandbox.XXXXXX`, runs the session, and automatically wipes all temporary state upon exiting.
+
+---
+
+### Verifying Changes
+
+Hellmacs has strict standards for reproducibility and performance:
+
+1. **Verify Health**:
+   ```sh
+   bin/hellmacs doctor
+   ```
+2. **Verify Checksums & Lock Integrity**:
+   ```sh
+   bin/hellmacs verify
+   ```
+3. **Verify Licenses & SBOM**:
+   ```sh
+   bin/hellmacs licenses
+   bin/hellmacs sbom
+   ```
 
 A full sync of the default modules downloads the language servers and
 takes minutes the first time. After changing core or a module, sync again

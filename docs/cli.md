@@ -91,8 +91,13 @@ features, the system, the profile, your modules.
 **`version`** [`v`]
 Hellmacs' version and commit, its update channel, and the Emacs it runs on.
 
-**`profile list`**, **`profile sync --all`** [`pf`]
-Lists every profile and whether it's synced; or syncs all of them.
+**`profile list`**, **`profile create NAME [--in-tree]`**, **`profile sync [NAME|--all]`**, **`profile delete NAME`**, **`profile path NAME`** [`pf`]
+Manages isolated Hellmacs profiles:
+- `profile list` (`ls`): Lists all discovered profiles, their sync status, and resolved config paths.
+- `profile create NAME [--in-tree]` (`new`, `init`): Creates a new profile with starter configuration templates (`static/*.example.el`). `--in-tree` places it in `profiles/NAME/` inside the repo checkout; otherwise in `~/.config/hellmacs-NAME/`.
+- `profile sync [NAME|--all]`: Syncs a specific profile or all profiles.
+- `profile delete NAME [-!]` (`rm`): Deletes the profile config and all its isolated data/cache/state directories.
+- `profile path NAME`: Prints the resolved configuration directory.
 
 ### Reproducibility and compliance
 

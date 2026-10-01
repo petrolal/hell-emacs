@@ -80,27 +80,113 @@
       (accept-process-output proc 0.1))
     (process-exit-status proc)))
 
+(defun hellmacs-cli-profile--create (name &optional in-tree no-sync)
+  "Create a new profile named NAME.
+With IN-TREE, create in profiles/NAME/ inside the repository;
+otherwise create in ~/.config/hellmacs-NAME/."
+  (unless (and name (string-match-p "\\`[A-Za-z0-9_-]+\\'" name))
+    (user-error "Invalid profile name `%s' (use letters, digits, - and _)" name))
+  (when (member name '("default" "nil"))
+    (user-error "Cannot create profile `%s': it is reserved for the default configuration" name))
+  (let* ((target-dir (if in-tree
+                         (expand-file-name (format "profiles/%s/" name) hellmacs-dir)
+                       (expand-file-name (format "hellmacs-%s/" name)
+                                         (or (getenv "XDG_CONFIG_HOME") "~/.config"))))
+         (existed (file-directory-p target-dir)))
+    (make-directory target-dir t)
+    (dolist (file '("init.el" "packages.el" "config.el"))
+      (let ((dest (expand-file-name file target-dir)))
+        (unless (file-exists-p dest)
+          (copy-file (expand-file-name (concat "static/" (file-name-base file) ".example.el") hellmacs-dir)
+                     dest))))
+    (hellmacs-cli--say "  %s profile `%s' in %s"
+                       (if existed "Kept existing" "Created")
+                       name (abbreviate-file-name target-dir))
+    (unless no-sync
+      (hellmacs-cli--say "\nSyncing profile `%s'..." name)
+      (apply #'hellmacs-cli-profile--run (list "--profile" name "sync")))))
+
+(defun hellmacs-cli-profile--delete (name &optional force)
+  "Delete profile NAME and its cached/state data."
+  (unless (and name (string-match-p "\\`[A-Za-z0-9_-]+\\'" name))
+    (user-error "Invalid profile name `%s'" name))
+  (when (member name '("default" "safe-mode" "nil"))
+    (user-error "Cannot delete protected profile `%s'" name))
+  (let* ((user-dir (hellmacs--user-dir name))
+         (data-dir (expand-file-name (format "hellmacs-%s/" name) (or (getenv "XDG_DATA_HOME") "~/.local/share")))
+         (cache-dir (expand-file-name (format "hellmacs-%s/" name) (or (getenv "XDG_CACHE_HOME") "~/.cache")))
+         (state-dir (expand-file-name (format "hellmacs-%s/" name) (or (getenv "XDG_STATE_HOME") "~/.local/state"))))
+    (when (or force
+              (hellmacs-cli--yes-p
+               (format "Permanently delete profile `%s' and all its data in:\n  - %s\n  - %s\nProceed?"
+                       name (abbreviate-file-name user-dir) (abbreviate-file-name data-dir))
+               nil))
+      (when (file-directory-p user-dir)
+        (delete-directory user-dir t)
+        (hellmacs-cli--say "Deleted config directory: %s" (abbreviate-file-name user-dir)))
+      (when (file-directory-p data-dir)
+        (delete-directory data-dir t)
+        (hellmacs-cli--say "Deleted data directory: %s" (abbreviate-file-name data-dir)))
+      (when (file-directory-p cache-dir)
+        (delete-directory cache-dir t))
+      (when (file-directory-p state-dir)
+        (delete-directory state-dir t))
+      (hellmacs-cli--say "Profile `%s' deleted." name))))
+
 (defcli! profile (&rest args)
-  "`list' the profiles, or `sync --all' of them."
+  "`list' the profiles, `create' a new one, `sync', or `delete' an existing one.
+
+Subcommands:
+  list, ls                 List all discovered profiles and their sync state
+  create, new NAME [OPTS]  Create profile NAME with starter templates
+                           Options: --in-tree (place in profiles/NAME/), --no-sync
+  sync [--all | NAME]      Sync all profiles or the specified profile
+  delete, rm NAME [-!]     Delete profile config and all its data directories
+  path NAME                Print the resolved configuration directory for NAME"
   (pcase (car args)
     ((or 'nil "list" "ls")
      (dolist (name (hellmacs-cli-profile--names))
-       (hellmacs-cli--say "%s %-16s %s"
-                          (if (equal name hellmacs-profile) "*" " ")
-                          (or name "default")
-                          (let ((init (hellmacs-cli-profile--init-file name)))
-                            (if (file-exists-p init) "synced" "not synced")))))
+       (let* ((dir (hellmacs--user-dir name))
+              (init (hellmacs-cli-profile--init-file name)))
+         (hellmacs-cli--say "%s %-16s %-12s %s"
+                            (if (equal name hellmacs-profile) "*" " ")
+                            (or name "default")
+                            (if (file-exists-p init) "synced" "not synced")
+                            (abbreviate-file-name dir)))))
+    ((or "create" "new" "init")
+     (let* ((name (cadr args))
+            (in-tree (member "--in-tree" args))
+            (no-sync (member "--no-sync" args)))
+       (unless name
+         (user-error "profile create: specify a profile name (e.g. `bin/hellmacs profile create dev')"))
+       (hellmacs-cli-profile--create name in-tree no-sync)))
     ("sync"
-     (unless (member "--all" args)
-       (user-error "profile sync: say --all (or `bin/hellmacs --profile NAME sync' for one)"))
-     (let (failed)
-       (dolist (name (hellmacs-cli-profile--names))
-         (hellmacs-cli--say "\n== %s ==" (or name "default"))
-         (unless (zerop (apply #'hellmacs-cli-profile--run
-                               (append (and name (list "--profile" name)) '("sync"))))
-           (push (or name "default") failed)))
-       (when failed
-         (error "Couldn't sync: %s" (string-join (nreverse failed) ", ")))))
-    (other (user-error "profile: unknown subcommand `%s' (list, sync --all)" other))))
+     (let ((target (cadr args)))
+       (cond
+        ((member "--all" args)
+         (let (failed)
+           (dolist (name (hellmacs-cli-profile--names))
+             (hellmacs-cli--say "\n== %s ==" (or name "default"))
+             (unless (zerop (apply #'hellmacs-cli-profile--run
+                                   (append (and name (list "--profile" name)) '("sync"))))
+               (push (or name "default") failed)))
+           (when failed
+             (error "Couldn't sync: %s" (string-join (nreverse failed) ", ")))))
+        (target
+         (apply #'hellmacs-cli-profile--run (list "--profile" target "sync")))
+        (t
+         (user-error "profile sync: specify a profile NAME or `--all'")))))
+    ((or "delete" "rm" "remove")
+     (let* ((name (cadr args))
+            (force (or (member "-!" args) (member "--force" args) (getenv "HELLMACS_FORCE"))))
+       (unless name
+         (user-error "profile delete: specify a profile name to delete"))
+       (hellmacs-cli-profile--delete name force)))
+    ("path"
+     (let ((name (cadr args)))
+       (unless name
+         (user-error "profile path: specify a profile name"))
+       (princ (format "%s\n" (hellmacs--user-dir name)))))
+    (other (user-error "profile: unknown subcommand `%s' (list, create, sync, delete, path)" other))))
 
 ;;; hellmacs-profile ends here
