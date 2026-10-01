@@ -204,10 +204,16 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
             (error fallback-glyph))
         fallback-glyph))))
 
-(defun hellmacs-splash--insert-button (label action help svg-file fallback-glyph)
-  "Insert an interactive text button for ACTION with SVG-FILE icon or FALLBACK-GLYPH."
+(defun hellmacs-splash--insert-button (label action help svg-file fallback-glyph &optional fixed-width)
+  "Insert an interactive text button for ACTION with SVG-FILE icon or FALLBACK-GLYPH.
+If FIXED-WIDTH is non-nil, pad the inside of the button so its visual width is FIXED-WIDTH."
   (let* ((icon (hellmacs-splash--button-icon svg-file fallback-glyph))
-         (display-text (format " %s %s " icon label)))
+         (icon-width (if (display-graphic-p) 2 (string-width fallback-glyph)))
+         (label-width (string-width label))
+         (inner-width (+ 1 icon-width 1 label-width 1))
+         (pad-len (if fixed-width (max 0 (- fixed-width inner-width)) 0))
+         (pad (make-string pad-len ?\s))
+         (display-text (format " %s %s%s " icon label pad)))
     (insert-text-button display-text
                         'action (lambda (_) (call-interactively action))
                         'follow-link t
@@ -415,29 +421,31 @@ Prefers banner-960.png, falling back to banner.png or banner.svg in assets/banne
           (insert sigil-indent (propertize line 'face 'hellmacs-splash-sigil) "\n"))
         (insert "\n")))
 
-    ;; 2. Interactive SVG Sprite Action Buttons Bar
-    (let* ((all-buttons
-            `(("Ignite File" find-file "Find file (C-x C-f)" "ignite.svg" "🔥")
-              ("Summon Project" hellmacs-splash--action-project "Switch project (C-x p p)" "forge.svg" "⚙")
-              ("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
-              ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡")
-              ("Relic Chamber" hellmacs-splash--action-plugins "Plugin and module manager (C-c h p)" "marketplace.svg" "📦")
-              ("Grimoire Manual" hellmacs-info-manual "Hellmacs Info manual (C-c h i)" "manual.svg" "📖")
-              ("IntelliJ Exorcism" hellmacs-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg" "💡")
-              ("Forge Source" hellmacs-splash--action-github "Hellmacs GitHub repository" "github.svg" "🐙")
-              ("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Official portal (WIP)" "website.svg" "🔮")))
-           (gap "   ")
-           (gap-len (string-width gap))
-           (button-rows (hellmacs-splash--split-buttons-into-rows all-buttons (max 70 (- width 4)) gap-len)))
-      (dolist (row button-rows)
-        (let* ((row-width (+ (apply #'+ (mapcar (lambda (b) (+ (string-width (nth 0 b)) 6)) row))
-                             (* gap-len (1- (length row)))))
-               (left-pad (make-string (max 0 (/ (- width row-width) 2)) ?\s)))
+    ;; 2. Interactive SVG Sprite Action Buttons (Two Centered Columns)
+    (let* ((button-pairs
+            `((("Ignite File" find-file "Find file (C-x C-f)" "ignite.svg" "🔥")
+               ("Summon Project" hellmacs-splash--action-project "Switch project (C-x p p)" "forge.svg" "⚙"))
+              (("Grimoires" hellmacs-splash--action-buffer "Switch buffer (C-x b)" "skull.svg" "💀")
+               ("Hell Shell" hellmacs-splash--action-shell "Spawn shell" "shell.svg" "⚡"))
+              (("Relic Chamber" hellmacs-splash--action-plugins "Plugin and module manager (C-c h p)" "marketplace.svg" "📦")
+               ("Grimoire Manual" hellmacs-info-manual "Hellmacs Info manual (C-c h i)" "manual.svg" "📖"))
+              (("IntelliJ Exorcism" hellmacs-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg" "💡")
+               ("Forge Source" hellmacs-splash--action-github "Hellmacs GitHub repository" "github.svg" "🐙"))
+              (("Dark Beacon (WIP)" hellmacs-splash--action-beacon "Official portal (WIP)" "website.svg" "🔮")
+               nil)))
+           (col-btn-width 26)
+           (col-gap "      ")
+           (col-gap-len (string-width col-gap))
+           (grid-width (+ (* col-btn-width 2) col-gap-len))
+           (left-pad (make-string (max 0 (/ (- width grid-width) 2)) ?\s)))
+      (dolist (pair button-pairs)
+        (let ((b1 (nth 0 pair))
+              (b2 (nth 1 pair)))
           (insert left-pad)
-          (dolist (b row)
-            (hellmacs-splash--insert-button (nth 0 b) (nth 1 b) (nth 2 b) (nth 3 b) (nth 4 b))
-            (unless (eq b (car (last row)))
-              (insert gap)))
+          (hellmacs-splash--insert-button (nth 0 b1) (nth 1 b1) (nth 2 b1) (nth 3 b1) (nth 4 b1) col-btn-width)
+          (when b2
+            (insert col-gap)
+            (hellmacs-splash--insert-button (nth 0 b2) (nth 1 b2) (nth 2 b2) (nth 3 b2) (nth 4 b2) col-btn-width))
           (insert "\n\n")))
       (insert "\n")) ; Breathing room before utility lists
 

@@ -222,14 +222,17 @@
 
 (defun hellmacs-intellij--format-candidate (entry max-action max-intellij max-key)
   "Format an ENTRY with aligned columns."
-  (let* ((action (plist-get entry :action))
-         (intellij (plist-get entry :intellij))
-         (key (plist-get entry :key))
-         (category (plist-get entry :category)))
-    (format "%-*s  │ %-*s │ %-*s │ %s"
-            max-action action
-            max-intellij intellij
-            max-key key
+  (let* ((action (or (plist-get entry :action) ""))
+         (intellij (or (plist-get entry :intellij) ""))
+         (key (or (plist-get entry :key) ""))
+         (category (or (plist-get entry :category) ""))
+         (pad-action (make-string (max 0 (- max-action (string-width action))) ?\s))
+         (pad-intellij (make-string (max 0 (- max-intellij (string-width intellij))) ?\s))
+         (pad-key (make-string (max 0 (- max-key (string-width key))) ?\s)))
+    (format "%s%s  │ %s%s │ %s%s │ %s"
+            action pad-action
+            intellij pad-intellij
+            key pad-key
             category)))
 
 ;;;###autoload
