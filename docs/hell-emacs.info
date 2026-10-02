@@ -42,7 +42,7 @@ environment built on stock GNU Emacs.
 * Installation and Profiles::    Installing, profiles, and initial setup.
 * Daily JVM Workflow::           Java, Kotlin, Clojure, Groovy, Scala, and Spring.
 * IntelliJ Parity & Key Finder:: Finding your way from IntelliJ shortcuts.
-* Enhanced Dired & Projectile::  File and project management.
+* Enhanced Dired::  File management.
 * Workspaces::                   Native tab-bar project workspace isolation.
 * Modules and Configuration::    Configuring modules, flags, and packages.
 * Enterprise & Team Layer::      Team configurations, proxies, CAs, and offline mirrors.
@@ -230,7 +230,7 @@ Access the interactive JVM Help and Cheatsheet Hub at any time:
 readiness, discovered JDK paths, and full keybinding tables.
 
 
-File: hell-emacs.info,  Node: IntelliJ Parity & Key Finder,  Next: Enhanced Dired & Projectile,  Prev: Daily JVM Workflow,  Up: Top
+File: hell-emacs.info,  Node: IntelliJ Parity & Key Finder,  Next: Enhanced Dired,  Prev: Daily JVM Workflow,  Up: Top
 
 5 IntelliJ Parity & Key Finder
 ******************************
@@ -245,32 +245,24 @@ Shift’, ‘Ctrl-N’) to immediately see the equivalent GNU Emacs keychord
 and execute the command.
 
 
-File: hell-emacs.info,  Node: Enhanced Dired & Projectile,  Next: Workspaces,  Prev: IntelliJ Parity & Key Finder,  Up: Top
+File: hell-emacs.info,  Node: Enhanced Dired,  Next: Workspaces,  Prev: IntelliJ Parity & Key Finder,  Up: Top
 
-6 Enhanced Dired & Projectile
-*****************************
+6 Enhanced Dired
+****************
 
 6.1 Enhanced Dired (‘:emacs dired’)
 ===================================
 
 File management in Hell Emacs is enhanced with:
    • Colored filetype glyphs via ‘nerd-icons-dired’.
-   • Batch file renaming as editable text: press ‘r’ or ‘C-x C-q’ in
-     Dired to enter ‘wdired-mode’.
-   • Quick sorting menu: press ‘S’ in Dired to sort by name, size, date,
-     or extension.
+   • Batch file renaming as editable text: press ‘C-x C-q’ in Dired to
+     enter ‘wdired-mode’.
+   • Sorting is stock: ‘s’ toggles name / date, ‘C-u s’ takes any ‘ls’
+     switches.
    • Automatic reuse of Dired buffers to keep buffer lists clean.
 
-6.2 Projectile (‘:tools projectile’)
-====================================
-
-Fast project exploration and buffer management:
-   • ‘C-c p f’: Find file in project with fuzzy search.
-   • ‘C-c p s r’: Ripgrep search across project.
-   • ‘C-c p b’: Switch between project-specific buffers.
-
 
-File: hell-emacs.info,  Node: Workspaces,  Next: Modules and Configuration,  Prev: Enhanced Dired & Projectile,  Up: Top
+File: hell-emacs.info,  Node: Workspaces,  Next: Modules and Configuration,  Prev: Enhanced Dired,  Up: Top
 
 7 Workspaces
 ************
@@ -290,8 +282,6 @@ using Emacs' native ‘tab-bar-mode’:
      Rename workspace tab.
 ‘C-x t RET’
      Switch to a tab by name.
-‘C-c TAB p’
-     Switch to a project's tab, or open it when it has none.
 
    Each tab automatically formats with project indicators and nerd-icons
 glyphs.
@@ -305,8 +295,6 @@ File: hell-emacs.info,  Node: Modules and Configuration,  Next: Enterprise & Tea
 Your personal configuration lives in ‘~/.config/hell-emacs/init.el’:
      (hell! :ui
                 theme
-                dashboard
-                modeline
                 workspaces
                 popup
 
@@ -326,7 +314,6 @@ Your personal configuration lives in ‘~/.config/hell-emacs/init.el’:
                 direnv
                 lsp
                 magit
-                projectile
                 run
                 test
 
@@ -448,19 +435,19 @@ Key Index
 
 Tag Table:
 Node: Top651
-Node: Overview2345
-Node: The 40-Year Purist Guarantee3289
-Node: Installation and Profiles5074
-Node: Daily JVM Workflow5840
-Node: IntelliJ Parity & Key Finder9459
-Node: Enhanced Dired & Projectile10014
-Node: Workspaces10979
-Node: Modules and Configuration11705
-Node: Enterprise & Team Layer13010
-Node: CLI Reference13897
-Node: Diagnostics and Doctor14914
-Node: Concept Index15596
-Node: Key Index15731
+Node: Overview2320
+Node: The 40-Year Purist Guarantee3264
+Node: Installation and Profiles5049
+Node: Daily JVM Workflow5815
+Node: IntelliJ Parity & Key Finder9434
+Node: Enhanced Dired9976
+Node: Workspaces10585
+Node: Modules and Configuration11221
+Node: Enterprise & Team Layer12448
+Node: CLI Reference13335
+Node: Diagnostics and Doctor14352
+Node: Concept Index15034
+Node: Key Index15169
 
 End Tag Table
 

@@ -4,4 +4,3 @@
 ;; License: GPL-3.0-or-later
 
 (package! nerd-icons-dired)
-(package! dired-quick-sort)

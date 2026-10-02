@@ -323,7 +323,7 @@ Without one it's forgotten, so a stopped server's workspace isn't kept."
       (concat " " (propertize (if (bound-and-true-p hell-ux-enable) themed plain) 'face face) " "))))
 
 ;; A standard `mode-line-misc-info' entry, so any mode-line shows it
-;; (`:ui modeline' included); empty in buffers without such a server.
+;; (the stock one included); empty in buffers without such a server.
 (add-to-list 'mode-line-misc-info '(:eval (hell-lsp-status-mode-line)))
 
 (hell-provide 'hell-lib 'lsp-status)

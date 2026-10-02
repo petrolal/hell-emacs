@@ -152,7 +152,7 @@ so core and `:tools` never name a language: `hell-reload-function`
 (`C-c h r`), `hell-forge-test-class-function` and
 `-test-method-function` and `-test-run-function` (running tests, on
 `C-c l t` once `hell-forge-setup-build-h` has run), and
-`(hell-lsp-status-register SERVER ...)` (the modeline and messages).
+`(hell-lsp-status-register SERVER ...)` (the mode line and messages).
 
 Useful hooks: `hell-first-input-hook`, `-first-file-hook`,
 `-first-buffer-hook` (defer work until needed),

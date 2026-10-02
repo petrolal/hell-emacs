@@ -96,7 +96,7 @@ Use `hell-after-init-hook' instead.")
 (defun hell--own-file-p ()
   "Return non-nil if the current buffer visits one of Hell Emacs' own files.
 Packages read their state that way (bookmark.el visits the bookmarks
-file, for one, when the dashboard lists bookmarks); that isn't the user
+file, for one, when something lists bookmarks); that isn't the user
 opening a file."
   (when-let* ((file buffer-file-name))
     (seq-some (lambda (dir) (file-in-directory-p file dir)) (hell--own-dirs))))

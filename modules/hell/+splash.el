@@ -41,7 +41,6 @@
 
 (autoload 'hell-info-manual "lib/help" nil t)
 (autoload 'hell-plugins "hell-plugins" nil t)
-(declare-function projectile-switch-project "ext:projectile")
 
 (defgroup hell-splash nil
   "The Hell Emacs startup screen."
@@ -75,9 +74,6 @@ Nil is `inhibit-startup-screen': Emacs starts on *scratch*."
   "Face for the Altar's button under the mouse."
   :group 'hell-splash)
 
-(defvar hell-splash-buffer-function nil
-  "Function returning the startup buffer instead of the Altar, or nil.
-The `:ui dashboard' module sets it.")
 
 (defun hell-splash--themed-p ()
   "Whether the Altar wears Hell Emacs' look (see `hell-ux-enable')."
@@ -154,12 +150,6 @@ at the Relic Chamber: packages come from `package!', never package.el."
 
 ;;; The buttons ---------------------------------------------------------------
 
-(defun hell-splash--project ()
-  "Switch project: Projectile's when `:tools projectile' is on."
-  (interactive)
-  (call-interactively (if (featurep 'projectile)
-                          #'projectile-switch-project
-                        #'project-switch-project)))
 
 (defun hell-splash--buffer ()
   "Switch buffer, as `C-x b' does."
@@ -182,7 +172,7 @@ at the Relic Chamber: packages come from `package!', never package.el."
 (defconst hell-splash-buttons
   `(("Forge..."
      ("Ignite File" find-file "Find a file (C-x C-f)" "ignite.svg")
-     ("Summon Project" hell-splash--project "Switch project (C-x p p)" "forge.svg")
+     ("Summon Project" project-switch-project "Switch project (C-x p p)" "forge.svg")
      ("Grimoires" hell-splash--buffer "Switch buffer (C-x b)" "skull.svg")
      ("Hell Shell" hell-splash--shell "Open a shell" "shell.svg")
      ("Grimoire Manual" hell-info-manual "The Hell Emacs manual (C-c h i)" "manual.svg")
@@ -269,14 +259,8 @@ at the Relic Chamber: packages come from `package!', never package.el."
 (add-hook 'hell-after-init-hook
           (defun hell-splash--setup-h ()
             ;; Read here, after the user's config.el has had its say.
-            (cond ((not hell-splash-enable)
-                   (setq inhibit-startup-screen t))
-                  ((and hell-splash-buffer-function (null initial-buffer-choice))
-                   (setq initial-buffer-choice
-                         (lambda ()
-                           (if (or buffer-file-name (derived-mode-p 'dired-mode))
-                               (current-buffer)
-                             (funcall hell-splash-buffer-function))))))))
+            (unless hell-splash-enable
+              (setq inhibit-startup-screen t))))
 
 (provide 'hell-splash)
 ;;; +splash.el ends here

@@ -52,7 +52,7 @@ GNU Emacs.
 * Installation and Profiles::    Installing, profiles, and initial setup.
 * Daily JVM Workflow::           Java, Kotlin, Clojure, Groovy, Scala, and Spring.
 * IntelliJ Parity & Key Finder:: Finding your way from IntelliJ shortcuts.
-* Enhanced Dired & Projectile::  File and project management.
+* Enhanced Dired::  File management.
 * Workspaces::                   Native tab-bar project workspace isolation.
 * Modules and Configuration::    Configuring modules, flags, and packages.
 * Enterprise & Team Layer::      Team configurations, proxies, CAs, and offline mirrors.
@@ -238,24 +238,16 @@ Type any IntelliJ shortcut (e.g. @kbd{Shift-F6}, @kbd{Ctrl-Alt-L}, @kbd{Double S
 to immediately see the equivalent GNU Emacs keychord and execute the command.
 
 @c -----------------------------------------------------------------------------
-@node Enhanced Dired & Projectile
-@chapter Enhanced Dired & Projectile
+@node Enhanced Dired
+@chapter Enhanced Dired
 
 @section Enhanced Dired (@code{:emacs dired})
 File management in Hell Emacs is enhanced with:
 @itemize @bullet
 @item Colored filetype glyphs via @code{nerd-icons-dired}.
-@item Batch file renaming as editable text: press @kbd{r} or @kbd{C-x C-q} in Dired to enter @code{wdired-mode}.
-@item Quick sorting menu: press @kbd{S} in Dired to sort by name, size, date, or extension.
+@item Batch file renaming as editable text: press @kbd{C-x C-q} in Dired to enter @code{wdired-mode}.
+@item Sorting is stock: @kbd{s} toggles name / date, @kbd{C-u s} takes any @command{ls} switches.
 @item Automatic reuse of Dired buffers to keep buffer lists clean.
-@end itemize
-
-@section Projectile (@code{:tools projectile})
-Fast project exploration and buffer management:
-@itemize @bullet
-@item @kbd{C-c p f}: Find file in project with fuzzy search.
-@item @kbd{C-c p s r}: Ripgrep search across project.
-@item @kbd{C-c p b}: Switch between project-specific buffers.
 @end itemize
 
 @c -----------------------------------------------------------------------------
@@ -278,8 +270,6 @@ Open a project in a new tab (stock).
 Rename workspace tab.
 @item C-x t RET
 Switch to a tab by name.
-@item C-c TAB p
-Switch to a project's tab, or open it when it has none.
 @end table
 
 Each tab automatically formats with project indicators and nerd-icons glyphs.
@@ -292,8 +282,6 @@ Your personal configuration lives in @file{~/.config/hell-emacs/init.el}:
 @example
 (hell! :ui
            theme
-           dashboard
-           modeline
            workspaces
            popup
 
@@ -313,7 +301,6 @@ Your personal configuration lives in @file{~/.config/hell-emacs/init.el}:
            direnv
            lsp
            magit
-           projectile
            run
            test
 

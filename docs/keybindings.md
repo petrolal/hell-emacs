@@ -101,8 +101,7 @@ With a language server (`:tools lsp`) the group also has `C-c c a` code
 actions, `C-c c r` rename, `C-c c o` organize imports, `C-c c f` format,
 `C-c c i` / `C-c c t` implementations / type definition. lsp-mode's
 own whole map stays on its `s-l` (`s-l w r` restart the server, `T`
-toggles, `g` goto and the rest; which-key lists them). `:tools eglot` puts its own code
-actions, rename and format on the same keys, in its buffers.
+toggles, `g` goto and the rest; which-key lists them).
 
 Stock: **`M-.`** / **`M-?`** / **`C-M-.`** definition / references /
 project symbol, **`C-x p c`** build the project, **`C-h .`** help at point.
@@ -141,14 +140,13 @@ a symbol of the buffer, **`C-x r b`** a bookmark.
 
 Stock: **`C-x C-q`** read-only, **`<f11>`** fullscreen.
 
-### `C-c w` window, `C-c q` quit, `C-c TAB` workspace
+### `C-c w` window, `C-c q` quit
 
 | Key | Command |
 |---|---|
 | `C-c w b` `f` `p` `n` | Move to the window left, right, up, down |
 | `C-c w t` | Hide or bring back the bottom popup (`:ui popup`) |
 | `C-c q r` | Restart Emacs |
-| `C-c TAB p` | A project's tab: switch to it, or open it (`:ui workspaces`) |
 
 Stock: **`C-x 2`** / **`C-x 3`** split, **`C-x 0`** / **`C-x 1`** delete
 this / the others, **`C-x o`** other window, **`C-x +`** balance,

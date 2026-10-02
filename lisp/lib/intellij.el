@@ -35,7 +35,7 @@
      :category "Finding" :doc "Run any Emacs or Hell Emacs command by name with fuzzy completion.")
     (:action "Find file in project"
      :intellij "Ctrl+Shift+N" :eclipse "Ctrl+Shift+R" :key "C-x p f" :command project-find-file
-     :category "Finding" :doc "Fuzzy find and open any file in the current project (or C-c p f with Projectile).")
+     :category "Finding" :doc "Fuzzy find and open any file in the current project.")
     (:action "Find class / symbol in project"
      :intellij "Ctrl+N, Ctrl+Alt+Shift+N" :eclipse "Ctrl+Shift+T" :key "C-M-." :command xref-find-apropos
      :category "Finding" :doc "Search for classes, interfaces, and symbols across workspace.")
@@ -267,12 +267,6 @@ Selecting a candidate displays full documentation and offers to run the command.
                    (y-or-n-p (format "Run `%s' now? " cmd)))
           (call-interactively cmd))))))
 
-(defun hell-open-user-dir ()
-  "Open `hell-user-dir' in Dired (alias for `hell-visit-user-dir')."
-  (interactive)
-  (if (fboundp 'hell-visit-user-dir)
-      (call-interactively #'hell-visit-user-dir)
-    (dired hell-user-dir)))
 
 (hell-provide 'hell-lib 'intellij)
 

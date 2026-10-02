@@ -5,4 +5,3 @@
 
 (depends-on! :tools lsp)
 
-(package! python-mode)

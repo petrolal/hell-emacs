@@ -515,38 +515,5 @@ when `hell-ux-enable' is nil."
 `C-c h r' (the Crucible) calls it. Each language module sets it in its
 buffers: Java hot-swaps into a debug session, Clojure loads into its REPL.")
 
-;;; Display ----------------------------------------------------------------
-
-(defun hell-nerd-font-p (&optional frame)
-  "Non-nil if FRAME (default: the selected one) can draw Nerd Font icons.
-Only a graphical frame can say: it needs some font with the Nerd Font
-glyphs (checked on nf-fa-folder, which every Nerd Font has), not only
-the \"Symbols Nerd Font Mono\" nerd-icons asks for by name. A terminal
-can't tell which font it uses, so this is nil there; the `:ui'
-modules have their own options to force icons in a terminal.
-The answer is kept per frame (the mode-line asks on every window
-switch), until a font changes."
-  (let ((frame (or frame (selected-frame))))
-    (and (display-graphic-p frame)
-         (let ((known (frame-parameter frame 'hell--nerd-font)))
-           (unless known
-             (setq known (if (with-selected-frame frame (char-displayable-p #xf07b)) 'yes 'no))
-             (set-frame-parameter frame 'hell--nerd-font known))
-           (eq known 'yes)))))
-
-(defun hell--forget-nerd-font-h ()
-  "A font changed: find out again, per frame, whether it draws icons."
-  (dolist (frame (frame-list))
-    (set-frame-parameter frame 'hell--nerd-font nil)))
-(add-hook 'after-setting-font-hook #'hell--forget-nerd-font-h)
-
-(defun hell-icons-p (tty-icons &optional frame)
-  "Non-nil if FRAME (default: the selected one) should draw icons.
-A graphical frame needs a Nerd Font (`hell-nerd-font-p'); a
-terminal draws them only if TTY-ICONS, the caller's option, is non-nil."
-  (if (display-graphic-p frame)
-      (hell-nerd-font-p frame)
-    tty-icons))
-
 (provide 'hell-lib)
 ;;; hell-lib.el ends here

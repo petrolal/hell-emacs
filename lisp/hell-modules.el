@@ -185,9 +185,22 @@ module doesn't exist."
                        :config-depth c-depth
                        :index (hash-table-count hell-modules))
                  hell-modules))
-    (display-warning 'hell (format "Unknown module %s, skipped"
-                                   (hell-module-key-string (cons group name))))
+    (display-warning 'hell
+                     (if-let* ((why (alist-get (cons group name) hell-module-removed
+                                               nil nil #'equal)))
+                         (format "Module %s was removed, skipped: %s; take it out of your init.el"
+                                 (hell-module-key-string (cons group name)) why)
+                       (format "Unknown module %s, skipped"
+                               (hell-module-key-string (cons group name)))))
     nil))
+
+(defconst hell-module-removed
+  '(((:ui . dashboard) . "the Altar is GNU Emacs' own startup screen (C-c h s)")
+    ((:ui . modeline) . "Emacs' stock mode line shows the JVM status itself")
+    ((:tools . projectile) . "Emacs' built-in project.el does it, on C-x p")
+    ((:tools . eglot) . "eglot is built into Emacs; the JVM modules use lsp-mode"))
+  "Modules Hell Emacs no longer has (13.7), and what to use instead,
+as Doom's obsolete modules: `hell!' skips them with this reason.")
 
 (defmacro hell! (&rest modules)
   "Enable MODULES, in order. Use it once, in your init.el.

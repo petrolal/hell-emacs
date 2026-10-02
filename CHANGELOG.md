@@ -37,6 +37,17 @@ The first tagged release will be 0.9.0. Since the project started
 - Update channels: `bin/hell upgrade --channel stable|main`, stable
   (the latest release) by default.
 
+### Removed
+
+- What Emacs already does (roadmap 13.7): `:tools projectile` (use
+  built-in `project.el`, `C-x p`), `:ui modeline` (Emacs' own mode line,
+  which shows the JVM status), `:tools eglot` (eglot is built in; the
+  JVM modules use lsp-mode), the deprecated `:ui dashboard`,
+  dired-quick-sort (Dired's `s`), the third-party `python-mode` and the
+  `ruby-mode` packages (both modes are built in), and `C-c TAB p`
+  (`C-x t p p`). `hell!` skips a removed module with a warning saying
+  what replaces it.
+
 ### Changed
 
 - Stock keys untouched, modern keys isolated (roadmap 13.5): Hell

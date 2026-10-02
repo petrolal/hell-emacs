@@ -25,8 +25,7 @@
 ;; one tab per project, with project isolation, modern iconography, and
 ;; infernal theming. Tabs keep their stock `C-x t' keys (`C-x t 2' new,
 ;; `C-x t 0' close, `C-x t o' next, `C-x t RET' switch, `C-x t p p' a
-;; project in a new tab); the module adds one key, `C-c TAB p', which
-;; reuses a project's tab instead of opening another (13.5).
+;; project in a new tab); the module adds no command or key (13.7).
 
 (require 'tab-bar)
 
@@ -49,10 +48,6 @@
 (defun hell-workspaces--project-name ()
   "Return the name of the current project, or nil if not in a project."
   (cond
-   ((and (fboundp 'projectile-project-name)
-         (fboundp 'projectile-project-p)
-         (projectile-project-p))
-    (projectile-project-name))
    ((and (fboundp 'project-current)
          (project-current))
     (file-name-nondirectory (directory-file-name (project-root (project-current)))))
@@ -70,30 +65,6 @@
         (format "%s %s" (or icon "") proj)
       (format "%s %s" (or icon "") (or buf "*scratch*")))))
 
-(defun hell-workspaces-open-project-tab (dir)
-  "Open or switch to a dedicated tab for the project at DIR."
-  (interactive
-   (list (cond
-          ((fboundp 'projectile-prompt-project-dir)
-           (projectile-prompt-project-dir))
-          ((fboundp 'project-prompt-project-dir)
-           (project-prompt-project-dir))
-          (t (read-directory-name "Project directory: ")))))
-  (let* ((proj-name (file-name-nondirectory (directory-file-name (expand-file-name dir))))
-         (tabs (tab-bar-tabs))
-         (matching-tab (seq-find (lambda (tab)
-                                   (let ((name (alist-get 'name tab)))
-                                     (and name (string-match-p (regexp-quote proj-name) name))))
-                                 tabs)))
-    (if matching-tab
-        (tab-bar-select-tab-by-name (alist-get 'name matching-tab))
-      (tab-bar-new-tab)
-      (let ((default-directory (file-name-as-directory (expand-file-name dir))))
-        (if (fboundp 'consult-projectile-find-file)
-            (call-interactively #'consult-projectile-find-file)
-          (if (fboundp 'project-find-file)
-              (call-interactively #'project-find-file)
-            (dired default-directory)))))))
 
 ;; Configure tab-bar-mode
 (setq tab-bar-show hell-workspaces-show
@@ -108,9 +79,5 @@
 
 ;; Enable tab-bar-mode
 (tab-bar-mode 1)
-
-(hell-leader-def
-  "TAB"   "workspace"
-  "TAB p" '("project tab" . hell-workspaces-open-project-tab))
 
 ;;; config.el ends here

@@ -49,8 +49,8 @@
 ;; Covers the built-in faces, font-lock (tree-sitter included), the
 ;; completion stack (vertico, orderless, marginalia, consult, corfu,
 ;; which-key), line numbers, mode-lines, compilation, flymake, eglot,
-;; comint and CIDER, lsp-mode, dap-mode, Magit, the dashboard and
-;; doom-modeline, and Hell Emacs' own faces.
+;; comint and CIDER, lsp-mode, dap-mode, Magit, and Hell Emacs' own
+;; faces.
 ;;
 ;; Load it with (load-theme 'hell-inferno t); the `:ui theme'
 ;; module does.
@@ -337,37 +337,6 @@
    `(git-commit-comment-file ((t (:foreground ,fg-main :slant italic))))
    `(git-commit-comment-branch-local ((t (:foreground ,reap-gold))))
    `(git-commit-comment-branch-remote ((t (:foreground ,venom-green))))
-
-   ;;; Dashboard (:ui dashboard)
-   `(dashboard-banner-logo-title ((t (:foreground ,inferno-crimson :weight bold))))
-   `(dashboard-text-banner ((t (:foreground ,inferno-crimson :weight bold))))
-   `(dashboard-heading ((t (:foreground ,ember-amber :weight bold))))
-   `(dashboard-items-face ((t (:foreground ,fg-main :weight normal))))
-   `(dashboard-no-items-face ((t (:foreground ,forge-gray-hi :slant italic))))
-   `(dashboard-navigator ((t (:foreground ,reap-gold))))
-   `(dashboard-footer-face ((t (:foreground ,reap-gold :slant italic))))
-   `(dashboard-footer-icon-face ((t (:foreground ,inferno-crimson))))
-
-   ;;; doom-modeline (:ui modeline). The rest of its faces inherit these.
-   `(doom-modeline ((t (:foreground ,fg-main))))
-   `(doom-modeline-bar ((t (:background ,inferno-crimson))))
-   `(doom-modeline-bar-inactive ((t (:background ,bg-deep))))
-   `(doom-modeline-emphasis ((t (:foreground ,inferno-crimson))))
-   `(doom-modeline-highlight ((t (:foreground ,reap-gold))))
-   `(doom-modeline-panel ((t (:foreground ,bg-main :background ,reap-gold))))
-   `(doom-modeline-buffer-file ((t (:foreground ,reap-gold :weight bold))))
-   `(doom-modeline-buffer-path ((t (:foreground ,forge-gray-hi :weight bold))))
-   `(doom-modeline-buffer-modified ((t (:foreground ,inferno-crimson :weight bold))))
-   `(doom-modeline-buffer-major-mode ((t (:foreground ,ember-amber :weight bold))))
-   `(doom-modeline-project-dir ((t (:foreground ,venom-green :weight bold))))
-   `(doom-modeline-project-root-dir ((t (:foreground ,ember-amber :weight bold))))
-   `(doom-modeline-info ((t (:foreground ,venom-green :weight bold))))
-   `(doom-modeline-warning ((t (:foreground ,ember-amber :weight bold))))
-   `(doom-modeline-urgent ((t (:foreground ,inferno-crimson :weight bold))))
-   `(doom-modeline-debug ((t (:foreground ,forge-gray-hi))))
-   `(doom-modeline-debug-visual ((t (:foreground ,bg-main :background ,ember-amber))))
-   `(doom-modeline-vcs-default ((t (:foreground ,reap-gold))))
-   `(doom-modeline-compilation ((t (:foreground ,ember-amber :slant italic))))
 
    ;;; Hell Emacs JVM status (the :lang java mode-line segment, Phase 6.2)
    `(hell-jvm-busy ((t (:foreground ,ember-amber :weight bold))))

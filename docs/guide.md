@@ -281,7 +281,7 @@ when your config changed since.
 ### Modules
 
 ```elisp
-(hell! :ui         theme dashboard modeline popup
+(hell! :ui         theme popup
        :editor     undo
        :completion vertico (corfu +tab)
        :tools      build debugger direnv lsp magit run test editorconfig
@@ -355,13 +355,11 @@ files a module can have are in [development.md](development.md#modules).
 - **GNU Emacs' frame**: the menu bar, tool bar and scroll bars stay, in
   the theme's colours. `(menu-bar-mode -1)`, `(tool-bar-mode -1)` and
   `(scroll-bar-mode -1)` in your `config.el` turn them off.
-- **`:ui modeline`**: the buffer and position; the language server's state
-  (`JVM:ready`, `JVM:purgatory`), the debugger, the mode, the Git branch,
-  flymake's counts.
-- **Icons** come from a Nerd Font; without one, text. `M-x
-  nerd-icons-install-fonts` installs one. In a terminal, the Altar is
-  GNU Emacs' text startup screen, and the dashboard and mode-line draw text, unless you set
-  `hell-dashboard-tty-icons` and `hell-modeline-tty-icons` to `t`.
+- **The mode line** is Emacs' own, in the theme's colours, with the
+  language server's state (`JVM:ready`, `JVM:purgatory`) beside the mode.
+- **Icons** in Dired, the minibuffer and the completion popup come from a
+  Nerd Font. `M-x nerd-icons-install-fonts` installs one. In a terminal,
+  the Altar is GNU Emacs' text startup screen.
 - **A neutral look** for workplaces that want one:
   `(setq hell-ux-enable nil)` gives stock quit prompts and messages.
 
@@ -642,7 +640,7 @@ fix, run `hell doctor` again.
 
 #### Doctor: fonts
 
-- **No Nerd Font:** icons in the dashboard and modeline show as boxes.
+- **No Nerd Font:** icons in Dired, the minibuffer and the completion popup show as boxes.
   Run `M-x nerd-icons-install-fonts`, or install a Nerd Font from your
   distribution; Hell Emacs never installs fonts itself.
 
@@ -650,6 +648,6 @@ fix, run `hell doctor` again.
 
 - **`var/` or `etc/` left over from an older Hell Emacs:** nothing uses
   them; delete them.
-- **A file of Hell Emacs itself is missing** (a dashboard banner in
+- **A file of Hell Emacs itself is missing** (from
   `assets/`): your checkout is incomplete. `git status` in it shows what
   changed; `git checkout -- assets/` restores it.

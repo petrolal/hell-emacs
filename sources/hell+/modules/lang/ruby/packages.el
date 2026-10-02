@@ -5,5 +5,4 @@
 
 (depends-on! :tools lsp)
 
-(package! ruby-mode)
 (package! inf-ruby)

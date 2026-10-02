@@ -473,6 +473,19 @@ iconography (`nerd-icons`):
       dashboard's keys; dropped Hell Emacs' `C-c g` / `C-c v` groups,
       which would repeat them. Checked with a throwaway sync and a dump
       of the started profile's keymaps).
+- [x] 13.7 Nothing Emacs already does: drop what duplicates a built-in
+      or another module (projectile for `project.el`, doom-modeline for
+      the mode line, eglot's module beside lsp-mode, dired-quick-sort,
+      the deprecated dashboard, packages for built-in modes, dead assets)
+      (2026-10-02: removed `:tools projectile`, `:ui modeline`,
+      `:tools eglot`, `:ui dashboard`, dired-quick-sort, the
+      `python-mode` / `ruby-mode` packages, `C-c TAB p` (stock
+      `C-x t p p`), `hell-open-user-dir`, the now unused icon helpers,
+      `banner.png` / `banner.svg` / `website.svg` and the `agy` copy of
+      `bin/hell`; `hell!` names a removed module and what replaces it.
+      Checked with a throwaway sync (63 packages, was 67), doctor, and a
+      started frame: stock mode line with the JVM status, stock Dired `s`,
+      the Altar's project button on `project.el`).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
 
 - [ ] 18.1 **Structural Code Folding (`:editor fold`)**:

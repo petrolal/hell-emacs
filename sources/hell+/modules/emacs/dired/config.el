@@ -21,8 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Enhanced Dired: inline nerd-icons, batch editing (wdired),
-;; and quick sorting (dired-quick-sort).
+;; Enhanced Dired: inline nerd-icons and batch editing (wdired). Sorting
+;; is stock: `s' toggles name / date, `C-u s' takes any `ls' switches.
 
 (use-package dired
   :ensure nil
@@ -46,8 +46,3 @@
 (use-package nerd-icons-dired
   :after dired
   :hook (dired-mode . nerd-icons-dired-mode))
-
-(use-package dired-quick-sort
-  :after dired
-  :config
-  (dired-quick-sort-setup))

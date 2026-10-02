@@ -24,6 +24,7 @@
 ;; Ruby editing and language server integration.
 
 (use-package ruby-mode
+  :ensure nil                           ; built into Emacs
   :mode ("\\.\\(?:rb\\|rake\\|gemspec\\|ru\\)\\'"
          "\\(?:Gem\\|Rake\\|Cap\\|Vagrant\\|Guard\\)file\\'")
   :interpreter "ruby"
