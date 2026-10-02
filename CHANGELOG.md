@@ -39,6 +39,12 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Changed
 
+- GNU Emacs' own layout (roadmap 13.4): the frame keeps the stock menu
+  bar, tool bar and scroll bars, and the Altar is now Emacs' own
+  startup screen (`*GNU Emacs*`) with Hell Emacs' logo and words,
+  including the concise screen beside files opened from the command
+  line and the `C-h C-a` echo-area message.
+
 - Hellmacs is now Hell Emacs: every `hellmacs-` symbol is `hell-`, the
   CLI is `bin/hell`, core's module is `:hell`, the catalog is
   `sources/hell+/`, module and project files are `.hellmodule` and

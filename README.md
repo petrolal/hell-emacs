@@ -58,7 +58,7 @@
 
 - **Performance & Aggressive Garbage Execution**:
   - Garbage collection held off during boot, then a low-pause runtime threshold, with `gcmh` collecting while you're idle.
-  - Early-init pre-frame suppression of UI chrome (toolbars, menu bars, scroll bars) and deferral of package loading.
+  - Deferral of package loading; the frame keeps GNU Emacs' own menu bar, tool bar and scroll bars.
   - Native compilation (`native-comp`) caching cutting cold boot to **~0.05 seconds**.
 
 - **Stock Emacs DNA (The 40-Year Purist Guarantee)**:
@@ -79,7 +79,7 @@
 Three `:ui` modules, all on by default (`static/init.example.el`):
 
 - **`theme`**: `hell-inferno`, Hell Emacs' own theme with no dependencies. It covers the built-in faces, tree-sitter, the completion stack, lsp-mode, dap-mode, Magit, CIDER, the dashboard and the mode-line. Use another theme with `(setq hell-theme 'modus-vivendi)` in your `init.el`, or `nil` for none.
-- **`The Altar` (`*hell-emacs*`)**: the native, dependency-free startup screen. It features our infernal banner emblem (`assets/banners/`), 6 Workspace Core Action Buttons (`[Ignite File]`, `[Summon Project]`, `[Grimoires]`, `[Hell Shell]`, `[Grimoire Manual]`, `[IntelliJ Exorcism]`), stabilized dual columns for Recent Sacrifices & Active Forges, an External Sanctums & Portals section, dynamic GC benchmarking telemetry, and key navigation hints. Stock keys: `TAB`/`S-TAB` navigate, `RET` activates, `g` redraws, `q`/`ESC` dismisses, and `C-c h s` summons it back. `(setq hell-splash-enable nil)` starts on `*scratch*` instead.
+- **The Altar**: the startup screen is GNU Emacs' own (`*GNU Emacs*`, `fancy-startup-screen`), with the same layout and features: the link table, "To start...", the newcomer presets checkbox, the version line, the auto-save recovery notice, and the concise "Dismiss this startup screen" panel beside files opened from the command line. Hell Emacs changes only the logo (`assets/banners/splash.svg`) and the words: a Hell Emacs welcome line and manual row, and a forge line with the profile and startup time under the version. "Explore Packages" opens the Relic Chamber (`hell-plugins`), since packages come from `package!`. Stock keys: `TAB`/`S-TAB` move between links, `RET` follows one, `SPC`/`DEL` scroll, `q` dismisses; `C-c h s` brings it back. `(setq hell-splash-enable nil)` starts on `*scratch*` instead; with `hell-ux-enable nil` it is the stock GNU screen. The frame keeps GNU Emacs' menu bar, tool bar and scroll bars, themed; turn them off with the stock `menu-bar-mode`, `tool-bar-mode` and `scroll-bar-mode` in your `config.el`.
 - **`modeline`**: a minimal [doom-modeline](https://github.com/seagle0128/doom-modeline). Left: the buffer and position. Right: the language server's state (`JVM:ready`, `JVM:purgatory` after a failed build), the debugger, the major mode, the Git branch and flymake's counts. It turns on with the first real buffer, keeping its load out of the startup time; the startup screen has the stock mode-line, in the same colours.
 
 The palette:

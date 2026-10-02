@@ -54,7 +54,8 @@ wins and the feature finds another way.
   Clojure, Groovy and Scala follow the same pattern. Other languages are
   welcome as modules but never drive the plan.
 - **The identity:** the `hell-inferno` theme, the banner and logos,
-  the Altar, the themed messages (`[FORGE IGNITED]`, `[DAEMON READY]`,
+  the Altar (GNU Emacs' own startup screen and frame layout, themed;
+  13.4), the themed messages (`[FORGE IGNITED]`, `[DAEMON READY]`,
   `[BYTECODE PURGATORY]`). `hell-ux-enable nil` gives companies a
   neutral look; the defaults stay Hell Emacs'.
 
@@ -434,6 +435,16 @@ iconography (`nerd-icons`):
       (`hell-describe-module`) (2026-09-30: created `lisp/lib/help.el`
       with interactive module inspector, components, packages, docs, and
       actions on `C-c h d` / `C-c h m`).
+- [x] 13.4 GNU Emacs' own layout: the frame keeps the stock menu bar,
+      tool bar, scroll bars and tooltips, and the Altar is Emacs' own
+      startup screen (`fancy-startup-screen`, `*GNU Emacs*`) with all its
+      features, only themed: Hell Emacs' logo, welcome line, manual row
+      and forge line (2026-10-02: rewrote `modules/hell/+splash.el` as
+      advice on the stock screen, added `assets/banners/splash.svg`,
+      dropped early-init.el's chrome and splash suppression, themed
+      `menu`/`tool-bar`/`scroll-bar`; checked with a throwaway sync, GUI
+      captures of the full and concise screens, `C-c h s`, and startup
+      times unchanged against the previous code).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
 
 - [ ] 18.1 **Structural Code Folding (`:editor fold`)**:

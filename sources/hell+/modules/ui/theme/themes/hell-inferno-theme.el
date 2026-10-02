@@ -139,6 +139,11 @@
    `(mode-line-emphasis ((t (:foreground ,inferno-crimson :weight bold))))
    `(mode-line-highlight ((t (:box (:line-width 1 :color ,reap-gold)))))
 
+   ;;; GNU Emacs' own chrome (13.4); `menu' only reaches non-GTK menu bars
+   `(menu ((t (:background ,bg-alt :foreground ,fg-main))))
+   `(tool-bar ((t (:background ,bg-alt :foreground ,fg-main :box (:line-width 1 :style released-button)))))
+   `(scroll-bar ((t (:background ,bg-main :foreground ,forge-gray))))
+
    ;;; Tab-bar / Workspaces (:ui workspaces)
    `(tab-bar ((t (:background ,bg-deep :foreground ,forge-gray-hi))))
    `(tab-bar-tab ((t (:background ,bg-alt :foreground ,reap-gold :weight bold :box (:line-width (1 . 1) :color ,ember-amber)))))
@@ -371,16 +376,8 @@
 
    ;;; Hell Emacs' own faces (defined in modules/hell/+splash.el and
    ;;; modules/hell/+ux.el, with these colours as defaults)
-   `(hell-splash-sigil ((t (:foreground ,inferno-crimson :weight bold))))
-   `(hell-splash-tagline ((t (:foreground ,reap-gold :weight bold))))
-   `(hell-splash-altar ((t (:foreground ,venom-green :weight bold))))
-   `(hell-splash-hint ((t (:foreground ,forge-gray-hi))))
-   `(hell-splash-border ((t (:foreground ,inferno-crimson :weight bold))))
-   `(hell-splash-section-heading ((t (:foreground ,ember-amber :weight bold))))
-   `(hell-splash-item ((t (:foreground ,fg-main))))
-   `(hell-splash-item-active ((t (:foreground ,reap-gold :underline t :weight bold))))
-   `(hell-splash-button ((t (:box (:line-width (1 . 1) :color ,bg-alt) :background ,bg-alt :foreground ,fg-main :weight bold))))
-   `(hell-splash-button-active ((t (:box (:line-width (1 . 1) :color ,inferno-crimson) :background ,bg-hl :foreground ,reap-gold :weight bold))))
+   `(hell-splash-welcome ((t (:foreground ,inferno-crimson))))
+   `(hell-splash-altar ((t (:foreground ,ember-amber :weight bold))))
    `(hell-fatality ((t (:foreground ,inferno-crimson :weight bold))))))
 
 ;;;###autoload

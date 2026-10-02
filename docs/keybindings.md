@@ -62,7 +62,7 @@ groups gather stock commands in one place; the stock keys keep working.
 
 | Key | Command |
 |---|---|
-| `C-c h s` | The Altar (the startup dashboard) |
+| `C-c h s` | The Altar (GNU Emacs' startup screen, themed) |
 | `C-c h f` | The Forge: find a file in the project (or pick a project first) |
 | `C-c h i` | Grimoire Manual (open Hell Emacs native Info manual) |
 | `C-c h k` | IntelliJ Exorcism (Rosetta Stone / IntelliJ key finder) |
@@ -267,7 +267,8 @@ These are the modes' own keys, only in their buffers.
   expansion, `TAB` indents everywhere else.
 - **Snippets (`:editor snippets`):** complete a snippet's name with `C-M-i`;
   inside one, `M-}` / `M-{` next / previous field, `ESC ESC ESC` abort.
-- **The Altar:** `TAB` / `S-TAB` move, `RET` opens, `g` redraws, `q` buries.
+- **The Altar:** GNU Emacs' startup screen and its keys: `TAB` / `S-TAB`
+  move between links, `RET` follows one, `SPC` / `DEL` scroll, `q` dismisses.
 - **Test results:** `RET` go to the test, `r` rerun it, `f` rerun the
   failures, `g` reread the reports (`revert-buffer`), `c` coverage per file.
 

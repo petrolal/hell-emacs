@@ -351,16 +351,16 @@ files a module can have are in [development.md](development.md#modules).
 - **`:ui theme`**: `hell-inferno`, Hell Emacs' own theme.
   `(setq hell-theme 'modus-vivendi)` in `init.el` uses another; `nil`,
   none.
-- **The Altar (`*hell-emacs*`)**: the native, dependency-free startup screen:
-  emblem banner (`assets/banners/`), 6 Workspace Core Action Buttons (`[Ignite File]`, `[Summon Project]`, `[Grimoires]`, `[Hell Shell]`, `[Grimoire Manual]`, `[IntelliJ Exorcism]`), stabilized dual columns for Recent Sacrifices & Active Forges, External Sanctums & Portals (`[Relic Chamber]`, `[Forge Source]`, `[Issue Sanctum]`, `[Release Grimoires]`, `[Dark Beacon]`), and GC benchmarking telemetry.
-  `TAB`/`S-TAB` move between buttons, `RET` activates, `g` redraws, `q`/`ESC` dismisses,
-  `C-c h s` brings it back. `(setq hell-splash-enable nil)` starts on `*scratch*`.
+- **The Altar**: the startup screen is GNU Emacs' own (`*GNU Emacs*`, `fancy-startup-screen`), with the same layout and features: the link table, "To start...", the newcomer presets checkbox, the version line, the auto-save recovery notice, and the concise "Dismiss this startup screen" panel beside files opened from the command line. Hell Emacs changes only the logo (`assets/banners/splash.svg`) and the words: a Hell Emacs welcome line and manual row, and a forge line with the profile and startup time under the version. "Explore Packages" opens the Relic Chamber (`hell-plugins`), since packages come from `package!`. Stock keys: `TAB`/`S-TAB` move between links, `RET` follows one, `SPC`/`DEL` scroll, `q` dismisses; `C-c h s` brings it back. `(setq hell-splash-enable nil)` starts on `*scratch*` instead; with `hell-ux-enable nil` it is the stock GNU screen.
+- **GNU Emacs' frame**: the menu bar, tool bar and scroll bars stay, in
+  the theme's colours. `(menu-bar-mode -1)`, `(tool-bar-mode -1)` and
+  `(scroll-bar-mode -1)` in your `config.el` turn them off.
 - **`:ui modeline`**: the buffer and position; the language server's state
   (`JVM:ready`, `JVM:purgatory`), the debugger, the mode, the Git branch,
   flymake's counts.
 - **Icons** come from a Nerd Font; without one, text. `M-x
-  nerd-icons-install-fonts` installs one. In a terminal, the Altar shows the
-  ASCII sigil and both draw text, unless you set
+  nerd-icons-install-fonts` installs one. In a terminal, the Altar is
+  GNU Emacs' text startup screen, and the dashboard and mode-line draw text, unless you set
   `hell-dashboard-tty-icons` and `hell-modeline-tty-icons` to `t`.
 - **A neutral look** for workplaces that want one:
   `(setq hell-ux-enable nil)` gives stock quit prompts and messages.

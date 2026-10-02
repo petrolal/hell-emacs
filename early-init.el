@@ -23,8 +23,8 @@
 
 ;; This file is loaded before `package.el', before `init.el', and
 ;; before the first frame is created.  Everything here exists to
-;; make startup fast and to keep the first frame from flashing
-;; stock Emacs chrome before Hell Emacs gets a chance to configure it.
+;; make startup fast.  The frame keeps stock Emacs' chrome (menu bar,
+;; tool bar, scroll bars) and startup screen, as GNU Emacs has them.
 ;; Nothing in here should depend on a third-party package.
 
 ;;; Code:
@@ -309,43 +309,19 @@ Used to tell whether a package is built into Emacs (`package!'s
         native-comp-async-jobs-number
         (max 1 (if (fboundp 'num-processors) (/ (num-processors) 2) 2))))
 
-;;; 6. UI: unset chrome before the first frame is drawn -----------------
+;;; 6. UI: GNU Emacs' own frame and startup screen ----------------------
 ;;
-;; Setting these as frame parameters (rather than calling
-;; `menu-bar-mode' etc. later from `init.el') avoids allocating the
-;; widgets in the first place. That is both faster and prevents the
-;; "flash" of a fully-chromed default frame before Hell Emacs' own
-;; config has a chance to run.
+;; Unlike Doom, the frame keeps stock Emacs' chrome -- menu bar, tool
+;; bar, scroll bars, tooltips -- and Emacs' own startup screen and echo
+;; area message (13.4): the layout is GNU Emacs', the look Hell Emacs'.
+;; modules/hell/+splash.el themes the startup screen; a user who wants
+;; less turns the stock modes off in their config.el.
 
-(setq default-frame-alist
-      (append '((menu-bar-lines . 0)
-                (tool-bar-lines . 0)
-                (vertical-scroll-bars . nil)
-                (horizontal-scroll-bars . nil))
-              default-frame-alist))
-
-;; Belt-and-suspenders: also set the minor-mode variables so a later
-;; `make-frame' (e.g. a new frame opened mid-session) stays consistent
-;; even if something toggles a mode instead of touching frame params.
-(setq menu-bar-mode nil
-      tool-bar-mode nil
-      scroll-bar-mode nil
-      tooltip-mode nil)
-
-(setq inhibit-startup-screen t
-      inhibit-startup-echo-area-message user-login-name
-      initial-scratch-message nil
+(setq initial-scratch-message nil
       inhibit-default-init t
       ;; Resizing the frame to match font metrics on every startup and
       ;; theme load is a measurable, avoidable cost; do it once.
       frame-inhibit-implied-resize t)
-
-;; `inhibit-startup-echo-area-message' only works when set literally in
-;; the user's init file, and even with `inhibit-startup-screen' Emacs
-;; still does some of the splash screen's work. Skip both outright.
-(unless (daemonp)
-  (advice-add #'display-startup-echo-area-message :override #'ignore)
-  (advice-add #'display-startup-screen :override #'ignore))
 
 ;;; 7. Miscellaneous startup and runtime settings -----------------------
 
@@ -391,9 +367,6 @@ Used to tell whether a package is built into Emacs (`package!'s
   (dolist (buf (buffer-list))
     (with-current-buffer buf (setq mode-line-format nil)))
   (setq-default inhibit-message t)
-  ;; Setting up a tool bar Hell Emacs has turned off is expensive; do it only
-  ;; if something turns `tool-bar-mode' on.
-  (advice-add #'tool-bar-setup :override #'ignore)
   ;; In a terminal, set it up once the frame is, not before.
   (unless initial-window-system
     (define-advice tty-run-terminal-initialization (:override (&rest _) hell-defer)
@@ -405,10 +378,6 @@ Used to tell whether a package is built into Emacs (`package!'s
     "Undo early-init.el's startup hacks, once the init file has loaded."
     (unwind-protect (apply fn args)
       (setq-default inhibit-message nil)
-      (advice-remove #'tool-bar-setup #'ignore)
-      (define-advice tool-bar-mode (:after (&rest _) hell-setup)
-        (advice-remove #'tool-bar-mode #'tool-bar-mode@hell-setup)
-        (tool-bar-setup))
       (unless (default-toplevel-value 'mode-line-format)
         (setq-default mode-line-format (get 'mode-line-format 'initial-value)))))
   ;; Command-line options for other window systems than this one.
