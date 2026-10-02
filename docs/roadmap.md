@@ -299,6 +299,11 @@ announced instead of leaving completion silently empty.
       `bin/hell-profile` fixed to use `hell-emacs-NAME/` as early-init.el does;
       checked by a throwaway install: sync and byte-compile clean, `doctor`
       reports only missing JDK/Node, startup 0.05s, `profile create`/`list`).
+- [x] 16.23 `bin/hell licenses` recognises BSD license texts
+      (2026-10-02: protobuf-mode, BSD-3-Clause with no SPDX tag, was
+      "no license found" and failed `licenses`; BSD-3/BSD-2 text patterns
+      added to `hell-compliance--license-texts`; checked by a throwaway
+      sync: `licenses` and `sbom` exit 0, startup 0.05s).
 
 ### 3. Groovy (8.4)
 

@@ -58,6 +58,9 @@
     ("Permission to use, copy, modify, and/or distribute this software for any" . "ISC")
     ("This is free and unencumbered software released into the public domain" . "Unlicense")
     ("CC0 1\\.0 Universal" . "CC0-1.0")
+    ;; BSD: only the 3-clause text has the "Neither the name" clause (protobuf-mode).
+    ("Neither the name of .+ nor the names of\\(?: its\\)?" . "BSD-3-Clause")
+    ("Redistribution and use in source and binary forms" . "BSD-2-Clause")
     ;; A comment saying so (restclient): SPDX has no identifier for it.
     ("^;+.*\\<[Pp]ublic domain\\>" . "LicenseRef-PublicDomain"))
   "(REGEXP . SPDX): license texts, as LICENSE files and headers carry them.")
