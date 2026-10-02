@@ -31,13 +31,11 @@
 ;; own go in $HELLDIR/templates/*.eld (tempel's format; see the
 ;; module's templates/ for examples), and are picked up as you save them.
 ;;
-;; Keys: none of its own; TAB keeps indenting, in a snippet too. Inside
-;; one, stock keys move between its fields: `M-}' (`forward-paragraph')
-;; to the next, `M-{' to the previous, and `ESC ESC ESC' takes the whole
-;; snippet back out. Moving on from the last field finishes it.
+;; Keys: tempel's own, as it ships them (13.6), only inside a snippet
+;; (`tempel-map'): `M-}' / `M-{' next / previous field, `M-<' / `M->' the
+;; first / last, `ESC ESC ESC' takes the snippet back out.
 
 (defvar tempel-path)
-(defvar tempel-map)
 (declare-function tempel-expand "tempel")
 
 (setq tempel-path
@@ -54,14 +52,3 @@
 
 (dolist (hook '(prog-mode-hook text-mode-hook conf-mode-hook))
   (add-hook hook #'hell-snippets--capf-h))
-
-(defun hell-snippets--remaps-only ()
-  "Keep only `tempel-map''s remaps of stock commands; drop its own keys."
-  (let (own)
-    (map-keymap (lambda (event _) (unless (eq event 'remap) (push event own)))
-                tempel-map)
-    (dolist (event own)
-      (define-key tempel-map (vector event) nil t))))
-
-(with-eval-after-load 'tempel
-  (hell-snippets--remaps-only))

@@ -24,19 +24,17 @@
 ;; In-buffer completion: a popup that appears as you type (corfu), fed
 ;; by extra completion sources (cape).
 ;;
-;; Keys: the popup keeps stock keys working. `RET' inserts the candidate
-;; only once you've picked one (`M-n'/`M-p', `<down>'/`<up>', `C-n'/`C-p');
-;; otherwise it's a newline, as ever. `TAB' indents; `C-M-i' completes.
-;; `M-g', `M-h' and `M-t' keep their stock meanings (corfu would take
-;; them for the candidate's location, its documentation and the
-;; documentation popup, which shows by itself after a moment). `M-SPC'
-;; is corfu's, to type a space between orderless components.
+;; Keys: corfu's own, as it ships them (13.6), and only while its popup
+;; is open: `M-n'/`M-p', `<down>'/`<up>', `C-n'/`C-p' move, `RET' and
+;; `TAB' insert / complete the candidate, `M-g' goes to its location,
+;; `M-h' shows its documentation, `M-SPC' types a space between orderless
+;; components, `C-g' closes it. Outside the popup every key is stock:
+;; `TAB' indents, `C-M-i' completes.
 ;;
 ;; Flags:
 ;;   +tab  Make TAB complete when there's nothing to indent
-;;         (`tab-always-indent' = complete), and complete the candidate
-;;         in the popup. Off by default, since stock Emacs TAB only
-;;         indents; `C-M-i' completes either way.
+;;         (`tab-always-indent' = complete). Off by default, since stock
+;;         Emacs TAB only indents; `C-M-i' completes either way.
 
 (when (modulep! +tab)
   (setq tab-always-indent 'complete))
@@ -60,31 +58,13 @@
   (corfu-history-mode 1)
   (when (fboundp 'corfu-terminal-mode)
     ;; Only in terminal frames: graphical ones keep corfu's own popup.
-    (corfu-terminal-mode 1))
-  (hell-corfu--stock-keys))
+    (corfu-terminal-mode 1)))
 
 (use-package nerd-icons-corfu
   :after corfu
   :init
   (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
-(defvar corfu-map)
-(defvar corfu-popupinfo-map)
-(defvar corfu--index)
-
-(defun hell-corfu--insert-if-selected (&optional _)
-  "`corfu-insert' when a candidate is selected, else nothing (a menu-item filter).
-Nothing lets the key through to its stock command: RET's newline."
-  (and (>= corfu--index 0) #'corfu-insert))
-
-(defun hell-corfu--stock-keys ()
-  "Give back the stock keys corfu's popup takes (see the Commentary)."
-  (keymap-set corfu-map "RET" '(menu-item "" nil :filter hell-corfu--insert-if-selected))
-  (unless (modulep! +tab)
-    (keymap-unset corfu-map "TAB" t))
-  (dolist (key '("M-g" "M-h"))
-    (keymap-unset corfu-map key t))
-  (keymap-unset corfu-popupinfo-map "M-t" t))
 ;; In a terminal, Emacs before 31 can't draw corfu's popup (a child
 ;; frame): `corfu-terminal' draws it there, and only there.
 

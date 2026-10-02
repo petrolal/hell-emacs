@@ -36,7 +36,7 @@
 ;; and with it the localleader's test group (`:tools test' adds the
 ;; results and coverage to it):
 ;;   C-c l t t  the test at point    C-c l t T  the test class
-;; `C-c c c' (`project-compile') builds.
+;; Stock `C-x p c' (`project-compile') builds.
 
 (defgroup hell-forge nil
   "Hell Emacs' build integration."

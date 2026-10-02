@@ -30,7 +30,7 @@
 ;; by SHA-256) into the data directory. It runs on JAVA_HOME's JDK, like
 ;; the Gradle build. Completion, navigation, diagnostics, rename and code
 ;; actions come from `:tools lsp' (`C-c c', `M-.', `C-c ! n'). With
-;; `:tools build', `C-c c c' builds (Gradle, wrapper first) and `C-c l t t'
+;; `:tools build', `C-x p c' builds (Gradle, wrapper first) and `C-c l t t'
 ;; / `C-c l t T' run the test at point (backticked names too) / the test
 ;; class; compile errors are clickable (`e: file:///...Foo.kt:12:5'
 ;; lines) and a failed build shows `[BYTECODE PURGATORY]'.

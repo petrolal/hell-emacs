@@ -56,10 +56,10 @@ Parameter hints show in the echo area as you type `(` and `,`.
 
 `C-c c` is the code group every language shares; `C-c l`, the
 localleader, holds Java's own commands. lsp-mode's full map is on
-`C-c c l`.
+`s-l` (lsp-mode's own prefix).
 
 **Diagnostics** are flymake's: `C-c ! n` / `C-c ! p` next and previous,
-`C-c ! l` (or `C-c c x`) the list, `M-g f` jump to one.
+`C-c ! l` the list, `C-c s e` jump to one.
 
 **Spring Boot (`+spring`).** Spring Boot's own language server runs beside
 JDTLS: completion and checks in `application*.yml` and `.properties`, and
@@ -92,7 +92,7 @@ compiles against the JDK its build targets, Java 8 and up.
 ## Kotlin (`:lang kotlin`)
 
 kotlin-language-server: navigation, diagnostics, rename (`C-c c r`),
-completion. With `:tools build`, `C-c c c` builds, `C-c l t t` runs the
+completion. With `:tools build`, `C-x p c` builds, `C-c l t t` runs the
 test at point (backticked names too), `C-c l t T` the class. IntelliJ's
 Kotlin refactorings (extract, organize imports) aren't there yet; Hell Emacs
 switches to JetBrains' Kotlin server when it can be pinned (roadmap 12.7).
@@ -115,7 +115,7 @@ CIDER for the REPL, clojure-lsp for navigation and diagnostics.
 Groovy sources, Gradle's Groovy scripts and Jenkinsfiles, through
 groovy-language-server (built by `sync` from a pinned commit). The server
 learns the project's libraries from the build: the mode-line shows
-`JVM:igniting` until it has them. `C-c c c` builds, `C-c l t t` /
+`JVM:igniting` until it has them. `C-x p c` builds, `C-c l t t` /
 `C-c l t T` run the test at point (JUnit or Spock) / the class, `C-c l c`
 asks the build for the classpath again.
 
@@ -123,7 +123,7 @@ asks the build for the classpath again.
 
 ## Building and testing
 
-**Build (`:tools build`).** `C-x p c` (or `C-c c c`) builds with the project's wrapper
+**Build (`:tools build`).** `C-x p c` builds with the project's wrapper
 (`./gradlew`, `./mvnw`) or the installed tool. Errors and failing
 assertions are clickable: `M-g n` / `M-g p`.
 

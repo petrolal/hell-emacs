@@ -88,24 +88,28 @@ official GNU Emacs manual:
    • ‘C-x 2’, ‘C-x 3’, ‘C-x 0’, ‘C-x 1’, ‘C-x o’ manage windows.
    • ‘C-x t’ manages tabs and workspaces.
 
-   Custom Hell Emacs commands are grouped strictly under ‘C-c’, the
-prefix reserved by GNU Emacs conventions for users:
+   Custom Hell Emacs commands live only under ‘C-c’, the prefix reserved
+by GNU Emacs conventions for users, and only where stock Emacs has no
+key: the groups never repeat ‘C-x C-f’, ‘M-.’, ‘C-x p c’ and the like,
+and nothing is added inside Emacs' own ‘C-x’, ‘M-g’ or ‘M-s’ prefixes.
+Installed packages keep their own default keys as they ship them:
+Magit's ‘C-x g’, lsp-mode's ‘s-l’, diff-hl's ‘C-x v’ hunk keys.
 ‘C-c h’
-     Hell Emacs core commands (‘C-c h s’ Altar, ‘C-c h f’ Forge, ‘C-c h
-     k’ IntelliJ Finder, ‘C-c h i’ Info manual, ‘C-c h p’ Relic
-     Chamber).
+     Hell Emacs core commands (‘C-c h s’ Altar, ‘C-c h k’ IntelliJ
+     Finder, ‘C-c h i’ Info manual, ‘C-c h p’ Relic Chamber, ‘C-c h r’
+     Crucible).
 ‘C-c c’
-     Code and compilation commands (‘C-c c c’ compile, ‘C-c c a’ code
-     actions, ‘C-c c r’ rename).
+     Code commands a language server adds (‘C-c c a’ code actions, ‘C-c
+     c r’ rename, ‘C-c c o’ organize imports, ‘C-c c f’ format).
 ‘C-c l’
-     The Localleader: mode-specific commands (Java imports,
-     refactorings, test runners).
-‘C-c w’
-     Workspace and tab management (‘C-c w p’ open project tab, ‘C-c w w’
-     switch tab).
+     The Localleader: mode-specific commands (Java refactorings, test
+     runners).
+‘C-c d’
+     Debugging (‘C-c d d’ start, ‘C-c d b’ breakpoint).
+‘C-c s’
+     Search (‘C-c s s’ buffer lines, ‘C-c s p’ the project).
 ‘C-c t’
-     Toggles (‘C-c t w’ tab-bar, ‘C-c t l’ line numbers, ‘C-c t f’
-     flymake).
+     Toggles (‘C-c t l’ line numbers, ‘C-c t f’ flymake).
 
 
 File: hell-emacs.info,  Node: Installation and Profiles,  Next: Daily JVM Workflow,  Prev: The 40-Year Purist Guarantee,  Up: Top
@@ -145,14 +149,14 @@ the complete JVM ecosystem.
 Powered by Eclipse JDTLS, java-debug, and Spring Boot Tools:
    • *Code Completion*: Semantic member completion, type hints, Lombok
      annotations.
-   • *Refactoring & Code Actions*: Press ‘C-c l a’ or ‘M-RET’ for quick
-     fixes and intentions.  Rename across project with ‘C-c l r’.
+   • *Refactoring & Code Actions*: Press ‘C-c c a’ for quick fixes and
+     intentions.  Rename across the project with ‘C-c c r’.
    • *Navigation*: ‘M-.’ jumps to definition, ‘M-?’ finds all usages
      across the project, and ‘M-,’ returns.
    • *Spring Boot*: Bean navigation, application properties completion,
      '‘@Autowired’' cross-references.
-   • *Testing*: Run JUnit test at point (‘C-c t t’ or ‘C-c l t t’),
-     current file (‘C-c t f’), or full test suite (‘C-c t p’).
+   • *Testing*: Run the JUnit test at point (‘C-c l t t’) or the test
+     class (‘C-c l t T’); results on ‘C-c l t r’.
 
 4.2 Debugging with DAP (‘:tools debugger’)
 ==========================================
@@ -182,17 +186,16 @@ Native Debug Adapter Protocol integration via ‘dap-mode’ and Eclipse
 =========================================================
 
 Direct invocation of project wrappers and tools without leaving Emacs:
-‘C-c b b’
-     Build project via Gradle or Maven wrapper (‘hell-build’).
-‘C-c b c’
-     Clean build output directory (‘hell-build-clean’).
-‘C-c t t’
-     Run test at point.
-‘C-c t f’
-     Run all tests in current file.
-‘C-c t p’
-     Run entire project test suite.
-‘C-c r’
+‘C-x p c’
+     Build the project with its Gradle or Maven wrapper
+     (‘project-compile’).
+‘C-c l t t’
+     Run the test at point.
+‘C-c l t T’
+     Run the test class.
+‘C-c l t r’
+     Show the test results.
+‘C-c r r’
      Execute project Run Configuration (‘.hell-emacs/run.eld’,
      ‘.run/*.xml’).
 
@@ -223,9 +226,8 @@ Hell Emacs automatically locates every JDK installed on the machine:
 
 Access the interactive JVM Help and Cheatsheet Hub at any time:
      M-x hell-help
-   Shortcut: ‘C-c h h’ or ‘C-c h ?’.  Displays live language server
-status, debugger readiness, discovered JDK paths, and full keybinding
-tables.
+   Shortcut: ‘C-c h h’.  Displays live language server status, debugger
+readiness, discovered JDK paths, and full keybinding tables.
 
 
 File: hell-emacs.info,  Node: IntelliJ Parity & Key Finder,  Next: Enhanced Dired & Projectile,  Prev: Daily JVM Workflow,  Up: Top
@@ -236,7 +238,7 @@ File: hell-emacs.info,  Node: IntelliJ Parity & Key Finder,  Next: Enhanced Dire
 For developers migrating from JetBrains IntelliJ IDEA, Hell Emacs
 includes the interactive IntelliJ Key Finder:
      M-x hell-where-is-intellij
-   Shortcut: ‘C-c h k’ or ‘C-c h ?’.
+   Shortcut: ‘C-c h k’.
 
    Type any IntelliJ shortcut (e.g.  ‘Shift-F6’, ‘Ctrl-Alt-L’, ‘Double
 Shift’, ‘Ctrl-N’) to immediately see the equivalent GNU Emacs keychord
@@ -282,13 +284,14 @@ using Emacs' native ‘tab-bar-mode’:
 ‘C-x t o’
      Cycle to next workspace tab.
 ‘C-x t p’
-     Open or switch to a project in its own dedicated workspace tab.
+‘C-x t p p’
+     Open a project in a new tab (stock).
 ‘C-x t r’
      Rename workspace tab.
-‘C-x t b’
-     Switch workspace tab by fuzzy search.
-‘C-c t w’
-     Toggle workspace tab bar visibility.
+‘C-x t RET’
+     Switch to a tab by name.
+‘C-c TAB p’
+     Switch to a project's tab, or open it when it has none.
 
    Each tab automatically formats with project indicators and nerd-icons
 glyphs.
@@ -447,17 +450,17 @@ Tag Table:
 Node: Top651
 Node: Overview2345
 Node: The 40-Year Purist Guarantee3289
-Node: Installation and Profiles4693
-Node: Daily JVM Workflow5459
-Node: IntelliJ Parity & Key Finder9183
-Node: Enhanced Dired & Projectile9755
-Node: Workspaces10720
-Node: Modules and Configuration11447
-Node: Enterprise & Team Layer12752
-Node: CLI Reference13639
-Node: Diagnostics and Doctor14656
-Node: Concept Index15338
-Node: Key Index15473
+Node: Installation and Profiles5074
+Node: Daily JVM Workflow5840
+Node: IntelliJ Parity & Key Finder9459
+Node: Enhanced Dired & Projectile10014
+Node: Workspaces10979
+Node: Modules and Configuration11705
+Node: Enterprise & Team Layer13010
+Node: CLI Reference13897
+Node: Diagnostics and Doctor14914
+Node: Concept Index15596
+Node: Key Index15731
 
 End Tag Table
 

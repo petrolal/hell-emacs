@@ -34,7 +34,7 @@
 ;; Completion, navigation, diagnostics and rename come from `:tools lsp'
 ;; (`C-c c', `M-.', `C-c ! n'); this module adds `C-c l c' in Groovy
 ;; buffers (ask the build for the classpath again). With `:tools build',
-;; `C-c c c' builds (Gradle or Maven, wrapper first) and `C-c l t t' /
+;; `C-x p c' builds (Gradle or Maven, wrapper first) and `C-c l t t' /
 ;; `C-c l t T' run the test at point (JUnit methods, Spock features) /
 ;; the test class.
 

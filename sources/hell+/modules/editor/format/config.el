@@ -23,7 +23,7 @@
 
 
 ;; Each language's own formatter (autoload.el), on the keys you already
-;; have: `C-c c f' and lsp-mode's `C-c c l = =' (and eglot's command) are
+;; have: `C-c c f' and lsp-mode's `s-l = =' (and eglot's command) are
 ;; remapped, in Java, Kotlin and Clojure buffers, to the pinned
 ;; formatter; XML, YAML and JSON keep their language server's. No new keys. Flags:
 ;;   +onsave  format on save (off by default, so a first save doesn't

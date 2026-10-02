@@ -100,19 +100,26 @@ GNU Emacs manual:
 @item @kbd{C-x t} manages tabs and workspaces.
 @end itemize
 
-Custom Hell Emacs commands are grouped strictly under @kbd{C-c}, the prefix
-reserved by GNU Emacs conventions for users:
+Custom Hell Emacs commands live only under @kbd{C-c}, the prefix reserved
+by GNU Emacs conventions for users, and only where stock Emacs has no key:
+the groups never repeat @kbd{C-x C-f}, @kbd{M-.}, @kbd{C-x p c} and the
+like, and nothing is added inside Emacs' own @kbd{C-x}, @kbd{M-g} or
+@kbd{M-s} prefixes. Installed packages keep their own default keys as
+they ship them: Magit's @kbd{C-x g}, lsp-mode's @kbd{s-l}, diff-hl's
+@kbd{C-x v} hunk keys.
 @table @kbd
 @item C-c h
-Hell Emacs core commands (@kbd{C-c h s} Altar, @kbd{C-c h f} Forge, @kbd{C-c h k} IntelliJ Finder, @kbd{C-c h i} Info manual, @kbd{C-c h p} Relic Chamber).
+Hell Emacs core commands (@kbd{C-c h s} Altar, @kbd{C-c h k} IntelliJ Finder, @kbd{C-c h i} Info manual, @kbd{C-c h p} Relic Chamber, @kbd{C-c h r} Crucible).
 @item C-c c
-Code and compilation commands (@kbd{C-c c c} compile, @kbd{C-c c a} code actions, @kbd{C-c c r} rename).
+Code commands a language server adds (@kbd{C-c c a} code actions, @kbd{C-c c r} rename, @kbd{C-c c o} organize imports, @kbd{C-c c f} format).
 @item C-c l
-The Localleader: mode-specific commands (Java imports, refactorings, test runners).
-@item C-c w
-Workspace and tab management (@kbd{C-c w p} open project tab, @kbd{C-c w w} switch tab).
+The Localleader: mode-specific commands (Java refactorings, test runners).
+@item C-c d
+Debugging (@kbd{C-c d d} start, @kbd{C-c d b} breakpoint).
+@item C-c s
+Search (@kbd{C-c s s} buffer lines, @kbd{C-c s p} the project).
 @item C-c t
-Toggles (@kbd{C-c t w} tab-bar, @kbd{C-c t l} line numbers, @kbd{C-c t f} flymake).
+Toggles (@kbd{C-c t l} line numbers, @kbd{C-c t f} flymake).
 @end table
 
 @c -----------------------------------------------------------------------------
@@ -149,10 +156,10 @@ Hell Emacs provides deep language support, debugging, and building for the compl
 Powered by Eclipse JDTLS, java-debug, and Spring Boot Tools:
 @itemize @bullet
 @item @strong{Code Completion}: Semantic member completion, type hints, Lombok annotations.
-@item @strong{Refactoring & Code Actions}: Press @kbd{C-c l a} or @kbd{M-RET} for quick fixes and intentions. Rename across project with @kbd{C-c l r}.
+@item @strong{Refactoring & Code Actions}: Press @kbd{C-c c a} for quick fixes and intentions. Rename across the project with @kbd{C-c c r}.
 @item @strong{Navigation}: @kbd{M-.} jumps to definition, @kbd{M-?} finds all usages across the project, and @kbd{M-,} returns.
 @item @strong{Spring Boot}: Bean navigation, application properties completion, `@code{@@Autowired}` cross-references.
-@item @strong{Testing}: Run JUnit test at point (@kbd{C-c t t} or @kbd{C-c l t t}), current file (@kbd{C-c t f}), or full test suite (@kbd{C-c t p}).
+@item @strong{Testing}: Run the JUnit test at point (@kbd{C-c l t t}) or the test class (@kbd{C-c l t T}); results on @kbd{C-c l t r}.
 @end itemize
 
 @section Debugging with DAP (@code{:tools debugger})
@@ -181,17 +188,15 @@ Evaluate expression in current execution frame (@code{dap-eval}).
 @section Build & Test Systems (@code{:tools build} & @code{:tools test})
 Direct invocation of project wrappers and tools without leaving Emacs:
 @table @kbd
-@item C-c b b
-Build project via Gradle or Maven wrapper (@code{hell-build}).
-@item C-c b c
-Clean build output directory (@code{hell-build-clean}).
-@item C-c t t
-Run test at point.
-@item C-c t f
-Run all tests in current file.
-@item C-c t p
-Run entire project test suite.
-@item C-c r
+@item C-x p c
+Build the project with its Gradle or Maven wrapper (@code{project-compile}).
+@item C-c l t t
+Run the test at point.
+@item C-c l t T
+Run the test class.
+@item C-c l t r
+Show the test results.
+@item C-c r r
 Execute project Run Configuration (@file{.hell-emacs/run.eld}, @file{.run/*.xml}).
 @end table
 
@@ -215,7 +220,7 @@ Access the interactive JVM Help and Cheatsheet Hub at any time:
 @example
 M-x hell-help
 @end example
-Shortcut: @kbd{C-c h h} or @kbd{C-c h ?}.
+Shortcut: @kbd{C-c h h}.
 Displays live language server status, debugger readiness, discovered JDK paths, and full keybinding tables.
 
 @c -----------------------------------------------------------------------------
@@ -227,7 +232,7 @@ interactive IntelliJ Key Finder:
 @example
 M-x hell-where-is-intellij
 @end example
-Shortcut: @kbd{C-c h k} or @kbd{C-c h ?}.
+Shortcut: @kbd{C-c h k}.
 
 Type any IntelliJ shortcut (e.g. @kbd{Shift-F6}, @kbd{Ctrl-Alt-L}, @kbd{Double Shift}, @kbd{Ctrl-N})
 to immediately see the equivalent GNU Emacs keychord and execute the command.
@@ -267,13 +272,14 @@ Close current workspace tab.
 @item C-x t o
 Cycle to next workspace tab.
 @item C-x t p
-Open or switch to a project in its own dedicated workspace tab.
+@item C-x t p p
+Open a project in a new tab (stock).
 @item C-x t r
 Rename workspace tab.
-@item C-x t b
-Switch workspace tab by fuzzy search.
-@item C-c t w
-Toggle workspace tab bar visibility.
+@item C-x t RET
+Switch to a tab by name.
+@item C-c TAB p
+Switch to a project's tab, or open it when it has none.
 @end table
 
 Each tab automatically formats with project indicators and nerd-icons glyphs.

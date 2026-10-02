@@ -150,18 +150,6 @@
           dashboard-icon-type (and icons 'nerd-icons)
           dashboard-navigator-buttons (hell-dashboard--navigator))))
 
-;;; Keys ---------------------------------------------------------------------
-
-(defconst hell-dashboard-removed-keys
-  '("j" "k" "{" "}" "1" "2" "3" "4" "5" "6" "7" "8" "9"
-    "C-n" "C-p" "<up>" "<down>" "DEL" "<backspace>" "<delete>")
-  "Keys dashboard binds that Hell Emacs takes out of `dashboard-mode-map'.")
-
-(defun hell-dashboard--vanilla-keys ()
-  "Take the non-stock keys out of `dashboard-mode-map'."
-  (dolist (key hell-dashboard-removed-keys)
-    (keymap-unset dashboard-mode-map key t)))
-
 ;;; Dashboard Configuration --------------------------------------------------
 
 (use-package dashboard
@@ -190,7 +178,6 @@
         dashboard-footer-messages (list (hell-dashboard-footer-message))
         dashboard-navigator-buttons (hell-dashboard--navigator))
   :config
-  (hell-dashboard--vanilla-keys)
   (add-hook 'dashboard-before-initialize-hook #'hell-dashboard--prepare-h)
   ;; Custom infernal face styling
   (custom-set-faces

@@ -24,6 +24,8 @@
 ;; Zero-overhead native LSP client via Emacs 29+ built-in `eglot'.
 ;; Integrates with `flymake', `xref', `eldoc', and `corfu'.
 
+(defvar eglot-mode-map)
+
 (use-package eglot
   :ensure nil
   :commands (eglot eglot-ensure)
@@ -33,7 +35,8 @@
         eglot-events-buffer-size 0
         eglot-stay-out-of '(company))
   :config
-  (hell-leader-def
-    "c a" '("code action" . eglot-code-actions)
-    "c r" '("rename symbol" . eglot-rename)
-    "c f" '("format buffer" . eglot-format)))
+  ;; The server's actions in the `C-c c' code group, only where eglot
+  ;; runs (as `:tools lsp' does in lsp-mode's map), never globally.
+  (keymap-set eglot-mode-map "C-c c a" (cons "code action" #'eglot-code-actions))
+  (keymap-set eglot-mode-map "C-c c r" (cons "rename symbol" #'eglot-rename))
+  (keymap-set eglot-mode-map "C-c c f" (cons "format buffer" #'eglot-format)))

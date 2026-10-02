@@ -39,7 +39,7 @@
            ;;unicode          ; [idea] fallback fonts for every script
            ;;vc-gutter        ; changed lines in the fringe or terminal margin (diff-hl), C-x v [ ] * n S
            ;;window-select    ; [idea] pick a window by number (ace-window)
-           ;;workspaces       ; tab-bar workspaces, one per project on C-x t and C-c w
+           ;;workspaces       ; tab-bar workspaces: stock C-x t, C-c TAB p a project's tab
            ;;zen              ; [idea] distraction-free writing (olivetti)
 
            :editor
@@ -80,7 +80,7 @@
            build              ; build/test with Gradle or Maven (C-x p c), clickable errors
            debugger           ; debug via dap-mode, C-c d (Java: breakpoints, tests, hot swap)
            direnv             ; per-project environments from .envrc (JAVA_HOME, MAVEN_OPTS...); needs direnv
-           lsp                ; code intelligence via lsp-mode, C-c c (lsp-mode's map on C-c c l)
+           lsp                ; code intelligence via lsp-mode, C-c c (lsp-mode's own map on s-l)
            ;;eglot            ; zero-overhead native LSP alternative (Emacs 29+)
            magit              ; Git via Magit: C-x g status, C-x M-g dispatch, C-c M-g file
            projectile         ; project management via Projectile + Consult-Projectile (C-c p)

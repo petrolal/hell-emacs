@@ -30,8 +30,9 @@
 ;; Keys, as Doom's: in a buffer with a server, the `C-c c' code group
 ;; gains the server's actions (`a' code action, `r' rename, `o' organize
 ;; imports, `f' format, `i' implementations, `t' type definition, `k'
-;; documentation), and `C-c c l' is lsp-mode's own whole command map
-;; (`w r' restart, `T' toggles, `g' goto, ...). Diagnostics are
+;; documentation). lsp-mode's own keys are as it ships them (13.6): its
+;; whole command map on `s-l' (`s-l w r' restart, `T' toggles, `g' goto,
+;; ...), its mouse menu on `mouse-3', signature help on `C-S-SPC'. Diagnostics are
 ;; flymake's, on `C-c !' wherever it runs. Emacs' xref keys work as
 ;; everywhere: `M-.' definition, `M-?' references, `M-,' back,
 ;; `C-M-.' search workspace symbols.
@@ -71,12 +72,12 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   (and (assq 'lsp-mode hell-packages)
        (not (hell-package-disabled-p 'lsp-mode))))
 
-;; lsp-mode names its `C-c c l' groups for which-key, but needs which-key
+;; lsp-mode names its `s-l' groups for which-key, but needs which-key
 ;; loaded to: a file opened at startup can start lsp-mode first, and the
 ;; error would also stop the rest of the hook.
 (declare-function lsp-enable-which-key-integration "lsp-mode")
 (defun hell-lsp--which-key-h ()
-  "Name lsp-mode's `C-c c l' groups in which-key, loading it if need be."
+  "Name lsp-mode's `s-l' groups in which-key, loading it if need be."
   (when (require 'which-key nil t)
     (lsp-enable-which-key-integration)))
 
@@ -92,10 +93,6 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
     :defer-incrementally (dash f s ht spinner lv markdown-mode url-parse lsp-protocol
                           lsp-mode lsp-completion lsp-diagnostics lsp-modeline)
     :commands (lsp lsp-deferred)
-    :init
-    ;; Must be set before lsp-mode loads: it binds its command map there.
-    ;; Inside Doom's code group, as Doom puts it; `C-c l' is the localleader.
-    (setq lsp-keymap-prefix "C-c c l")
     :custom
     (lsp-completion-provider :none)         ; plain completion-at-point, shown by corfu
     (lsp-diagnostics-provider :flymake)     ; built-in; no flycheck
@@ -114,20 +111,14 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
 ;; The servers' snippets: completing a method inserts its arguments as
 ;; placeholders, and JDTLS's templates (`sysout', `foreach') and postfix
 ;; completion (`list.for', `x.nnull') expand. yasnippet expands them, and
-;; only with `yas-minor-mode' on, so it's on where a server runs -- with
-;; its keymap emptied: no `TAB' expansion of its own, no `C-c &' keys,
-;; and no snippet directory read. Inside an expansion only: `TAB' /
-;; `S-TAB' next / previous placeholder (the IDE keys), `M-}' / `M-{' too,
-;; as in `:editor snippets'; `C-g' leaves it.
+;; only with `yas-minor-mode' on, so it's on where a server runs, with
+;; no snippet directory read. Its keys are yasnippet's own (13.6): `TAB'
+;; expands (and indents when there's nothing to expand), `C-c &' its
+;; commands; inside an expansion `TAB' / `S-TAB' next / previous
+;; placeholder, `C-g' leaves it.
 (defvar yas-snippet-dirs)
-(defvar yas-keymap)
-(defvar yas-minor-mode-map)
 (setq yas-snippet-dirs nil)
 (add-hook 'lsp-mode-hook #'yas-minor-mode)
-(after! yasnippet
-  (setcdr yas-minor-mode-map nil)
-  (keymap-set yas-keymap "<remap> <forward-paragraph>" #'yas-next-field)
-  (keymap-set yas-keymap "<remap> <backward-paragraph>" #'yas-prev-field))
 
 ;; Diagnostics are flymake's (`lsp-diagnostics-provider' above), so its
 ;; keys are in flymake's map: they work wherever flymake runs, elisp too.
@@ -142,12 +133,7 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   (keymap-set lsp-mode-map "C-c c f" (cons "format buffer" #'lsp-format-buffer))
   (keymap-set lsp-mode-map "C-c c i" (cons "find implementations" #'lsp-find-implementation))
   (keymap-set lsp-mode-map "C-c c t" (cons "find type definition" #'lsp-find-type-definition))
-  (keymap-set lsp-mode-map "C-c c k" (cons "documentation at point" #'lsp-describe-thing-at-point))
-  ;; lsp-mode's mouse keys take stock ones: mouse-3 is Emacs' own
-  ;; (`mouse-save-then-kill', or the context menu), C-mouse-1 the buffer
-  ;; menu. `M-.' goes to a definition; lsp-mode's menu is in the menu bar.
-  (dolist (key '("<mouse-3>" "C-<mouse-1>" "C-<down-mouse-1>"))
-    (keymap-unset lsp-mode-map key t)))
+  (keymap-set lsp-mode-map "C-c c k" (cons "documentation at point" #'lsp-describe-thing-at-point)))
 
 (defvar flymake-mode-map)
 (after! flymake

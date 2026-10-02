@@ -46,10 +46,13 @@ wins and the feature finds another way.
 - **Stock Emacs keys, the 40-Year Purist Guarantee.** `C-x C-f`, `C-x b`,
   `C-s`, `M-x`, `M-.` and every other default keep their meaning. Nothing
   is modal: no Evil, no `SPC` leader, no single-key hijacks. Hell Emacs'
-  commands live under `C-c` (`C-c h` is Hell Emacs' own), packages improve
-  default commands (`consult-buffer` on `C-x b`) rather than adding keys,
-  `TAB` indents (`C-M-i` completes; `+tab` is opt-in), and `C-h` stays
-  untouched. There is no IntelliJ keymap; migrants get a cheat sheet.
+  commands live under `C-c` (`C-c h` is Hell Emacs' own) and never repeat
+  a stock key's command; nothing goes inside Emacs' own `C-x`, `M-g`,
+  `M-s` prefixes. Installed packages keep their own default keys as they
+  ship them (Magit's `C-x g`, lsp-mode's `s-l`, corfu's popup keys):
+  Hell Emacs never rebinds, unsets or moves them (13.6). Its config may
+  remap a stock command to a richer one (`consult-buffer` on `C-x b`).
+  `TAB` indents (`C-M-i` completes; `+tab` is opt-in). There is no IntelliJ keymap; migrants get a cheat sheet.
 - **JVM first.** Java is the reference and gets IntelliJ parity; Kotlin,
   Clojure, Groovy and Scala follow the same pattern. Other languages are
   welcome as modules but never drive the plan.
@@ -183,12 +186,13 @@ check, commands from `$HELLPATH`; `install`'s flags and warnings;
 
 **Keys** (16.20, 2026-09-30: checked in a started profile, key by key
 against `emacs -Q`): the leader groups are Doom's non-evil ones on
-`C-c` (`h` Hell Emacs, `c` code with lsp-mode's map on `C-c c l`, `f`, `b`,
-`s`, `t`, `w`, `q`, `o`, `r`, `d`), and `C-c l` is the localleader: the
-current mode's own commands (Java's, Groovy's, tests in JVM sources).
-Every stock key keeps its meaning; packages that took one give it back
-(corfu's `RET`/`TAB`/`M-g`/`M-h`/`M-t`, which-key's `C-h`, lsp-mode's
-mouse keys). Deliberate departures, documented in keybindings.md: the
+`C-c` (`h` Hell Emacs, `c` code, `f`, `s`, `t`, `w`, `q`, `o`, `r`,
+`d`, `TAB` workspace; only what stock Emacs has no key for, 13.5), and
+`C-c l` is the localleader: the current mode's own commands (Java's,
+Groovy's, tests in JVM sources). Every stock key keeps its meaning, and
+installed packages keep their own keys as they ship them (13.6: Magit's
+`C-x g`, diff-hl's `C-x v`, lsp-mode's `s-l`, corfu's popup keys,
+which-key's `C-h`). Deliberate departures, documented in keybindings.md: the
 completion popup opens as you type, `delete-selection-mode`,
 `electric-pair-mode`.
 
@@ -446,6 +450,29 @@ iconography (`nerd-icons`):
       `menu`/`tool-bar`/`scroll-bar`; checked with a throwaway sync, GUI
       captures of the full and concise screens, `C-c h s`, and startup
       times unchanged against the previous code).
+- [x] 13.5 Stock keys untouched, modern keys isolated: every stock key
+      keeps its `emacs -Q` command, Hell Emacs' and packages' keys live
+      only under `C-c` groups, none inside Emacs' own prefixes (`C-x`,
+      `M-g`, `M-s`, `C-x t`),
+      and no `C-c` key duplicates a stock key's command (2026-10-02:
+      dropped the `C-c` duplicates of stock keys (`C-c f f`/`f s`,
+      `C-c b`, `C-c c c`/`d`/`D`/`j`/`x`, `C-c s o`/`i`/`m`, `C-c t r`/`F`,
+      `C-c w` splits and winner, `C-c q q`, `C-c h f`/`d`/`?`), moved
+      consult's `M-g`/`M-s` keys to `C-c s`, workspaces to `C-c TAB p` (giving
+      back `C-x t p`, `C-x t RET` and `M-1`..`M-9`), eglot's keys into its
+      own map, wdired back to stock `C-x C-q`; fixed the help hub, the
+      IntelliJ finder and the manual. Checked with a throwaway sync and a
+      key-by-key dump of the started profile against `emacs -Q`: only
+      `delete-selection-mode`'s minibuffer `C-g` differs).
+- [x] 13.6 Installed packages keep their own default keys, as they ship
+      them: nothing of theirs is rebound, unset or moved (2026-10-02:
+      gave back Magit's `C-x g` / `C-x M-g` / `C-c M-g`, diff-hl's `C-x v`
+      keys and `vc-diff` remap, lsp-mode's `s-l` prefix and mouse keys,
+      corfu's popup `RET` / `TAB` / `M-g` / `M-h` / `M-t`, which-key's
+      `C-h`, yasnippet's `TAB` and `C-c &`, tempel's field keys and
+      dashboard's keys; dropped Hell Emacs' `C-c g` / `C-c v` groups,
+      which would repeat them. Checked with a throwaway sync and a dump
+      of the started profile's keymaps).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
 
 - [ ] 18.1 **Structural Code Folding (`:editor fold`)**:
@@ -460,7 +487,7 @@ iconography (`nerd-icons`):
       Quarkus RESTEasy/Panache and Micronaut HTTP service templates, auto-hooking into `:tools build`.
 - [ ] 21.1 **Git Forge Pull Requests & Issues (`:tools forge`)**:
       Native Magit extension (`forge.el`) for GitHub and GitLab Enterprise PR reviews, issue management,
-      and code discussion inside `C-x g`, authenticated through `~/.authinfo.gpg`.
+      and code discussion inside `C-c g g`, authenticated through `~/.authinfo.gpg`.
 - [ ] 22.1 **AI & LLM Pair Programming (`:tools llm`)**:
       Native, privacy-first AI companion (`gptel` / `ellama`) with support for local offline models
       (Ollama, llama.cpp) and corporate/cloud APIs (Gemini, Claude, OpenAI).

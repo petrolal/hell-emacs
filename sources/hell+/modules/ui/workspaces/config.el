@@ -22,8 +22,11 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; Workspaces / tabs built on Emacs' native `tab-bar-mode':
-;; one tab per project on stock `C-x t` keys, with project isolation,
-;; modern iconography, and infernal theming.
+;; one tab per project, with project isolation, modern iconography, and
+;; infernal theming. Tabs keep their stock `C-x t' keys (`C-x t 2' new,
+;; `C-x t 0' close, `C-x t o' next, `C-x t RET' switch, `C-x t p p' a
+;; project in a new tab); the module adds one key, `C-c TAB p', which
+;; reuses a project's tab instead of opening another (13.5).
 
 (require 'tab-bar)
 
@@ -97,7 +100,6 @@
       tab-bar-close-button-show nil
       tab-bar-tab-hints t
       tab-bar-tab-name-function #'hell-workspaces-tab-name
-      tab-bar-select-tab-modifiers '(meta)
       tab-bar-format '(tab-bar-format-history
                        tab-bar-format-tabs
                        tab-bar-separator
@@ -107,26 +109,8 @@
 ;; Enable tab-bar-mode
 (tab-bar-mode 1)
 
-;; Stock Emacs C-x t prefix additions & workspace bindings
-(keymap-set tab-prefix-map "p" #'hell-workspaces-open-project-tab)
-(keymap-set tab-prefix-map "RET" #'tab-bar-select-tab-by-name)
-
-;; Toggles
-(when (boundp 'hell-toggle-map)
-  (keymap-set hell-toggle-map "w" #'tab-bar-mode)
-  (keymap-set hell-toggle-map "t" #'tab-bar-mode))
-
-;; Workspace leader group under C-c w
-(defvar-keymap hell-workspace-map
-  :doc "Hell Emacs workspace keymap."
-  "w" #'tab-bar-select-tab-by-name
-  "n" #'tab-bar-new-tab
-  "d" #'tab-bar-close-tab
-  "p" #'hell-workspaces-open-project-tab
-  "r" #'tab-bar-rename-tab
-  "." #'tab-bar-switch-to-next-tab
-  "," #'tab-bar-switch-to-prev-tab)
-
-(keymap-set global-map "C-c w" hell-workspace-map)
+(hell-leader-def
+  "TAB"   "workspace"
+  "TAB p" '("project tab" . hell-workspaces-open-project-tab))
 
 ;;; config.el ends here

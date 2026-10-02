@@ -22,14 +22,15 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-;; Git through Magit. Nothing is rebound: Magit binds its own global keys
-;; when its autoloads are read (`magit-define-global-key-bindings', which
-;; defaults to `default'), so Magit stays unloaded until first use:
+;; Git through Magit, on the keys Magit ships with (13.6: an installed
+;; package keeps its own default keys). Magit binds them itself when its
+;; autoloads are read (`magit-define-global-key-bindings', `default'), so
+;; Magit stays unloaded until first use:
 ;;   C-x g      status of the current repository
 ;;   C-x M-g    dispatch (init, clone, and commands needing no repository)
 ;;   C-c M-g    file dispatch (blame, log and diff of the current file)
-;; Inside a Magit buffer, `?' lists every command; `C-x g' also works
-;; from any buffer in a repository, including Java sources.
+;; Inside a Magit buffer, `?' lists every command. Hell Emacs adds no git
+;; keys of its own: they would repeat these.
 ;;
 ;; Magit's transient (the popup menus) keeps its history, levels and
 ;; saved values in the state directory: see lisp/hell-core.el.

@@ -22,9 +22,9 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; Phase 13: Integrated Help, Info Manual & Module Introspection
-;; - `C-c h h' / `C-c h ?': `hell-help' (interactive JVM & shortcuts hub)
+;; - `C-c h h': `hell-help' (interactive JVM & shortcuts hub)
 ;; - `C-c h i': `hell-info-manual'
-;; - `C-c h d' / `M-x hell-describe-module': module inspection buffer
+;; - `C-c h m' / `M-x hell-describe-module': module inspection buffer
 ;; - Info directory integration with docs/
 
 (require 'info)
@@ -61,7 +61,7 @@
 
 ;;;###autoload
 (defun hell-help ()
-  "Open the interactive Hell Emacs JVM Help & Cheatsheet Hub (C-c h h / C-c h ?)."
+  "Open the interactive Hell Emacs JVM Help & Cheatsheet Hub (C-c h h)."
   (interactive)
   (let ((buf (get-buffer-create "*Hell Emacs Help*")))
     (with-current-buffer buf
@@ -128,60 +128,50 @@
           (insert "    · (JDKs automatically mapped during bin/hell sync)\n"))
         (insert "\n")
 
-        ;; 2. Code Intelligence & LSP Shortcuts (C-c l)
-        (insert (propertize "2. CODE INTELLIGENCE & LSP SHORTCUTS (C-c l / M-.)\n" 'face '(:foreground "#ffb86c" :weight bold)))
-        (insert (make-string 76 ?─) "\n")
-        (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold) (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-        (insert (format "  %-18s  %-30s  %s\n" "M-." "xref-find-definitions" "Jump to symbol definition"))
-        (insert (format "  %-18s  %-30s  %s\n" "M-?" "xref-find-references" "Find all usages / references across project"))
-        (insert (format "  %-18s  %-30s  %s\n" "M-," "xref-go-back" "Jump back to previous location"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c l a / M-RET" "eglot-code-actions" "Code Actions / Quick Fix / Intentions"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c l r" "eglot-rename" "Rename symbol across entire project"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c l f / C-c c f" "eglot-format-buffer" "Format buffer according to code style"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c l o" "eglot-code-action-organize" "Organize imports"))
-        (insert "\n")
+;; 2.-5. The keys, by group: stock keys first, then Hell Emacs'
+        ;; `C-c' groups, which only hold what stock Emacs has no key for.
+        (pcase-dolist (`(,title . ,rows)
+                       '(("2. CODE INTELLIGENCE (stock keys, C-c c in a language server's buffers)"
+                          ("M-." "xref-find-definitions" "Jump to symbol definition")
+                          ("M-?" "xref-find-references" "Find all usages across the project")
+                          ("M-," "xref-go-back" "Jump back to the previous location")
+                          ("C-M-." "xref-find-apropos" "Find a symbol in the project")
+                          ("C-c c a" "lsp-execute-code-action" "Code actions / quick fixes")
+                          ("C-c c r" "lsp-rename" "Rename across the project")
+                          ("C-c c o" "lsp-organize-imports" "Organize imports")
+                          ("C-c c f" "lsp-format-buffer" "Format the buffer")
+                          ("C-c c i / C-c c t" "lsp-find-implementation" "Implementations / type definition")
+                          ("C-c ! n / p / l" "flymake-goto-next-error" "Next / previous diagnostic / the list"))
+                         ("3. DEBUGGER (C-c d)"
+                          ("C-c d d" "dap-debug" "Start a debug session")
+                          ("C-c d b" "dap-breakpoint-toggle" "Toggle a breakpoint on this line")
+                          ("C-c d n / i / o" "hell-debug-next" "Step over / into / out, then n i o alone")
+                          ("C-c d c" "hell-debug-continue" "Continue to the next breakpoint")
+                          ("C-c d r / q" "dap-debug-restart" "Restart / disconnect the session")
+                          ("C-c d E" "dap-eval" "Evaluate an expression in the frame"))
+                         ("4. BUILD, TEST, RUN, GIT (C-x p c, C-c l t, C-c r, C-x g)"
+                          ("C-x p c" "project-compile" "Build the project with its wrapper")
+                          ("C-c l t t / T" "hell-forge-test-at-point" "Run the test at point / the class")
+                          ("C-c l t r" "hell-test-results" "Test results")
+                          ("C-c r r / d / l" "hell-run" "Run / debug / rerun a configuration")
+                          ("C-x g" "magit-status" "Git status (Magit)"))
+                         ("5. HELL EMACS SYSTEM COMMANDS (C-c h)"
+                          ("C-c h s" "hell-splash" "Return to the Altar")
+                          ("C-c h h" "hell-help" "Open this help hub")
+                          ("C-c h i" "hell-info-manual" "Read the Hell Emacs Info manual")
+                          ("C-c h m / M" "hell-describe-module" "Describe a module / list them")
+                          ("C-c h u" "hell-visit-user-dir" "Open your configuration directory")
+                          ("C-c h S" "hell-sync-child" "Sync packages and compile the profile")
+                          ("C-c h k" "hell-where-is-intellij" "IntelliJ IDEA to Emacs key finder"))))
+          (insert (propertize (concat title "\n") 'face '(:foreground "#ffb86c" :weight bold)))
+          (insert (make-string 76 ?─) "\n")
+          (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold)
+                          (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
+          (pcase-dolist (`(,key ,command ,description) rows)
+            (insert (format "  %-18s  %-30s  %s\n" key command description)))
+          (insert "\n"))
 
-        ;; 3. Debugger & DAP Shortcuts (C-c d)
-        (insert (propertize "3. DEBUGGER & DAP SHORTCUTS (C-c d)\n" 'face '(:foreground "#ffb86c" :weight bold)))
-        (insert (make-string 76 ?─) "\n")
-        (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold) (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d d" "dap-debug" "Start new debug session"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d b" "dap-breakpoint-toggle" "Toggle breakpoint on current line"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d n" "dap-next" "Step Over (next instruction)"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d i" "dap-step-in" "Step Into method call"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d o" "dap-step-out" "Step Out of current method"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d c" "dap-continue" "Continue execution until next breakpoint"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d r" "dap-restart-frame" "Restart debug frame"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d q" "dap-disconnect" "Disconnect / Stop debug session"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c d E" "dap-eval" "Evaluate expression in current frame"))
-        (insert "\n")
-
-        ;; 4. Build, Test & Run Shortcuts (C-c b / C-c t / C-c r)
-        (insert (propertize "4. BUILD, TEST & RUN SHORTCUTS (C-c b / C-c t / C-c r)\n" 'face '(:foreground "#ffb86c" :weight bold)))
-        (insert (make-string 76 ?─) "\n")
-        (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold) (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c b b" "hell-build" "Build project (Gradle/Maven)"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c b c" "hell-build-clean" "Clean build output directory"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c t t" "hell-test-single" "Run test at point"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c t f" "hell-test-file" "Run all tests in current file"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c t p" "hell-test-project" "Run full test suite in project"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c r" "hell-run" "Execute Run Configuration"))
-        (insert "\n")
-
-        ;; 5. Hell Emacs Prefix Commands (C-c h)
-        (insert (propertize "5. HELL EMACS SYSTEM COMMANDS (C-c h)\n" 'face '(:foreground "#ffb86c" :weight bold)))
-        (insert (make-string 76 ?─) "\n")
-        (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold) (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h s" "hell-splash" "Return to Altar splash screen"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h h / C-c h ?" "hell-help" "Open this JVM Help & Cheatsheet Hub"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h i" "hell-info-manual" "Read official Hell Emacs Info manual"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h d" "hell-describe-module" "Describe and inspect any module"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h u" "hell-visit-user-dir" "Open your configuration directory"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h S" "hell-sync-child" "Sync packages and compile profile"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h k" "hell-where-is-intellij" "IntelliJ IDEA to Emacs key finder"))
-        (insert "\n")
-
-        ;; 6. Interactive Quick Actions
+                ;; 6. Interactive Quick Actions
         (insert (propertize "QUICK ACTIONS:\n" 'face 'bold))
         (insert "  ")
         (insert-text-button "[ Open Info Manual (C-c h i) ]"
@@ -194,7 +184,7 @@
                             'follow-link t
                             'help-echo "Go to Altar splash")
         (insert "   ")
-        (insert-text-button "[ Describe Modules (C-c h d) ]"
+        (insert-text-button "[ Describe Modules (C-c h m) ]"
                             'action (lambda (_) (call-interactively #'hell-describe-module))
                             'follow-link t
                             'help-echo "Inspect module")

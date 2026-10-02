@@ -226,7 +226,7 @@ isn't used for it."
 ;;;###autoload
 (defun hell-format-buffer ()
   "Format the buffer with its language's formatter, else its language server's.
-On the format keys (`C-c c f', lsp-mode's `C-c c l = =') and eglot's
+On the format keys (`C-c c f', lsp-mode's `s-l = =') and eglot's
 command, in buffers with a pinned formatter: the server's is eglot's
 where eglot manages the buffer."
   (interactive)

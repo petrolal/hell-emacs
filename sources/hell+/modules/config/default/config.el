@@ -24,9 +24,18 @@
 ;; Hell Emacs' default keybindings and the groups with no natural owning
 ;; feature module: `C-c h' (Hell Emacs' own map, `hell-prefix-map'),
 ;; `C-c c' (code), `C-c t' (toggles), `C-c q' (quit) and `C-c w'
-;; (windows), all built-in commands. Feature modules fill their own
-;; groups, e.g. `:completion vertico' owns `C-c f', `C-c b' and `C-c s',
-;; and `C-c l' is the localleader (`hell-localleader-def').
+;; (windows). Feature modules fill their own groups, e.g. `:completion
+;; vertico' owns `C-c f' and `C-c s', and `C-c l' is the localleader
+;; (`hell-localleader-def').
+;;
+;; Two layers, kept apart (13.5). Traditional: every stock key keeps its
+;; meaning, and nothing is added inside Emacs' own prefixes (`C-x', `M-g',
+;; `M-s', `C-x v', `C-x t'). Modern: Hell Emacs' and its packages' keys,
+;; only under `C-c'. A `C-c' key never repeats a stock key's command --
+;; the groups hold what stock Emacs has no key for -- so there is one key
+;; per command, and the stock one wins. Installed packages keep their own
+;; default keys as they ship them (13.6): nothing of theirs is rebound,
+;; unset or moved.
 ;;
 ;; Stock keys get better built-in commands in place: `C-x C-b' is
 ;; ibuffer, `M-/' hippie-expand (dabbrev first, as before, then file
@@ -107,10 +116,7 @@
   :init
   (setq which-key-idle-delay 0.4
         which-key-sort-order 'which-key-key-order-alpha
-        which-key-add-column-padding 1
-        ;; `C-h' after a prefix stays Emacs' `describe-prefix-bindings';
-        ;; which-key's pages are on `which-key-paging-key' (<f5>).
-        which-key-use-C-h-commands nil)
+        which-key-add-column-padding 1)
   :config
   (which-key-mode 1)
   (hell-default--name-stock-prefixes))
@@ -141,27 +147,24 @@
 ;; `hell-prefix-map' is a named keymap, so you can also put it on a
 ;; key of your own:  (keymap-global-set "<f12>" hell-prefix-map)
 ;; which-key labels use Hell Emacs' own names: altar/... for the splash
-;; and memory, forge/... for projects and the config, crucible/... for
-;; the REPL. No leading `+': which-key marks groups with it, and these
-;; are commands.
+;; and memory, forge/... for the config, crucible/... for the REPL. No
+;; leading `+': which-key marks groups with it, and these are commands.
+;; Finding a project's file is stock `C-x p f'.
 
 (defvar-keymap hell-prefix-map
   :doc "Hell Emacs' own commands, on `C-c h'."
   "s" (cons "altar/splash" #'hell-splash)
   "c" (cons "altar/reap" #'hell-reap)
-  ;; Outside a project, `project-find-file' asks for one first.
-  "f" (cons "forge/find-file" #'project-find-file)
   "r" (cons "crucible/reload" #'hell-crucible-reload)
   "R" (cons "forge/reload-config" #'hell-reload)
   "S" (cons "forge/sync" #'hell-sync-child)
   "u" (cons "forge/user-config" #'hell-visit-user-dir)
+  "v" (cons "forge/hell-dir" #'hell-visit-dir)
   "i" (cons "forge/manual" #'hell-info-manual)
-  "d" (cons "forge/describe-module" #'hell-describe-module)
   "m" (cons "forge/describe-module" #'hell-describe-module)
   "M" (cons "forge/modules-list" #'hell-list-modules)
   "p" (cons "forge/plugins" #'hell-plugins)
   "h" (cons "forge/help" #'hell-help)
-  "?" (cons "forge/help" #'hell-help)
   "k" (cons "forge/where-is-intellij" #'hell-where-is-intellij))
 
 (autoload 'hell-help "lib/help" "Open Hell Emacs JVM Help and shortcuts hub." t)
@@ -173,68 +176,55 @@
 (keymap-set mode-specific-map "h" hell-prefix-map)
 
 ;;; C-c q -----------------------------------------------------------------------
+;;
+;; Quitting is stock `C-x C-c'; restarting has no stock key.
 
 (hell-leader-def
   "h"   "hell"                   ; labels the map bound just above
   "q"   "quit"
-  "q q" '("quit emacs" . save-buffers-kill-terminal)
   "q r" '("restart emacs" . restart-emacs))
 
 ;;; C-c c -- code ---------------------------------------------------------------
 ;;
-;; Doom's code group, with built-in commands: xref (which a language
-;; server feeds), `compile' (which `:tools build' makes the project's
-;; build), eldoc and flymake. `:tools lsp' adds the server's actions to
-;; this group in its buffers, and lsp-mode's whole map on `C-c c l'.
-
-(autoload 'flymake-show-buffer-diagnostics "flymake" nil t)
+;; What a language needs beyond the stock keys, which stay the way in:
+;; `M-.' / `M-?' / `C-M-.' (definition, references, project symbols, fed
+;; by the language server), `C-x p c' (build, which `:tools build' makes
+;; the project's), `C-h .' (help at point). `:tools lsp' adds the server's
+;; actions to this group in its buffers, and lsp-mode's whole map on
+;; its own `s-l'; flymake's diagnostics are on `C-c !'.
 
 (hell-leader-def
   "c"   "code"
-  "c c" '("compile project" . project-compile)
   "c C" '("recompile" . recompile)
-  "c d" '("jump to definition" . xref-find-definitions)
-  "c D" '("jump to references" . xref-find-references)
-  "c j" '("jump to symbol in project" . xref-find-apropos)
   "c k" '("documentation at point" . eldoc-doc-buffer)
-  "c w" '("delete trailing whitespace" . delete-trailing-whitespace)
-  "c x" '("list errors" . flymake-show-buffer-diagnostics))
+  "c w" '("delete trailing whitespace" . delete-trailing-whitespace))
 
 ;;; C-c t -- toggle -------------------------------------------------------------
 ;;
-;; Doom's toggles, with built-in minor modes.
+;; Minor modes with no stock key (`C-x C-q' is read-only, `<f11>'
+;; fullscreen).
 
 (hell-leader-def
   "t"   "toggle"
   "t c" '("fill column indicator" . display-fill-column-indicator-mode)
   "t f" '("flymake" . flymake-mode)
-  "t F" '("frame fullscreen" . toggle-frame-fullscreen)
   "t l" '("line numbers" . display-line-numbers-mode)
-  "t r" '("read-only mode" . read-only-mode)
   "t s" '("spell checker" . flyspell-mode)
   "t v" '("visible mode" . visible-mode)
   "t w" '("soft line wrapping" . visual-line-mode))
 
 ;;; C-c w -- windows -----------------------------------------------------------
 ;;
-;; Built-in commands only. The defaults (`C-x 2', `C-x 3', `C-x 0',
-;; `C-x 1', `C-x o') still work; this group gathers them in one place
-;; and adds directional movement and window-layout undo (winner-mode's
-;; own `C-c <left>' / `C-c <right>' work too).
+;; What the stock window keys lack: moving by direction (windmove ships
+;; without keys). Splitting, deleting, `C-x o' and balancing stay on
+;; `C-x 2' / `C-x 3' / `C-x 0' / `C-x 1' / `C-x o' / `C-x +', and
+;; winner-mode's layout undo on its own `C-c <left>' / `C-c <right>'.
 
 (add-hook 'hell-first-input-hook #'winner-mode)
 
 (hell-leader-def
   "w"   "window"
-  "w s" '("split below" . split-window-below)
-  "w v" '("split right" . split-window-right)
-  "w d" '("delete window" . delete-window)
-  "w m" '("maximize (delete others)" . delete-other-windows)
-  "w o" '("other window" . other-window)
-  "w =" '("balance windows" . balance-windows)
   "w b" '("window left" . windmove-left)
   "w f" '("window right" . windmove-right)
   "w p" '("window up" . windmove-up)
-  "w n" '("window down" . windmove-down)
-  "w u" '("undo layout" . winner-undo)
-  "w r" '("redo layout" . winner-redo))
+  "w n" '("window down" . windmove-down))

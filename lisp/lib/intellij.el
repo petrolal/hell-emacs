@@ -22,7 +22,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; IntelliJ IDEA and Eclipse to Hell Emacs cheat sheet and interactive
-;; search tool (`M-x hell-where-is-intellij' on `C-c h k' or `C-c h ?').
+;; search tool (`M-x hell-where-is-intellij' on `C-c h k').
 ;;
 ;; Loaded on demand through `(hell-require 'hell-lib 'intellij)'.
 
@@ -35,10 +35,10 @@
      :category "Finding" :doc "Run any Emacs or Hell Emacs command by name with fuzzy completion.")
     (:action "Find file in project"
      :intellij "Ctrl+Shift+N" :eclipse "Ctrl+Shift+R" :key "C-x p f" :command project-find-file
-     :category "Finding" :doc "Fuzzy find and open any file in the current project (or C-c h f / C-c p f).")
+     :category "Finding" :doc "Fuzzy find and open any file in the current project (or C-c p f with Projectile).")
     (:action "Find class / symbol in project"
      :intellij "Ctrl+N, Ctrl+Alt+Shift+N" :eclipse "Ctrl+Shift+T" :key "C-M-." :command xref-find-apropos
-     :category "Finding" :doc "Search for classes, interfaces, and symbols across workspace (or C-c c j).")
+     :category "Finding" :doc "Search for classes, interfaces, and symbols across workspace.")
     (:action "Recent files"
      :intellij "Ctrl+E" :eclipse "—" :key "C-c f r" :command consult-recent-file
      :category "Finding" :doc "Switch to a recently visited file across projects.")
@@ -47,16 +47,16 @@
      :category "Finding" :doc "Switch buffer with live preview (also C-x p b for project buffers).")
     (:action "File structure / Imenu"
      :intellij "Ctrl+F12" :eclipse "Ctrl+O" :key "M-g i" :command consult-imenu
-     :category "Finding" :doc "Jump to any method, field, or symbol in the current buffer (or C-c s i).")
+     :category "Finding" :doc "Jump to any method, field, or symbol in the current buffer.")
     (:action "Go to line"
      :intellij "Ctrl+G" :eclipse "Ctrl+L" :key "M-g g" :command consult-goto-line
      :category "Finding" :doc "Jump directly to line number with live preview.")
     (:action "Find in current file"
      :intellij "Ctrl+F" :eclipse "Ctrl+F" :key "C-s" :command isearch-forward
-     :category "Finding" :doc "Incremental search forward (M-s l for line overview, C-c s s).")
+     :category "Finding" :doc "Incremental search forward (C-c s s for a list of the matching lines).")
     (:action "Find in project (Ripgrep)"
-     :intellij "Ctrl+Shift+F" :eclipse "Ctrl+H" :key "M-s r" :command consult-ripgrep
-     :category "Finding" :doc "Fast ripgrep search across all project files (or C-c s p).")
+     :intellij "Ctrl+Shift+F" :eclipse "Ctrl+H" :key "C-c s p" :command consult-ripgrep
+     :category "Finding" :doc "Fast ripgrep search across all project files.")
     (:action "Replace / Project replace"
      :intellij "Ctrl+R / Ctrl+Shift+R" :eclipse "Ctrl+F / Ctrl+H" :key "M-% / C-x p r" :command query-replace
      :category "Finding" :doc "Query replace in buffer (M-%) or across project (C-x p r).")
@@ -67,13 +67,13 @@
     ;; Navigating code
     (:action "Go to declaration / definition"
      :intellij "Ctrl+B, Ctrl+Click" :eclipse "F3" :key "M-." :command xref-find-definitions
-     :category "Navigation" :doc "Jump to definition of symbol at point (or C-c c d).")
+     :category "Navigation" :doc "Jump to definition of symbol at point.")
     (:action "Back to previous location"
      :intellij "Ctrl+Alt+Left" :eclipse "Alt+Left" :key "M-," :command xref-go-back
      :category "Navigation" :doc "Jump back to where you were before following definition.")
     (:action "Find usages / references"
      :intellij "Alt+F7" :eclipse "Ctrl+Shift+G" :key "M-?" :command xref-find-references
-     :category "Navigation" :doc "List all references to symbol across the workspace (or C-c c D).")
+     :category "Navigation" :doc "List all references to symbol across the workspace.")
     (:action "Go to implementation"
      :intellij "Ctrl+Alt+B" :eclipse "Ctrl+T" :key "C-c c i" :command lsp-find-implementation
      :category "Navigation" :doc "Jump to implementations of the interface or abstract method.")
@@ -88,19 +88,19 @@
      :category "Navigation" :doc "Show documentation and signature at point (or lsp-describe-thing-at-point).")
     (:action "Next error / diagnostic"
      :intellij "F2" :eclipse "Ctrl+." :key "C-c ! n" :command flymake-goto-next-error
-     :category "Navigation" :doc "Jump to next compiler error or linter warning (or M-g f).")
+     :category "Navigation" :doc "Jump to next compiler error or linter warning (C-c s e to pick one).")
     (:action "Previous error / diagnostic"
      :intellij "Shift+F2" :eclipse "Ctrl+," :key "C-c ! p" :command flymake-goto-prev-error
      :category "Navigation" :doc "Jump to previous compiler error or linter warning.")
     (:action "Problems view / error list"
      :intellij "Alt+6" :eclipse "Problems View" :key "C-c ! l" :command flymake-show-buffer-diagnostics
-     :category "Navigation" :doc "Open buffer diagnostics popup (or C-c c x).")
+     :category "Navigation" :doc "Open buffer diagnostics popup.")
     (:action "Last edit location"
      :intellij "Ctrl+Shift+Backspace" :eclipse "Ctrl+Q" :key "C-u C-SPC" :command set-mark-command
      :category "Navigation" :doc "Cycle backward through the global mark ring.")
     (:action "Toggle bookmark / jump"
      :intellij "F11 / Shift+F11" :eclipse "—" :key "C-x r m / C-x r b" :command bookmark-set
-     :category "Navigation" :doc "Set named bookmark (C-x r m) or jump to one (C-x r b / C-c s m).")
+     :category "Navigation" :doc "Set named bookmark (C-x r m) or jump to one (C-x r b).")
 
     ;; Editing and refactoring
     (:action "Code completion"
@@ -155,7 +155,7 @@
     ;; Build, run, test, debug
     (:action "Build project"
      :intellij "Ctrl+F9" :eclipse "Ctrl+B" :key "C-x p c" :command project-compile
-     :category "Build & Debug" :doc "Build project using Maven/Gradle wrapper with clickable errors (or C-c c c).")
+     :category "Build & Debug" :doc "Build project using Maven/Gradle wrapper with clickable errors.")
     (:action "Run configuration"
      :intellij "Shift+F10" :eclipse "Ctrl+F11" :key "C-c r r" :command hell-run
      :category "Build & Debug" :doc "Run a saved run configuration (.run/, .launch, or .hell-emacs/run.eld).")

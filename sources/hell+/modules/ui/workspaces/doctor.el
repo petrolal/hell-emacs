@@ -21,6 +21,4 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-(if (fboundp 'tab-bar-mode)
-    (hell-doctor-ok "Native tab-bar workspaces enabled (C-x t and C-c w)")
-  (hell-doctor-warn "tab-bar-mode is not supported in this Emacs version"))
+(hell-doctor-ok "Native tab-bar workspaces (stock C-x t keys, C-c TAB p)")

@@ -26,10 +26,10 @@
 ;; marks follow your edits on save, and Magit's commits, stages and
 ;; checkouts.
 ;;
-;; Keys: none of the module's own. diff-hl's are kept as it ships them, on
-;; `C-x v' keys Emacs leaves free: `C-x v [' and `C-x v ]' previous and
-;; next hunk, `C-x v *' show it, `C-x v n' revert it, `C-x v S' stage it.
-;; `C-x v =' (`vc-diff') becomes a diff that jumps to the hunk at point.
+;; Keys: diff-hl's own, as it ships them (13.6), on `C-x v': `C-x v ['
+;; and `C-x v ]' previous and next hunk, `C-x v *' show it, `C-x v n'
+;; revert it, `C-x v S' stage it; `C-x v =' (`vc-diff') becomes a diff
+;; that jumps to the hunk at point.
 
 (defvar diff-hl-update-async)
 (defvar diff-hl-disable-on-remote)

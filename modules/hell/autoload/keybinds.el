@@ -25,7 +25,7 @@
 ;; editing (see "Rules" in docs/roadmap.md). Its own
 ;; commands live under `C-c', the prefix Emacs reserves for users,
 ;; laid out like Doom's non-evil leader: `C-c h' Hell Emacs, `C-c c'
-;; code, `C-c f' file, `C-c b' buffer, `C-c s' search, `C-c t' toggle,
+;; code, `C-c f' file, `C-c s' search, `C-c t' toggle,
 ;; `C-c w' window, `C-c q' quit, and `C-c l' the localleader: the
 ;; commands of the current major mode (and of some minor modes), as
 ;; Doom's `doom-localleader-alt-key'.
@@ -68,8 +68,9 @@ PREFIX is MAP's own key, for messages."
 (defun hell-leader-def (&rest bindings)
   "Bind BINDINGS, alternating KEY DEF pairs, under the `C-c' leader.
 
-KEY is relative to `C-c', in `keymap-set' syntax (\"f f\" means
-`C-c f f'). DEF is one of:
+KEY is relative to `C-c', in `keymap-set' syntax (\"s s\" means
+`C-c s s'). Bind only what stock Emacs has no key for: the leader adds
+commands, it doesn't repeat `C-x C-f' and the like (13.5). DEF is one of:
   - a command
   - (DESCRIPTION . COMMAND), to also give which-key a label
   - a string, to label KEY as a prefix group (\"file\" for `C-c f')

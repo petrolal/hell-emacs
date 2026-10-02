@@ -16,14 +16,14 @@
 ;; (after! consult
 ;;   (setq consult-preview-key "M-."))
 
-;; Your own keys under the C-c leader (C-c g g here):
+;; Your own keys under the C-c leader (C-c y w here):
 ;; (hell-leader-def
-;;   "g"   "git"
-;;   "g g" '("status" . magit-status))
+;;   "y"   "yours"
+;;   "y w" '("whitespace" . whitespace-mode))
 
 ;; Configure a package declared in packages.el:
 ;; (use-package magit
-;;   :bind ("C-x g" . magit-status))
+;;   :bind ("C-c y m" . magit-status))   ; your keys: C-c and a letter of your own
 
 ;; Check which modules/flags are on:
 ;; (when (modulep! :completion corfu +tab) ...)

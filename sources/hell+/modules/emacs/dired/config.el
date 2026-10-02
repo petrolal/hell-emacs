@@ -32,10 +32,9 @@
         dired-dwim-target t
         dired-recursive-copies 'always
         dired-recursive-deletes 'top
-        dired-kill-when-opening-new-dired-buffer t)
-  :config
-  (keymap-set dired-mode-map "r" #'wdired-change-to-wdired-mode)
-  (keymap-set dired-mode-map "C-x C-q" #'wdired-change-to-wdired-mode))
+        dired-kill-when-opening-new-dired-buffer t))
+;; Batch renaming is stock `C-x C-q' in Dired (`dired-toggle-read-only'
+;; turns on wdired); no key of the module's own (13.5).
 
 (use-package wdired
   :ensure nil

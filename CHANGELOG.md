@@ -39,6 +39,18 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Changed
 
+- Stock keys untouched, modern keys isolated (roadmap 13.5): Hell
+  Emacs' keys live only under `C-c` groups and never repeat a stock
+  key's command, and installed packages keep their own default keys as
+  they ship them (13.6): Magit's `C-x g` / `C-x M-g` / `C-c M-g`,
+  diff-hl's `C-x v`, lsp-mode's `s-l` (was `C-c c l`) and mouse keys,
+  corfu's popup keys, which-key's `C-h`, yasnippet's and tempel's keys.
+  Consult's
+  `M-g f`/`M-g o`/`M-s l`/`M-s r`/`M-s d` to `C-c s e`/`s o`/`s s`/`s p`/
+  `s f`, workspaces to `C-c TAB p` (`M-1`..`M-9` are `digit-argument`
+  again); `C-c f f`, `C-c b`, `C-c c c`/`d`/`D`/`j`/`x`, `C-c w` splits
+  and the like are gone in favour of their stock keys.
+
 - GNU Emacs' own layout (roadmap 13.4): the frame keeps the stock menu
   bar, tool bar and scroll bars, and the Altar is now Emacs' own
   startup screen (`*GNU Emacs*`) with Hell Emacs' logo and words,

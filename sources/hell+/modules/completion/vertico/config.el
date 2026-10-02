@@ -24,23 +24,18 @@
 ;; Minibuffer completion: vertico (UI), orderless (matching),
 ;; marginalia (annotations), consult (commands).
 ;;
-;; Owns the `C-c f' (file), `C-c b' (buffer), and `C-c s' (search)
-;; leader groups. The groups bind built-in commands; `consult' then
-;; remaps those built-ins -- and their default keys, like `C-x b' and
-;; `M-y' -- to its richer versions. Emacs muscle memory keeps working,
-;; it just gets previews and better completion.
+;; Owns the `C-c f' (file) and `C-c s' (search) leader groups, with only
+;; what stock Emacs has no key for (13.5): finding, saving, switching and
+;; killing buffers, `occur', imenu and bookmarks keep their stock keys
+;; (`C-x C-f', `C-x C-s', `C-x b', `C-x k', `M-s o', `M-g i', `C-x r b').
+;; `consult' remaps those stock commands -- `C-x b', `M-y', `M-g g' and
+;; the rest keep their keys -- to its richer versions with previews.
+;; Nothing is added inside Emacs' own `M-g' and `M-s' prefixes.
 
 (hell-leader-def
   "f"   "file"
-  "f f" '("find file" . find-file)
-  "f s" '("save file" . save-buffer)
   "f R" '("rename file" . rename-visited-file)
-  "b"   "buffer"
-  "b b" '("switch buffer" . switch-to-buffer)
-  "b d" '("kill buffer" . kill-current-buffer)
-  "b r" '("revert buffer" . revert-buffer-quick)
-  "s"   "search"
-  "s o" '("occur" . occur))
+  "s"   "search")
 
 ;; Neither is needed before the first command: vertico turns on with it
 ;; (before any minibuffer opens), and orderless loads with the first
@@ -73,7 +68,7 @@
   :defer-incrementally t
   :bind
   (;; Replace default commands everywhere they're bound -- `C-x b',
-   ;; `C-x 4 b', `C-x 5 b', `C-x t b', `C-c b b', `M-y', `M-g g', ...
+   ;; `C-x 4 b', `C-x 5 b', `C-x t b', `M-y', `M-g g', `M-g i', ...
    ;; -- rather than inventing new keys.
    ([remap switch-to-buffer]              . consult-buffer)
    ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -83,14 +78,7 @@
    ([remap yank-pop]                      . consult-yank-pop)
    ([remap goto-line]                     . consult-goto-line)
    ([remap imenu]                         . consult-imenu)
-   ([remap bookmark-jump]                 . consult-bookmark)
-   ;; Keys stock Emacs leaves free in its own `M-g' (go to) and `M-s'
-   ;; (search) prefixes, where consult's README puts them.
-   ("M-g f" . consult-flymake)
-   ("M-g o" . consult-outline)
-   ("M-s l" . consult-line)
-   ("M-s r" . consult-ripgrep)
-   ("M-s d" . consult-find))
+   ([remap bookmark-jump]                 . consult-bookmark))
   :init
   (setq consult-narrow-key "<"
         consult-preview-key 'any)
@@ -100,5 +88,5 @@
     "s s" '("search buffer" . consult-line)
     "s p" '("search project" . consult-ripgrep)
     "s f" '("locate file" . consult-find)
-    "s i" '("jump to symbol" . consult-imenu)
-    "s m" '("jump to bookmark" . consult-bookmark)))
+    "s o" '("jump to heading" . consult-outline)
+    "s e" '("jump to diagnostic" . consult-flymake)))

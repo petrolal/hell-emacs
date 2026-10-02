@@ -1,16 +1,30 @@
 # Keybindings
 
-Hell Emacs keeps **every stock GNU Emacs key** with its usual meaning, and
-adds nothing modal: no Evil, no `SPC` leader. Its own commands live under
-`C-c`, the prefix Emacs reserves for users, and packages improve the
-default commands in place (`C-x b` switches buffers with previews). `C-h`
-is untouched, after a prefix too (`C-c C-h` lists its keys), and
-which-key shows what follows any prefix (`<f5>` pages through it).
+Hell Emacs keys come in three layers, kept apart:
+
+- **Traditional:** every stock GNU Emacs key keeps its meaning, and
+  nothing is added inside Emacs' own prefixes (`C-x`, `M-g`, `M-s`,
+  `C-x v`, `C-x t`). Packages improve the default commands in place
+  (`C-x b` switches buffers with previews) instead of adding keys.
+- **Modern:** Hell Emacs' and its packages' commands (debugger, git,
+  language servers, tests, runs) live only under `C-c`, the prefix Emacs
+  reserves for users, in the groups below; a mode's own commands on the
+  `C-c l` localleader. A `C-c` key never repeats a stock key's command:
+  when stock Emacs has a key, that is the key.
+- **Installed packages:** each keeps its own default keys exactly as it
+  ships them -- Magit's `C-x g`, diff-hl's `C-x v [ ]`, lsp-mode's
+  `s-l`, corfu's popup keys, which-key's `C-h`, yasnippet's `TAB` and
+  `C-c &`. Hell Emacs never rebinds, unsets or moves them, and adds no
+  key of its own that would repeat one.
+
+Nothing is modal: no Evil, no `SPC` leader. which-key shows what
+follows any prefix; `C-h` there is which-key's (pages, help), as it
+ships.
 
 `TAB` indents, as in stock Emacs; `C-M-i` completes (`(corfu +tab)` makes
-`TAB` complete too). The completion popup keeps stock keys: `RET` inserts
-a candidate only once you've picked one (`M-n` / `M-p`, the arrows),
-otherwise it starts a new line; `M-g`, `M-h` and `M-t` keep their meanings.
+`TAB` complete too). While the completion popup is open, its keys are
+corfu's own: `M-n` / `M-p` and the arrows move, `RET` / `TAB` insert,
+`M-g` the candidate's location, `M-h` its documentation, `C-g` closes it.
 
 ---
 
@@ -24,15 +38,13 @@ otherwise it starts a new line; `M-g`, `M-h` and `M-t` keep their meanings.
 | `M-/` | `hippie-expand`: dabbrev as before, then file names, abbrevs, Lisp symbols | `:config default` |
 | `M-y` | `consult-yank-pop` | vertico |
 | `M-g g` / `M-g i` | `consult-goto-line` / `consult-imenu` | vertico |
-| `M-g f` / `M-g o` | Jump to a diagnostic / a heading (free `M-g` keys) | vertico |
 | `C-x r b` | `consult-bookmark` | vertico |
-| `M-s l` / `M-s r` / `M-s d` | Search lines / ripgrep the project / find files by name (consult's own keys) | vertico |
 | `M-.` / `M-?` / `M-,` | Definition / references / back, through the language server | `:tools lsp` |
 | `C-M-.` | Workspace symbols | lsp |
 | `C-x p c` | Build the project with its wrapper; errors clickable with `M-g n` / `M-g p` | `:tools build` |
-| `C-x g` / `C-x M-g` / `C-c M-g` | Magit status / dispatch / file actions | `:tools magit` |
-| `C-x v [` `]` / `*` / `n` / `S` | Previous, next changed hunk / show / revert / stage it | `:ui vc-gutter` |
-| `C-x t 2` / `0` / `o` / `p` | New tab / close / next / open project tab | `:ui workspaces` |
+| `C-x g` / `C-x M-g` / `C-c M-g` | Magit status / dispatch / file actions (Magit's own keys) | `:tools magit` |
+| `C-x v [` `]` / `*` / `n` / `S`, `C-x v =` | Previous, next changed hunk / show / revert / stage it, a diff at the hunk (diff-hl's own keys) | `:ui vc-gutter` |
+| `C-x t 2` / `0` / `o` / `RET` / `p p` | New tab / close / next / switch / a project in a new tab, with the tab bar shown | `:ui workspaces` |
 | `C-/` / `C-?` (`C-M-_` in a terminal) | Undo / redo, Emacs' own; history kept across restarts | `:editor undo` |
 
 With `(default +repeat)`, Emacs' own `repeat-mode` lets the last key
@@ -48,23 +60,24 @@ the movement keys (`C-n` / `C-p`, the arrows, `M-<` / `M->`, `C-v` /
 them off in your `config.el`: `(delete-selection-mode -1)`,
 `(electric-pair-mode -1)`, `(setq corfu-auto nil)` (then `C-M-i` opens
 the popup).
-lsp-mode's mouse keys are left out: `mouse-3` and `C-mouse-1` stay
-Emacs' own.
+lsp-mode keeps its own mouse keys: `mouse-3` its menu, `C-mouse-1` its actions.
 
 ---
 
 ## `C-c` groups
 
-Laid out as Doom Emacs' non-evil leader, with Emacs' own commands. The
-groups gather stock commands in one place; the stock keys keep working.
+Laid out as Doom Emacs' non-evil leader. Each group holds only what stock
+Emacs has no key for: finding files, saving, switching or killing
+buffers, splitting windows, going to a definition, building, quitting --
+those are on their stock keys, listed beside each group.
 
 ### `C-c h`: Hell Emacs
 
 | Key | Command |
 |---|---|
 | `C-c h s` | The Altar (GNU Emacs' startup screen, themed) |
-| `C-c h f` | The Forge: find a file in the project (or pick a project first) |
 | `C-c h i` | Grimoire Manual (open Hell Emacs native Info manual) |
+| `C-c h h` | The help hub: the JVM toolchain's state and the keys |
 | `C-c h k` | IntelliJ Exorcism (Rosetta Stone / IntelliJ key finder) |
 | `C-c h p` | Relic Chamber (Hell Emacs plugin & module manager) |
 | `C-c h r` | The Crucible: hot-swap changed classes into the debugged JVM, or reload into the Clojure REPL |
@@ -72,24 +85,27 @@ groups gather stock commands in one place; the stock keys keep working.
 | `C-c h S` | Sync (install what your config declares) |
 | `C-c h R` | Sync in a child Emacs, then reload your config |
 | `C-c h u` / `C-c h v` | Open your config directory / Hell Emacs' directory |
-| `C-c h m` | List the enabled modules |
+| `C-c h m` / `C-c h M` | Describe a module / list the enabled modules |
+
+A project's file is stock **`C-x p f`**.
 
 ### `C-c c`: code
 
 | Key | Command |
 |---|---|
-| `C-c c c` / `C-c c C` | Compile the project (its build tool with `:tools build`) / recompile |
-| `C-c c d` / `C-c c D` | Jump to the definition / the references |
-| `C-c c j` | Jump to a symbol in the project |
+| `C-c c C` | Recompile |
 | `C-c c k` | Documentation at point |
 | `C-c c w` | Delete trailing whitespace |
-| `C-c c x` | List the buffer's errors |
 
 With a language server (`:tools lsp`) the group also has `C-c c a` code
 actions, `C-c c r` rename, `C-c c o` organize imports, `C-c c f` format,
-`C-c c i` / `C-c c t` implementations / type definition, and lsp-mode's
-whole map on `C-c c l` (`w r` restart the server, `T` toggles, `g` goto
-and the rest; which-key lists them).
+`C-c c i` / `C-c c t` implementations / type definition. lsp-mode's
+own whole map stays on its `s-l` (`s-l w r` restart the server, `T`
+toggles, `g` goto and the rest; which-key lists them). `:tools eglot` puts its own code
+actions, rename and format on the same keys, in its buffers.
+
+Stock: **`M-.`** / **`M-?`** / **`C-M-.`** definition / references /
+project symbol, **`C-x p c`** build the project, **`C-h .`** help at point.
 
 ### `C-c l`: the localleader
 
@@ -102,16 +118,18 @@ buffers they belong to, unbound elsewhere.
 | Groovy | `c` refresh the classpath |
 | A JVM source with `:tools build` | `t t` / `t T` test at point / class; with `:tools test`, `t r` results, `t f` rerun the failures, `t c` run with coverage, `t s` / `t h` show / hide coverage |
 
-### `C-c f` file, `C-c b` buffer, `C-c s` search
+### `C-c f` file, `C-c s` search
 
 | Key | Command |
 |---|---|
-| `C-c f f` / `C-c f s` / `C-c f R` | Find a file / save / rename the visited file |
-| `C-c f r` | A recent file |
-| `C-c b b` / `C-c b d` / `C-c b r` | Switch buffer / kill it / revert it |
-| `C-c s s` / `C-c s p` | Search the buffer / the project |
-| `C-c s f` / `C-c s i` / `C-c s m` | Locate a file / jump to a symbol / to a bookmark |
-| `C-c s o` | occur |
+| `C-c f r` / `C-c f R` | A recent file / rename the visited file |
+| `C-c s s` / `C-c s p` | Search the buffer's lines / ripgrep the project |
+| `C-c s f` | Locate a file by name |
+| `C-c s o` / `C-c s e` | Jump to a heading / a diagnostic |
+
+Stock: **`C-x C-f`** find, **`C-x C-s`** save, **`C-x b`** / **`C-x k`**
+switch / kill buffer, **`C-x x g`** revert, **`M-s o`** occur, **`M-g i`**
+a symbol of the buffer, **`C-x r b`** a bookmark.
 
 ### `C-c t`: toggle
 
@@ -119,27 +137,36 @@ buffers they belong to, unbound elsewhere.
 |---|---|
 | `C-c t l` / `C-c t c` | Line numbers / fill column indicator |
 | `C-c t w` / `C-c t v` | Soft line wrapping / visible mode |
-| `C-c t r` / `C-c t F` | Read-only / frame fullscreen |
 | `C-c t f` / `C-c t s` | Flymake / the spell checker |
 
-### `C-c w` window, `C-c q` quit
+Stock: **`C-x C-q`** read-only, **`<f11>`** fullscreen.
+
+### `C-c w` window, `C-c q` quit, `C-c TAB` workspace
 
 | Key | Command |
 |---|---|
-| `C-c w s` / `C-c w v` | Split below / right |
-| `C-c w d` / `C-c w m` / `C-c w o` / `C-c w =` | Delete / maximize / other window / balance |
 | `C-c w b` `f` `p` `n` | Move to the window left, right, up, down |
-| `C-c w u` / `C-c w r` | Undo / redo the window layout (also winner's own `C-c <left>` / `C-c <right>`) |
 | `C-c w t` | Hide or bring back the bottom popup (`:ui popup`) |
-| `C-c q q` / `C-c q r` | Quit / restart Emacs |
+| `C-c q r` | Restart Emacs |
+| `C-c TAB p` | A project's tab: switch to it, or open it (`:ui workspaces`) |
 
-The stock window keys (`C-x 2`, `C-x 3`, `C-x 0`, `C-x 1`, `C-x o`) work as
-always.
+Stock: **`C-x 2`** / **`C-x 3`** split, **`C-x 0`** / **`C-x 1`** delete
+this / the others, **`C-x o`** other window, **`C-x +`** balance,
+winner's **`C-c <left>`** / **`C-c <right>`** undo / redo the layout,
+**`C-x C-c`** quit, **`C-x t`** tabs.
 
 ### `C-c !`: diagnostics
 
 Flymake's, wherever it runs: `C-c ! n` / `C-c ! p` next / previous,
-`C-c ! l` the list.
+`C-c ! l` the list; `C-c s e` jumps to one.
+
+|---|---|
+| `C-c g g` / `C-c g d` / `C-c g f` | Magit status / dispatch / the current file's actions |
+| `C-c M-g`, then `b` / `l` | Blame / log of the current file |
+| `C-c v [` `]` / `*` / `n` / `S` | Previous, next changed hunk / show / revert / stage it |
+
+Magit's own `C-x g`, `C-x M-g` and `C-c M-g` are turned off, so `C-x`
+stays stock; Emacs' own vc stays on **`C-x v`**, `C-x v =` included.
 
 ### `C-c d`: debugging (`:tools debugger`)
 
@@ -173,14 +200,14 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 | Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
 | Any command | `Ctrl+Shift+A` | `Ctrl+3` | **`M-x`** |
-| A file in the project | `Ctrl+Shift+N` | `Ctrl+Shift+R` | **`C-x p f`**, or `C-c h f` |
-| A class or symbol in the project | `Ctrl+N`, `Ctrl+Alt+Shift+N` | `Ctrl+Shift+T` | **`C-M-.`**, or `C-c c j` |
+| A file in the project | `Ctrl+Shift+N` | `Ctrl+Shift+R` | **`C-x p f`** |
+| A class or symbol in the project | `Ctrl+N`, `Ctrl+Alt+Shift+N` | `Ctrl+Shift+T` | **`C-M-.`** |
 | Recent files | `Ctrl+E` | — | `C-c f r` |
 | Switch between open files | `Ctrl+Tab` | `Ctrl+E` | **`C-x b`** (with previews) |
-| Structure of this file | `Ctrl+F12` | `Ctrl+O` | **`M-g i`**, or `C-c s i` |
+| Structure of this file | `Ctrl+F12` | `Ctrl+O` | **`M-g i`** |
 | Go to line | `Ctrl+G` | `Ctrl+L` | **`M-g g`** |
-| Find in this file | `Ctrl+F` | `Ctrl+F` | **`C-s`**; a list of matches: **`M-s l`**, or `C-c s s` |
-| Find in the project | `Ctrl+Shift+F` | `Ctrl+H` | **`M-s r`**, or `C-c s p` |
+| Find in this file | `Ctrl+F` | `Ctrl+F` | **`C-s`**; a list of matches: **`M-s o`**, or `C-c s s` |
+| Find in the project | `Ctrl+Shift+F` | `Ctrl+H` | **`C-x p g`**, or `C-c s p` (ripgrep) |
 | Replace / in the project | `Ctrl+R` / `Ctrl+Shift+R` | `Ctrl+F` / `Ctrl+H` | **`M-%`** / **`C-x p r`** |
 | Project files as a tree | `Alt+1` | Package Explorer | **`C-x p D`** (Dired) |
 
@@ -188,16 +215,16 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 | Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
-| Go to declaration | `Ctrl+B`, `Ctrl+Click` | `F3` | **`M-.`**, or `C-c c d` |
+| Go to declaration | `Ctrl+B`, `Ctrl+Click` | `F3` | **`M-.`** |
 | Back | `Ctrl+Alt+Left` | `Alt+Left` | **`M-,`** |
-| Find usages | `Alt+F7` | `Ctrl+Shift+G` | **`M-?`**, or `C-c c D` |
+| Find usages | `Alt+F7` | `Ctrl+Shift+G` | **`M-?`** |
 | Go to implementation | `Ctrl+Alt+B` | `Ctrl+T` | `C-c c i` |
 | Go to type declaration | `Ctrl+Shift+B` | — | `C-c c t` |
 | Type hierarchy | `Ctrl+H` | `F4` | `C-c l h` (Java) |
 | Quick documentation | `Ctrl+Q` | `F2` | `C-c c k`; while typing, in the echo area |
 | Parameter info | `Ctrl+P` | `Ctrl+Shift+Space` | Shown by itself after `(` and `,` |
-| Next / previous error | `F2` / `Shift+F2` | `Ctrl+.` / `Ctrl+,` | `C-c ! n` / `C-c ! p`; jump to one: **`M-g f`** |
-| All errors of the file | `Alt+6` | Problems view | `C-c ! l`, or `C-c c x` |
+| Next / previous error | `F2` / `Shift+F2` | `Ctrl+.` / `Ctrl+,` | `C-c ! n` / `C-c ! p`; jump to one: `C-c s e` |
+| All errors of the file | `Alt+6` | Problems view | `C-c ! l` |
 | Last edit location | `Ctrl+Shift+Backspace` | `Ctrl+Q` | **`C-u C-SPC`** (back through the marks) |
 | Bookmark / go to one | `F11` / `Shift+F11` | — | **`C-x r m`** / **`C-x r b`** |
 
@@ -220,13 +247,13 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 | Move line | `Ctrl+Shift+Up/Down` | `Alt+Up/Down` | **`C-x C-t`** swaps it with the line above |
 | Undo / redo | `Ctrl+Z` / `Ctrl+Shift+Z` | `Ctrl+Z` / `Ctrl+Y` | **`C-/`** / **`C-?`** (**`C-M-_`** in a terminal) |
 | Save all | `Ctrl+S` | `Ctrl+Shift+S` | **`C-x s`** |
-| Close the file | `Ctrl+F4` | `Ctrl+W` | **`C-x k`**, or `C-c b d` |
+| Close the file | `Ctrl+F4` | `Ctrl+W` | **`C-x k`** |
 
 **Build, run, test, debug**
 
 | Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
-| Build the project | `Ctrl+F9` | `Ctrl+B` | **`C-x p c`**, or `C-c c c` |
+| Build the project | `Ctrl+F9` | `Ctrl+B` | **`C-x p c`** |
 | Run / debug a configuration | `Shift+F10` / `Shift+F9` | `Ctrl+F11` / `F11` | `C-c r r` / `C-c r d` |
 | Run the last again | `Ctrl+F5` | `Ctrl+F11` | `C-c r l` |
 | Run the test at point / the class | `Ctrl+Shift+F10` | `Alt+Shift+X T` | `C-c l t t` / `C-c l t T` |
@@ -243,8 +270,8 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 | Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
-| Git: status, commit, push | `Alt+9`, `Ctrl+K`, `Ctrl+Shift+K` | Git Staging | **`C-x g`** (Magit), then `c c` commit, `P p` push |
-| Blame / history of this file | Annotate / Show History | Show Annotations / History | **`C-c M-g`**, then `b` / `l` |
+| Git: status, commit, push | `Alt+9`, `Ctrl+K`, `Ctrl+Shift+K` | Git Staging | `C-x g` (Magit), then `c c` commit, `P p` push |
+| Blame / history of this file | Annotate / Show History | Show Annotations / History | `C-c g b` / `C-c g l` |
 | Terminal | `Alt+F12` | — | **`C-x p s`** (shell) or **`C-x p e`** (eshell), in the project |
 | Split the editor | Split Right | — | **`C-x 3`** / **`C-x 2`** |
 | Close a popup | `Esc` | `Esc` | **`C-g`**, or `q` in it |
@@ -262,11 +289,12 @@ These are the modes' own keys, only in their buffers.
   `C-c C-a` run the request / file with httpyac (`+httpyac`).
 - **SQL (`:tools db`):** `C-c C-c` run the statement at point, `C-c C-b`
   the buffer.
-- **A completed method's placeholders (`:tools lsp`):** `TAB` / `S-TAB`
-  or `M-}` / `M-{` next / previous, `C-g` leaves; only inside the
-  expansion, `TAB` indents everywhere else.
+- **Snippets from the language server (`:tools lsp`, yasnippet's own
+  keys):** `TAB` expands; inside an expansion `TAB` / `S-TAB` next /
+  previous placeholder, `C-g` leaves; `C-c &` yasnippet's commands.
 - **Snippets (`:editor snippets`):** complete a snippet's name with `C-M-i`;
-  inside one, `M-}` / `M-{` next / previous field, `ESC ESC ESC` abort.
+  inside one, tempel's own keys: `M-}` / `M-{` next / previous field,
+  `ESC ESC ESC` abort.
 - **The Altar:** GNU Emacs' startup screen and its keys: `TAB` / `S-TAB`
   move between links, `RET` follows one, `SPC` / `DEL` scroll, `q` dismisses.
 - **Test results:** `RET` go to the test, `r` rerun it, `f` rerun the
