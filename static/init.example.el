@@ -1,21 +1,21 @@
-;;; init.el --- Your Hellmacs init file -*- lexical-binding: t; -*-
+;;; init.el --- Your Hell Emacs init file -*- lexical-binding: t; -*-
 
-;; Loaded after Hellmacs' core, but BEFORE any module. Use it to choose
-;; which modules load (the `hellmacs!' block) and to set variables that
+;; Loaded after Hell Emacs' core, but BEFORE any module. Use it to choose
+;; which modules load (the `hell!' block) and to set variables that
 ;; modules read while loading. Everything else belongs in config.el.
 ;;
-;; This file lives in `hellmacs-user-dir' (~/.config/hellmacs/ by
-;; default, or $HELLMACSDIR), outside the Hellmacs git checkout, so
-;; upgrading Hellmacs never touches it. Without it, Hellmacs uses the
-;; `hellmacs!' block below (it reads this very file from static/).
+;; This file lives in `hell-user-dir' (~/.config/hell-emacs/ by
+;; default, or $HELLDIR), outside the Hell Emacs git checkout, so
+;; upgrading Hell Emacs never touches it. Without it, Hell Emacs uses the
+;; `hell!' block below (it reads this very file from static/).
 ;;
-;; After changing this block, run `bin/hellmacs sync' (or `C-c h S').
+;; After changing this block, run `bin/hell sync' (or `C-c h S').
 ;;
 ;; Modules load in the order listed. Comment a line out to disable a
 ;; module; +flags turn on optional behavior, documented at the top of
-;; each module's config.el (sources/hellmacs+/modules/<group>/<name>/config.el).
+;; each module's config.el (sources/hell+/modules/<group>/<name>/config.el).
 ;;
-;; The list below is every module Hellmacs has or could have. Enabled by
+;; The list below is every module Hell Emacs has or could have. Enabled by
 ;; default: what a JVM project needs. Entries marked [planned] are on the
 ;; roadmap (docs/roadmap.md) and [idea] ones aren't yet; neither exists,
 ;; so enabling one only warns "Unknown module ..., skipped" until it
@@ -23,10 +23,10 @@
 ;; don't exist yet name what one would most likely wrap. To write one
 ;; yourself, start from static/module-template/.
 
-(hellmacs! :ui
-           theme              ; the Hellmacs theme, line numbers, current line
+(hell! :ui
+       theme              ; the Hell Emacs theme, line numbers, current line
            ;;dashboard        ; [deprecated] third-party dashboard package (native Altar is default on C-c h s)
-           modeline           ; minimal doom-modeline in the Hellmacs palette
+           modeline           ; minimal doom-modeline in the Hell Emacs palette
            ;;emoji            ; [idea] emoji input and display
            ;;hl-todo          ; highlight TODO/FIXME/HACK/NOTE in comments; M-x hl-todo-next, hl-todo-occur
            ;;indent-guides    ; [idea] indentation guides
@@ -84,11 +84,11 @@
            ;;eglot            ; zero-overhead native LSP alternative (Emacs 29+)
            magit              ; Git via Magit: C-x g status, C-x M-g dispatch, C-c M-g file
            projectile         ; project management via Projectile + Consult-Projectile (C-c p)
-           run                ; run configurations (.hellmacs/run.eld, IntelliJ .run/, Eclipse .launch), C-c r
+           run                ; run configurations (.hell-emacs/run.eld, IntelliJ .run/, Eclipse .launch), C-c r
            test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c l t (+watch)
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
-           ;;db               ; databases over JDBC: sql-mode + sqlline, .hellmacs/db.eld, passwords in auth-source
+           ;;db               ; databases over JDBC: sql-mode + sqlline, .hell-emacs/db.eld, passwords in auth-source
            ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
            editorconfig       ; the project's .editorconfig: indentation, charset, line endings (built in)
            ;;eval             ; [idea] run code in a REPL or inline, per language
@@ -110,7 +110,7 @@
            ;;tty              ; [idea] terminal Emacs: clipboard, mouse, cursor shape
 
            :lang
-           ;; JVM (Hellmacs' own). Each language server is pinned and installed by `sync'.
+           ;; JVM (Hell Emacs' own). Each language server is pinned and installed by `sync'.
            (java +lombok +spring) ; Java: JDTLS, Spring Boot; a JDK 21+ (+lombok, +spring, +tree-sitter)
            kotlin             ; Kotlin: kotlin-language-server; a JDK (+tree-sitter)
            clojure            ; Clojure: CIDER REPL + clojure-lsp (+tree-sitter: Emacs 30.1+)
@@ -131,7 +131,7 @@
            web                ; HTML, CSS, Less, SCSS, Thymeleaf, Velocity, FreeMarker, JSP
            yaml               ; YAML: yaml-language-server; needs Node (+tree-sitter)
 
-           ;; Plugin languages (manage via `bin/hellmacs plugins' or uncomment below)
+           ;; Plugin languages (manage via `bin/hell plugins' or uncomment below)
            ;;cc               ; C, C++, Objective-C: clangd
            ;;go               ; Go: gopls
            ;;php              ; PHP: phpactor (intelephense)
@@ -196,8 +196,8 @@
            default)           ; C-c leader groups (h c t w q), which-key, ibuffer on C-x C-b (+repeat)
 
 ;; Look and feel (all optional):
-;; (setq hellmacs-theme 'modus-vivendi)   ; another theme; nil loads none
-;; (setq hellmacs-splash-enable nil)      ; start on *scratch*, not the Altar
-;; (setq hellmacs-ux-enable nil)          ; stock quit prompt and error messages
+;; (setq hell-theme 'modus-vivendi)   ; another theme; nil loads none
+;; (setq hell-splash-enable nil)      ; start on *scratch*, not the Altar
+;; (setq hell-ux-enable nil)          ; stock quit prompt and error messages
 
 ;;; init.el ends here

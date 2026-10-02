@@ -1,23 +1,34 @@
-# Hellmacs Guide
+# Hell Emacs Guide
 
-Everything about installing, configuring and running Hellmacs. For the JVM
+Everything about installing, configuring and running Hell Emacs. For the JVM
 languages and tools, see the [JVM guide](jvm.md); for keys, the
 [keybindings](keybindings.md); for every command, the [CLI reference](cli.md).
 
-Hellmacs installs and works like [Doom Emacs](https://github.com/doomemacs/core):
+Hell Emacs installs and works like [Doom Emacs](https://github.com/doomemacs/core):
 if you know Doom, you know where everything is. The difference is the keys:
-Hellmacs keeps stock GNU Emacs bindings.
+Hell Emacs keeps stock GNU Emacs bindings.
 
 ---
 
 ## 1. Install
+
+Short version, on a machine with the [requirements](#requirements) and no
+other Emacs config:
+
+```sh
+git clone https://github.com/petrolal/hell-emacs.git ~/.config/emacs
+~/.config/emacs/bin/hell install
+emacs
+```
+
+The rest of this section is each step in detail.
 
 ### Requirements
 
 | Tool | Version | For |
 |---|---|---|
 | GNU Emacs | 29.1+ (30.1+ for `clojure-ts-mode`); native-comp and tree-sitter recommended | Everything |
-| Git | 2.25+ (2.31+ behind a proxy or mirror) | Packages, Magit |
+| Git | 2.25+ (2.31+ behind a proxy or mirror) | Packages, Magit, `hell upgrade` |
 | JDK | 21+ | Running JDTLS; your projects can target Java 8 and up |
 | ripgrep, fd | any recent | Project search |
 | A C compiler and `make` | any | Building the pinned tree-sitter grammars |
@@ -28,83 +39,257 @@ Optional: Maven or Gradle (projects without a wrapper), `clojure`/`lein`/`bb`
 JSON, shell and `+httpyac` servers), a [Nerd Font](https://www.nerdfonts.com)
 (icons). Language servers aren't on this list: `sync` installs pinned copies.
 
-### Steps
+### Step 1: get the requirements
+
+- **Ubuntu 24.04+, Debian 13+**:
+  ```sh
+  sudo apt install emacs git openjdk-21-jdk ripgrep fd-find build-essential unzip
+  mkdir -p ~/.local/bin && ln -s "$(command -v fdfind)" ~/.local/bin/fd
+  ```
+  Debian names fd `fdfind`; the link makes it `fd` (with `~/.local/bin` on
+  your `PATH`). Older releases (Ubuntu 22.04, Debian 12) ship Emacs 27 or
+  28, too old: build Emacs or use a newer release.
+- **Fedora**:
+  ```sh
+  sudo dnf install emacs git java-21-openjdk-devel ripgrep fd-find gcc make unzip
+  ```
+  (`java-latest-openjdk-devel` works too: any JDK 21 or later.)
+- **Arch Linux** (and Manjaro, EndeavourOS):
+  ```sh
+  sudo pacman -S --needed emacs git jdk21-openjdk ripgrep fd base-devel unzip
+  sudo pacman -S --needed nodejs npm   # optional: YAML, JSON and shell servers
+  ```
+  With several JDKs installed, `archlinux-java status` lists them and
+  `sudo archlinux-java set java-21-openjdk` picks the default one (any
+  21 or later works).
+- **NixOS**: in `configuration.nix`, then `sudo nixos-rebuild switch`:
+  ```nix
+  environment.systemPackages = with pkgs; [
+    emacs git jdk21 ripgrep fd gcc gnumake unzip
+    nodejs   # optional: YAML, JSON and shell servers
+  ];
+  # clojure-lsp and marksman are prebuilt Linux binaries that sync
+  # downloads: they need nix-ld to run on NixOS.
+  programs.nix-ld.enable = true;
+  ```
+  With Home Manager, put the same packages in `home.packages` (nix-ld
+  stays a system option). Install Emacs as a plain package, not through
+  `programs.emacs.extraPackages`: Hell Emacs installs its own packages
+  with Elpaca.
+- **Nix on another Linux or macOS**:
+  ```sh
+  nix profile install nixpkgs#{emacs,git,jdk21,ripgrep,fd,gcc,gnumake,unzip}
+  ```
+  (or `nix-env -iA nixpkgs.emacs nixpkgs.git ...` without flakes). nix-ld
+  isn't needed outside NixOS.
+- **macOS**:
+  ```sh
+  brew tap d12frosted/emacs-plus
+  brew install emacs-plus openjdk@21 ripgrep fd
+  ```
+- **Windows**: install a distribution in WSL2 (`wsl --install -d Ubuntu`),
+  then follow the Ubuntu line inside it. See [Platforms](#platforms).
+
+Check the versions before going on:
 
 ```sh
-git clone https://github.com/petrolal/hellmacs.git ~/.config/emacs
-~/.config/emacs/bin/hellmacs install
+emacs --version    # GNU Emacs 29.1 or later
+java -version      # 21 or later
+```
+
+Several JDKs can be installed side by side: the one that runs JDTLS only
+needs to be 21+, and each project picks its own (see the
+[JVM guide](jvm.md)).
+
+### Step 2: move any other Emacs config out of the way
+
+Emacs reads the first of `~/.emacs`, `~/.emacs.el`, `~/.emacs.d/`, then
+`~/.config/emacs/`, so an older config would be loaded instead of Hell
+Emacs. Rename what you have:
+
+```sh
+mv ~/.emacs      ~/.emacs.bak        # if it exists
+mv ~/.emacs.d    ~/.emacs.d.bak      # if it exists
+mv ~/.config/emacs ~/.config/emacs.bak  # if it exists; git won't clone into it
+```
+
+To keep using your old config, skip this step and install Hell Emacs
+[somewhere else](#alongside-another-config) instead.
+
+### Step 3: clone and install
+
+```sh
+git clone https://github.com/petrolal/hell-emacs.git ~/.config/emacs
+~/.config/emacs/bin/hell install
+```
+
+Don't clone with `--depth 1`: `hell upgrade` follows release tags.
+
+`install` takes several minutes the first time (it downloads packages and
+language servers, and compiles grammars) and is safe to run again. It:
+
+1. warns about anything that would make Emacs skip Hell Emacs (a `~/.emacs`,
+   or a `~/.emacs.d` while Hell Emacs is in `~/.config/emacs`);
+2. creates your config in `~/.config/hell-emacs/` from `static/`
+   (`init.el`, `config.el`, `packages.el`); an existing one is kept;
+3. syncs: installs every package and language server your modules need,
+   each checked by SHA-256, and generates the file Emacs starts from;
+4. asks whether to save your shell environment (`PATH`, `JAVA_HOME`, ...)
+   for Emacs started from a desktop launcher or the macOS Dock. Say yes
+   unless you only start Emacs from a terminal;
+5. runs `doctor` and says how to start Emacs.
+
+Its options:
+
+| Option | Does |
+|---|---|
+| `--env` / `--no-env` | Answer the environment question without asking |
+| `--no-config` | Don't create `~/.config/hell-emacs/` |
+| `--no-install` | Don't sync now; run `hell sync` before starting Emacs |
+| `--aot` | Native-compile every package now instead of on first use |
+| `--from-bundle FILE` | Install from an offline bundle, without network ([Companies](#6-companies-networks-offline-machines-compliance)) |
+| `-!` (before `install`) | Accept every prompt: for scripts and provisioning |
+
+Behind a proxy or a corporate CA? Run `hell install --no-install` first,
+set the proxy in `~/.config/hell-emacs/init.el` as in
+[Companies](#6-companies-networks-offline-machines-compliance), then
+`hell sync`.
+
+### Step 4: put `hell` on your PATH
+
+```sh
+# bash
+echo 'export PATH="$HOME/.config/emacs/bin:$PATH"' >> ~/.bashrc
+# zsh
+echo 'export PATH="$HOME/.config/emacs/bin:$PATH"' >> ~/.zshrc
+# fish
+fish_add_path ~/.config/emacs/bin
+```
+
+Open a new shell: `hell sync`, `hell doctor` and the rest now work from
+anywhere. Optional, but the rest of the documentation assumes it.
+
+### Step 5: start it and check
+
+```sh
+hell doctor   # every check passes, or says what to install
 emacs
 ```
 
-`install` is safe to run again. It:
+Emacs opens on the Altar, Hell Emacs' start screen, and `*Messages*`
+(`C-h e`) says `Hell Emacs ready in 0.0Ns`. Open a Java project with
+`C-x p p` or `C-x C-f`: the first time, JDTLS imports it, which takes a
+minute or more on a large Maven or Gradle build; the mode-line shows
+`JVM:ready` when it's done. From here:
 
-1. warns about anything that would make Emacs skip Hellmacs (a `~/.emacs`,
-   or a `~/.emacs.d` while Hellmacs is in `~/.config/emacs`);
-2. creates your config in `~/.config/hellmacs/` from `static/`
-   (`--no-config` skips it);
-3. syncs: installs every package and language server your modules need,
-   and generates the file Emacs starts from (`--no-install` skips it);
-4. offers to save your shell environment (`PATH`, `JAVA_HOME`, ...) for
-   Emacs started from a desktop launcher (`--env` / `--no-env` answer for
-   you);
-5. runs `doctor` and says how to start Emacs.
+- [Your configuration](#2-your-configuration): choose modules, add packages.
+- The [JVM guide](jvm.md): building, running, testing, debugging.
+- The [keybindings](keybindings.md): stock Emacs keys, plus `C-c` groups.
 
-Put `~/.config/emacs/bin` on your `PATH`: then `hellmacs sync`,
-`hellmacs doctor` and the rest work from anywhere. Don't clone with
-`--depth 1`: `hellmacs upgrade` follows release tags.
+If something fails, `hell doctor` names it and links to the fix in
+[What doctor's messages mean](#what-doctors-messages-mean).
 
-Hellmacs can live anywhere: clone it to `~/hellmacs` and start it with
-`hellmacs emacs` (or `emacs --init-directory ~/hellmacs`).
+### Alongside another config
+
+Hell Emacs can live anywhere, and leaves your current config alone:
+
+```sh
+git clone https://github.com/petrolal/hell-emacs.git ~/hell-emacs
+~/hell-emacs/bin/hell install
+~/hell-emacs/bin/hell emacs        # or: emacs --init-directory ~/hell-emacs
+```
+
+Plain `emacs` keeps starting your old config. Your Hell Emacs config is still
+`~/.config/hell-emacs/` (`$HELLDIR` moves it).
+
+### Versions
+
+`hell upgrade` updates Hell Emacs and its packages to the latest release
+(the stable channel). Until the first release is tagged, a clone is the
+development branch: `hell upgrade --channel main` follows it. See
+[Staying up to date](#3-staying-up-to-date--updating-production).
 
 ### Platforms
 
 - **Linux** (x86-64, arm64): as above.
-- **macOS** (Apple Silicon, Intel): `brew install emacs-plus openjdk@21
-  ripgrep fd`, then as above. Run `hellmacs env` so a GUI Emacs gets your
-  shell's `PATH` and `JAVA_HOME`.
-- **Windows**: through WSL2, as on Linux. Keep Hellmacs and your projects
+- **macOS** (Apple Silicon, Intel): as above. Say yes to saving the
+  environment (or run `hell env` later) so an Emacs started from the Dock
+  gets your shell's `PATH` and `JAVA_HOME`.
+- **Windows**: through WSL2, as on Linux. Keep Hell Emacs and your projects
   on the Linux filesystem (`~/...`), not `/mnt/c/`: the Windows mount is
   slow. WSLg shows GUI Emacs on Windows 11.
+- **Termux** and systems without `/usr/bin/env`: run `bin/hell.sh` instead
+  of `bin/hell`.
 - **Try it in Docker**, without touching your machine:
   ```sh
   docker run -it --rm alpine:edge sh -c '
     apk add bash git emacs-nativecomp ripgrep fd openjdk21 unzip build-base &&
-    git clone https://github.com/petrolal/hellmacs.git ~/.config/emacs &&
-    ~/.config/emacs/bin/hellmacs -! install && emacs -nw'
+    git clone https://github.com/petrolal/hell-emacs.git ~/.config/emacs &&
+    ~/.config/emacs/bin/hell -! install && emacs -nw'
   ```
+
+### Coming from Hellmacs
+
+Hell Emacs was called Hellmacs, and the old names no longer work. In your
+checkout:
+
+```sh
+git pull
+mv ~/.config/hellmacs ~/.config/hell-emacs
+mv ~/.local/state/hellmacs ~/.local/state/hell-emacs   # keeps history, recent files, undo
+rm -rf ~/.local/share/hellmacs ~/.cache/hellmacs        # rebuilt by sync
+bin/hell sync
+```
+
+In your `init.el` and `config.el`, `hellmacs-` becomes `hell-` (`hellmacs!`
+is `hell!`); `$HELLMACSDIR` and `$HELLMACS_PROFILE` are `$HELLDIR` and
+`$HELL_PROFILE`; a named profile's `~/.config/hellmacs-NAME/` is
+`~/.config/hell-emacs-NAME/`. The [CHANGELOG](../CHANGELOG.md) lists every
+rename.
+
+### Uninstall
+
+```sh
+rm -rf ~/.config/emacs ~/.local/share/hell-emacs ~/.cache/hell-emacs ~/.local/state/hell-emacs
+```
+
+and remove the `PATH` line from your shell's rc file. Keep (or back up)
+`~/.config/hell-emacs/`, your config, if you might come back; named
+profiles have their own `hell-emacs-NAME` directories in the same places.
+Restore your old config by renaming the `.bak` files from step 2.
 
 ---
 
 ## 2. Your configuration
 
-Your config is `~/.config/hellmacs/` (`$HELLMACSDIR` moves it; Doom's is
-`~/.config/doom/`). Hellmacs never writes into its own checkout.
+Your config is `~/.config/hell-emacs/` (`$HELLDIR` moves it; Doom's is
+`~/.config/doom/`). Hell Emacs never writes into its own checkout.
 
 | File | What goes in it |
 |---|---|
-| `init.el` | The `hellmacs!` block: which modules are on. Settings Hellmacs reads early (theme, proxy, ...) |
+| `init.el` | The `hell!` block: which modules are on. Settings Hell Emacs reads early (theme, proxy, ...) |
 | `packages.el` | Extra packages (`package!`) |
 | `config.el` | Everything else: `use-package`, `setq`, `after!`, your keys |
 | `custom.el` | Written by `M-x customize` |
 | `modules/` | Your own modules |
 
-**After changing `init.el`'s block or `packages.el`, run `hellmacs sync`**
+**After changing `init.el`'s block or `packages.el`, run `hell sync`**
 and restart Emacs (or press `C-c h R`, which syncs and reloads). Startup
-only replays what the last sync decided, as in Doom; `hellmacs doctor` says
+only replays what the last sync decided, as in Doom; `hell doctor` says
 when your config changed since.
 
 ### Modules
 
 ```elisp
-(hellmacs! :ui         theme dashboard modeline popup
-           :editor     undo
-           :completion vertico (corfu +tab)
-           :tools      build debugger direnv lsp magit run test editorconfig
-           :lang       (java +lombok +spring) kotlin clojure
-           :config     default)
+(hell! :ui         theme dashboard modeline popup
+       :editor     undo
+       :completion vertico (corfu +tab)
+       :tools      build debugger direnv lsp magit run test editorconfig
+       :lang       (java +lombok +spring) kotlin clojure
+       :config     default)
 ```
 
-Your `init.el` lists every module Hellmacs has, the optional ones commented
+Your `init.el` lists every module Hell Emacs has, the optional ones commented
 out: uncomment one (`:lang groovy`, `:tools db`, ...), then sync. Flags
 (`+name`) switch on a module's options, for example:
 
@@ -118,13 +303,13 @@ out: uncomment one (`:lang groovy`, `:tools db`, ...), then sync. Flags
 | `(http +httpyac)` | Run `.http` files' JavaScript handlers (needs Node) |
 | `(static +sonarlint)` | SonarLint's analysis, on top of the build's reports |
 
-An empty `(hellmacs!)` turns every module off except Hellmacs' own core
+An empty `(hell!)` turns every module off except Hell Emacs' own core
 module (the Altar, the themed messages), which is always on. Without a
 block at all, you get the defaults in `static/init.example.el`.
 
 Your `init.el` is never rewritten, so modules made default after you
-installed don't appear in it. `hellmacs doctor` lists them;
-`hellmacs config --add-defaults` adds them (keeping `init.el.bak`).
+installed don't appear in it. `hell doctor` lists them;
+`hell config --add-defaults` adds them (keeping `init.el.bak`).
 
 ### Packages (plugins)
 
@@ -149,61 +334,61 @@ Declare a package in `packages.el`, configure it in `config.el`, sync:
 ```
 
 Packages load lazily: give each one a trigger (`:hook`, `:bind`,
-`:commands`) or `:demand t`. `hellmacs lock` pins every package's exact
-commit so another machine installs the same; `hellmacs gc` deletes the ones
-nothing declares any more. A plugin manager (`hellmacs plugins`) is planned
+`:commands`) or `:demand t`. `hell lock` pins every package's exact
+commit so another machine installs the same; `hell gc` deletes the ones
+nothing declares any more. A plugin manager (`hell plugins`) is planned
 ([roadmap](roadmap.md), Phase 15).
 
 ### Your own modules
 
-Copy `static/module-template/` to `~/.config/hellmacs/modules/<group>/<name>/`,
-name it in its `.hellmacsmodule`, enable `:group name` in your block, sync.
-A module of yours with the same name as one of Hellmacs' replaces it. The
+Copy `static/module-template/` to `~/.config/hell-emacs/modules/<group>/<name>/`,
+name it in its `.hellmodule`, enable `:group name` in your block, sync.
+A module of yours with the same name as one of Hell Emacs' replaces it. The
 files a module can have are in [development.md](development.md#modules).
 
 ### Look and feel
 
-- **`:ui theme`**: `hellmacs-inferno`, Hellmacs' own theme.
-  `(setq hellmacs-theme 'modus-vivendi)` in `init.el` uses another; `nil`,
+- **`:ui theme`**: `hell-inferno`, Hell Emacs' own theme.
+  `(setq hell-theme 'modus-vivendi)` in `init.el` uses another; `nil`,
   none.
-- **The Altar (`*hellmacs*`)**: the native, dependency-free startup screen:
+- **The Altar (`*hell-emacs*`)**: the native, dependency-free startup screen:
   emblem banner (`assets/banners/`), 6 Workspace Core Action Buttons (`[Ignite File]`, `[Summon Project]`, `[Grimoires]`, `[Hell Shell]`, `[Grimoire Manual]`, `[IntelliJ Exorcism]`), stabilized dual columns for Recent Sacrifices & Active Forges, External Sanctums & Portals (`[Relic Chamber]`, `[Forge Source]`, `[Issue Sanctum]`, `[Release Grimoires]`, `[Dark Beacon]`), and GC benchmarking telemetry.
   `TAB`/`S-TAB` move between buttons, `RET` activates, `g` redraws, `q`/`ESC` dismisses,
-  `C-c h s` brings it back. `(setq hellmacs-splash-enable nil)` starts on `*scratch*`.
+  `C-c h s` brings it back. `(setq hell-splash-enable nil)` starts on `*scratch*`.
 - **`:ui modeline`**: the buffer and position; the language server's state
   (`JVM:ready`, `JVM:purgatory`), the debugger, the mode, the Git branch,
   flymake's counts.
 - **Icons** come from a Nerd Font; without one, text. `M-x
   nerd-icons-install-fonts` installs one. In a terminal, the Altar shows the
   ASCII sigil and both draw text, unless you set
-  `hellmacs-dashboard-tty-icons` and `hellmacs-modeline-tty-icons` to `t`.
+  `hell-dashboard-tty-icons` and `hell-modeline-tty-icons` to `t`.
 - **A neutral look** for workplaces that want one:
-  `(setq hellmacs-ux-enable nil)` gives stock quit prompts and messages.
+  `(setq hell-ux-enable nil)` gives stock quit prompts and messages.
 
 ---
 
 ## 3. Staying up to date & Updating Production
 
-Hellmacs provides dedicated commands to upgrade core, update packages, apply configuration changes, and freeze dependencies for production environments:
+Hell Emacs provides dedicated commands to upgrade core, update packages, apply configuration changes, and freeze dependencies for production environments:
 
 ### Common Update Workflows
 
 | Scenario | Command | What happens |
 |---|---|---|
-| **Full Production Upgrade** | `hellmacs upgrade` | Updates Hellmacs repository to latest release, updates packages, recompiles bytecode, and runs health checks |
-| **Update Packages Only** | `hellmacs upgrade --packages` | Updates installed packages without altering Hellmacs core version |
-| **Apply Config Changes** | `hellmacs sync` | Run after editing `init.el` or `packages.el` (or press `C-c h S` / `C-c h R` in Emacs) |
-| **Lock Dependencies** | `hellmacs lock` | Generates `packages.lock.eld` pinning exact commit SHAs for zero-drift deployments |
-| **Clean Unused Packages** | `hellmacs gc` | Purges orphaned packages no longer declared by your active modules |
-| **Version Inspection** | `hellmacs version` | Prints current version, commit hash, channel, and Emacs build info |
+| **Full Production Upgrade** | `hell upgrade` | Updates Hell Emacs repository to latest release, updates packages, recompiles bytecode, and runs health checks |
+| **Update Packages Only** | `hell upgrade --packages` | Updates installed packages without altering Hell Emacs core version |
+| **Apply Config Changes** | `hell sync` | Run after editing `init.el` or `packages.el` (or press `C-c h S` / `C-c h R` in Emacs) |
+| **Lock Dependencies** | `hell lock` | Generates `packages.lock.eld` pinning exact commit SHAs for zero-drift deployments |
+| **Clean Unused Packages** | `hell gc` | Purges orphaned packages no longer declared by your active modules |
+| **Version Inspection** | `hell version` | Prints current version, commit hash, channel, and Emacs build info |
 
 ---
 
 ### Step-by-Step Production Maintenance
 
-#### 1. Upgrading to a New Hellmacs Release
+#### 1. Upgrading to a New Hell Emacs Release
 ```sh
-hellmacs upgrade
+hell upgrade
 ```
 `upgrade` is fully automated and safe to run on production machines:
 1. Fetches the latest signed release tag on your chosen channel (`stable` by default).
@@ -212,16 +397,16 @@ hellmacs upgrade
 4. Executes `doctor` to ensure zero regressions before you restart Emacs.
 
 #### 2. Updating After Editing Your Config
-Whenever you add/remove modules in `~/.config/hellmacs/init.el` or add packages in `~/.config/hellmacs/packages.el`:
-- **From CLI**: `hellmacs sync`
+Whenever you add/remove modules in `~/.config/hell-emacs/init.el` or add packages in `~/.config/hell-emacs/packages.el`:
+- **From CLI**: `hell sync`
 - **From GUI/Terminal Emacs**: Press `C-c h S` (background sync) or `C-c h R` (sync and live reload).
 
 #### 3. Enterprise Reproducibility & Locking
 To guarantee identical, immutable environments across a whole team or CI/CD pipelines:
 ```sh
-hellmacs lock
+hell lock
 ```
-This writes `~/.config/hellmacs/packages.lock.eld`. When you commit and share this lockfile, every teammate's `hellmacs sync` will install the exact same commit for every package.
+This writes `~/.config/hell-emacs/packages.lock.eld`. When you commit and share this lockfile, every teammate's `hell sync` will install the exact same commit for every package.
 
 ---
 
@@ -235,9 +420,9 @@ without breaking (deprecations warn until the next MAJOR), MAJOR may remove
 what was deprecated or raise the minimum Emacs.
 
 **Channels.** `upgrade` follows `stable` by default, the latest release;
-`main` is the development branch. `hellmacs upgrade --channel main` for one
-run, or `(setq hellmacs-upgrade-channel 'main)` in `init.el`.
-`(setq hellmacs-upgrade-verify-tags t)` refuses tags not signed by a key in
+`main` is the development branch. `hell upgrade --channel main` for one
+run, or `(setq hell-upgrade-channel 'main)` in `init.el`.
+`(setq hell-upgrade-verify-tags t)` refuses tags not signed by a key in
 your GPG keyring. Your lock file applies on either channel.
 
 **Support.** Each release states the Emacs versions (29.1+), platforms and
@@ -249,41 +434,32 @@ petrolalucas@gmail.com, not in an issue.
 
 ## 4. Profiles
  
- A profile is a separate configuration with its own packages, caches and
- history. As in Doom, a directory is a profile: for `--profile NAME`,
- Hellmacs uses the first that exists of `~/.config/hellmacs-NAME/`,
- `~/.config/hellmacs/profiles/NAME/`, and `profiles/NAME/` in Hellmacs.
- 
--```sh
--hellmacs -p work sync        # set up the "work" profile
--hellmacs -p work emacs       # start Emacs on it (or: emacs --profile work)
--hellmacs profile list        # every profile, and whether it's synced
--```
--
--Its files are `~/.local/share/hellmacs-NAME/` and so on, never your default
--profile's. Hellmacs ships **`safe-mode`**: its core and nothing else, for
--finding what broke (see below).
-+### Profile Commands
-+
-+| Command | Description |
-+|---|---|
-+| `hellmacs profile list` | List every profile, sync status, and config path |
-+| `hellmacs profile create NAME [--in-tree]` | Create a profile with starter template files |
-+| `hellmacs profile sync NAME` / `sync --all` | Sync a specific profile or all profiles |
-+| `hellmacs profile delete NAME [-!]` | Delete a profile and its isolated data/cache directories |
-+| `hellmacs profile path NAME` | Print the resolved directory path of a profile |
-+
-+```sh
-+hellmacs profile create work --in-tree # create in-tree profile in profiles/work/
-+hellmacs -p work sync                  # sync packages and generate startup file
-+hellmacs -p work emacs                 # start Emacs on it (or: emacs --profile work)
-+```
-+
-+Its files are `~/.local/share/hellmacs-NAME/`, `~/.cache/hellmacs-NAME/`, and
-+`~/.local/state/hellmacs-NAME/`, completely isolated from your default profile.
-+
-+Hellmacs ships **`safe-mode`**: its core and nothing else, for finding what
-+broke (see below). For in-depth developer workflows, see [development.md](development.md#development-environments--workflows).
+A profile is a separate configuration with its own packages, caches and
+history. As in Doom, a directory is a profile: for `--profile NAME`,
+Hell Emacs uses the first that exists of `~/.config/hell-emacs-NAME/`,
+`~/.config/hell-emacs/profiles/NAME/`, and `profiles/NAME/` in Hell Emacs.
+
+### Profile Commands
+
+| Command | Description |
+|---|---|
+| `hell profile list` | List every profile, sync status, and config path |
+| `hell profile create NAME [--in-tree]` | Create a profile with starter template files |
+| `hell profile sync [NAME|--all]` | Sync a specific profile or all profiles |
+| `hell profile delete NAME [-!]` | Delete a profile and its isolated data/cache directories |
+| `hell profile path NAME` | Print the resolved directory path of a profile |
+
+```sh
+hell profile create work --in-tree # create in-tree profile in profiles/work/
+hell -p work sync                  # sync packages and generate startup file
+hell -p work emacs                 # start Emacs on it (or: emacs --profile work)
+```
+
+Its files are `~/.local/share/hell-emacs-NAME/`, `~/.cache/hell-emacs-NAME/`, and
+`~/.local/state/hell-emacs-NAME/`, completely isolated from your default profile.
+
+Hell Emacs ships **`safe-mode`**: its core and nothing else, for finding what
+broke (see below). For in-depth developer workflows, see [development.md](development.md#development-environments--workflows).
 
 ---
 
@@ -291,11 +467,11 @@ petrolalucas@gmail.com, not in an issue.
 
 | Directory | Holds | Safe to delete? |
 |---|---|---|
-| `~/.config/emacs/` | Hellmacs itself (the git checkout) | Reinstall it |
-| `~/.config/hellmacs/` | Your config | **No** |
-| `~/.local/share/hellmacs/` | Packages, language servers, the generated startup file (`profiles/default/`), the saved environment | Yes: `sync` rebuilds it |
-| `~/.cache/hellmacs/` | Native-compiled code, caches | Yes |
-| `~/.local/state/hellmacs/` | History, recent files, bookmarks, undo, backups | Yes, losing that history |
+| `~/.config/emacs/` | Hell Emacs itself (the git checkout) | Reinstall it |
+| `~/.config/hell-emacs/` | Your config | **No** |
+| `~/.local/share/hell-emacs/` | Packages, language servers, the generated startup file (`profiles/default/`), the saved environment | Yes: `sync` rebuilds it |
+| `~/.cache/hell-emacs/` | Native-compiled code, caches | Yes |
+| `~/.local/state/hell-emacs/` | History, recent files, bookmarks, undo, backups | Yes, losing that history |
 
 ---
 
@@ -304,56 +480,56 @@ petrolalucas@gmail.com, not in an issue.
 **Proxy, corporate CA, mirrors.** In `init.el`, then sync:
 
 ```elisp
-(setq hellmacs-proxy "http://proxy.corp.example:3128")   ; nil: $HTTPS_PROXY
-(setq hellmacs-no-proxy '("localhost" ".corp.example"))  ; nil: $NO_PROXY
-(setq hellmacs-ca-bundle "~/certs/corp-root-ca.pem")      ; added to the system's CAs
-(setq hellmacs-mirrors
+(setq hell-proxy "http://proxy.corp.example:3128")   ; nil: $HTTPS_PROXY
+(setq hell-no-proxy '("localhost" ".corp.example"))  ; nil: $NO_PROXY
+(setq hell-ca-bundle "~/certs/corp-root-ca.pem")      ; added to the system's CAs
+(setq hell-mirrors
       '(("https://github.com/" . "https://git.corp.example/github/")
         ("https://repo1.maven.org/maven2/" . "https://artifactory.corp.example/maven/")))
 ```
 
-The proxy and CA apply to all of Emacs; mirrors apply to what Hellmacs
+The proxy and CA apply to all of Emacs; mirrors apply to what Hell Emacs
 fetches (packages, servers, grammars, npm). Every pinned download is still
-checked by SHA-256, so a mirror can't serve a different file. `hellmacs
+checked by SHA-256, so a mirror can't serve a different file. `hell
 doctor` shows what's in use and checks each host can be reached through it
 (`doctor --network` does so without any setting).
 
 **No internet.** On a connected machine of the same platform and Emacs
-version: `hellmacs bundle hellmacs.tar.zst` (`--modules` packs another
-module set). On the offline one: `hellmacs install --from-bundle
-hellmacs.tar.zst`, which checks every file's SHA-256 and never touches the
+version: `hell bundle hell-bundle.tar.zst` (`--modules` packs another
+module set). On the offline one: `hell install --from-bundle
+hell-bundle.tar.zst`, which checks every file's SHA-256 and never touches the
 network.
 
-**Compliance.** `hellmacs sbom` writes a CycloneDX bill of materials of
-everything installed; `hellmacs licenses` reports each license and fails
-on an unknown one; `hellmacs verify` checks that nothing installed has
-changed since sync. Hellmacs sends no telemetry and turns off that of the
+**Compliance.** `hell sbom` writes a CycloneDX bill of materials of
+everything installed; `hell licenses` reports each license and fails
+on an unknown one; `hell verify` checks that nothing installed has
+changed since sync. Hell Emacs sends no telemetry and turns off that of the
 tools it installs (docker-language-server's, SonarLint's, clojure-lsp's
 ClojureDocs download); it only goes online during `sync`, `install`,
 `upgrade` and `doctor --network`.
 
 **Rolling out.** Clone at a release tag, share a `packages.lock.eld`
-(`hellmacs lock`) with the team's `init.el`, and install with
-`hellmacs -! install` (no prompts). A team layer and `install --team URL`
+(`hell lock`) with the team's `init.el`, and install with
+`hell -! install` (no prompts). A team layer and `install --team URL`
 are planned ([roadmap](roadmap.md), 12.8).
 
 ---
 
 ## 7. When something breaks
 
-1. **`hellmacs doctor`**: checks Emacs, tools, your config, every module's
+1. **`hell doctor`**: checks Emacs, tools, your config, every module's
    needs, and whether you forgot to sync.
 2. **Did you sync?** Emacs starts plain, with a warning, until the first
    sync; after config changes it keeps starting as the last sync left it.
-3. **`safe-mode`**: Hellmacs without your modules and config.
+3. **`safe-mode`**: Hell Emacs without your modules and config.
    ```sh
-   hellmacs -p safe-mode sync && hellmacs -p safe-mode emacs
+   hell -p safe-mode sync && hell -p safe-mode emacs
    ```
    If that works, add your modules back one at a time.
-4. **`hellmacs emacs --vanilla`**: plain Emacs (`emacs -Q`), to tell a
-   Hellmacs problem from an Emacs one.
-5. **`hellmacs -D ...`** or `DEBUG=1 emacs`: backtraces and debug output.
-6. **Reporting a bug:** include `hellmacs info`'s output.
+4. **`hell emacs --vanilla`**: plain Emacs (`emacs -Q`), to tell a
+   Hell Emacs problem from an Emacs one.
+5. **`hell -D ...`** or `DEBUG=1 emacs`: backtraces and debug output.
+6. **Reporting a bug:** include `hell info`'s output.
 
 JVM projects that won't import: see the [JVM guide](jvm.md#when-a-project-wont-import).
 
@@ -362,13 +538,13 @@ JVM projects that won't import: see the [JVM guide](jvm.md#when-a-project-wont-i
 `!` is a warning (something optional is missing), `✗` an error (something
 won't work; `doctor` then exits with a failure). Each prints a `see` line
 pointing to its entry below, in your own copy of this guide. After any
-fix, run `hellmacs doctor` again.
+fix, run `hell doctor` again.
 
 #### Doctor: Emacs
 
-- **Emacs is too old:** Hellmacs needs Emacs 29.1 or newer. Install it
+- **Emacs is too old:** Hell Emacs needs Emacs 29.1 or newer. Install it
   from your package manager (or Homebrew's `emacs-plus` on macOS), then
-  `hellmacs sync`: each Emacs version gets its own synced init file.
+  `hell sync`: each Emacs version gets its own synced init file.
 - **A development build:** a snapshot Emacs (a version ending in `.50`
   and up) works, but packages may break on it. Use a release if they do.
 - **No tree-sitter support**, which `+tree-sitter` needs: this Emacs was
@@ -379,8 +555,8 @@ fix, run `hellmacs doctor` again.
 
 #### Doctor: platform
 
-- **Hellmacs or your config on a Windows mount (`/mnt/...`)** under WSL2:
-  every file read crosses to Windows and is slow. Clone Hellmacs and keep
+- **Hell Emacs or your config on a Windows mount (`/mnt/...`)** under WSL2:
+  every file read crosses to Windows and is slow. Clone Hell Emacs and keep
   your config under your Linux home (`~/`).
 
 #### Doctor: tools
@@ -390,7 +566,7 @@ fix, run `hellmacs doctor` again.
   a warning means only that feature is missing, an error that the module
   can't work.
 - **Found in a terminal, not in GUI Emacs:** a GUI launcher doesn't read
-  your shell's PATH. Run `hellmacs env` in a terminal, then restart Emacs.
+  your shell's PATH. Run `hell env` in a terminal, then restart Emacs.
 - **Node or Git too old:** the message says the minimum; upgrade it.
 - **No C compiler** (`cc`, `gcc` or `clang`): tree-sitter grammars are
   built from source. Install your system's build tools (`build-essential`,
@@ -398,17 +574,17 @@ fix, run `hellmacs doctor` again.
 
 #### Doctor: JDK
 
-- **No JDK to run JDTLS**, or `hellmacs-jvm-java-home` is the wrong one:
+- **No JDK to run JDTLS**, or `hell-jvm-java-home` is the wrong one:
   the Java server runs on the releases the message names. Install one
-  (SDKMAN, your package manager), then `hellmacs sync`; or point
-  `hellmacs-jvm-java-home` at one in your `config.el`.
+  (SDKMAN, your package manager), then `hell sync`; or point
+  `hell-jvm-java-home` at one in your `config.el`.
 - **A server or tool needs a JDK 11+ (or 17+)** and none is found: set
   `JAVA_HOME`, put `java` on the PATH, or install one; for GUI Emacs, also
-  run `hellmacs env`.
-- **`hellmacs-jdks` names a JDK wrongly:** each entry's name must be its
+  run `hell env`.
+- **`hell-jdks` names a JDK wrongly:** each entry's name must be its
   release, as JDTLS spells it (`("JavaSE-17" . "/opt/jdk-17")`).
 - **JDKs not known to JDTLS yet:** you installed some since the last
-  sync; `hellmacs sync` stores them. See the JVM guide's
+  sync; `hell sync` stores them. See the JVM guide's
   [Several JDKs](jvm.md#several-jdks).
 
 #### Doctor: toolchains
@@ -425,42 +601,42 @@ fix, run `hellmacs doctor` again.
 #### Doctor: installs
 
 - **Not installed yet / not the pinned release / fails its SHA-256
-  check:** `hellmacs sync` installs or replaces it. Language servers,
+  check:** `hell sync` installs or replaces it. Language servers,
   grammars, jars and the JVM truststore are all installed by sync, never
   while you edit.
-- **No pinned build for this platform:** Hellmacs has no checksummed
+- **No pinned build for this platform:** Hell Emacs has no checksummed
   release of that tool for your OS and CPU. Install it yourself and put
-  it on the PATH; Hellmacs uses the one it finds there.
+  it on the PATH; Hell Emacs uses the one it finds there.
 - **Sync can't download** (offline, or a blocked host): see
   [Doctor: network](#doctor-network), or install from an offline bundle
-  (`hellmacs bundle`).
+  (`hell bundle`).
 
 #### Doctor: network
 
 - **A certificate isn't trusted:** your network inspects TLS. Set
-  `hellmacs-ca-bundle` to your company's CA (a PEM file) in `config.el`,
-  then `hellmacs sync`, which also builds the JVM's truststore from it.
-- **`hellmacs-ca-bundle` can't be read or holds no certificate:** check
+  `hell-ca-bundle` to your company's CA (a PEM file) in `config.el`,
+  then `hell sync`, which also builds the JVM's truststore from it.
+- **`hell-ca-bundle` can't be read or holds no certificate:** check
   the path, and that the file is PEM (`-----BEGIN CERTIFICATE-----`).
-- **Can't reach a host / through the proxy:** set `hellmacs-proxy` (with
+- **Can't reach a host / through the proxy:** set `hell-proxy` (with
   its credentials if it needs them), or map the host to an internal
-  mirror with `hellmacs-mirrors`. The details are in
+  mirror with `hell-mirrors`. The details are in
   [Companies](#6-companies-networks-offline-machines-compliance).
 
 #### Doctor: config
 
 - **A module needs another** ("Needs :tools lsp; add it to your
-  hellmacs! block"): add that module to `init.el`, then `hellmacs sync`.
+  hell! block"): add that module to `init.el`, then `hell sync`.
 - **Without `:completion corfu`**, or **no module supplies a debug
   adapter**: those features are missing until you enable the module the
   message names.
-- **`hellmacs-maven-settings` can't be read:** fix the path in your
+- **`hell-maven-settings` can't be read:** fix the path in your
   `config.el`, or remove the setting to use `~/.m2/settings.xml`.
 
 #### Doctor: sync
 
 - **Not synced yet** or **out of sync** (it says what changed): run
-  `hellmacs sync`, or `C-c h S` inside Emacs, then restart Emacs. Startup
+  `hell sync`, or `C-c h S` inside Emacs, then restart Emacs. Startup
   only replays the last sync, so a changed `init.el`, `packages.el` or
   module isn't used until then.
 
@@ -468,12 +644,12 @@ fix, run `hellmacs doctor` again.
 
 - **No Nerd Font:** icons in the dashboard and modeline show as boxes.
   Run `M-x nerd-icons-install-fonts`, or install a Nerd Font from your
-  distribution; Hellmacs never installs fonts itself.
+  distribution; Hell Emacs never installs fonts itself.
 
 #### Doctor: checkout
 
-- **`var/` or `etc/` left over from an older Hellmacs:** nothing uses
+- **`var/` or `etc/` left over from an older Hell Emacs:** nothing uses
   them; delete them.
-- **A file of Hellmacs itself is missing** (a dashboard banner in
+- **A file of Hell Emacs itself is missing** (a dashboard banner in
   `assets/`): your checkout is incomplete. `git status` in it shows what
   changed; `git checkout -- assets/` restores it.

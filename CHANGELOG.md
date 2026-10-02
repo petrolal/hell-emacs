@@ -1,8 +1,8 @@
 # Changelog
 
-What changed in each Hellmacs release, newest first. Hellmacs follows
+What changed in each Hell Emacs release, newest first. Hell Emacs follows
 [Semantic Versioning](https://semver.org/): a release is the git tag
-`vMAJOR.MINOR.PATCH`, and `hellmacs-version` (in `lisp/hellmacs-lib.el`)
+`vMAJOR.MINOR.PATCH`, and `hell-version` (in `lisp/hell-lib.el`)
 carries its number. Which Emacs versions and platforms each release
 supports, and how long it gets security fixes, is in
 [the guide](docs/guide.md#3-staying-up-to-date).
@@ -16,10 +16,10 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Added
 
-- The module system (`hellmacs!`, `modulep!`, `package!`), Elpaca, and a
+- The module system (`hell!`, `modulep!`, `package!`), Elpaca, and a
   synced profile that startup replays: compiled core and modules, one
   autoloads file, startup well under its 0.12s budget.
-- `bin/hellmacs`: `install`, `sync`, `upgrade`, `lock`, `bundle` (offline
+- `bin/hell`: `install`, `sync`, `upgrade`, `lock`, `bundle` (offline
   installs), `doctor`, `env`, `gc`, `config`, `sbom`, `licenses`, `test`,
   and `version`.
 - Java through Eclipse JDTLS (Lombok, Spring Boot's language server),
@@ -34,11 +34,19 @@ The first tagged release will be 0.9.0. Since the project started
 - Corporate networks: proxy, CA bundle, mirrors, offline bundles.
 - Several JDKs side by side, per-project toolchains, direnv.
 - A CycloneDX SBOM and a license report of everything installed.
-- Update channels: `bin/hellmacs upgrade --channel stable|main`, stable
+- Update channels: `bin/hell upgrade --channel stable|main`, stable
   (the latest release) by default.
 
 ### Changed
 
+- Hellmacs is now Hell Emacs: every `hellmacs-` symbol is `hell-`, the
+  CLI is `bin/hell`, core's module is `:hell`, the catalog is
+  `sources/hell+/`, module and project files are `.hellmodule` and
+  `.hell-emacs`, the environment variables are `HELLDIR`, `HELLPATH`,
+  `HELL_PROFILE` and `HELL_TEAM_DIR`, and your config lives in
+  `~/.config/hell-emacs/` (a named profile in `~/.config/hell-emacs-NAME/`).
+  The old names don't work any more: move `~/.config/hellmacs/` to
+  `~/.config/hell-emacs/` and run `bin/hell sync`.
 - The documentation is six files: docs/guide.md (from getting-started,
   configuration, releases and profiles), docs/jvm.md, docs/keybindings.md
   (now from the real bindings), docs/cli.md, docs/development.md (from
@@ -49,7 +57,7 @@ The first tagged release will be 0.9.0. Since the project started
   keys only. `C-c c` is the code group (compile, xref, documentation,
   errors; with a language server also code actions, rename, organize
   imports, format), and lsp-mode's map moved from `C-c l` to `C-c c l`.
-  `C-c l` is now the localleader (`hellmacs-localleader-def`): Java's
+  `C-c l` is now the localleader (`hell-localleader-def`): Java's
   commands (`C-c l j X` is now `C-c l X`), Groovy's classpath, and in JVM
   sources the tests (`C-c l t t` / `t T`, and the results and coverage
   that were on `C-c t`). `C-c t` toggles built-in modes. `C-c s` has
@@ -75,50 +83,56 @@ The first tagged release will be 0.9.0. Since the project started
   named as the reason for a failed import; and after an import JDTLS's
   unresolved dependencies are listed.
 - Every `doctor` warning and error points to its troubleshooting entry
-  (`see ~/hellmacs/docs/guide.md#doctor-jdk`): eleven entries in the
+  (`see ~/hell-emacs/docs/guide.md#doctor-jdk`): eleven entries in the
   guide's new "What doctor's messages mean". Module doctors can do the same
-  with a leading `:topic` in `hellmacs-doctor-warn` / `-error`.
-- Hellmacs has no test suites any more: `bin/hellmacs test`, test/ and the
-  budgets workflow are gone, and CI installs Hellmacs and runs `doctor`,
+  with a leading `:topic` in `hell-doctor-warn` / `-error`.
+- Hell Emacs has no test suites any more: `bin/hell test`, test/ and the
+  budgets workflow are gone, and CI installs Hell Emacs and runs `doctor`,
   `licenses` and `sbom`.
 
 - Startup, packages, the CLI and installing now work as Doom Emacs v3's.
-  Core loads from early-init.el (`hellmacs-initialize`), and the entry point
-  in lisp/hellmacs-emacs.el loads the profile's generated init file, now
+  Core loads from early-init.el (`hell-initialize`), and the entry point
+  in lisp/hell-emacs.el loads the profile's generated init file, now
   `init.MAJOR.MINOR.el`, built from numbered `init.d/` parts that run on
-  `hellmacs-startup-functions`. Startup no longer installs packages or reads
-  packages.el: after changing your modules or packages, run `bin/hellmacs
+  `hell-startup-functions`. Startup no longer installs packages or reads
+  packages.el: after changing your modules or packages, run `bin/hell
   sync`, as with `doom sync`. Without a sync, Emacs starts plain and says so.
-  lisp/hellmacs-start.el is gone.
+  lisp/hell-start.el is gone.
 - `package!` takes `:ignore` and `:type`; `unpin!` and `disable-packages!`
   are new; modules can hold `autoload/*.el`; module init and config hooks.
-- `bin/hellmacs`: options before the command (`-p`, `--hellmacsdir`, `-D`,
+- `bin/hell`: options before the command (`-p`, `--helldir`, `-D`,
   `-!`), short names (`s`, `up`, `doc`, `pf`), Doom's exit codes, a refusal
-  to run as root, commands from your `bin/` and `$HELLMACSPATH`, the new
-  `emacs`, `info` and `profile` commands, and `bin/hellmacs.sh`. `install`
+  to run as root, commands from your `bin/` and `$HELLPATH`, the new
+  `emacs`, `info` and `profile` commands, and `bin/hell.sh`. `install`
   takes `--[no-]config`, `--[no-]env` (it asks otherwise) and
   `--[no-]install`, and warns about a `~/.emacs` that would win.
 - Layout: sync is in lisp/cli/sync.el, the `C-c` leader API is core's
   module's `autoload/keybinds.el`, and the dashboard, modeline and
-  hellmacs-inferno theme live in their modules. `C-c h R` syncs, then
+  hell-inferno theme live in their modules. `C-c h R` syncs, then
   reloads.
 
 - Doom Emacs v3's architecture and layout (Phase 16). The engine is in
   `lisp/` (was `core/`), with `lisp/lib/` and `lisp/cli/` loaded through
-  `hellmacs-require`; core's own features are a module, `modules/hellmacs/`
-  (`:hellmacs`); the module catalog is `sources/hellmacs+/modules/` (was
-  `modules/<group>/`); each command is `bin/hellmacs-COMMAND`; modules carry a
-  `.hellmacsmodule` and the project a `.hellmacs`; `profiles/` ships a
+  `hell-require`; core's own features are a module, `modules/hell/`
+  (`:hell`); the module catalog is `sources/hell+/modules/` (was
+  `modules/<group>/`); each command is `bin/hell-COMMAND`; modules carry a
+  `.hellmodule` and the project a `.hell-emacs`; `profiles/` ships a
   `safe-mode` profile, and a directory is a profile.
 - There is no `init.el` in the checkout any more: `sync` generates each
-  profile's, and Emacs starts from `lisp/hellmacs-start.el` until it has.
-  Batch scripts start with `emacs --batch -l early-init.el -f hellmacs-start`
+  profile's, and Emacs starts from `lisp/hell-start.el` until it has.
+  Batch scripts start with `emacs --batch -l early-init.el -f hell-start`
   instead of `-l init.el`.
-- `(require 'hellmacs-jdk)`, `hellmacs-net`, `hellmacs-lsp-status` and the
+- `(require 'hell-jdk)`, `hell-net`, `hell-lsp-status` and the
   other moved libraries no longer load that way: use
-  `(hellmacs-require 'hellmacs-lib 'jdk)`.
-- An empty `(hellmacs!)` block now enables no module; only an `init.el`
+  `(hell-require 'hell-lib 'jdk)`.
+- An empty `(hell!)` block now enables no module; only an `init.el`
   without a block gets the defaults.
+
+### Fixed
+
+- `bin/hell` runs under any POSIX `sh`: it used bash arrays, so on Debian
+  and Ubuntu, whose `sh` is dash, every command failed with
+  `Syntax error: "(" unexpected`.
 
 ### Security
 
@@ -127,6 +141,6 @@ The first tagged release will be 0.9.0. Since the project started
 - No telemetry: docker-language-server's (on by default) is turned off,
   and clojure-lsp no longer downloads ClojureDocs at startup. A test fails
   if code outside `lisp/lib/net.el` reaches the network.
-- `bin/hellmacs env` no longer saves tokens, passwords or API keys, and
+- `bin/hell env` no longer saves tokens, passwords or API keys, and
   writes the file readable by you only.
 - The JDBC password no longer lands in sqlline's history file.

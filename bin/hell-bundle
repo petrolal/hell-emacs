@@ -1,0 +1,57 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-bundle --- Offline bundles: make one, or install from one -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell bundle' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli-bundle (&rest args)
+  "Sync, then pack everything installed into an offline bundle.
+ARGS: the bundle's file name, and optionally --modules SPEC (read
+before this runs, by `hell-cli-main')."
+  (let* ((spec (hell-cli--option args "--modules"))
+         (files (remove spec (seq-remove (lambda (a) (string-prefix-p "-" a)) args)))
+         (out (car files)))
+    (unless (and out (null (cdr files)))
+      (error "Usage: bin/hell bundle OUT.tar.zst [--modules SPEC]"))
+    (hell-sync)
+    (hell-cli--say "Packing the bundle...")
+    (let ((manifest (hell-bundle-create out)))
+      (hell-cli--say "Bundled %d files (%s before compression) into %s"
+                         (cl-count :file (plist-get manifest :entries) :key #'cadr)
+                         (file-size-human-readable (hell-bundle-size manifest))
+                         (abbreviate-file-name (expand-file-name out)))
+      (hell-cli--say "  For %s, Emacs %s; modules: %s"
+                         (plist-get manifest :platform) emacs-major-version
+                         (mapconcat (lambda (m) (hell-bundle--module-string (car m) (cadr m)))
+                                    (plist-get manifest :modules) ", "))
+      (hell-cli--say "  SHA-256: %s" (hell-file-sha256 out))
+      (hell-cli--say "Install it with:  bin/hell install --from-bundle %s" (file-name-nondirectory out))
+      (when spec
+        (hell-cli--say "\nNote: this machine's profile is now synced for those modules; \
+`bin/hell sync' goes back to yours. (`bin/hell --profile NAME bundle ...' keeps them apart.)")))))
+
+;;; hell-bundle ends here

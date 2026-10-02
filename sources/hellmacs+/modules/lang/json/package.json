@@ -1,8 +1,0 @@
-{
-  "name": "hellmacs-lang-json",
-  "private": true,
-  "description": "The vscode-langservers-extracted server :lang json pins; bin/hellmacs sync installs it with npm ci.",
-  "dependencies": {
-    "vscode-langservers-extracted": "4.10.0"
-  }
-}

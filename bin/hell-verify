@@ -1,0 +1,50 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-verify --- Check what sync installed is as it left it -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell verify' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli-verify (&rest _)
+  "Check that everything sync installed is still as it left it.
+And as the lock file pins it. Every installed file against the SHA-256 sync recorded, every package
+against its commit (and your lock file); fails on any difference."
+  (let* ((manifest (hell-profile-file "installed.eld"))
+         (lock (and (file-exists-p hell-lock-file) hell-lock-file))
+         (problems (hell-verify-problems manifest lock)))
+    (if problems
+        (progn
+          (hell-cli--say "Not as sync installed it:")
+          (dolist (problem problems)
+            (hell-cli--check 'error "%s" problem))
+          (hell-cli--say "Delete what changed (a server's directory, a jar) and run `bin/hell sync': \
+it reinstalls what's missing. Undo a package's local changes with git, in its directory."))
+      (pcase-let ((`(,files . ,packages) (hell-verify-summary manifest)))
+        (hell-cli--check 'ok "%d files and %d package%s are as sync installed them%s"
+                             files packages (if (= packages 1) "" "s")
+                             (if lock ", and as your lock file pins them" ""))))))
+
+;;; hell-verify ends here

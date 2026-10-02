@@ -3,17 +3,17 @@
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
 ;; Author: petrolal <petrolalucas@gmail.com>
-;; URL: https://github.com/petrolal/hellmacs
+;; URL: https://github.com/petrolal/hell-emacs
 ;; License: GPL-3.0-or-later
 ;;
-;; This file is part of Hellmacs.
+;; This file is part of Hell Emacs.
 ;;
-;; Hellmacs is free software: you can redistribute it and/or modify
+;; Hell Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 ;;
-;; Hellmacs is distributed in the hope that it will be useful,
+;; Hell Emacs is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
@@ -21,18 +21,18 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; IntelliJ IDEA and Eclipse to Hellmacs cheat sheet and interactive
-;; search tool (`M-x hellmacs-where-is-intellij' on `C-c h k' or `C-c h ?').
+;; IntelliJ IDEA and Eclipse to Hell Emacs cheat sheet and interactive
+;; search tool (`M-x hell-where-is-intellij' on `C-c h k' or `C-c h ?').
 ;;
-;; Loaded on demand through `(hellmacs-require 'hellmacs-lib 'intellij)'.
+;; Loaded on demand through `(hell-require 'hell-lib 'intellij)'.
 
 ;;; Code:
 
-(defconst hellmacs-intellij-actions
+(defconst hell-intellij-actions
   '(;; Finding things
     (:action "Any command / Action search"
      :intellij "Ctrl+Shift+A" :eclipse "Ctrl+3" :key "M-x" :command execute-extended-command
-     :category "Finding" :doc "Run any Emacs or Hellmacs command by name with fuzzy completion.")
+     :category "Finding" :doc "Run any Emacs or Hell Emacs command by name with fuzzy completion.")
     (:action "Find file in project"
      :intellij "Ctrl+Shift+N" :eclipse "Ctrl+Shift+R" :key "C-x p f" :command project-find-file
      :category "Finding" :doc "Fuzzy find and open any file in the current project (or C-c h f / C-c p f).")
@@ -157,22 +157,22 @@
      :intellij "Ctrl+F9" :eclipse "Ctrl+B" :key "C-x p c" :command project-compile
      :category "Build & Debug" :doc "Build project using Maven/Gradle wrapper with clickable errors (or C-c c c).")
     (:action "Run configuration"
-     :intellij "Shift+F10" :eclipse "Ctrl+F11" :key "C-c r r" :command hellmacs-run
-     :category "Build & Debug" :doc "Run a saved run configuration (.run/, .launch, or .hellmacs/run.eld).")
+     :intellij "Shift+F10" :eclipse "Ctrl+F11" :key "C-c r r" :command hell-run
+     :category "Build & Debug" :doc "Run a saved run configuration (.run/, .launch, or .hell-emacs/run.eld).")
     (:action "Debug configuration"
-     :intellij "Shift+F9" :eclipse "F11" :key "C-c r d" :command hellmacs-run-debug
+     :intellij "Shift+F9" :eclipse "F11" :key "C-c r d" :command hell-run-debug
      :category "Build & Debug" :doc "Debug run configuration under DAP debugger.")
     (:action "Rerun last configuration"
-     :intellij "Ctrl+F5" :eclipse "Ctrl+F11" :key "C-c r l" :command hellmacs-run-last
+     :intellij "Ctrl+F5" :eclipse "Ctrl+F11" :key "C-c r l" :command hell-run-last
      :category "Build & Debug" :doc "Rerun the last launched configuration.")
     (:action "Run test at point / class"
-     :intellij "Ctrl+Shift+F10" :eclipse "Alt+Shift+X T" :key "C-c l t t" :command hellmacs-test-at-point
+     :intellij "Ctrl+Shift+F10" :eclipse "Alt+Shift+X T" :key "C-c l t t" :command hell-test-at-point
      :category "Build & Debug" :doc "Run the test method at point (or C-c l t T for entire test class).")
     (:action "View test results / Rerun failures"
-     :intellij "Alt+4" :eclipse "JUnit View" :key "C-c l t r" :command hellmacs-test-results
+     :intellij "Alt+4" :eclipse "JUnit View" :key "C-c l t r" :command hell-test-results
      :category "Build & Debug" :doc "Open JUnit test results view (C-c l t f to rerun failures).")
     (:action "Run with coverage"
-     :intellij "Run with Coverage" :eclipse "—" :key "C-c l t c" :command hellmacs-test-coverage
+     :intellij "Run with Coverage" :eclipse "—" :key "C-c l t c" :command hell-test-coverage
      :category "Build & Debug" :doc "Execute tests with JaCoCo coverage gutters (C-c l t s to show).")
     (:action "Toggle breakpoint"
      :intellij "Ctrl+F8" :eclipse "Ctrl+Shift+B" :key "C-c d b" :command dap-breakpoint-toggle
@@ -193,7 +193,7 @@
      :intellij "Alt+F8" :eclipse "Ctrl+Shift+I" :key "C-c d E" :command dap-eval
      :category "Build & Debug" :doc "Evaluate expression in current debug frame (or C-c d e for point).")
     (:action "Hot-swap / Reload classes"
-     :intellij "Ctrl+F9 (while debugging)" :eclipse "Save (debugging)" :key "C-c h r" :command hellmacs-crucible-reload
+     :intellij "Ctrl+F9 (while debugging)" :eclipse "Save (debugging)" :key "C-c h r" :command hell-crucible-reload
      :category "Build & Debug" :doc "The Crucible: hot-swap changed bytecode into the debugged JVM.")
 
     ;; Git and Tools
@@ -207,7 +207,7 @@
      :intellij "Alt+F12" :eclipse "—" :key "C-x p s" :command project-shell
      :category "Git & Tools" :doc "Open shell buffer in project root (or C-x p e for eshell).")
     (:action "Database connections (JDBC)"
-     :intellij "Database Tool Window" :eclipse "DTP" :key "C-c o d" :command hellmacs-db
+     :intellij "Database Tool Window" :eclipse "DTP" :key "C-c o d" :command hell-db
      :category "Git & Tools" :doc "Connect to database over JDBC, execute SQL, and inspect tables.")
     (:action "Docker / Containers"
      :intellij "Services / Docker" :eclipse "Docker Tooling" :key "C-c o d" :command docker
@@ -216,11 +216,11 @@
      :intellij "Services / Kubernetes" :eclipse "—" :key "C-c o k" :command kubel
      :category "Git & Tools" :doc "Inspect pods, logs, deployments, and port-forwards.")
     (:action "Settings / Preferences"
-     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-c h u" :command hellmacs-visit-user-dir
-     :category "Editor & UI" :doc "Open user configuration directory (~/.config/hellmacs/)."))
-  "Complete registry of IntelliJ IDEA / Eclipse actions and their Hellmacs key equivalents.")
+     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-c h u" :command hell-visit-user-dir
+     :category "Editor & UI" :doc "Open user configuration directory (~/.config/hell-emacs/)."))
+  "Complete registry of IntelliJ IDEA / Eclipse actions and their Hell Emacs key equivalents.")
 
-(defun hellmacs-intellij--format-candidate (entry max-action max-intellij max-key)
+(defun hell-intellij--format-candidate (entry max-action max-intellij max-key)
   "Format an ENTRY with aligned columns."
   (let* ((action (or (plist-get entry :action) ""))
          (intellij (or (plist-get entry :intellij) ""))
@@ -236,8 +236,8 @@
             category)))
 
 ;;;###autoload
-(defun hellmacs-where-is-intellij (&optional query)
-  "Look up any IntelliJ IDEA or Eclipse key/action and discover its Hellmacs shortcut.
+(defun hell-where-is-intellij (&optional query)
+  "Look up any IntelliJ IDEA or Eclipse key/action and discover its Hell Emacs shortcut.
 When invoked interactively, opens a searchable fuzzy prompt.
 Selecting a candidate displays full documentation and offers to run the command."
   (interactive)
@@ -246,10 +246,10 @@ Selecting a candidate displays full documentation and offers to run the command.
          (max-key 20)
          (table
           (mapcar (lambda (entry)
-                    (cons (hellmacs-intellij--format-candidate entry max-action max-intellij max-key)
+                    (cons (hell-intellij--format-candidate entry max-action max-intellij max-key)
                           entry))
-                  hellmacs-intellij-actions))
-         (prompt (if query (format "Hellmacs key for [%s]: " query) "Where is IntelliJ action / key: "))
+                  hell-intellij-actions))
+         (prompt (if query (format "Hell Emacs key for [%s]: " query) "Where is IntelliJ action / key: "))
          (choice (completing-read prompt (mapcar #'car table) nil t query))
          (entry (cdr (assoc choice table))))
     (when entry
@@ -260,20 +260,20 @@ Selecting a candidate displays full documentation and offers to run the command.
              (cmd (plist-get entry :command))
              (doc (plist-get entry :doc))
              (category (plist-get entry :category))
-             (msg (format "[%s] %s\n  • Hellmacs Key:   %s\n  • Command:        %s\n  • IntelliJ Key:   %s\n  • Eclipse Key:    %s\n\n%s"
+             (msg (format "[%s] %s\n  • Hell Emacs Key:   %s\n  • Command:        %s\n  • IntelliJ Key:   %s\n  • Eclipse Key:    %s\n\n%s"
                           category action (propertize key 'face 'highlight) cmd intellij eclipse doc)))
         (message "%s" msg)
         (when (and (fboundp cmd)
                    (y-or-n-p (format "Run `%s' now? " cmd)))
           (call-interactively cmd))))))
 
-(defun hellmacs-open-user-dir ()
-  "Open `hellmacs-user-dir' in Dired (alias for `hellmacs-visit-user-dir')."
+(defun hell-open-user-dir ()
+  "Open `hell-user-dir' in Dired (alias for `hell-visit-user-dir')."
   (interactive)
-  (if (fboundp 'hellmacs-visit-user-dir)
-      (call-interactively #'hellmacs-visit-user-dir)
-    (dired hellmacs-user-dir)))
+  (if (fboundp 'hell-visit-user-dir)
+      (call-interactively #'hell-visit-user-dir)
+    (dired hell-user-dir)))
 
-(hellmacs-provide 'hellmacs-lib 'intellij)
+(hell-provide 'hell-lib 'intellij)
 
 ;;; intellij.el ends here

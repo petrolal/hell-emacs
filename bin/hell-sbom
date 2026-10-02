@@ -1,0 +1,47 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-sbom --- The software bill of materials (CycloneDX) -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell sbom' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli-sbom (&rest args)
+  "Write a CycloneDX bill of materials of everything installed.
+ARGS: the file to write it to; without one, it goes to stdout."
+  (let ((files (seq-remove (lambda (a) (string-prefix-p "-" a)) args)))
+    (when (cdr files)
+      (error "Usage: bin/hell sbom [OUT.json]"))
+    (let* ((components (hell-compliance-components))
+           (json (let ((json-encoding-pretty-print t))
+                   (json-encode (hell-compliance-cyclonedx-sbom components)))))
+      (if-let* ((out (car files)))
+          (progn
+            (with-temp-file out (insert json "\n"))
+            (hell-cli--say "Wrote %d components to %s" (length components)
+                           (abbreviate-file-name (expand-file-name out))))
+        (hell-cli--say "%s" json)))))
+
+;;; hell-sbom ends here

@@ -1,0 +1,192 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-profile --- List and sync profiles -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell profile' (Doom's `doom profile'): the profiles there are,
+;; and syncing all of them. A profile is a directory (Doom v3's implicit
+;; profiles; see `hell--user-dir' in early-init.el):
+;;
+;;   ~/.config/hell-emacs-NAME/      your own
+;;   ~/.config/hell-emacs/profiles/NAME/   kept with your config
+;;   profiles/NAME/ in Hell Emacs          the ones Hell Emacs ships (safe-mode)
+;;
+;; Loaded by `hell-cli-main' when the command runs, or run directly
+;; through bin/hellscript. Lives outside `load-path'; see
+;; `hell-cli-load'.
+
+;;; Code:
+
+(require 'hell-profiles)
+
+(defun hell-cli-profile--names ()
+  "The names of every profile there is, the default one (nil) first."
+  (let* ((config (or (getenv "XDG_CONFIG_HOME") "~/.config"))
+         (default-user-dir (hell--user-dir nil))
+         (explicit (mapcar #'car (hell--read-profiles-el default-user-dir)))
+         (names
+          (append
+           explicit
+           (mapcar (lambda (dir) (substring (file-name-nondirectory (directory-file-name dir))
+                                            (length "hell-emacs-")))
+                   (seq-filter #'file-directory-p
+                               (file-expand-wildcards (expand-file-name "hell-emacs-*" config))))
+           (mapcar (lambda (dir) (file-name-nondirectory (directory-file-name dir)))
+                   (seq-filter #'file-directory-p
+                               (append
+                                (file-expand-wildcards
+                                 (expand-file-name "profiles/*" default-user-dir))
+                                (file-expand-wildcards (expand-file-name "profiles/*" hell-dir))))))))
+    (cons nil (sort (delete-dups (seq-filter (lambda (name)
+                                               (and name (string-match-p "\\`[A-Za-z0-9_-]+\\'" (if (symbolp name) (symbol-name name) name))))
+                                             (mapcar (lambda (x) (if (symbolp x) (symbol-name x) x)) names)))
+                    #'string<))))
+
+(defun hell-cli-profile--init-file (name)
+  "Profile NAME's generated init file (NAME nil: the default profile's)."
+  (expand-file-name
+   (format "%s/profiles/%s/init.%d.%d.el" (if name (concat "hell-emacs-" name) "hell-emacs")
+           (or name "default") emacs-major-version emacs-minor-version)
+   (or (getenv "XDG_DATA_HOME") "~/.local/share")))
+
+(defun hell-cli-profile--run (&rest args)
+  "Run bin/hell with ARGS, its output going to ours; return its exit code."
+  (let* ((done nil)
+         (proc (make-process
+                :name "hell-profile" :noquery t :connection-type 'pipe
+                :command (cons (expand-file-name "bin/hell" hell-dir) args)
+                :filter (lambda (_ output) (princ output))
+                :sentinel (lambda (_ _) (setq done t)))))
+    (while (not done)
+      (accept-process-output proc 0.1))
+    (process-exit-status proc)))
+
+(defun hell-cli-profile--create (name &optional in-tree no-sync)
+  "Create a new profile named NAME.
+With IN-TREE, create in profiles/NAME/ inside the repository;
+otherwise create in ~/.config/hell-emacs-NAME/."
+  (unless (and name (string-match-p "\\`[A-Za-z0-9_-]+\\'" name))
+    (user-error "Invalid profile name `%s' (use letters, digits, - and _)" name))
+  (when (member name '("default" "nil"))
+    (user-error "Cannot create profile `%s': it is reserved for the default configuration" name))
+  (let* ((target-dir (if in-tree
+                         (expand-file-name (format "profiles/%s/" name) hell-dir)
+                       (expand-file-name (format "hell-emacs-%s/" name)
+                                         (or (getenv "XDG_CONFIG_HOME") "~/.config"))))
+         (existed (file-directory-p target-dir)))
+    (make-directory target-dir t)
+    (dolist (file '("init.el" "packages.el" "config.el"))
+      (let ((dest (expand-file-name file target-dir)))
+        (unless (file-exists-p dest)
+          (copy-file (expand-file-name (concat "static/" (file-name-base file) ".example.el") hell-dir)
+                     dest))))
+    (hell-cli--say "  %s profile `%s' in %s"
+                   (if existed "Kept existing" "Created")
+                       name (abbreviate-file-name target-dir))
+    (unless no-sync
+      (hell-cli--say "\nSyncing profile `%s'..." name)
+      (apply #'hell-cli-profile--run (list "--profile" name "sync")))))
+
+(defun hell-cli-profile--delete (name &optional force)
+  "Delete profile NAME and its cached/state data."
+  (unless (and name (string-match-p "\\`[A-Za-z0-9_-]+\\'" name))
+    (user-error "Invalid profile name `%s'" name))
+  (when (member name '("default" "safe-mode" "nil"))
+    (user-error "Cannot delete protected profile `%s'" name))
+  (let* ((user-dir (hell--user-dir name))
+         (data-dir (expand-file-name (format "hell-emacs-%s/" name) (or (getenv "XDG_DATA_HOME") "~/.local/share")))
+         (cache-dir (expand-file-name (format "hell-emacs-%s/" name) (or (getenv "XDG_CACHE_HOME") "~/.cache")))
+         (state-dir (expand-file-name (format "hell-emacs-%s/" name) (or (getenv "XDG_STATE_HOME") "~/.local/state"))))
+    (when (or force
+              (hell-cli--yes-p
+               (format "Permanently delete profile `%s' and all its data in:\n  - %s\n  - %s\nProceed?"
+                       name (abbreviate-file-name user-dir) (abbreviate-file-name data-dir))
+               nil))
+      (when (file-directory-p user-dir)
+        (delete-directory user-dir t)
+        (hell-cli--say "Deleted config directory: %s" (abbreviate-file-name user-dir)))
+      (when (file-directory-p data-dir)
+        (delete-directory data-dir t)
+        (hell-cli--say "Deleted data directory: %s" (abbreviate-file-name data-dir)))
+      (when (file-directory-p cache-dir)
+        (delete-directory cache-dir t))
+      (when (file-directory-p state-dir)
+        (delete-directory state-dir t))
+      (hell-cli--say "Profile `%s' deleted." name))))
+
+(defcli! profile (&rest args)
+  "`list' the profiles, `create' a new one, `sync', or `delete' an existing one.
+
+Subcommands:
+  list, ls                 List all discovered profiles and their sync state
+  create, new NAME [OPTS]  Create profile NAME with starter templates
+                           Options: --in-tree (place in profiles/NAME/), --no-sync
+  sync [--all | NAME]      Sync all profiles or the specified profile
+  delete, rm NAME [-!]     Delete profile config and all its data directories
+  path NAME                Print the resolved configuration directory for NAME"
+  (pcase (car args)
+    ((or 'nil "list" "ls")
+     (dolist (name (hell-cli-profile--names))
+       (let* ((dir (hell--user-dir name))
+              (init (hell-cli-profile--init-file name)))
+         (hell-cli--say "%s %-16s %-12s %s"
+                        (if (equal name hell-profile) "*" " ")
+                            (or name "default")
+                            (if (file-exists-p init) "synced" "not synced")
+                            (abbreviate-file-name dir)))))
+    ((or "create" "new" "init")
+     (let* ((name (cadr args))
+            (in-tree (member "--in-tree" args))
+            (no-sync (member "--no-sync" args)))
+       (unless name
+         (user-error "profile create: specify a profile name (e.g. `bin/hell profile create dev')"))
+       (hell-cli-profile--create name in-tree no-sync)))
+    ("sync"
+     (let ((target (cadr args)))
+       (cond
+        ((member "--all" args)
+         (let (failed)
+           (dolist (name (hell-cli-profile--names))
+             (hell-cli--say "\n== %s ==" (or name "default"))
+             (unless (zerop (apply #'hell-cli-profile--run
+                                   (append (and name (list "--profile" name)) '("sync"))))
+               (push (or name "default") failed)))
+           (when failed
+             (error "Couldn't sync: %s" (string-join (nreverse failed) ", ")))))
+        (target
+         (apply #'hell-cli-profile--run (list "--profile" target "sync")))
+        (t
+         (user-error "profile sync: specify a profile NAME or `--all'")))))
+    ((or "delete" "rm" "remove")
+     (let* ((name (cadr args))
+            (force (or (member "-!" args) (member "--force" args) (getenv "HELL_FORCE"))))
+       (unless name
+         (user-error "profile delete: specify a profile name to delete"))
+       (hell-cli-profile--delete name force)))
+    ("path"
+     (let ((name (cadr args)))
+       (unless name
+         (user-error "profile path: specify a profile name"))
+       (princ (format "%s\n" (hell--user-dir name)))))
+    (other (user-error "profile: unknown subcommand `%s' (list, create, sync, delete, path)" other))))
+
+;;; hell-profile ends here

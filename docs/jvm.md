@@ -1,12 +1,12 @@
 # JVM Guide
 
-Hellmacs exists for the JVM: Java at IntelliJ IDEA's level, and Kotlin,
+Hell Emacs exists for the JVM: Java at IntelliJ IDEA's level, and Kotlin,
 Clojure and Groovy on the same footing. This guide covers each language and
 the tools around them. Keys are stock Emacs plus the `C-c` groups in
 [keybindings.md](keybindings.md).
 
 Everything here is on by default except where it says "off": uncomment the
-module in `~/.config/hellmacs/init.el`, then `hellmacs sync`. Every language
+module in `~/.config/hell-emacs/init.el`, then `hell sync`. Every language
 server is pinned and installed by `sync`; nothing is downloaded while you
 edit.
 
@@ -76,12 +76,12 @@ compiles against the JDK its build targets, Java 8 and up.
   `/usr/lib/jvm`, macOS's `JavaVirtualMachines`, asdf, jenv and mise.
 - **Set them yourself** in `init.el`:
   ```elisp
-  (setq hellmacs-jdks '(("JavaSE-1.8" . "/opt/jdk8")
+  (setq hell-jdks '(("JavaSE-1.8" . "/opt/jdk8")
                         ("JavaSE-21"  . "/opt/jdk-21")))
-  (setq hellmacs-jvm-java-home "/opt/jdk-21")   ; the one running JDTLS
+  (setq hell-jvm-java-home "/opt/jdk-21")   ; the one running JDTLS
   ```
 - **Build toolchains** are honored: Gradle's (`jvmToolchain(N)`) and
-  Maven's `~/.m2/toolchains.xml`. `hellmacs doctor`, run in a project, says
+  Maven's `~/.m2/toolchains.xml`. `hell doctor`, run in a project, says
   whether the JDKs it asks for exist.
 - **Per project (`:tools direnv`):** a project's `.envrc` sets
   `JAVA_HOME`, `MAVEN_OPTS`, proxies... for that project only, JDTLS and
@@ -94,7 +94,7 @@ compiles against the JDK its build targets, Java 8 and up.
 kotlin-language-server: navigation, diagnostics, rename (`C-c c r`),
 completion. With `:tools build`, `C-c c c` builds, `C-c l t t` runs the
 test at point (backticked names too), `C-c l t T` the class. IntelliJ's
-Kotlin refactorings (extract, organize imports) aren't there yet; Hellmacs
+Kotlin refactorings (extract, organize imports) aren't there yet; Hell Emacs
 switches to JetBrains' Kotlin server when it can be pinned (roadmap 12.7).
 
 ## Clojure (`:lang clojure`)
@@ -128,7 +128,7 @@ asks the build for the classpath again.
 assertions are clickable: `M-g n` / `M-g p`.
 
 **Tests, results and coverage (`:tools build`, `:tools test`, `C-c l t`
-in a source file).** After a build that ran tests, `*hellmacs-tests*`
+in a source file).** After a build that ran tests, `*hell-tests*`
 lists them, failures first, from the JUnit XML reports (Java, Kotlin,
 Groovy and Scala alike).
 
@@ -147,12 +147,12 @@ added on the command line, so your build files stay unchanged.
 `(test +watch)` reruns a class's tests when you save it.
 
 **Run configurations (`:tools run`, `C-c r`).** Read from
-`.hellmacs/run.eld`, IntelliJ's shared `.run/*.run.xml` (Application,
+`.hell-emacs/run.eld`, IntelliJ's shared `.run/*.run.xml` (Application,
 Spring Boot, Gradle, Maven) and Eclipse's `.launch` files, so a team's
 configurations work unchanged.
 
 ```elisp
-;; .hellmacs/run.eld
+;; .hell-emacs/run.eld
 ((:name "Server" :main "com.example.App" :args ("--port=8080")
   :jvm-args ("-Xmx1g") :env (("STAGE" . "local")) :profiles ("dev"))
  (:name "Boot" :task "bootRun" :profiles ("dev")))
@@ -195,7 +195,7 @@ exactly as teammates on Eclipse or IntelliJ format.
 
 **Static analysis (`:checkers static`, off).** Checkstyle, PMD and
 SpotBugs findings from your build's own reports, as flymake diagnostics in
-Java and Kotlin buffers (`C-c ! n`); `M-x hellmacs-static-findings` lists
+Java and Kotlin buffers (`C-c ! n`); `M-x hell-static-findings` lists
 the project's. `+sonarlint` adds SonarLint's analysis as you type.
 
 **HTTP requests (`:tools http`, off).** IntelliJ's `.http` files as they
@@ -215,7 +215,7 @@ Connections are per project, passwords come from auth-source
 (`~/.authinfo.gpg`) and never from the file:
 
 ```elisp
-;; .hellmacs/db.eld
+;; .hell-emacs/db.eld
 ((:name "dev" :driver postgresql :host "localhost" :database "app" :user "ann")
  (:name "legacy" :driver sqlserver :url "jdbc:sqlserver://h:1433;databaseName=x" :user "u"))
 ```
@@ -248,11 +248,11 @@ Spring server.
 The mode-line says `JVM:purgatory` and the echo area `[BYTECODE PURGATORY]`
 when a project fails to import or build. Until a project is imported
 there's **no completion** in it, not even with `C-M-i`: when an import is
-still running after 90 seconds (`hellmacs-lsp-status-slow-seconds`), the
+still running after 90 seconds (`hell-lsp-status-slow-seconds`), the
 echo area says so. After an import, it names the dependencies the build
 couldn't resolve: their classes won't complete.
 
-1. **A JDK is missing:** run `hellmacs doctor` in the project; it lists
+1. **A JDK is missing:** run `hell doctor` in the project; it lists
    the JDKs the build asks for and which exist.
 2. **Import again:** `C-c l u` makes JDTLS re-read the build.
 3. **Gradle waits for its cache lock** ("another Gradle process holds
@@ -260,7 +260,7 @@ couldn't resolve: their classes won't complete.
    project, holds `~/.gradle`'s lock and every import times out. Stop it
    (`gradle --stop` with that Gradle, or kill the old `GradleDaemon`),
    then `M-x lsp-workspace-restart`.
-4. **GUI Emacs can't find your tools:** run `hellmacs env` in a terminal,
+4. **GUI Emacs can't find your tools:** run `hell env` in a terminal,
    then restart Emacs.
 5. **Behind a proxy or with internal repositories:** see the guide's
    [Companies](guide.md#6-companies-networks-offline-machines-compliance)

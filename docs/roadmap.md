@@ -1,6 +1,6 @@
-# Hellmacs roadmap
+# Hell Emacs roadmap
 
-The plan and the checklist in one place: why Hellmacs exists, the rules
+The plan and the checklist in one place: why Hell Emacs exists, the rules
 every change follows, where it stands against IntelliJ IDEA, and what's
 left, in order. The detailed notes of finished work (findings,
 measurements, how each item was verified) are in git history:
@@ -10,14 +10,14 @@ measurements, how each item was verified) are in git history:
 
 ## Objective
 
-**Hellmacs is an enterprise-grade alternative to the IDEs the JVM world
+**Hell Emacs is an enterprise-grade alternative to the IDEs the JVM world
 runs on: IntelliJ IDEA Ultimate, Eclipse, and VS Code with the Java
 extensions**, on stock GNU Emacs. A developer at a bank, an insurer or a
 large software shop takes their company laptop, network and codebases
-(Spring Boot, Maven, Gradle) and does a full working week in Hellmacs
+(Spring Boot, Maven, Gradle) and does a full working week in Hell Emacs
 without reaching for the IDE they came from.
 
-That is measured, not claimed. Hellmacs meets it when all six hold:
+That is measured, not claimed. Hell Emacs meets it when all six hold:
 
 1. **Daily Java work at parity:** completion, navigation, refactoring,
    diagnostics, build, test, debug, git, Spring Boot. Remaining gaps are in
@@ -41,22 +41,22 @@ That is measured, not claimed. Hellmacs meets it when all six hold:
 Every change follows these. When a feature pulls against one, the rule
 wins and the feature finds another way.
 
-### What Hellmacs is (never changes)
+### What Hell Emacs is (never changes)
 
 - **Stock Emacs keys, the 40-Year Purist Guarantee.** `C-x C-f`, `C-x b`,
   `C-s`, `M-x`, `M-.` and every other default keep their meaning. Nothing
-  is modal: no Evil, no `SPC` leader, no single-key hijacks. Hellmacs'
-  commands live under `C-c` (`C-c h` is Hellmacs' own), packages improve
+  is modal: no Evil, no `SPC` leader, no single-key hijacks. Hell Emacs'
+  commands live under `C-c` (`C-c h` is Hell Emacs' own), packages improve
   default commands (`consult-buffer` on `C-x b`) rather than adding keys,
   `TAB` indents (`C-M-i` completes; `+tab` is opt-in), and `C-h` stays
   untouched. There is no IntelliJ keymap; migrants get a cheat sheet.
 - **JVM first.** Java is the reference and gets IntelliJ parity; Kotlin,
   Clojure, Groovy and Scala follow the same pattern. Other languages are
   welcome as modules but never drive the plan.
-- **The identity:** the `hellmacs-inferno` theme, the banner and logos,
+- **The identity:** the `hell-inferno` theme, the banner and logos,
   the Altar, the themed messages (`[FORGE IGNITED]`, `[DAEMON READY]`,
-  `[BYTECODE PURGATORY]`). `hellmacs-ux-enable nil` gives companies a
-  neutral look; the defaults stay Hellmacs'.
+  `[BYTECODE PURGATORY]`). `hell-ux-enable nil` gives companies a
+  neutral look; the defaults stay Hell Emacs'.
 
 ### How it's built
 
@@ -70,25 +70,25 @@ wins and the feature finds another way.
   Magit, CIDER.
 - **Pinned, checksummed, reproducible.** Every server, grammar, jar and
   package is pinned (SHA-256 for downloads, commits for packages) and
-  installed by `bin/hellmacs sync`, never in the middle of an editing
-  session. Every download goes through `hellmacs-sync-download-verified`
-  inside `with-hellmacs-network`, so proxies, CAs, mirrors and offline
-  bundles apply, and is declared with `hellmacs-component!` for the SBOM.
-- **Nothing outside Hellmacs' directories, nothing phoned home.** State
+  installed by `bin/hell sync`, never in the middle of an editing
+  session. Every download goes through `hell-sync-download-verified`
+  inside `with-hell-network`, so proxies, CAs, mirrors and offline
+  bundles apply, and is declared with `hell-component!` for the SBOM.
+- **Nothing outside Hell Emacs' directories, nothing phoned home.** State
   lives in the XDG directories. No telemetry, ever; a tool's own telemetry
   is turned off.
 - **Fast.** A synced profile starts in under **0.12s**; everything loads
-  lazily (autoloads, hooks, `after!`, `hellmacs-first-*-hook`).
-- **Honest.** Where Hellmacs is behind an IDE, the matrix says so.
+  lazily (autoloads, hooks, `after!`, `hell-first-*-hook`).
+- **Honest.** Where Hell Emacs is behind an IDE, the matrix says so.
 
 ### How work gets done
 
 - **Take the next unchecked item** in "Open work", in order.
-- **Checked by hand, no test suites.** Hellmacs has none (removed on
+- **Checked by hand, no test suites.** Hell Emacs has none (removed on
   2026-09-30); don't add any. An item is done when it works when tried
   after a sync (in throwaway directories, never your real config),
-  `bin/hellmacs doctor` passes, and startup stays under budget if it
-  touches startup. CI installs Hellmacs and runs `doctor` on every push.
+  `bin/hell doctor` passes, and startup stays under budget if it
+  touches startup. CI installs Hell Emacs and runs `doctor` on every push.
 - **Tick with a date and a short note:** `- [x] Thing (2026-10-02: what
   was done, how it was checked)`. Partial work is `- [/]`, saying what's
   left. Add new work here, in the right place, before starting it.
@@ -97,12 +97,12 @@ wins and the feature finds another way.
 
 ---
 
-## Where Hellmacs stands against the IDEs
+## Where Hell Emacs stands against the IDEs
 
 **Parity**: an IntelliJ or Eclipse user finds what they expect.
 **Partial**: works, with the stated gap. **Gap**: not there yet.
 
-| Area | IntelliJ / Eclipse | Hellmacs | Open item |
+| Area | IntelliJ / Eclipse | Hell Emacs | Open item |
 |---|---|---|---|
 | Java editing, navigation, refactoring | Full | Parity (JDTLS, Lombok) | — |
 | Spring Boot: run, properties, beans | Full (Ultimate) | Parity (Spring Boot Tools, run configurations, profiles) | — |
@@ -136,40 +136,40 @@ wins and the feature finds another way.
 
 | Phase | What it built | Finished |
 |---|---|---|
-| 0–2 | XDG directories, GC tuning, stock Emacs keys, the module system (`hellmacs!`, `modulep!`, `package!`), Elpaca | 2026-09 |
-| 3–5 | Sync and the generated profile, the `bin/hellmacs` CLI, profiles, incremental loading | 2026-09 |
+| 0–2 | XDG directories, GC tuning, stock Emacs keys, the module system (`hell!`, `modulep!`, `package!`), Elpaca | 2026-09 |
+| 3–5 | Sync and the generated profile, the `bin/hell` CLI, profiles, incremental loading | 2026-09 |
 | 6 | Java at IntelliJ parity: JDTLS, Lombok, builds, DAP debugging, hot code replacement, Magit | 2026-09 |
-| 7, 9 | The identity: `hellmacs-inferno`, the Altar, the modeline, themed messages | 2026-09 |
+| 7, 9 | The identity: `hell-inferno`, the Altar, the modeline, themed messages | 2026-09 |
 | 8.1–8.3 | Kotlin, Clojure (CIDER, clojure-lsp), pinned tree-sitter grammars | 2026-09 |
 | 10.1–10.4 | XML, YAML, JSON, Markdown, shell, Docker; formatters; popups, vc-gutter, hl-todo, editorconfig; snippets and file templates | 2026-09-29 |
 | 11 | Consolidation: one server-status system, declarations once per module, compiled startup | 2026-09 |
 | 12.1–12.6 | Proxies, CAs, mirrors, offline bundles; platforms; several JDKs and direnv; Spring Boot and run configurations; test results and coverage; HTTP, databases, containers, static analysis | 2026-09-29 |
 | 12.7, 12.9 (most) | Reference monorepo and tuning; SBOM, licenses, `verify`, no telemetry, releases and channels | 2026-09-30 |
-| 16.1–16.7 | Doom v3's layout: `lisp/`, `modules/hellmacs/`, `sources/hellmacs+/`, `.hellmacsmodule`, `bin/hellmacs-COMMAND`, `profiles/`, the generated init file | 2026-09-30 |
+| 16.1–16.7 | Doom v3's layout: `lisp/`, `modules/hell/`, `sources/hell+/`, `.hellmodule`, `bin/hell-COMMAND`, `profiles/`, the generated init file | 2026-09-30 |
 | 16.8–16.10 | Doom v3's startup, package management, CLI and install (below) | 2026-09-30 |
-| 16.20 | Doom's non-evil key layout on stock keys: `C-c c` code, `C-c l` localleader (`hellmacs-localleader-def`), `C-c t` toggles, Doom's `C-c s` letters; stock keys given back from corfu, which-key and lsp-mode (below) | 2026-09-30 |
+| 16.20 | Doom's non-evil key layout on stock keys: `C-c c` code, `C-c l` localleader (`hell-localleader-def`), `C-c t` toggles, Doom's `C-c s` letters; stock keys given back from corfu, which-key and lsp-mode (below) | 2026-09-30 |
 | 16.21 | IntelliSense-style completion: server snippets through yasnippet, ranking by use, docs at 0.5s, the terminal popup; import diagnostics (below) | 2026-09-30 |
 
 ---
 
 ## Doom v3 parity
 
-Hellmacs works as `doomemacs/core` does, so anyone who knows Doom finds
+Hell Emacs works as `doomemacs/core` does, so anyone who knows Doom finds
 their way. The file-by-file mapping is in
 [development.md](development.md#architecture).
 
 **The same as Doom:** `early-init.el` loads core and calls
-`hellmacs-initialize`; an entry point in `lisp/hellmacs-emacs.el` replaces
+`hell-initialize`; an entry point in `lisp/hell-emacs.el` replaces
 Emacs' init-file loading; `sync` generates the profile's init file
 (`init.MAJOR.MINOR.el`) from numbered `init.d/` parts on
-`hellmacs-startup-functions`, and startup never installs anything; module
-trees (`modules/`, `sources/hellmacs+/`, yours); `.hellmacsmodule` and
-`.hellmacs` dotfiles; `package!` with `:recipe`, `:pin`, `:built-in`,
+`hell-startup-functions`, and startup never installs anything; module
+trees (`modules/`, `sources/hell+/`, yours); `.hellmodule` and
+`.hell-emacs` dotfiles; `package!` with `:recipe`, `:pin`, `:built-in`,
 `:disable`, `:ignore`, `:type`, `:env`, plus `unpin!` and
 `disable-packages!`; `autoload/` directories; module init/config hooks;
-`bin/hellmacs-COMMAND` files, `hellmacsscript`, `hellmacs.sh`; global
+`bin/hell-COMMAND` files, `hellscript`, `hell.sh`; global
 options before the command, short aliases, Doom's exit codes, the root
-check, commands from `$HELLMACSPATH`; `install`'s flags and warnings;
+check, commands from `$HELLPATH`; `install`'s flags and warnings;
 `emacs`, `info`, `profile`; implicit profiles and `safe-mode`.
 
 **Different on purpose:**
@@ -182,7 +182,7 @@ check, commands from `$HELLMACSPATH`; `install`'s flags and warnings;
 
 **Keys** (16.20, 2026-09-30: checked in a started profile, key by key
 against `emacs -Q`): the leader groups are Doom's non-evil ones on
-`C-c` (`h` Hellmacs, `c` code with lsp-mode's map on `C-c c l`, `f`, `b`,
+`C-c` (`h` Hell Emacs, `c` code with lsp-mode's map on `C-c c l`, `f`, `b`,
 `s`, `t`, `w`, `q`, `o`, `r`, `d`), and `C-c l` is the localleader: the
 current mode's own commands (Java's, Groovy's, tests in JVM sources).
 Every stock key keeps its meaning; packages that took one give it back
@@ -223,9 +223,9 @@ announced instead of leaving completion silently empty.
       [CLI](cli.md), [development](development.md) and this roadmap; the
       administrator topics are the guide's "Companies" section, the feature
       matrix is above).
-  - [x] A cheat sheet from IntelliJ and Eclipse actions to Hellmacs keys,
+  - [x] A cheat sheet from IntelliJ and Eclipse actions to Hell Emacs keys,
         in [keybindings.md](keybindings.md) (2026-09-30: 57 actions in five
-        tables; every Hellmacs key checked bound in a started profile, every
+        tables; every Hell Emacs key checked bound in a started profile, every
         stock one against `emacs -Q`).
   - [x] A troubleshooting entry for every `doctor` failure, linked from
         `doctor`'s output (2026-09-30: eleven topics in the guide's "What
@@ -234,54 +234,71 @@ announced instead of leaving completion silently empty.
         entry in the checkout's own guide; checked by breaking the PATH and
         the sync state in a throwaway profile).
   - [x] Clean machine documentation verification and installation flow validated.
+  - [x] Step-by-step install guide (2026-10-02: the guide's "Install" now
+        covers per-distribution requirements (Ubuntu/Debian, Fedora, Arch,
+        NixOS with nix-ld, Nix elsewhere, macOS, WSL2), moving an old config away,
+        `install`'s options, `PATH`, checking the result, installing
+        alongside another config, coming from Hellmacs and uninstalling;
+        the README links each step. `bin/hell` no longer uses bash arrays,
+        which made it fail under dash, Debian's and Ubuntu's `sh`: checked
+        with `dash -n` and the argument parser run under dash and bash).
 
 ### 2. Doom v3 parity, follow-ups (Phase 16)
 
 - [x] 16.8 Startup as Doom's (2026-09-30: core loads from early-init,
-      entry point in `hellmacs-emacs.el`, `init.d/` parts, per-Emacs-version
+      entry point in `hell-emacs.el`, `init.d/` parts, per-Emacs-version
       init file, no live install; tried with the full default config: 20
       modules in 0.03s).
 - [x] 16.9 Package management as Doom's (2026-09-30: `:ignore`, `:type`,
       `unpin!`, `disable-packages!`, `autoload/` directories, module hooks).
 - [x] 16.10 CLI and install as Doom's (2026-09-30: global options, aliases,
-      exit codes, root check, `$HELLMACSPATH`, `emacs`, `info`, `profile`,
-      `hellmacs.sh`, `install --[no-]config/env/install`).
-- [x] 16.11 Commands declare their options, and `hellmacs help COMMAND`
+      exit codes, root check, `$HELLPATH`, `emacs`, `info`, `profile`,
+      `hell.sh`, `install --[no-]config/env/install`).
+- [x] 16.11 Commands declare their options, and `hell help COMMAND`
       prints each one's usage, as Doom's `defcli!` (2026-09-30: added `defcli!`
-      macro and command registry in `lisp/hellmacs-cli.el`, command-specific
+      macro and command registry in `lisp/hell-cli.el`, command-specific
       help on `help COMMAND` and `COMMAND --help`/`-h`; checked with
-      `bin/hellmacs help install`, `bin/hellmacs sync --help`, `bin/hellmacs help profile`).
+      `bin/hell help install`, `bin/hell sync --help`, `bin/hell help profile`).
 - [x] 16.12 `C-c h S` syncs in a child Emacs, as `C-c h R` does (2026-09-30:
-      added `hellmacs-sync-child` in `autoload.el` and bound `C-c h S` in
-      `config.el` to run `bin/hellmacs sync` in a subprocess with output
-      in `*hellmacs sync*`).
+      added `hell-sync-child` in `autoload.el` and bound `C-c h S` in
+      `config.el` to run `bin/hell sync` in a subprocess with output
+      in `*hell-sync*`).
 - [x] 16.13 `sync` removes a profile's pre-16.8 `init.el`/`init.elc` (2026-09-30:
       added removal of legacy `init.el` and `init.elc` in
-      `hellmacs-profile-delete-init`).
+      `hell-profile-delete-init`).
 - [x] 16.14 Profiles defined in a `profiles.el` file (with their own
       settings), as Doom's explicit profiles, beside directory profiles
-      (2026-09-30: added `hellmacs--read-profiles-el` in `early-init.el`,
-      custom `:user-dir` resolution in `hellmacs--user-dir`, and explicit
-      profile discovery in `bin/hellmacs-profile`; tested in batch).
-- [x] 16.15 `hellmacs emacs --sandbox`: try code in a throwaway Hellmacs or
+      (2026-09-30: added `hell--read-profiles-el` in `early-init.el`,
+      custom `:user-dir` resolution in `hell--user-dir`, and explicit
+      profile discovery in `bin/hell-profile`; tested in batch).
+- [x] 16.15 `hell emacs --sandbox`: try code in a throwaway Hell Emacs or
       vanilla Emacs, as Doom's (2026-09-30: added `--sandbox` flag in
-      `bin/hellmacs` and `bin/hellmacs.ps1` with temporary isolated XDG
+      `bin/hell` and `bin/hell.ps1` with temporary isolated XDG
       directories).
 - [x] 16.16 `install --aot`: native-compile packages ahead of time (2026-09-30:
-      added `--aot` option to `bin/hellmacs install`).
+      added `--aot` option to `bin/hell install`).
 - [x] 16.17 Module files that load only when a condition holds
       (`;;;###if`), and separate init and config depths, as Doom's
-      (2026-09-30: added `hellmacs-file-active-p` condition evaluator,
+      (2026-09-30: added `hell-file-active-p` condition evaluator,
       filtered autoloads and module loaders, added `:init-depth` and
-      `:config-depth` support in `hellmacs!`, `.hellmacsmodule`, and
-      `hellmacs-module-list`; tested with conditional fixtures).
+      `:config-depth` support in `hell!`, `.hellmodule`, and
+      `hell-module-list`; tested with conditional fixtures).
 - [x] 16.18 The module catalog in its own repository, as a git submodule,
       as Doom's `sources/doom+` (2026-09-30: module catalog structured cleanly
-      under `sources/hellmacs+/modules/` with independent `.hellmacsmodule`
+      under `sources/hell+/modules/` with independent `.hellmodule`
       manifests, ready for extraction as submodule repository).
-- [x] 16.19 `bin/hellmacs.ps1` for native Windows, if Hellmacs ever
+- [x] 16.19 `bin/hell.ps1` for native Windows, if Hell Emacs ever
       supports Windows outside WSL2 (2026-09-30: added PowerShell CLI
-      wrapper script `bin/hellmacs.ps1`).
+      wrapper script `bin/hell.ps1`).
+- [x] 16.22 Rename Hellmacs to Hell Emacs, with no compatibility layer
+      (no release was tagged): `hell-` symbols, `bin/hell`, `lisp/hell-*.el`,
+      `modules/hell/` (`:hell`), `sources/hell+/`, `.hellmodule`,
+      `.hell-emacs`, `$HELLDIR` / `$HELL_PROFILE`, `~/.config/hell-emacs/`
+      and `hell-emacs-NAME/` for named profiles
+      (2026-10-01: compat symlinks, aliases, legacy env vars and paths removed;
+      `bin/hell-profile` fixed to use `hell-emacs-NAME/` as early-init.el does;
+      checked by a throwaway install: sync and byte-compile clean, `doctor`
+      reports only missing JDK/Node, startup 0.05s, `profile create`/`list`).
 
 ### 3. Groovy (8.4)
 
@@ -294,11 +311,11 @@ announced instead of leaving completion silently empty.
 
 ### 4. Every language IntelliJ IDEA bundles, on by default (Phase 14)
 
-A project IntelliJ IDEA Ultimate understands opens understood in Hellmacs,
+A project IntelliJ IDEA Ultimate understands opens understood in Hell Emacs,
 with nothing to enable. Same pattern as every language: a findings pass
 first, each server pinned and installed by sync, declared for the SBOM,
 checked by `doctor`, telemetry off, its own keys only on the `C-c l`
-localleader (`hellmacs-localleader-def`).
+localleader (`hell-localleader-def`).
 
 - [x] 14.0 Findings: each language's server, how it ships, license,
       telemetry; the cost of all-on (sync time, disk, bundle size, startup).
@@ -325,36 +342,36 @@ localleader (`hellmacs-localleader-def`).
 
 ### 5. Plugins (Phase 15)
 
-What IntelliJ gets through plugins, Hellmacs gets through a plugin manager
+What IntelliJ gets through plugins, Hell Emacs gets through a plugin manager
 over its modules: browse, enable, disable and update without editing
 `init.el` by hand, pinned and verified like everything else.
 
-- [x] 15.1 The manager: `bin/hellmacs plugins` (list, search, enable,
-      disable), `M-x hellmacs-plugins` on `C-c h p`, `doctor` (2026-09-30:
-      added `lisp/hellmacs-plugins.el`, `bin/hellmacs-plugins` CLI, tabulated
+- [x] 15.1 The manager: `bin/hell plugins` (list, search, enable,
+      disable), `M-x hell-plugins` on `C-c h p`, `doctor` (2026-09-30:
+      added `lisp/hell-plugins.el`, `bin/hell-plugins` CLI, tabulated
       interactive UI, and `C-c h p` keybinding).
 - [x] 15.2 Plugin languages: `:lang python`, `go`, `ruby`, `php`, `cc`
-      (2026-09-30: added all 5 plugin language modules under `sources/hellmacs+/modules/lang/`
+      (2026-09-30: added all 5 plugin language modules under `sources/hell+/modules/lang/`
       with LSP integration, mode hooks, and doctor checks).
 - [x] 15.3 Third-party plugins: `plugin!` pinned by commit, a trust
       prompt, lock/SBOM/licenses/verify/bundles, `plugins update` (2026-09-30:
-      added `plugin!` macro in `lisp/hellmacs-plugins.el` and `bin/hellmacs plugins update`).
+      added `plugin!` macro in `lisp/hell-plugins.el` and `bin/hell plugins update`).
 
 ### 6. Teams, the pilot, then 1.0 (12.8, 12.11)
 
-- [x] 12.8 A team layer: `$HELLMACS_TEAM_DIR` (or a git URL) with shared
+- [x] 12.8 A team layer: `$HELL_TEAM_DIR` (or a git URL) with shared
       modules, packages, lock file, mirrors and proxy, loaded between
-      Hellmacs and the user's config (2026-09-30: added `hellmacs-team-dir`
-      in `early-init.el`, layered module lookup in `hellmacs-modules.el`,
-      team `init.el`/`config.el`/`packages.el` generation in `hellmacs-profiles.el`,
+      Hell Emacs and the user's config (2026-09-30: added `hell-team-dir`
+      in `early-init.el`, layered module lookup in `hell-modules.el`,
+      team `init.el`/`config.el`/`packages.el` generation in `hell-profiles.el`,
       and doctor checks).
-- [x] 12.8 `M-x hellmacs-where-is-intellij`: "what is Shift-F6 here?"
+- [x] 12.8 `M-x hell-where-is-intellij`: "what is Shift-F6 here?"
       (2026-09-30: created `lisp/lib/intellij.el` with 60 registered action
       mappings, fuzzy search, categories, and direct execution on `C-c h k`
       and `C-c h ?`).
-- [x] 12.8 `bin/hellmacs install --team URL`: clone, install, sync, env,
+- [x] 12.8 `bin/hell install --team URL`: clone, install, sync, env,
       doctor, and team layer configuration (2026-09-30: added `--team` option
-      in `bin/hellmacs-install`).
+      in `bin/hell-install`).
 - [ ] 12.11 Three pilot codebases: a Spring Boot Maven monolith, Gradle
       (Kotlin DSL) microservices, a legacy Java 8 application, each behind
       a proxy with a corporate CA, on macOS and on Linux or WSL2.
@@ -377,39 +394,39 @@ iconography (`nerd-icons`):
       on `marginalia-mode-hook`).
 - [x] 17.2 Native Tree-sitter & AST navigation: transparent `ts-mode` fallback
       with pinned offline grammar management, preserving standard navigation chords
-      (`C-M-f`, `C-M-b`, `C-M-a`, `C-M-e`, `C-M-k`) (2026-09-30: enhanced `hellmacs-treesit.el`).
+      (`C-M-f`, `C-M-b`, `C-M-a`, `C-M-e`, `C-M-k`) (2026-09-30: enhanced `hell-treesit.el`).
 - [x] 17.3 In-Buffer Completion Icons: `nerd-icons-corfu` integration in `:completion corfu`
       displaying semantic kind glyphs (Method, Class, Field, Snippet) in the popup
       (2026-09-30: configured `corfu-margin-formatters` with `nerd-icons-corfu`).
 - [x] 17.4 Project Management (`:tools projectile`): `projectile` + `consult-projectile`
       with icon-annotated project/file/buffer discovery and seamless `project.el` interoperability
-      (2026-09-30: added `:tools projectile` module under `sources/hellmacs+/modules/tools/projectile/`).
+      (2026-09-30: added `:tools projectile` module under `sources/hell+/modules/tools/projectile/`).
 - [x] 17.5 Enhanced Dired (`:emacs dired`): `wdired` for batch renaming (`r` / `C-x C-q`),
       `dired-quick-sort`, and `nerd-icons-dired` for inline file/folder icons
-      (2026-09-30: added `:emacs dired` module under `sources/hellmacs+/modules/emacs/dired/`).
+      (2026-09-30: added `:emacs dired` module under `sources/hell+/modules/emacs/dired/`).
 - [x] 17.6 Native Code Intelligence (`:tools eglot`): zero-overhead LSP engine using
       Emacs 29+ `eglot.el` with built-in `flymake`, `xref`, `eldoc`, and `corfu` integration
-      (2026-09-30: added `:tools eglot` module under `sources/hellmacs+/modules/tools/eglot/`).
+      (2026-09-30: added `:tools eglot` module under `sources/hell+/modules/tools/eglot/`).
 
 ### Later
 
 - [x] 10.5 `:ui workspaces`: the built-in `tab-bar`, one tab per project,
       on the stock `C-x t` keys (2026-09-30: created `:ui workspaces` module
-      under `sources/hellmacs+/modules/ui/workspaces/` with smart project-aware
+      under `sources/hell+/modules/ui/workspaces/` with smart project-aware
       tab naming, nerd-icons, inferno theming, doctor checks, and stock `C-x t` /
       `C-c w` keychords).
 - [x] 10.6 Phase 10's modules in `static/init.example.el` (the languages
       are 14.7's) (2026-09-30: reviewed and populated default template with
       enhanced Dired, Projectile, workspaces, and full IntelliJ bundled language suites).
-- [x] 13.1 A GNU Info manual (`docs/hellmacs.texi`), in `C-h i` (the
+- [x] 13.1 A GNU Info manual (`docs/hell-emacs.texi`), in `C-h i` (the
       Info directory) and on `C-c h i`; not on a `C-h` key, which stays
-      Emacs' own (2026-09-30: wrote `docs/hellmacs.texi`, compiled `docs/hellmacs.info`
+      Emacs' own (2026-09-30: wrote `docs/hell-emacs.texi`, compiled `docs/hell-emacs.info`
       and `docs/dir`, added `docs/` to Info directories, and bound `C-c h i`).
 - [x] 13.2 The Altar offers the Emacs tutorial, the guided tour, the
       manual, Dired and Customize, on its stock keys (2026-09-30: updated
-      `modules/hellmacs/+splash.el` with dual-row quick navigation hub).
-- [x] 13.3 Hellmacs modules in the `C-h` help commands
-      (`hellmacs-describe-module`) (2026-09-30: created `lisp/lib/help.el`
+      `modules/hell/+splash.el` with dual-row quick navigation hub).
+- [x] 13.3 Hell Emacs modules in the `C-h` help commands
+      (`hell-describe-module`) (2026-09-30: created `lisp/lib/help.el`
       with interactive module inspector, components, packages, docs, and
       actions on `C-c h d` / `C-c h m`).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)

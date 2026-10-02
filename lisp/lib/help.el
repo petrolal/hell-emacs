@@ -1,19 +1,19 @@
-;;; lib/help.el --- Hellmacs Info manual and module help -*- lexical-binding: t; -*-
+;;; lib/help.el --- Hell Emacs Info manual and module help -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
 ;; Author: petrolal <petrolalucas@gmail.com>
-;; URL: https://github.com/petrolal/hellmacs
+;; URL: https://github.com/petrolal/hell-emacs
 ;; License: GPL-3.0-or-later
 ;;
-;; This file is part of Hellmacs.
+;; This file is part of Hell Emacs.
 ;;
-;; Hellmacs is free software: you can redistribute it and/or modify
+;; Hell Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 ;;
-;; Hellmacs is distributed in the hope that it will be useful,
+;; Hell Emacs is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
@@ -22,58 +22,58 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; Phase 13: Integrated Help, Info Manual & Module Introspection
-;; - `C-c h h' / `C-c h ?': `hellmacs-help' (interactive JVM & shortcuts hub)
-;; - `C-c h i': `hellmacs-info-manual'
-;; - `C-c h d' / `M-x hellmacs-describe-module': module inspection buffer
+;; - `C-c h h' / `C-c h ?': `hell-help' (interactive JVM & shortcuts hub)
+;; - `C-c h i': `hell-info-manual'
+;; - `C-c h d' / `M-x hell-describe-module': module inspection buffer
 ;; - Info directory integration with docs/
 
 (require 'info)
 (require 'help-mode)
 (require 'subr-x)
 
-(defvar hellmacs-dir)
-(declare-function hellmacs-module-list "hellmacs-modules")
-(declare-function hellmacs-module-get "hellmacs-modules")
-(declare-function hellmacs-module-locate-path "hellmacs-modules")
-(declare-function hellmacs-module-metadata "hellmacs-modules")
-(declare-function hellmacs-module-key-string "hellmacs-modules")
-(declare-function hellmacs-list-modules "config/default/autoload")
-(declare-function hellmacs-jdk-read "lib/jdk")
+(defvar hell-dir)
+(declare-function hell-module-list "hell-modules")
+(declare-function hell-module-get "hell-modules")
+(declare-function hell-module-locate-path "hell-modules")
+(declare-function hell-module-metadata "hell-modules")
+(declare-function hell-module-key-string "hell-modules")
+(declare-function hell-list-modules "config/default/autoload")
+(declare-function hell-jdk-read "lib/jdk")
 
 ;; Register docs/ in Info path
-(let ((docs-dir (expand-file-name "docs/" hellmacs-dir)))
+(let ((docs-dir (expand-file-name "docs/" hell-dir)))
   (when (file-directory-p docs-dir)
     (add-to-list 'Info-directory-list docs-dir)
     (add-to-list 'Info-default-directory-list docs-dir)))
 
 ;;;###autoload
-(defun hellmacs-info-manual ()
-  "Open the official Hellmacs Info manual (C-c h i)."
+(defun hell-info-manual ()
+  "Open the official Hell Emacs Info manual (C-c h i)."
   (interactive)
-  (let ((info-file (expand-file-name "docs/hellmacs.info" hellmacs-dir)))
+  (let ((info-file (expand-file-name "docs/hell-emacs.info" hell-dir)))
     (if (file-exists-p info-file)
         (info info-file)
       ;; Fallback to info top node if registered in Info-directory-list
       (condition-case nil
-          (info "(hellmacs)")
+          (info "(hell-emacs)")
         (error
-         (user-error "Hellmacs Info manual not found at %s. Run makeinfo docs/hellmacs.texi" info-file))))))
+         (user-error "Hell Emacs Info manual not found at %s. Run makeinfo docs/hell-emacs.texi" info-file))))))
 
 ;;;###autoload
-(defun hellmacs-help ()
-  "Open the interactive Hellmacs JVM Help & Cheatsheet Hub (C-c h h / C-c h ?)."
+(defun hell-help ()
+  "Open the interactive Hell Emacs JVM Help & Cheatsheet Hub (C-c h h / C-c h ?)."
   (interactive)
-  (let ((buf (get-buffer-create "*Hellmacs Help*")))
+  (let ((buf (get-buffer-create "*Hell Emacs Help*")))
     (with-current-buffer buf
       (help-mode)
       (let* ((inhibit-read-only t)
              (jdk-table (condition-case nil
-                            (and (require 'hellmacs-jdk (expand-file-name "lisp/lib/jdk" hellmacs-dir) t)
-                                 (hellmacs-jdk-read))
+                            (and (require 'hell-jdk (expand-file-name "lisp/lib/jdk" hell-dir) t)
+                                 (hell-jdk-read))
                           (error nil))))
         (erase-buffer)
         ;; Header
-        (insert (propertize "HELLMACS // [ JVM FORGE & SHORTCUTS HUB ]\n" 'face '(:foreground "#ff5555" :weight bold :height 1.2)))
+        (insert (propertize "HELL EMACS // [ JVM FORGE & SHORTCUTS HUB ]\n" 'face '(:foreground "#ff5555" :weight bold :height 1.2)))
         (insert (propertize "Heavy metal syntax. Bytecode subjugated. Pure GNU Emacs.\n" 'face '(:foreground "#ffb86c" :slant italic)))
         (insert (make-string 76 ?─) "\n\n")
 
@@ -84,12 +84,12 @@
         ;; LSP Status
         (insert (propertize "  • Language Servers (LSP):\n" 'face 'bold))
         (insert "    - Java:        ")
-        (let ((jdtls-dir (expand-file-name ".local/share/hellmacs/lsp/eclipse.jdt.ls" "~")))
+        (let ((jdtls-dir (expand-file-name "lsp/eclipse.jdt.ls" hell-data-dir)))
           (if (file-directory-p jdtls-dir)
               (insert (propertize "✓ Eclipse JDTLS (Ready)" 'face 'success) " + Spring Boot Tools + Lombok\n")
-            (insert (propertize "! Not installed (run bin/hellmacs sync)" 'face 'warning) "\n")))
+            (insert (propertize "! Not installed (run bin/hell sync)" 'face 'warning) "\n")))
         (insert "    - Kotlin:      ")
-        (if (file-directory-p (expand-file-name ".local/share/hellmacs/lsp/kotlin" "~"))
+        (if (file-directory-p (expand-file-name "lsp/kotlin" hell-data-dir))
             (insert (propertize "✓ kotlin-language-server (Ready)\n" 'face 'success))
           (insert (propertize "· Available via :lang kotlin\n" 'face 'shadow)))
         (insert "    - Clojure:     ")
@@ -97,14 +97,14 @@
             (insert (propertize "✓ clojure-lsp (Ready)\n" 'face 'success))
           (insert (propertize "· Available via :lang clojure\n" 'face 'shadow)))
         (insert "    - Groovy:      ")
-        (if (file-directory-p (expand-file-name ".local/share/hellmacs/lsp/groovy" "~"))
+        (if (file-directory-p (expand-file-name "lsp/groovy" hell-data-dir))
             (insert (propertize "✓ groovy-language-server (Ready)\n" 'face 'success))
           (insert (propertize "· Available via :lang groovy\n" 'face 'shadow)))
 
         ;; Debugger Status
         (insert (propertize "  • Debugger (DAP) & Test Runner:\n" 'face 'bold))
         (insert "    - Java Debug:  ")
-        (if (file-exists-p (expand-file-name ".local/share/hellmacs/lsp/eclipse.jdt.ls/bundles/com.microsoft.java.debug.plugin-0.53.1.jar" "~"))
+        (if (file-exists-p (expand-file-name "lsp/eclipse.jdt.ls/bundles/com.microsoft.java.debug.plugin-0.53.1.jar" hell-data-dir))
             (insert (propertize "✓ java-debug 0.53.1 (DAP Ready)\n" 'face 'success))
           (insert (propertize "✓ DAP Integration Active\n" 'face 'success)))
         (insert "    - JUnit:       ")
@@ -125,7 +125,7 @@
                 (insert (format "    - %s:  %s\n"
                                 (propertize (format "Java %s" version) 'face 'bold)
                                 (propertize (abbreviate-file-name path) 'face 'shadow)))))
-          (insert "    · (JDKs automatically mapped during bin/hellmacs sync)\n"))
+          (insert "    · (JDKs automatically mapped during bin/hell sync)\n"))
         (insert "\n")
 
         ;; 2. Code Intelligence & LSP Shortcuts (C-c l)
@@ -160,64 +160,64 @@
         (insert (propertize "4. BUILD, TEST & RUN SHORTCUTS (C-c b / C-c t / C-c r)\n" 'face '(:foreground "#ffb86c" :weight bold)))
         (insert (make-string 76 ?─) "\n")
         (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold) (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c b b" "hellmacs-build" "Build project (Gradle/Maven)"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c b c" "hellmacs-build-clean" "Clean build output directory"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c t t" "hellmacs-test-single" "Run test at point"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c t f" "hellmacs-test-file" "Run all tests in current file"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c t p" "hellmacs-test-project" "Run full test suite in project"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c r" "hellmacs-run" "Execute Run Configuration"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c b b" "hell-build" "Build project (Gradle/Maven)"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c b c" "hell-build-clean" "Clean build output directory"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c t t" "hell-test-single" "Run test at point"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c t f" "hell-test-file" "Run all tests in current file"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c t p" "hell-test-project" "Run full test suite in project"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c r" "hell-run" "Execute Run Configuration"))
         (insert "\n")
 
-        ;; 5. Hellmacs Prefix Commands (C-c h)
-        (insert (propertize "5. HELLMACS SYSTEM COMMANDS (C-c h)\n" 'face '(:foreground "#ffb86c" :weight bold)))
+        ;; 5. Hell Emacs Prefix Commands (C-c h)
+        (insert (propertize "5. HELL EMACS SYSTEM COMMANDS (C-c h)\n" 'face '(:foreground "#ffb86c" :weight bold)))
         (insert (make-string 76 ?─) "\n")
         (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold) (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h s" "hellmacs-splash" "Return to Altar splash screen"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h h / C-c h ?" "hellmacs-help" "Open this JVM Help & Cheatsheet Hub"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h i" "hellmacs-info-manual" "Read official Hellmacs Info manual"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h d" "hellmacs-describe-module" "Describe and inspect any module"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h u" "hellmacs-visit-user-dir" "Open your configuration directory"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h S" "hellmacs-sync-child" "Sync packages and compile profile"))
-        (insert (format "  %-18s  %-30s  %s\n" "C-c h k" "hellmacs-where-is-intellij" "IntelliJ IDEA to Emacs key finder"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h s" "hell-splash" "Return to Altar splash screen"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h h / C-c h ?" "hell-help" "Open this JVM Help & Cheatsheet Hub"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h i" "hell-info-manual" "Read official Hell Emacs Info manual"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h d" "hell-describe-module" "Describe and inspect any module"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h u" "hell-visit-user-dir" "Open your configuration directory"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h S" "hell-sync-child" "Sync packages and compile profile"))
+        (insert (format "  %-18s  %-30s  %s\n" "C-c h k" "hell-where-is-intellij" "IntelliJ IDEA to Emacs key finder"))
         (insert "\n")
 
         ;; 6. Interactive Quick Actions
         (insert (propertize "QUICK ACTIONS:\n" 'face 'bold))
         (insert "  ")
         (insert-text-button "[ Open Info Manual (C-c h i) ]"
-                            'action (lambda (_) (hellmacs-info-manual))
+                            'action (lambda (_) (hell-info-manual))
                             'follow-link t
                             'help-echo "Open full Info manual")
         (insert "   ")
         (insert-text-button "[ Return to Altar Splash (C-c h s) ]"
-                            'action (lambda (_) (call-interactively #'hellmacs-splash))
+                            'action (lambda (_) (call-interactively #'hell-splash))
                             'follow-link t
                             'help-echo "Go to Altar splash")
         (insert "   ")
         (insert-text-button "[ Describe Modules (C-c h d) ]"
-                            'action (lambda (_) (call-interactively #'hellmacs-describe-module))
+                            'action (lambda (_) (call-interactively #'hell-describe-module))
                             'follow-link t
                             'help-echo "Inspect module")
         (insert "\n")
         (goto-char (point-min))))
     (display-buffer buf)))
 
-(defun hellmacs-module-all-candidates ()
+(defun hell-module-all-candidates ()
   "Return a list of all module keys as strings (e.g. `:lang java')."
-  (let ((active (hellmacs-module-list))
-        (all (hellmacs-module-list :all)))
+  (let ((active (hell-module-list))
+        (all (hell-module-list :all)))
     (delete-dups
-     (mapcar (lambda (key) (hellmacs-module-key-string key))
+     (mapcar (lambda (key) (hell-module-key-string key))
              (append active all)))))
 
-(defun hellmacs-module-parse-key (str)
+(defun hell-module-parse-key (str)
   "Parse a module string like `:lang java' into a key cons `(:lang . java)'."
   (when (string-match "\\`\\(:[a-z]+\\)[ \t]+\\([a-z0-9-]+\\)\\'" (string-trim str))
     (cons (intern (match-string 1 str))
           (intern (match-string 2 str)))))
 
-(defun hellmacs-module--find-description (dir)
-  "Extract description from commentary in config.el or .hellmacsmodule in DIR."
+(defun hell-module--find-description (dir)
+  "Extract description from commentary in config.el or .hellmodule in DIR."
   (let ((config-file (expand-file-name "config.el" dir)))
     (if (file-readable-p config-file)
         (with-temp-buffer
@@ -230,7 +230,7 @@
                             (looking-at "^[ \t]*$")))
               (let ((line (if (looking-at "^;;[ \t]*\\(.*\\)$") (match-string 1) "")))
                 (cond
-                 ((string-match-p "\\(Copyright\\|Author\\|License\\|part of Hellmacs\\|Free Software\\|along with this program\\|-\\*- lexical\\|WARRANTY\\|MERCHANTABILITY\\|General Public License\\|distributed in the hope\\)" line)
+                 ((string-match-p "\\(Copyright\\|Author\\|License\\|part of Hell Emacs\\|Free Software\\|along with this program\\|-\\*- lexical\\|WARRANTY\\|MERCHANTABILITY\\|General Public License\\|distributed in the hope\\)" line)
                   (setq in-header t))
                  ((and in-header (string-empty-p (string-trim line)))
                   (setq in-header nil))
@@ -243,7 +243,7 @@
                 "No description provided in config.el."))))
       "No configuration file found.")))
 
-(defun hellmacs-module--find-packages (dir)
+(defun hell-module--find-packages (dir)
   "Extract declared package names from packages.el in DIR."
   (let ((pkg-file (and dir (expand-file-name "packages.el" dir))))
     (when (and pkg-file (file-readable-p pkg-file))
@@ -256,26 +256,26 @@
           (nreverse pkgs))))))
 
 ;;;###autoload
-(defun hellmacs-describe-module (module)
+(defun hell-describe-module (module)
   "Display complete information and documentation for MODULE.
 Shows active status, flags, declared packages, file links, and keybindings."
   (interactive
-   (let* ((candidates (hellmacs-module-all-candidates))
+   (let* ((candidates (hell-module-all-candidates))
            (default (when-let* ((at-pt (thing-at-point 'symbol t)))
                       (car (member at-pt candidates))))
            (choice (completing-read
                     (format-prompt "Describe module" default)
                     candidates nil t nil nil default)))
-     (list (hellmacs-module-parse-key choice))))
+     (list (hell-module-parse-key choice))))
   (unless module
     (user-error "No module specified"))
   (let* ((group (car module))
          (name (cdr module))
          (key module)
-         (active-p (member key (hellmacs-module-list)))
-         (flags (and active-p (hellmacs-module-get key :flags)))
-         (dir (hellmacs-module-locate-path group name))
-         (meta (and dir (hellmacs-module-metadata dir key)))
+         (active-p (member key (hell-module-list)))
+         (flags (and active-p (hell-module-get key :flags)))
+         (dir (hell-module-locate-path group name))
+         (meta (and dir (hell-module-metadata dir key)))
          (version (or (plist-get meta :version) "0.9.0"))
          (buf-name (format "*Help: %s %s*" group name)))
     (with-current-buffer (get-buffer-create buf-name)
@@ -320,7 +320,7 @@ Shows active status, flags, declared packages, file links, and keybindings."
 
         ;; Declared packages
         (insert (propertize "Declared Packages:\n" 'face 'bold))
-        (let ((pkgs (hellmacs-module--find-packages dir)))
+        (let ((pkgs (hell-module--find-packages dir)))
           (if pkgs
               (dolist (pkg pkgs)
                 (insert (format "  ✓ %s\n" pkg)))
@@ -329,24 +329,24 @@ Shows active status, flags, declared packages, file links, and keybindings."
 
         ;; Description
         (insert (propertize "Documentation & Summary:\n" 'face 'bold))
-        (insert (if dir (hellmacs-module--find-description dir) "None") "\n\n")
+        (insert (if dir (hell-module--find-description dir) "None") "\n\n")
 
         ;; Footer navigation
         (insert (propertize "Quick Actions:\n" 'face 'bold))
         (insert "  ")
-        (insert-text-button "[ Open Hellmacs Manual (C-c h i) ]"
-                            'action (lambda (_) (hellmacs-info-manual))
+        (insert-text-button "[ Open Hell Emacs Manual (C-c h i) ]"
+                            'action (lambda (_) (hell-info-manual))
                             'follow-link t
                             'help-echo "Open Info manual")
         (insert "   ")
         (insert-text-button "[ View All Modules ]"
-                            'action (lambda (_) (call-interactively #'hellmacs-list-modules))
+                            'action (lambda (_) (call-interactively #'hell-list-modules))
                             'follow-link t
                             'help-echo "List active modules")
         (goto-char (point-min))))
     (display-buffer (get-buffer buf-name))))
 
-(defalias 'describe-module #'hellmacs-describe-module)
+(defalias 'describe-module #'hell-describe-module)
 
-(hellmacs-provide 'hellmacs-lib 'help)
+(hell-provide 'hell-lib 'help)
 ;;; help.el ends here

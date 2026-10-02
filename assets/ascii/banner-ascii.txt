@@ -13,5 +13,5 @@
          /  / ||  || \  \
         (__/  ||  ||  \__)
  --------------------------------------------------
-  HELLMACS: THE INFERNAL JVM HACKING ENVIRONMENT
+  HELL EMACS: THE INFERNAL JVM HACKING ENVIRONMENT
          BYTECODE SUBJUGATED // REPL FIRED

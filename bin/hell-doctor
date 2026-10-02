@@ -1,0 +1,330 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-doctor --- Diagnose your system and config -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell doctor' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli--version (program &rest args)
+  "Return the first line PROGRAM prints for ARGS, or nil if it isn't installed."
+  (when (executable-find program)
+    (car (split-string (cdr (apply #'hell-cli--run program args)) "\n"))))
+
+;; The API a module's doctor.el uses.
+
+(defun hell-doctor-ok (format-string &rest args)
+  "Report a passing check (FORMAT-STRING, ARGS) from a module's doctor.el."
+  (apply #'hell-cli--check 'ok format-string args))
+
+(defun hell-doctor-info (format-string &rest args)
+  "Report a neutral fact (FORMAT-STRING, ARGS) from a module's doctor.el."
+  (apply #'hell-cli--check 'info format-string args))
+
+(defun hell-doctor-warn (format-string &rest args)
+  "Report something optional that's missing (FORMAT-STRING, ARGS).
+Precede FORMAT-STRING with `:topic' and a symbol to point to that entry
+of docs/guide.md's \"What doctor's messages mean\" (`hell-cli--check')."
+  (apply #'hell-cli--check 'warn format-string args))
+
+(defun hell-doctor-error (format-string &rest args)
+  "Report a problem that breaks the module (FORMAT-STRING, ARGS).
+Makes `bin/hell doctor' exit with a failure. Takes `:topic' as
+`hell-doctor-warn' does."
+  (apply #'hell-cli--check 'error format-string args))
+
+(defun hell-doctor-executable (program why &optional required &rest version-args)
+  "Check that PROGRAM is on the PATH; WHY says what it's needed for.
+If found, show its version (running it with VERSION-ARGS) or its path.
+If missing, warn -- or report an error if REQUIRED is non-nil.
+Returns PROGRAM's path, or nil."
+  (if-let* ((path (executable-find program)))
+      (progn (hell-doctor-ok "%s: %s" program
+                                 (or (and version-args (apply #'hell-cli--version program version-args))
+                                     (abbreviate-file-name path)))
+             path)
+    (funcall (if required #'hell-doctor-error #'hell-doctor-warn)
+             :topic 'tools "%s not found -- %s" program why)
+    nil))
+
+(defun hell-doctor-node (why min-major)
+  "Check Node.js and npm, which WHY needs (a server installed with npm).
+MIN-MAJOR is the oldest Node release it runs on. Errors when missing or
+too old: the server can't be installed or started without it."
+  (let ((node (executable-find "node")))
+    (if (not node)
+        (hell-doctor-error :topic 'tools "node not found -- %s is an npm package; install Node.js %d+" why min-major)
+      (let* ((version (or (hell-cli--version "node" "--version") ""))
+             (major (and (string-match "\\`v?\\([0-9]+\\)" version)
+                         (string-to-number (match-string 1 version)))))
+        (if (and major (< major min-major))
+            (hell-doctor-error :topic 'tools "Node %s is too old for %s (it needs %d+)" version why min-major)
+          (hell-doctor-ok "node: %s" version)))
+      (unless (executable-find "npm")
+        (hell-doctor-error :topic 'tools "npm not found -- `bin/hell sync' installs %s with it" why)))))
+
+(cl-defun hell-doctor-pinned (label version valid present &key where stale-note missing-note)
+  "Check the pinned install of LABEL (release VERSION) that sync makes.
+VALID is non-nil if it's the pinned release; PRESENT, if something is
+installed at all. WHERE, the install directory, is shown when it's valid.
+STALE-NOTE and MISSING-NOTE are appended to the error and warning."
+  (cond (valid
+         (if where
+             (hell-doctor-ok "%s %s installed in %s" label version (abbreviate-file-name where))
+           (hell-doctor-ok "%s %s installed" label version)))
+        (present
+         (hell-doctor-error :topic 'installs "The installed %s isn't the pinned %s%s; `bin/hell sync' replaces it"
+                                label version (or stale-note "")))
+        (t
+         (hell-doctor-warn :topic 'installs "%s isn't installed yet; `bin/hell sync' installs it%s"
+                               label (or missing-note "")))))
+
+;; Hell Emacs never installs fonts (it writes only to its own directories),
+;; so a missing Nerd Font is reported with the command that installs one.
+(defun hell-doctor-nerd-font (consequence)
+  "Check that a Nerd Font is installed; CONSEQUENCE says what happens without."
+  (if (not (executable-find "fc-list"))
+      (hell-doctor-info "fc-list not found; can't tell whether a Nerd Font is installed")
+    (if-let* ((families (ignore-errors
+                          (process-lines "fc-list" ":charset=f07b" "family"))))
+        (hell-doctor-ok "Nerd Font glyphs: %s" (car (split-string (car families) ",")))
+      (hell-doctor-warn :topic 'fonts "No Nerd Font installed: %s. Install one with M-x nerd-icons-install-fonts (into ~/.local/share/fonts), or from your distribution"
+                            consequence))))
+
+(defun hell-doctor-treesit (lang)
+  "Check what building and loading LANG's tree-sitter grammar needs.
+Run for every grammar a module declares (`hell-treesit!')."
+  (if (not (and (fboundp 'treesit-available-p) (treesit-available-p)))
+      (hell-doctor-error :topic 'emacs "This Emacs has no tree-sitter support, which +tree-sitter needs")
+    (if (hell-treesit-installed-p lang)
+        (hell-doctor-ok "tree-sitter %s grammar: %s" lang
+                            (abbreviate-file-name (hell-treesit-library lang)))
+      (if (file-exists-p (hell-treesit-library lang))
+          (hell-doctor-warn :topic 'installs "The tree-sitter %s grammar isn't the pinned commit; `bin/hell sync' rebuilds it" lang)
+        (hell-doctor-warn :topic 'installs "The tree-sitter %s grammar isn't built yet; `bin/hell sync' builds it" lang))
+      (unless (executable-find "git")
+        (hell-doctor-error :topic 'tools "git is needed to fetch the %s grammar" lang))
+      (unless (seq-some #'executable-find '("cc" "gcc" "clang"))
+        (hell-doctor-error :topic 'tools "No C compiler (cc, gcc or clang) to build the %s grammar" lang)))))
+
+;;; The network --------------------------------------------------------------
+
+(declare-function url-host "url-parse")
+
+(defvar hell-cli--probe-network nil
+  "Non-nil while doctor checks that hosts can be reached.
+On with --network, or whenever a proxy, CA bundle or mirror is set.")
+
+(defvar hell-cli--probed nil
+  "(URL . RESULT) of the hosts this doctor run probed, so each is probed once.")
+
+(defun hell-cli--redact (url)
+  "URL without its password."
+  (replace-regexp-in-string "\\(//[^:/@]+\\):[^@/]*@" "\\1:***@" url))
+
+(defun hell-doctor-reachable (url why)
+  "Check that URL's host can be reached; WHY says what it's needed for.
+It is probed as Hell Emacs' fetches reach it (`hell-net-probe'): its
+mirror, the proxy, the CAs. Only when doctor checks the network."
+  (when hell-cli--probe-network
+    (require 'url-parse)
+    (let* ((target (hell-net-rewrite url))
+           (host (url-host (url-generic-parse-url target)))
+           (result (if-let* ((cached (assoc target hell-cli--probed)))
+                       (cdr cached)
+                     (cdr (car (push (cons target (hell-net-probe target)) hell-cli--probed)))))
+           (proxy (and (hell-net--proxied-p host) (hell-cli--redact (hell-net-proxy)))))
+      (pcase result
+        ('nil (hell-doctor-ok "Reaches %s%s (%s)" host (if proxy " through the proxy" "") why))
+        (`(tls . ,message)
+         (hell-doctor-error :topic 'network "%s's certificate isn't trusted: %s. %s" host message
+                                (if hell-ca-bundle
+                                    (format "The CA that signs it is missing from `hell-ca-bundle' (%s)"
+                                            (abbreviate-file-name hell-ca-bundle))
+                                  "If your network inspects TLS, set `hell-ca-bundle' to your company's CA (a PEM file)")))
+        (`(proxy . ,message)
+         (hell-doctor-error :topic 'network "Can't reach %s through the proxy %s: %s" host proxy message))
+        (`(,_ . ,message)
+         (hell-doctor-error :topic 'network "Can't reach %s (%s): %s%s" host why message
+                                (if (hell-net-proxy) "" "; behind a proxy, set `hell-proxy'")))))))
+
+(defun hell-cli--package-hosts ()
+  "The hosts the installed packages are fetched from, as \"https://HOST/\" URLs."
+  (let (hosts)
+    (dolist (config (file-expand-wildcards (expand-file-name "*/.git/config" elpaca-sources-directory)))
+      (with-temp-buffer
+        (insert-file-contents config)
+        (when (re-search-forward "^[ \t]*url = \\(https?://[^/\n]+/\\)" nil t)
+          (cl-pushnew (match-string 1) hosts :test #'equal))))
+    (sort hosts #'string<)))
+
+(defun hell-cli--doctor-network ()
+  "Report the proxy, CA and mirrors in use, and check the package hosts."
+  (hell-cli--say "\nNetwork")
+  (if-let* ((proxy (hell-net-proxy)))
+      (progn
+        (hell-doctor-info "Proxy: %s (%s)" (hell-cli--redact proxy)
+                              (if hell-proxy "`hell-proxy'" "from the environment"))
+        (when-let* ((hosts (hell-net-no-proxy)))
+          (hell-doctor-info "Reached directly: %s" (string-join hosts ", "))))
+    (hell-doctor-info "No proxy"))
+  (when hell-ca-bundle
+    (let ((ca (expand-file-name hell-ca-bundle)))
+      (if (not (file-readable-p ca))
+          (hell-doctor-error :topic 'network "`hell-ca-bundle' is %s, which can't be read" (abbreviate-file-name ca))
+        (let ((count (length (hell-net--pem-certificates ca))))
+          (if (zerop count)
+              (hell-doctor-error :topic 'network "`hell-ca-bundle' (%s) holds no PEM certificate" (abbreviate-file-name ca))
+            (hell-doctor-ok "Corporate CA: %s (%d certificate%s)" (abbreviate-file-name ca)
+                                count (if (= count 1) "" "s"))))
+        (if (hell-net-truststore-current-p)
+            (hell-doctor-ok "JVM truststore: %s" (abbreviate-file-name hell-net-truststore))
+          (hell-doctor-warn :topic 'installs "The JVM truststore isn't built or is older than your CA; `bin/hell sync' builds it")))))
+  (pcase-dolist (`(,from . ,to) hell-mirrors)
+    (hell-doctor-info "Mirror: %s -> %s" from to))
+  (cond
+   (hell-net-offline
+    (hell-doctor-info "Hosts not checked (an offline install)"))
+   ((not hell-cli--probe-network)
+    (hell-doctor-info "Hosts not checked (no proxy, CA or mirror set); `bin/hell doctor --network' checks them"))
+   (t
+    (dolist (url (or (hell-cli--package-hosts) '("https://github.com/")))
+      (hell-doctor-reachable url "packages")))))
+
+(defun hell-cli--wsl-p ()
+  "Non-nil if running inside Windows Subsystem for Linux (WSL)."
+  (and (eq system-type 'gnu/linux)
+       (or (file-exists-p "/proc/sys/fs/binfmt_misc/WSLInterop")
+           (string-match-p "Microsoft\\|WSL" (or (ignore-errors (operating-system-release)) "")))))
+
+(defun hell-cli--doctor-platform ()
+  "Check and report platform-specific considerations (WSL, macOS, Linux)."
+  (cond
+   ((hell-cli--wsl-p)
+    (hell-cli--check 'ok "Platform: Linux under Windows WSL2")
+    (when (or (string-prefix-p "/mnt/" (expand-file-name hell-dir))
+              (string-prefix-p "/mnt/" (expand-file-name hell-user-dir)))
+      (hell-cli--check 'warn :topic 'platform "Hell Emacs or config is on a Windows mount (/mnt/...). Store them on the Linux filesystem (~/...) for native performance")))
+   ((eq system-type 'darwin)
+    (hell-cli--check 'ok "Platform: macOS (%s)" (or (and (boundp 'system-configuration) system-configuration) "darwin"))
+    (unless (file-exists-p hell-env-file)
+      (hell-cli--check 'info "macOS GUI launchers need shell PATH; run `bin/hell env' if GUI Emacs can't find tools")))
+   (t
+    (hell-cli--check 'ok "Platform: %s (%s)" (symbol-name system-type) (or (and (boundp 'system-configuration) system-configuration) "unix")))))
+
+(defun hell-cli-doctor (&rest args)
+  "Check Emacs, required and optional tools, and the state of the config.
+With --network in ARGS, also check that the hosts Hell Emacs fetches from
+can be reached (always done when a proxy, CA bundle or mirror is set)."
+  (setq hell-cli--problems 0
+        hell-cli--probed nil
+        hell-cli--probe-network (and (not hell-net-offline)
+                                         (or (member "--network" args) (hell-net-proxy)
+                                             hell-ca-bundle hell-mirrors)
+                                         t))
+  (hell-cli--say "Emacs")
+  (if (version< emacs-version "29.1")
+      (hell-cli--check 'error :topic 'emacs "Emacs %s is too old; Hell Emacs needs 29.1+" emacs-version)
+    (hell-cli--check 'ok "Emacs %s" emacs-version))
+  (when (string-match-p "\\.[5-9][0-9]\\'" emacs-version)
+    (hell-cli--check 'warn :topic 'emacs "This is a development build of Emacs; expect breakage"))
+  (if (and (fboundp 'native-comp-available-p) (native-comp-available-p))
+      (hell-cli--check 'ok "Native compilation available")
+    (hell-cli--check 'info "No native compilation (optional; makes packages faster)"))
+  (hell-cli--doctor-platform)
+
+  (hell-cli--say "\nRequired tools")
+  (if-let* ((git (hell-cli--version "git" "--version")))
+      (hell-cli--check 'ok "%s" git)
+    (hell-cli--check 'error :topic 'tools "git not found; it's needed to install packages"))
+
+  (hell-cli--doctor-network)
+
+  ;; Each enabled module checks its own requirements (doctor.el), after
+  ;; the modules it needs (`depends-on!', read from the packages.el
+  ;; files). `hell-cli-main' has read the config already.
+  (hell-modules-read-packages)
+  (dolist (key (hell-module-list))
+    (let ((file (expand-file-name "doctor.el" (hell-module-get key :path)))
+          (missing (hell-module-missing-dependencies key))
+          (grammars (hell-treesit-module-languages key)))
+      (when (or missing grammars (file-exists-p file))
+        (hell-cli--say "\nModule %s" (hell-module-key-string key))
+        (dolist (dep missing)
+          (hell-cli--check 'error :topic 'config "Needs %s; add it to your hell! block"
+                               (hell-module-dependency-string dep)))
+        (when (file-exists-p file)
+          (hell-module--load key "doctor.el"))
+        (dolist (lang grammars)
+          (hell-doctor-treesit lang)))))
+
+  (hell-cli--say "\nConfiguration")
+  (hell-cli--check 'info "Profile: %s" (or hell-profile "default"))
+  (if (file-directory-p hell-user-dir)
+      (hell-cli--check 'ok "Your config: %s" (abbreviate-file-name hell-user-dir))
+    (hell-cli--check 'info "No user config yet (%s); using the defaults. `bin/hell install' creates one"
+                         (abbreviate-file-name hell-user-dir)))
+  (if (and (bound-and-true-p hell-team-dir) (file-directory-p hell-team-dir))
+      (hell-cli--check 'ok "Team layer: %s" (abbreviate-file-name hell-team-dir))
+    (hell-cli--check 'info "No team layer ($HELL_TEAM_DIR or %s/team/)"
+                         (abbreviate-file-name hell-user-dir)))
+  (hell-cli--check 'info "Modules: %s"
+                       (mapconcat #'hell-module-key-string (hell-module-list) ", "))
+  (dolist (line (hell-config-report-lines))
+    (hell-cli--check 'info "%s" (string-trim line)))
+  (let* ((profile (hell-profile-read))
+         (reason (and profile (hell-profile--stale-reason profile))))
+    (cond ((null profile)
+           (hell-cli--check 'error :topic 'sync "Not synced yet; run `bin/hell sync'"))
+          (reason
+           (hell-cli--check 'error :topic 'sync "Out of sync (%s); run `bin/hell sync'" reason))
+          (t (hell-cli--check 'ok "Synced: %d packages" (length (plist-get profile :load-path))))))
+  (cond ((hell-compiled-core-current-p)
+         (hell-cli--check 'ok "Byte-compiled: core and the enabled modules (%s)"
+                              (abbreviate-file-name hell-compiled-dir)))
+        ((file-exists-p (expand-file-name "lisp/stamp" hell-compiled-dir))
+         (hell-cli--check 'info "Core changed since the last sync, so it loads from source (slower) until `bin/hell sync'"))
+        (t (hell-cli--check 'info "Not byte-compiled yet; `bin/hell sync' compiles core and the modules")))
+  (if (file-exists-p hell-lock-file)
+      (hell-cli--check 'ok "Packages locked (%s)" (abbreviate-file-name hell-lock-file))
+    (hell-cli--check 'info "Packages not locked; `bin/hell lock' pins their exact versions"))
+  (if (file-exists-p hell-env-file)
+      (hell-cli--check 'ok "Shell environment saved on %s"
+                           (format-time-string "%F" (file-attribute-modification-time
+                                                     (file-attributes hell-env-file))))
+    (hell-cli--check 'info "No saved shell environment; run `bin/hell env' if Emacs can't find your tools"))
+  (dolist (legacy '("var/" "etc/"))
+    (let ((dir (expand-file-name legacy hell-dir)))
+      (when (file-directory-p dir)
+        (hell-cli--check 'warn :topic 'checkout "%s is left over from an older Hell Emacs; nothing uses it, safe to delete"
+                             (abbreviate-file-name dir)))))
+
+  (hell-cli--say "")
+  (if (zerop hell-cli--problems)
+      (hell-cli--say "No problems found.")
+    ;; `hell-cli-main' turns these into a failing exit code.
+    (hell-cli--say "%d problem(s) found." hell-cli--problems)))
+
+;;; hell-doctor ends here

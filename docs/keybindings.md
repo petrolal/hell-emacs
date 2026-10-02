@@ -1,6 +1,6 @@
 # Keybindings
 
-Hellmacs keeps **every stock GNU Emacs key** with its usual meaning, and
+Hell Emacs keeps **every stock GNU Emacs key** with its usual meaning, and
 adds nothing modal: no Evil, no `SPC` leader. Its own commands live under
 `C-c`, the prefix Emacs reserves for users, and packages improve the
 default commands in place (`C-x b` switches buffers with previews). `C-h`
@@ -58,20 +58,20 @@ Emacs' own.
 Laid out as Doom Emacs' non-evil leader, with Emacs' own commands. The
 groups gather stock commands in one place; the stock keys keep working.
 
-### `C-c h`: Hellmacs
+### `C-c h`: Hell Emacs
 
 | Key | Command |
 |---|---|
 | `C-c h s` | The Altar (the startup dashboard) |
 | `C-c h f` | The Forge: find a file in the project (or pick a project first) |
-| `C-c h i` | Grimoire Manual (open Hellmacs native Info manual) |
+| `C-c h i` | Grimoire Manual (open Hell Emacs native Info manual) |
 | `C-c h k` | IntelliJ Exorcism (Rosetta Stone / IntelliJ key finder) |
-| `C-c h p` | Relic Chamber (Hellmacs plugin & module manager) |
+| `C-c h p` | Relic Chamber (Hell Emacs plugin & module manager) |
 | `C-c h r` | The Crucible: hot-swap changed classes into the debugged JVM, or reload into the Clojure REPL |
 | `C-c h c` | The Reaper: collect garbage now, and say how much memory is in use |
 | `C-c h S` | Sync (install what your config declares) |
 | `C-c h R` | Sync in a child Emacs, then reload your config |
-| `C-c h u` / `C-c h v` | Open your config directory / Hellmacs' directory |
+| `C-c h u` / `C-c h v` | Open your config directory / Hell Emacs' directory |
 | `C-c h m` | List the enabled modules |
 
 ### `C-c c`: code
@@ -163,14 +163,14 @@ Flymake's, wherever it runs: `C-c ! n` / `C-c ! p` next / previous,
 
 ## Coming from IntelliJ IDEA or Eclipse
 
-The same actions, on Hellmacs keys. IntelliJ's column is its default
+The same actions, on Hell Emacs keys. IntelliJ's column is its default
 keymap on Windows and Linux (macOS uses `Cmd` for most of them). Keys in
-**bold** are stock Emacs; the rest are Hellmacs' `C-c` groups. There is
+**bold** are stock Emacs; the rest are Hell Emacs' `C-c` groups. There is
 no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 **Finding things**
 
-| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+| Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
 | Any command | `Ctrl+Shift+A` | `Ctrl+3` | **`M-x`** |
 | A file in the project | `Ctrl+Shift+N` | `Ctrl+Shift+R` | **`C-x p f`**, or `C-c h f` |
@@ -186,7 +186,7 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 **Navigating code**
 
-| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+| Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
 | Go to declaration | `Ctrl+B`, `Ctrl+Click` | `F3` | **`M-.`**, or `C-c c d` |
 | Back | `Ctrl+Alt+Left` | `Alt+Left` | **`M-,`** |
@@ -203,7 +203,7 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 **Editing and refactoring**
 
-| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+| Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
 | Completion | `Ctrl+Space` | `Ctrl+Space` | As you type; on demand **`C-M-i`** |
 | Live templates / postfix | `Ctrl+J` / `.for`, `.var`... | Templates | Complete `sysout`, `foreach`, `list.for`, `x.var` like any name |
@@ -224,7 +224,7 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 **Build, run, test, debug**
 
-| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+| Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
 | Build the project | `Ctrl+F9` | `Ctrl+B` | **`C-x p c`**, or `C-c c c` |
 | Run / debug a configuration | `Shift+F10` / `Shift+F9` | `Ctrl+F11` / `F11` | `C-c r r` / `C-c r d` |
@@ -241,7 +241,7 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 
 **Git and the rest**
 
-| Action | IntelliJ IDEA | Eclipse | Hellmacs |
+| Action | IntelliJ IDEA | Eclipse | Hell Emacs |
 |---|---|---|---|
 | Git: status, commit, push | `Alt+9`, `Ctrl+K`, `Ctrl+Shift+K` | Git Staging | **`C-x g`** (Magit), then `c c` commit, `P p` push |
 | Blame / history of this file | Annotate / Show History | Show Annotations / History | **`C-c M-g`**, then `b` / `l` |
@@ -280,11 +280,11 @@ convention):
 
 ```elisp
 (keymap-global-set "C-c y g" #'my-command)
-(hellmacs-leader-def            ; with a which-key label
+(hell-leader-def            ; with a which-key label
   "y g" '("my command" . my-command))
-(hellmacs-localleader-def 'python-mode   ; C-c l r, in Python buffers
+(hell-localleader-def 'python-mode   ; C-c l r, in Python buffers
   "r" '("run file" . my-python-run))
 ```
 
-`hellmacs-prefix-map` is the `C-c h` map, if you want it on another key:
-`(keymap-global-set "<f12>" hellmacs-prefix-map)`.
+`hell-prefix-map` is the `C-c h` map, if you want it on another key:
+`(keymap-global-set "<f12>" hell-prefix-map)`.

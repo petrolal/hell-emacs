@@ -1,0 +1,49 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-config --- Keep your config up with the default modules -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell config' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli-config (&rest args)
+  "List the default modules your `hell!' block misses.
+With --add-defaults in ARGS, add them (keeping a backup of init.el)."
+  (if (not (member "--add-defaults" args))
+      (if-let* ((lines (hell-config-report-lines)))
+          (mapc (lambda (line) (hell-cli--say "%s" line)) lines)
+        (hell-cli--say "Your hell! block has every module that's on by default."))
+    (if-let* ((added (hell-config-add-defaults)))
+        (progn
+          (hell-cli--say "Added %d modules to %s (the old one is %s):"
+                             (length added)
+                             (abbreviate-file-name (expand-file-name "init.el" hell-user-dir))
+                             (file-name-nondirectory hell-config-last-backup))
+          (dolist (m added)
+            (hell-cli--say "  %s" (string-trim (cdr m))))
+          (hell-cli--say "Now run `bin/hell sync' to install them."))
+      (hell-cli--say "Nothing to add: your hell! block has every module that's on by default."))))
+
+;;; hell-config ends here

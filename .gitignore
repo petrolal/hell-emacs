@@ -1,11 +1,11 @@
-# Dotfiles at the root: only Hellmacs' own, matching Doom & Centaur Emacs conventions.
+# Dotfiles at the root: only Hell Emacs' own, matching Doom & Centaur Emacs conventions.
 /.*
-!/.hellmacs
+!/.hell-emacs
 !/.dir-locals.el
 !/.gitignore
 !/.github
 
-# Where older Hellmacs versions or local runs keep packages, state, and caches.
+# Where older Hell Emacs versions or local runs keep packages, state, and caches.
 /var/
 /etc/
 /.local*/
@@ -14,7 +14,7 @@
 /eln-cache/
 /auto-save-list/
 
-# User config in root if $HELLMACSDIR is this checkout.
+# User config in root if $HELLDIR is this checkout.
 /*.el
 !/early-init.el
 /user-lisp/
@@ -22,9 +22,9 @@
 /snippets/
 /templates/
 /modules/*/
-!/modules/hellmacs/
+!/modules/hell/
 /sources/*/
-!/sources/hellmacs+/
+!/sources/hell+/
 /profiles/*/
 !/profiles/safe-mode/
 

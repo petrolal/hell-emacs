@@ -1,0 +1,174 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-upgrade --- Update Hell Emacs itself, then its packages -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell upgrade' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(hell-cli-load "lock")
+
+(defun hell-cli--latest-release (tags)
+  "The highest release among TAGS, vMAJOR.MINOR.PATCH by version; nil if none.
+Pre-releases (v1.0.0-rc.1) and other tags don't count."
+  (car (sort (seq-filter (lambda (tag) (string-match-p "\\`v[0-9]+\\.[0-9]+\\.[0-9]+\\'" tag)) tags)
+             (lambda (a b) (version-list-< (version-to-list (substring b 1))
+                                           (version-to-list (substring a 1)))))))
+
+(defun hell-cli--upgrade-to-release (git)
+  "Check out the latest release: the stable channel.
+GIT runs git in `hell-dir'."
+  (let ((fetch (with-hell-network (funcall git "fetch" "--quiet" "--tags" "origin"))))
+    (unless (zerop (car fetch))
+      (error "git fetch failed in %s:\n%s" hell-dir (cdr fetch))))
+  (let* ((tags (split-string (cdr (funcall git "tag" "--list" "v*")) "\n" t))
+         (release (hell-cli--latest-release tags))
+         (current (let ((exact (funcall git "describe" "--tags" "--exact-match")))
+                    (and (zerop (car exact)) (cdr exact))))
+         (before (truncate-string-to-width (cdr (funcall git "rev-parse" "HEAD")) 7)))
+    (cond
+     ((null release)
+      (hell-cli--say "Hell Emacs has no release yet on the stable channel; staying at %s. \
+`upgrade --channel main' follows the development branch." before)
+      nil)
+     ((equal current release)
+      (hell-cli--say "Hell Emacs is already on its latest release, %s." release))
+     (t
+      (when hell-upgrade-verify-tags
+        (let ((verify (funcall git "verify-tag" release)))
+          (unless (zerop (car verify))
+            (error "Release %s isn't signed by a key you trust (`hell-upgrade-verify-tags'); not checked out:\n%s"
+                   release (cdr verify)))))
+      (let ((checkout (funcall git "checkout" "--quiet" release)))
+        (unless (zerop (car checkout))
+          (error "git checkout %s failed in %s:\n%s" release hell-dir (cdr checkout))))
+      (hell-cli--say "Hell Emacs is on release %s (it was at %s)." release (or current before))))))
+
+(defun hell-cli--upgrade-to-main (git)
+  "Pull the development branch (main channel), GIT running git in `hell-dir'.
+From a release (a detached HEAD), the branch is checked out first."
+  (unless (zerop (car (funcall git "symbolic-ref" "-q" "HEAD")))
+    (let* ((head (funcall git "symbolic-ref" "--short" "refs/remotes/origin/HEAD"))
+           (branch (if (zerop (car head)) (string-remove-prefix "origin/" (cdr head)) "main"))
+           (checkout (funcall git "checkout" "--quiet" branch)))
+      (unless (zerop (car checkout))
+        (error "git checkout %s failed in %s:\n%s" branch hell-dir (cdr checkout)))))
+  (if (not (zerop (car (funcall git "rev-parse" "--abbrev-ref" "@{upstream}"))))
+      (progn (hell-cli--say "Hell Emacs' branch has no upstream to pull from; skipping its update.") nil)
+    (let ((before (cdr (funcall git "rev-parse" "HEAD")))
+          (pull (with-hell-network (funcall git "pull" "--ff-only"))))
+      (unless (zerop (car pull))
+        (error "git pull failed in %s:\n%s" hell-dir (cdr pull)))
+      (let ((after (cdr (funcall git "rev-parse" "HEAD"))))
+        (hell-cli--say (if (equal before after)
+                               "Hell Emacs is already up to date."
+                         (format "Updated Hell Emacs %s -> %s"
+                                     (truncate-string-to-width before 7)
+                                     (truncate-string-to-width after 7))))))))
+
+(defun hell-cli-upgrade-self (&rest args)
+  "Move Hell Emacs itself to its channel's latest, with git, when that's safe.
+ARGS may hold --channel stable|main (default `hell-upgrade-channel').
+Run by `bin/hell upgrade' first, so the package update that follows
+runs the new code."
+  (let ((channel (if-let* ((name (hell-cli--option args "--channel"))) (intern name) hell-upgrade-channel))
+        (git (lambda (&rest args) (apply #'hell-cli--run "git" "-C" hell-dir args))))
+    (unless (memq channel '(stable main))
+      (error "No channel `%s': it's stable (the latest release) or main" channel))
+    (cond
+     ((not (zerop (car (funcall git "rev-parse" "--git-dir"))))
+      (hell-cli--say "Hell Emacs isn't a git checkout; skipping its update.") nil)
+     ((not (string-empty-p (cdr (funcall git "status" "--porcelain" "--untracked-files=no"))))
+      (hell-cli--say "Hell Emacs has uncommitted changes; skipping its update.") nil)
+     ((eq channel 'stable) (hell-cli--upgrade-to-release git))
+     (t (hell-cli--upgrade-to-main git)))))
+
+(defun hell-cli--detached (packages)
+  "The Elpaca records among PACKAGES whose git checkout is on a detached HEAD.
+Asks every checkout at once (`git symbolic-ref': 1 when detached, 128
+when it isn't a git checkout at all)."
+  (let* ((present (seq-filter (lambda (e) (file-directory-p (elpaca<-source-dir e))) packages))
+         (codes (hell-cli--run-all
+                 (mapcar (lambda (e) (list "git" "-C" (elpaca<-source-dir e) "symbolic-ref" "-q" "HEAD"))
+                         present))))
+    (cl-loop for e in present for code in codes
+             when (eql code 1) collect e)))
+
+(defun hell-cli--reattach (e)
+  "Put package E's detached git checkout back on its branch.
+Installing at an exact commit (from the lock file) leaves the checkout
+on a detached HEAD, which has no upstream to update from."
+  (let* ((dir (elpaca<-source-dir e))
+         (git (lambda (&rest args) (apply #'hell-cli--run "git" "-C" dir args))))
+    (let ((branch (or (plist-get (elpaca<-recipe e) :branch)
+                      (let ((head (funcall git "symbolic-ref" "--short" "refs/remotes/origin/HEAD")))
+                        (and (zerop (car head))
+                             (string-remove-prefix "origin/" (cdr head)))))))
+      (unless (and branch (zerop (car (funcall git "checkout" "-q" branch))))
+        (hell-cli--say "  ! couldn't find the branch of %s; leaving it at its current commit"
+                       (elpaca<-id e))))))
+
+(defcli! upgrade (&rest _)
+  "Update every unpinned package, then re-sync.
+`bin/hell upgrade' runs `upgrade-self' before this, unless given
+--packages. Rewrites the lock file if you have one."
+  (let ((locked (file-exists-p hell-lock-file)))
+    (hell-sync--log "Reading modules and packages...")
+    (hell-modules-read-config)
+    (with-hell-network
+      (hell-cli--upgrade-packages))
+    (when locked
+      (hell-cli--write-lock))
+    ;; New default modules come with updates; your block may miss them.
+    (when-let* ((lines (hell-config-report-lines)))
+      (hell-cli--say "")
+      (mapc (lambda (line) (hell-cli--say "%s" line)) lines))))
+
+(defun hell-cli--upgrade-packages ()
+  "Fetch and merge every unpinned package, then write the profile. For `upgrade'."
+  (hell-packages-bootstrap)
+  (hell-sync--check-elpaca)
+  ;; Install from the lock first, so upgrading starts from what's locked.
+  (hell-modules-install-packages)
+  (let ((pinned (cl-loop for (name . plist) in hell-packages
+                         when (plist-get plist :pin) collect name))
+        (ids (mapcar #'car (elpaca--queued))))
+    (hell-sync--log "Updating %d packages%s..."
+                    (- (length ids) (length pinned))
+                        (if pinned (format " (%d pinned, skipped)" (length pinned)) ""))
+    (let ((ids (seq-remove (lambda (id) (memq id pinned)) ids)))
+      ;; Usually none is detached (only after installing from the lock):
+      ;; every checkout is asked at once, and only those are fixed.
+      (mapc #'hell-cli--reattach
+            (hell-cli--detached (delq nil (mapcar #'elpaca-get ids))))
+      (dolist (id ids)
+        (elpaca-merge id 'fetch)))
+    (elpaca-process-queues)
+    (hell--elpaca-wait))
+  (hell-sync--check-failures)
+  (hell-sync--log "Synced %d packages" (length (hell-sync--write-profile)))
+  (hell-verify-record-installed))
+
+;;; hell-upgrade ends here

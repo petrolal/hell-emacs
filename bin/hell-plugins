@@ -1,0 +1,97 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-plugins --- Plugin and module manager CLI -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+(require 'hell-plugins)
+
+(defcli! plugins (&optional subcmd &rest args)
+  "Browse, enable, disable, and update Hell Emacs modules and plugins.
+
+Usage:
+  bin/hell plugins list
+  bin/hell plugins search QUERY
+  bin/hell plugins enable MODULE...
+  bin/hell plugins disable MODULE...
+  bin/hell plugins update"
+  (pcase (or subcmd "list")
+    ("list"
+     (let ((plugins (hell-plugins-all)))
+       (hell-cli--say "Available Hell Emacs modules and plugins:\n")
+       (dolist (p plugins)
+         (let ((status (if (plist-get p :enabled) "[✓ enabled]" "[  disabled]"))
+               (group (plist-get p :group))
+               (name (plist-get p :name))
+               (desc (plist-get p :desc)))
+           (hell-cli--say "  %-12s :%-10s %-16s %s"
+                          status group name desc)))
+       (hell-cli--say "\nUse `bin/hell plugins enable MODULE' to enable a module.")))
+
+    ("search"
+     (let* ((query (or (car args) (error "Usage: bin/hell plugins search QUERY")))
+            (plugins (hell-plugins-all))
+            (matches (seq-filter (lambda (p)
+                                   (let ((text (format "%s %s %s"
+                                                       (plist-get p :group)
+                                                       (plist-get p :name)
+                                                       (plist-get p :desc))))
+                                     (string-match-p (regexp-quote query) text)))
+                                 plugins)))
+       (if (null matches)
+           (hell-cli--say "No modules found matching '%s'" query)
+         (hell-cli--say "Search results for '%s':\n" query)
+         (dolist (p matches)
+           (let ((status (if (plist-get p :enabled) "[✓ enabled]" "[  disabled]"))
+                 (group (plist-get p :group))
+                 (name (plist-get p :name))
+                 (desc (plist-get p :desc)))
+             (hell-cli--say "  %-12s :%-10s %-16s %s" status group name desc))))))
+
+    ("enable"
+     (unless args
+       (error "Usage: bin/hell plugins enable MODULE..."))
+     (dolist (mod args)
+       (let* ((parts (split-string mod "/"))
+              (name (intern (car (last parts))))
+              (group (if (cdr parts) (intern (car parts)) 'lang)))
+         (hell-plugin-enable group name))))
+
+    ("disable"
+     (unless args
+       (error "Usage: bin/hell plugins disable MODULE..."))
+     (dolist (mod args)
+       (let* ((parts (split-string mod "/"))
+              (name (intern (car (last parts))))
+              (group (if (cdr parts) (intern (car parts)) 'lang)))
+         (hell-plugin-disable group name))))
+
+    ("update"
+     (hell-cli--say "Checking for plugin updates...")
+     (if (= (hash-table-count hell-third-party-plugins) 0)
+         (hell-cli--say "No third-party plugins declared. All core modules are synchronized.")
+       (maphash (lambda (name plist)
+                  (hell-cli--say "Updating plugin %s from %s..." name (plist-get plist :repo)))
+                hell-third-party-plugins)
+       (hell-cli--say "Done updating plugins. Run `bin/hell sync' to apply.")))
+
+    (other
+     (error "Unknown plugins subcommand '%s'. See `bin/hell help plugins'" other))))

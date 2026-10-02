@@ -1,0 +1,67 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-licenses --- The license report -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell licenses' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli--component-label (c)
+  "C's name and version, a package's commit shortened, and its kind."
+  (let ((version (or (plist-get c :version) "")))
+    (format "%s %s (%s)" (plist-get c :name)
+            (if (eq (plist-get c :kind) 'package) (truncate-string-to-width version 12) version)
+            (plist-get c :kind))))
+
+(defun hell-cli-licenses (&rest _)
+  "List the license of everything installed; fail if one isn't known."
+  (let* ((components (sort (hell-compliance-components)
+                           (lambda (a b)
+                             (let ((la (or (plist-get a :license) "")) (lb (or (plist-get b :license) "")))
+                               (if (equal la lb)
+                                   (string< (plist-get a :name) (plist-get b :name))
+                                 (string< la lb))))))
+         (known (seq-filter (lambda (c) (plist-get c :license)) components))
+         (width (apply #'max 10 (mapcar (lambda (c) (length (plist-get c :license))) known)))
+         (problems (hell-compliance-license-problems components)))
+    (hell-cli--say "Licenses of what's installed (%d components):" (length components))
+    (dolist (c known)
+      (hell-cli--say "  %s  %s" (string-pad (plist-get c :license) width)
+                     (hell-cli--component-label c)))
+    (hell-cli--say "\nBy license:")
+    (dolist (group (seq-group-by (lambda (c) (or (plist-get c :license) "UNKNOWN")) components))
+      (hell-cli--say "  %s  %d" (string-pad (car group) width) (length (cdr group))))
+    (when problems
+      (hell-cli--say "\nTo look at:")
+      (pcase-dolist (`(,c . ,why) problems)
+        (pcase why
+          ('unknown
+           (hell-cli--check 'error "%s: no license found in its headers, LICENSE file or declaration"
+                            (hell-cli--component-label c)))
+          ('unlisted
+           (hell-cli--check 'warn "%s: %s, not on SPDX's list: check its terms before you ship it"
+                            (hell-cli--component-label c) (plist-get c :license))))))))
+
+;;; hell-licenses ends here

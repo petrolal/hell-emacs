@@ -1,6 +1,6 @@
-name: Hellmacs CI
+name: Hell Emacs CI
 
-# Hellmacs has no test suites (test/ was removed on 2026-09-30). CI
+# Hell Emacs has no test suites (test/ was removed on 2026-09-30). CI
 # installs it the way a user does, checks it with doctor, and reports the
 # licenses and the bill of materials of everything installed.
 
@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The oldest Emacs Hellmacs supports, and the newest release.
+        # The oldest Emacs Hell Emacs supports, and the newest release.
         emacs-version: ['29.1', '30.1']
     steps:
       - name: Check out repository
@@ -53,18 +53,18 @@ jobs:
       # As a user would: creates the config, syncs, saves the environment,
       # and runs doctor.
       - name: Install
-        run: bin/hellmacs install --env
+        run: bin/hell install --env
 
       - name: Doctor
-        run: bin/hellmacs doctor
+        run: bin/hell doctor
 
       # 12.9: a dependency whose license isn't known fails here, before it
       # ships; the bill of materials is kept with the run.
       - name: License report
-        run: bin/hellmacs licenses
+        run: bin/hell licenses
 
       - name: Bill of materials (CycloneDX)
-        run: bin/hellmacs sbom sbom.json
+        run: bin/hell sbom sbom.json
 
       - name: Keep the bill of materials
         uses: actions/upload-artifact@v4

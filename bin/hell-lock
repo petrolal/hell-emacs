@@ -1,0 +1,45 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-lock --- Pin every package to its exact commit -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell lock' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli--write-lock ()
+  "Write `hell-lock-file' for every package Elpaca has queued."
+  (defvar elpaca-lock-file-functions)
+  (let ((elpaca-lock-file-functions nil)) ; lock everything, not just init-time orders
+    (make-directory (file-name-directory hell-lock-file) t)
+    (elpaca-write-lock-file hell-lock-file))
+  (hell-cli--say "Locked %d packages in %s"
+                     (length (elpaca--queued)) (abbreviate-file-name hell-lock-file)))
+
+(defun hell-cli-lock (&rest _)
+  "Sync, then record the exact commit of every installed package."
+  (hell-sync)
+  (hell-cli--write-lock))
+
+;;; hell-lock ends here

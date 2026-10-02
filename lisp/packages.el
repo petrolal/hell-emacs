@@ -3,17 +3,17 @@
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
 ;; Author: petrolal <petrolalucas@gmail.com>
-;; URL: https://github.com/petrolal/hellmacs
+;; URL: https://github.com/petrolal/hell-emacs
 ;; License: GPL-3.0-or-later
 ;;
-;; This file is part of Hellmacs.
+;; This file is part of Hell Emacs.
 ;;
-;; Hellmacs is free software: you can redistribute it and/or modify
+;; Hell Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 ;;
-;; Hellmacs is distributed in the hope that it will be useful,
+;; Hell Emacs is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
@@ -24,6 +24,6 @@
 ;; Packages the engine itself would need, read before any module's
 ;; packages.el. None: like Doom v3's lisp/packages.el, it's empty, and the
 ;; packages every configuration gets are core's own module's
-;; (modules/hellmacs/packages.el).
+;; (modules/hell/packages.el).
 
 ;;; packages.el ends here

@@ -1,0 +1,39 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-version --- Hell Emacs, its channel and Emacs -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell version' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli-version (&rest _)
+  "Say Hell Emacs' version (and its commit), its update channel and Emacs'."
+  (let ((described (hell-cli--run "git" "-C" hell-dir "describe" "--tags" "--always" "--dirty")))
+    (hell-cli--say "Hell Emacs %s%s" hell-version
+                       (if (zerop (car described)) (format " (%s)" (cdr described)) "")))
+  (hell-cli--say "Update channel: %s (`hell-upgrade-channel')" hell-upgrade-channel)
+  (hell-cli--say "Emacs %s on %s" emacs-version system-configuration))
+
+;;; hell-version ends here

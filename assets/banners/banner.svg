@@ -28,6 +28,6 @@
   <line x1="346" y1="105" x2="362" y2="105" stroke="#da8548" stroke-width="2"/>
 
   <!-- Typography -->
-  <text x="270" y="224" text-anchor="middle" fill="#ff6c6b" font-family="monospace" font-size="15" font-weight="bold" letter-spacing="3">HELLMACS: THE INFERNAL JVM HACKING ENVIRONMENT</text>
+  <text x="270" y="224" text-anchor="middle" fill="#ff6c6b" font-family="monospace" font-size="15" font-weight="bold" letter-spacing="3">HELL EMACS: THE INFERNAL JVM HACKING ENVIRONMENT</text>
   <text x="270" y="246" text-anchor="middle" fill="#da8548" font-family="monospace" font-size="10.5" letter-spacing="2">BYTECODE SUBJUGATED // REPL FIRED</text>
 </svg>

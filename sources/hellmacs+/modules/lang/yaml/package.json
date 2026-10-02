@@ -1,8 +1,0 @@
-{
-  "name": "hellmacs-lang-yaml",
-  "private": true,
-  "description": "The yaml-language-server server :lang yaml pins; bin/hellmacs sync installs it with npm ci.",
-  "dependencies": {
-    "yaml-language-server": "1.24.0"
-  }
-}

@@ -1,0 +1,9 @@
+;; -*- mode: lisp-data -*-
+"0.9.0"
+((name . petrolal/hell-emacs)
+ (version . ,hell-version)
+ (homepage . "https://github.com/petrolal/hell-emacs")
+ (license . "GPL-3.0-or-later")
+
+ (commits (style conventional)
+          (types "feat" "fix" "docs" "refactor" "test" "chore")))

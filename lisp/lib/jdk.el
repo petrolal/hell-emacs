@@ -3,17 +3,17 @@
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
 ;; Author: petrolal <petrolalucas@gmail.com>
-;; URL: https://github.com/petrolal/hellmacs
+;; URL: https://github.com/petrolal/hell-emacs
 ;; License: GPL-3.0-or-later
 ;;
-;; This file is part of Hellmacs.
+;; This file is part of Hell Emacs.
 ;;
-;; Hellmacs is free software: you can redistribute it and/or modify
+;; Hell Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 ;;
-;; Hellmacs is distributed in the hope that it will be useful,
+;; Hell Emacs is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
@@ -21,10 +21,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Several JDKs side by side (Phase 12.3). `bin/hellmacs sync' looks for
+;; Several JDKs side by side (Phase 12.3). `bin/hell sync' looks for
 ;; them where JDKs get installed -- SDKMAN, /usr/lib/jvm, macOS's
 ;; JavaVirtualMachines, asdf, jenv, mise -- and JAVA_HOME, and stores what
-;; it found (`hellmacs-jdk-file'). :lang java hands them to JDTLS as
+;; it found (`hell-jdk-file'). :lang java hands them to JDTLS as
 ;; `lsp-java-configuration-runtimes', so each project compiles against the
 ;; release it targets while JDTLS itself runs on 21+.
 ;;
@@ -36,20 +36,20 @@
 ;; Also here: what Maven's toolchains.xml and a Gradle build's toolchain
 ;; block ask for, in the same words.
 ;;
-;; Not loaded at startup: its entry points are autoloaded (hellmacs-modules.el).
+;; Not loaded at startup: its entry points are autoloaded (hell-modules.el).
 
 ;;; Code:
 
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
-(require 'hellmacs-lib)
+(require 'hell-lib)
 
-(defvar hellmacs-data-dir)              ; early-init.el
+(defvar hell-data-dir)              ; early-init.el
 
 ;;; Release names ----------------------------------------------------------------
 
-(defun hellmacs-jdk--major (version)
+(defun hell-jdk--major (version)
   "The major release of VERSION (\"1.8.0_402\", \"21.0.2+13-LTS\", 17), or nil."
   (let ((version (if (numberp version) (number-to-string version) version)))
     (when (and (stringp version)
@@ -61,57 +61,57 @@
           major)))))
 
 ;;;###autoload
-(defun hellmacs-jdk-release-name (version)
+(defun hell-jdk-release-name (version)
   "JDTLS's name for the release of VERSION: \"J2SE-1.5\", \"JavaSE-1.8\", \"JavaSE-21\".
 VERSION is a string (\"1.8\", \"8\", \"17.0.9\") or a number; nil if it
 isn't a Java version."
-  (when-let* ((major (hellmacs-jdk--major version)))
+  (when-let* ((major (hell-jdk--major version)))
     (cond ((< major 5) nil)
           ((= major 5) "J2SE-1.5")
           ((<= major 8) (format "JavaSE-1.%d" major))
           (t (format "JavaSE-%d" major)))))
 
-(defun hellmacs-jdk--name-major (name)
+(defun hell-jdk--name-major (name)
   "The major release a JDTLS release NAME (\"JavaSE-1.8\") stands for."
-  (hellmacs-jdk--major (replace-regexp-in-string "\\`[A-Za-z0-9]+-" "" name)))
+  (hell-jdk--major (replace-regexp-in-string "\\`[A-Za-z0-9]+-" "" name)))
 
 ;;;###autoload
-(defun hellmacs-jdk-parse-release-content (content)
+(defun hell-jdk-parse-release-content (content)
   "The release name in CONTENT, a JDK's `release' file, from its JAVA_VERSION."
   (when (string-match "^JAVA_VERSION=[\"']?\\([^\"'\n]+\\)" content)
-    (hellmacs-jdk-release-name (match-string 1 content))))
+    (hell-jdk-release-name (match-string 1 content))))
 
-(defun hellmacs-jdk-home-release (home)
+(defun hell-jdk-home-release (home)
   "The release name of the JDK in HOME, or nil if HOME isn't a JDK."
   (let ((file (expand-file-name "release" home)))
     (when (file-readable-p file)
       (with-temp-buffer
         (insert-file-contents file)
-        (hellmacs-jdk-parse-release-content (buffer-string))))))
+        (hell-jdk-parse-release-content (buffer-string))))))
 
-(defun hellmacs-jdk-home-major (home)
+(defun hell-jdk-home-major (home)
   "The major release of the JDK in HOME (8, 21...), or nil if HOME isn't one."
-  (when-let* ((name (and home (hellmacs-jdk-home-release home))))
-    (hellmacs-jdk--name-major name)))
+  (when-let* ((name (and home (hell-jdk-home-release home))))
+    (hell-jdk--name-major name)))
 
-(defun hellmacs-jdk-pick (homes min max)
+(defun hell-jdk-pick (homes min max)
   "The first of HOMES holding a JDK of release MIN to MAX, or nil."
   (seq-find (lambda (home)
-              (when-let* ((major (hellmacs-jdk-home-major home)))
+              (when-let* ((major (hell-jdk-home-major home)))
                 (<= min major max)))
             homes))
 
 ;;; Finding them -------------------------------------------------------------------
 
-(defvar hellmacs-jdk-roots nil
-  "Directories holding one JDK per subdirectory, searched by `bin/hellmacs sync'.
-nil searches `hellmacs-jdk-default-roots'.")
+(defvar hell-jdk-roots nil
+  "Directories holding one JDK per subdirectory, searched by `bin/hell sync'.
+nil searches `hell-jdk-default-roots'.")
 
-(defvar hellmacs-jdk-file (expand-file-name "jvm/jdks.eld" hellmacs-data-dir)
-  "Where `bin/hellmacs sync' stores the JDKs it found.")
+(defvar hell-jdk-file (expand-file-name "jvm/jdks.eld" hell-data-dir)
+  "Where `bin/hell sync' stores the JDKs it found.")
 
 ;;;###autoload
-(defun hellmacs-jdk-default-roots ()
+(defun hell-jdk-default-roots ()
   "Where JDK installers put JDKs, following their own variables when set."
   (let ((env (lambda (var default)
                (let ((value (getenv var)))
@@ -126,7 +126,7 @@ nil searches `hellmacs-jdk-default-roots'.")
           (expand-file-name "installs/java" (funcall env "MISE_DATA_DIR" "~/.local/share/mise"))
           (expand-file-name "~/.jdks"))))       ; IntelliJ's downloads, which Gradle finds too
 
-(defun hellmacs-jdk--homes (root)
+(defun hell-jdk--homes (root)
   "The JDK homes directly under ROOT; macOS keeps a JDK's in Contents/Home."
   (when (file-directory-p root)
     (cl-loop for dir in (directory-files root t directory-files-no-dot-files-regexp)
@@ -134,7 +134,7 @@ nil searches `hellmacs-jdk-default-roots'.")
              when (file-directory-p dir)
              collect (if (file-directory-p mac) mac dir))))
 
-(defun hellmacs-jdk--collect (homes)
+(defun hell-jdk--collect (homes)
   "(NAME . HOME) for each JDK among HOMES: the first one per release, sorted.
 A link is recorded as where it leads, and counts once with it."
   (let ((seen-names nil) (seen-dirs nil) found)
@@ -142,7 +142,7 @@ A link is recorded as where it leads, and counts once with it."
       (let ((true (file-truename (directory-file-name home))))
         (unless (member true seen-dirs)
           (push true seen-dirs)
-          (when-let* ((name (hellmacs-jdk-home-release home)))
+          (when-let* ((name (hell-jdk-home-release home)))
             (unless (member name seen-names)
               (push name seen-names)
               (push (cons name (if (file-symlink-p (directory-file-name home))
@@ -150,43 +150,43 @@ A link is recorded as where it leads, and counts once with it."
                                  (directory-file-name home)))
                     found))))))
     (sort (nreverse found)
-          (lambda (a b) (< (hellmacs-jdk--name-major (car a)) (hellmacs-jdk--name-major (car b)))))))
+          (lambda (a b) (< (hell-jdk--name-major (car a)) (hell-jdk--name-major (car b)))))))
 
 ;;;###autoload
-(defun hellmacs-jdk-scan-roots (roots)
+(defun hell-jdk-scan-roots (roots)
   "The JDKs in ROOTS (each holding JDKs), as (NAME . HOME), one per release."
-  (hellmacs-jdk--collect (mapcan #'hellmacs-jdk--homes roots)))
+  (hell-jdk--collect (mapcan #'hell-jdk--homes roots)))
 
-(defun hellmacs-jdk--path-home ()
+(defun hell-jdk--path-home ()
   "The JDK home of the java on the PATH, or nil."
   (when-let* ((java (executable-find "java")))
     (file-name-directory (directory-file-name (file-name-directory (file-truename java))))))
 
 ;;;###autoload
-(defun hellmacs-jdk-detect ()
+(defun hell-jdk-detect ()
   "Every JDK on this machine, as (NAME . HOME) sorted by release.
 JAVA_HOME's comes first for its release, then the PATH's java, then
-those in `hellmacs-jdk-roots'."
-  (hellmacs-jdk--collect
+those in `hell-jdk-roots'."
+  (hell-jdk--collect
    (append (delq nil (list (let ((home (getenv "JAVA_HOME")))
                              (and home (not (string-empty-p home)) (expand-file-name home)))
-                           (hellmacs-jdk--path-home)))
-           (mapcan #'hellmacs-jdk--homes (or hellmacs-jdk-roots (hellmacs-jdk-default-roots))))))
+                           (hell-jdk--path-home)))
+           (mapcan #'hell-jdk--homes (or hell-jdk-roots (hell-jdk-default-roots))))))
 
 ;;; A java new enough ------------------------------------------------------------
 
 ;;;###autoload
-(defun hellmacs-jdk-java-executable (min)
+(defun hell-jdk-java-executable (min)
   "A java of release MIN or later: JAVA_HOME's, one sync found, or the PATH's.
-For the JVM tools Hellmacs runs (formatters, sqlline...). \"java\" if
+For the JVM tools Hell Emacs runs (formatters, sqlline...). \"java\" if
 there is none, so the error names it."
   (let* ((path-java (executable-find "java"))
          (homes (delq nil (append (list (let ((home (getenv "JAVA_HOME")))
                                           (and home (not (string-empty-p home)) home)))
-                                  (mapcar #'cdr (hellmacs-jdk-read))
-                                  (list (and path-java (hellmacs-jdk--path-home))))))
+                                  (mapcar #'cdr (hell-jdk-read))
+                                  (list (and path-java (hell-jdk--path-home))))))
          (home (seq-find (lambda (home)
-                           (let ((major (hellmacs-jdk-home-major home)))
+                           (let ((major (hell-jdk-home-major home)))
                              (and major (>= major min))))
                          homes)))
     (if home (expand-file-name "bin/java" home) "java")))
@@ -194,26 +194,26 @@ there is none, so the error names it."
 ;;; What sync found ------------------------------------------------------------
 
 ;;;###autoload
-(defun hellmacs-jdk-write (jdks)
-  "Store JDKS, as found by `hellmacs-jdk-detect', in `hellmacs-jdk-file'."
-  (make-directory (file-name-directory hellmacs-jdk-file) t)
-  (with-temp-file hellmacs-jdk-file
-    (insert ";; -*- mode: lisp-data -*-\n;; The JDKs `bin/hellmacs sync' found; don't edit.\n")
+(defun hell-jdk-write (jdks)
+  "Store JDKS, as found by `hell-jdk-detect', in `hell-jdk-file'."
+  (make-directory (file-name-directory hell-jdk-file) t)
+  (with-temp-file hell-jdk-file
+    (insert ";; -*- mode: lisp-data -*-\n;; The JDKs `bin/hell sync' found; don't edit.\n")
     (let ((print-length nil) (print-level nil))
       (prin1 jdks (current-buffer)))
     (insert "\n")))
 
 ;;;###autoload
-(defun hellmacs-jdk-read ()
+(defun hell-jdk-read ()
   "The JDKs stored by the last sync, or nil."
-  (when (file-readable-p hellmacs-jdk-file)
+  (when (file-readable-p hell-jdk-file)
     (with-temp-buffer
-      (insert-file-contents hellmacs-jdk-file)
+      (insert-file-contents hell-jdk-file)
       (let ((data (ignore-errors (read (current-buffer)))))
         (and (listp data) (seq-every-p #'consp data) data)))))
 
 ;;;###autoload
-(defun hellmacs-jdk-lsp-runtimes (jdks default-home)
+(defun hell-jdk-lsp-runtimes (jdks default-home)
   "JDKS as `lsp-java-configuration-runtimes': a vector of (:name :path :default).
 The JDK in DEFAULT-HOME is the default (for projects that name no
 release); without one among JDKS, the newest is."
@@ -229,7 +229,7 @@ release); without one among JDKS, the newest is."
 ;;; What builds ask for -------------------------------------------------------------
 
 ;;;###autoload
-(defun hellmacs-jdk-parse-toolchains-xml (file)
+(defun hell-jdk-parse-toolchains-xml (file)
   "The releases Maven's toolchains.xml FILE provides JDKs for, or nil.
 A version range (\"[11,)\") names its lower bound."
   (when (file-readable-p file)
@@ -242,12 +242,12 @@ A version range (\"[11,)\") names its lower bound."
                (version (car (xml-node-children (car (xml-get-children provides 'version))))))
           (when (and (stringp type) (equal (string-trim type) "jdk") (stringp version)
                      (string-match "[0-9][0-9.]*" version))
-            (when-let* ((name (hellmacs-jdk-release-name (match-string 0 version))))
+            (when-let* ((name (hell-jdk-release-name (match-string 0 version))))
               (cl-pushnew name releases :test #'equal)))))
       (nreverse releases))))
 
 ;;;###autoload
-(defun hellmacs-jdk-toolchains-xml-jdks (file)
+(defun hell-jdk-toolchains-xml-jdks (file)
   "The JDKs Maven's toolchains.xml FILE lists, as (RELEASE . JDK-HOME).
 JDK-HOME is nil for an entry without one."
   (when (file-readable-p file)
@@ -262,35 +262,35 @@ JDK-HOME is nil for an entry without one."
         (let ((version (funcall text toolchain 'provides 'version)))
           (when (and (equal (funcall text toolchain 'type) "jdk") version
                      (string-match "[0-9][0-9.]*" version))
-            (when-let* ((name (hellmacs-jdk-release-name (match-string 0 version))))
+            (when-let* ((name (hell-jdk-release-name (match-string 0 version))))
               (push (cons name (funcall text toolchain 'configuration 'jdkHome)) jdks)))))
       (nreverse jdks))))
 
-(defconst hellmacs-jdk--gradle-toolchain-regexp
+(defconst hell-jdk--gradle-toolchain-regexp
   "\\(?:JavaLanguageVersion\\.of\\|jvmToolchain\\)(\\s-*\\([0-9]+\\)\\s-*)"
   "A Gradle toolchain request: Java's `JavaLanguageVersion.of(N)', Kotlin's `jvmToolchain(N)'.")
 
 ;;;###autoload
-(defun hellmacs-jdk-parse-gradle-toolchain (content)
+(defun hell-jdk-parse-gradle-toolchain (content)
   "The release a Gradle build script's CONTENT asks its toolchain for, or nil."
-  (when (string-match hellmacs-jdk--gradle-toolchain-regexp content)
-    (hellmacs-jdk-release-name (match-string 1 content))))
+  (when (string-match hell-jdk--gradle-toolchain-regexp content)
+    (hell-jdk-release-name (match-string 1 content))))
 
-(defun hellmacs-jdk--gradle-root (dir)
+(defun hell-jdk--gradle-root (dir)
   "The root of the Gradle build around DIR (where settings.gradle is), or nil."
   (locate-dominating-file dir (lambda (d) (seq-some (lambda (f) (file-exists-p (expand-file-name f d)))
                                                     '("settings.gradle" "settings.gradle.kts")))))
 
-(defun hellmacs-jdk--gradle-request (file)
+(defun hell-jdk--gradle-request (file)
   "(RELEASE . LINE) of the toolchain request in Gradle build FILE, or nil."
   (with-temp-buffer
     (insert-file-contents file)
-    (when (re-search-forward hellmacs-jdk--gradle-toolchain-regexp nil t)
+    (when (re-search-forward hell-jdk--gradle-toolchain-regexp nil t)
       (let ((line (line-number-at-pos (match-beginning 0)))) ; before the match data changes
-        (when-let* ((name (hellmacs-jdk-release-name (match-string 1))))
+        (when-let* ((name (hell-jdk-release-name (match-string 1))))
           (cons name line))))))
 
-(defun hellmacs-jdk--maven-request (file)
+(defun hell-jdk--maven-request (file)
   "(RELEASE . LINE) of what maven-toolchains-plugin in pom FILE asks for, or nil.
 Its `toolchains' goal's <toolchains><jdk><version>, or 3.2's
 `select-jdk-toolchain' <version>: either way, inside its <configuration>."
@@ -302,11 +302,11 @@ Its `toolchains' goal's <toolchains><jdk><version>, or 3.2's
                    (re-search-forward "<version>\\s-*\\([^<]+\\)</version>" end t))
           (let ((version (match-string 1)) (line (line-number-at-pos (match-beginning 0))))
             (when (string-match "[0-9][0-9.]*" version)
-              (when-let* ((name (hellmacs-jdk-release-name (match-string 0 version))))
+              (when-let* ((name (hell-jdk-release-name (match-string 0 version))))
                 (cons name line)))))))))
 
 ;;;###autoload
-(defun hellmacs-jdk-build-request (dir)
+(defun hell-jdk-build-request (dir)
   "The JDK the build around DIR asks for: (:tool TOOL :release R :file F :line N).
 TOOL is `gradle' (a toolchain in the nearest build script, else the
 root's) or `maven' (maven-toolchains-plugin in the nearest pom.xml);
@@ -322,16 +322,16 @@ nil when the build asks for none."
                                           (list (locate-dominating-file
                                                  dir (lambda (d) (seq-some (lambda (f) (file-exists-p (expand-file-name f d)))
                                                                            scripts)))
-                                                (hellmacs-jdk--gradle-root dir))))))
+                                                (hell-jdk--gradle-root dir))))))
          (pom (when-let* ((d (locate-dominating-file dir "pom.xml"))) (expand-file-name "pom.xml" d))))
     (or (seq-some (lambda (file)
-                    (when-let* ((found (hellmacs-jdk--gradle-request file)))
+                    (when-let* ((found (hell-jdk--gradle-request file)))
                       (list :tool 'gradle :release (car found) :file file :line (cdr found))))
                   gradle-files)
-        (when-let* ((found (and pom (hellmacs-jdk--maven-request pom))))
+        (when-let* ((found (and pom (hell-jdk--maven-request pom))))
           (list :tool 'maven :release (car found) :file pom :line (cdr found))))))
 
-(defun hellmacs-jdk--property (file key)
+(defun hell-jdk--property (file key)
   "The value of KEY in the Java properties FILE, or nil."
   (when (file-readable-p file)
     (with-temp-buffer
@@ -340,24 +340,24 @@ nil when the build asks for none."
         (string-trim (match-string 1))))))
 
 ;;;###autoload
-(defun hellmacs-jdk-gradle-installation-paths (dir)
+(defun hell-jdk-gradle-installation-paths (dir)
   "The JDKs listed for Gradle in org.gradle.java.installations.paths.
 From the gradle.properties of the build around DIR, then of the Gradle
 user home ($GRADLE_USER_HOME, else ~/.gradle)."
   (let ((home (or (let ((h (getenv "GRADLE_USER_HOME"))) (and h (not (string-empty-p h)) h))
                   "~/.gradle")))
     (mapcan (lambda (props)
-              (when-let* ((value (hellmacs-jdk--property props "org.gradle.java.installations.paths")))
+              (when-let* ((value (hell-jdk--property props "org.gradle.java.installations.paths")))
                 (split-string value "[ \t]*,[ \t]*" t)))
-            (list (expand-file-name "gradle.properties" (or (hellmacs-jdk--gradle-root dir) dir))
+            (list (expand-file-name "gradle.properties" (or (hell-jdk--gradle-root dir) dir))
                   (expand-file-name "gradle.properties" home)))))
 
 ;;;###autoload
-(defun hellmacs-jdk-gradle-provisions-p (dir)
+(defun hell-jdk-gradle-provisions-p (dir)
   "Non-nil if the Gradle build around DIR downloads the JDKs it lacks.
 That takes a toolchain resolver in its settings (the foojay plugin, or
 a `toolchainManagement' block)."
-  (let ((root (or (hellmacs-jdk--gradle-root dir) dir)))
+  (let ((root (or (hell-jdk--gradle-root dir) dir)))
     (seq-some (lambda (name)
                 (let ((file (expand-file-name name root)))
                   (and (file-readable-p file)
@@ -368,7 +368,7 @@ a `toolchainManagement' block)."
 
 ;;; The JDK Gradle itself runs on ----------------------------------------------
 
-(defconst hellmacs-jdk--gradle-max-java
+(defconst hell-jdk--gradle-max-java
   '(("9.1" . 25) ("8.14" . 24) ("8.10" . 23) ("8.8" . 22) ("8.5" . 21) ("8.3" . 20)
     ("7.6" . 19) ("7.5" . 18) ("7.3" . 17) ("7.0" . 16) ("6.7" . 15) ("6.3" . 14)
     ("6.0" . 13) ("5.4" . 12) ("5.0" . 11) ("4.7" . 10))
@@ -376,57 +376,57 @@ a `toolchainManagement' block)."
 Gradle's compatibility matrix, newest first; older releases run on 8.")
 
 ;;;###autoload
-(defun hellmacs-jdk-gradle-daemon-range (version)
+(defun hell-jdk-gradle-daemon-range (version)
   "(MIN . MAX): the Java releases Gradle VERSION runs on, or nil if VERSION isn't one."
   (when-let* ((v (ignore-errors (version-to-list version))))
     (cons (if (version-list-<= '(9) v) 17 8)
           (or (cdr (seq-find (lambda (entry) (version-list-<= (version-to-list (car entry)) v))
-                             hellmacs-jdk--gradle-max-java))
+                             hell-jdk--gradle-max-java))
               8))))
 
-(defun hellmacs-jdk--gradle-wrapper-root (dir)
+(defun hell-jdk--gradle-wrapper-root (dir)
   "The directory of the Gradle wrapper around DIR, or nil."
   (locate-dominating-file dir "gradle/wrapper/gradle-wrapper.properties"))
 
 ;;;###autoload
-(defun hellmacs-jdk-gradle-version (dir)
+(defun hell-jdk-gradle-version (dir)
   "The Gradle release the wrapper of the build around DIR downloads, or nil."
-  (when-let* ((root (hellmacs-jdk--gradle-wrapper-root dir))
-              (url (hellmacs-jdk--property
+  (when-let* ((root (hell-jdk--gradle-wrapper-root dir))
+              (url (hell-jdk--property
                     (expand-file-name "gradle/wrapper/gradle-wrapper.properties" root)
                     "distributionUrl")))
     (when (string-match "gradle-\\([0-9][^-/]*\\)-\\(?:bin\\|all\\)\\.zip" url)
       (match-string 1 url))))
 
-(defun hellmacs-jdk--gradle-picks-own-jvm-p (root)
+(defun hell-jdk--gradle-picks-own-jvm-p (root)
   "Non-nil if the Gradle build at ROOT chooses its own JVM.
 A daemon JVM criteria file, or org.gradle.java.home in the build's or
 the Gradle user home's gradle.properties."
   (let ((home (or (let ((h (getenv "GRADLE_USER_HOME"))) (and h (not (string-empty-p h)) h))
                   "~/.gradle")))
     (or (file-exists-p (expand-file-name "gradle/gradle-daemon-jvm.properties" root))
-        (seq-some (lambda (props) (hellmacs-jdk--property props "org.gradle.java.home"))
+        (seq-some (lambda (props) (hell-jdk--property props "org.gradle.java.home"))
                   (list (expand-file-name "gradle.properties" root)
                         (expand-file-name "gradle.properties" home))))))
 
 ;;;###autoload
-(defun hellmacs-jdk-gradle-environment (dir)
+(defun hell-jdk-gradle-environment (dir)
   "The environment the Gradle build around DIR runs in, as \"VAR=value\" strings.
 JAVA_HOME set to a JDK its wrapper's Gradle release runs on, the newest
 one sync found, when JAVA_HOME's (else the PATH's) doesn't run it. nil
 when it does, when none does (Gradle then says why), or when the build
 chooses its own JVM."
-  (when-let* ((root (hellmacs-jdk--gradle-wrapper-root dir))
-              (range (hellmacs-jdk-gradle-daemon-range (hellmacs-jdk-gradle-version root))))
-    (unless (hellmacs-jdk--gradle-picks-own-jvm-p root)
+  (when-let* ((root (hell-jdk--gradle-wrapper-root dir))
+              (range (hell-jdk-gradle-daemon-range (hell-jdk-gradle-version root))))
+    (unless (hell-jdk--gradle-picks-own-jvm-p root)
       (let* ((current (or (let ((home (getenv "JAVA_HOME")))
                             (and home (not (string-empty-p home)) home))
-                          (hellmacs-jdk--path-home)))
-             (major (and current (hellmacs-jdk-home-major current))))
+                          (hell-jdk--path-home)))
+             (major (and current (hell-jdk-home-major current))))
         (unless (and major (<= (car range) major (cdr range)))
-          (when-let* ((home (hellmacs-jdk-pick (reverse (mapcar #'cdr (hellmacs-jdk-read)))
-                                               (car range) (cdr range))))
+          (when-let* ((home (hell-jdk-pick (reverse (mapcar #'cdr (hell-jdk-read)))
+                                           (car range) (cdr range))))
             (list (concat "JAVA_HOME=" home))))))))
 
-(hellmacs-provide 'hellmacs-lib 'jdk)
+(hell-provide 'hell-lib 'jdk)
 ;;; jdk.el ends here

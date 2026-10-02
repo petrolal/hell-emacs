@@ -1,0 +1,137 @@
+#!/usr/bin/env sh
+# bin/hell -- Hell Emacs command-line tool. Run `bin/hell help'.
+#
+# Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+#
+# Author: petrolal <petrolalucas@gmail.com>
+# URL: https://github.com/petrolal/hell-emacs
+# License: GPL-3.0-or-later
+#
+# This file is part of Hell Emacs.
+#
+# Hell Emacs is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Hell Emacs is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Runs Emacs in batch mode against this checkout; lisp/hell-cli.el
+# dispatches, and each command is bin/hell-COMMAND (as Doom v3's
+# bin/doom-COMMAND), which bin/hellscript can also run directly.
+#
+# Global options come before the command, as `doom's do:
+#   -p, --profile NAME     act on a named profile ($HELL_PROFILE)
+#   --helldir DIR          use the config in DIR ($HELLDIR)
+#   -D, --debug            debug output and backtraces ($DEBUG)
+#   -!, --force            don't ask; accept every prompt ($HELL_FORCE)
+# Set $EMACS to use a different Emacs binary; $HELLDIR and the
+# XDG_*_HOME variables are honored exactly as in an interactive session.
+
+set -e
+
+HELL_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+case "$EMACS" in *term*) EMACS=emacs ;; *) EMACS=${EMACS:-emacs} ;; esac
+command -v "$EMACS" >/dev/null 2>&1 || [ -x "$EMACS" ] || {
+  echo "Error: couldn't run Emacs with the command '$EMACS'." >&2
+  echo "Is Emacs installed and on your \$PATH? (Or set \$EMACS.)" >&2
+  exit 3
+}
+
+# POSIX sh has no arrays (Debian's and Ubuntu's sh is dash): each
+# argument that isn't a global option is rotated to the end of "$@", and N
+# counts the ones still to look at.
+n=$#
+while [ "$n" -gt 0 ]; do
+  case "$1" in
+    -p|--profile)
+      [ "$n" -ge 2 ] && [ -n "$2" ] || { echo "bin/hell: $1 needs a profile name" >&2; exit 6; }
+      HELL_PROFILE=$2; export HELL_PROFILE; shift 2; n=$((n - 2)) ;;
+    --profile=*)
+      HELL_PROFILE=${1#--profile=}; export HELL_PROFILE; shift; n=$((n - 1)) ;;
+    --helldir)
+      [ "$n" -ge 2 ] && [ -n "$2" ] || { echo "bin/hell: $1 needs a directory" >&2; exit 6; }
+      HELLDIR=$2; export HELLDIR; shift 2; n=$((n - 2)) ;;
+    --helldir=*)
+      HELLDIR=${1#--helldir=}; export HELLDIR; shift; n=$((n - 1)) ;;
+    -D|--debug)
+      DEBUG=1; export DEBUG; shift; n=$((n - 1)) ;;
+    -!|--force)
+      HELL_FORCE=1; export HELL_FORCE; shift; n=$((n - 1)) ;;
+    *)
+      set -- "$@" "$1"; shift; n=$((n - 1)) ;;
+  esac
+done
+
+# As `doom': running as root is almost never what you want -- the files it
+# writes would be root's -- unless this checkout is root's own.
+if [ "$(id -u)" = 0 ]; then
+  owner=$(stat -c %u "$HELL_ROOT" 2>/dev/null || stat -f %u "$HELL_ROOT" 2>/dev/null || echo 0)
+  if [ "$owner" != 0 ]; then
+    echo "Error: bin/hell was run as root, which would leave files you can't" >&2
+    echo "change later. If you really mean root to use Hell Emacs, make it the owner:" >&2
+    echo "" >&2
+    echo "  chown -R root:root $HELL_ROOT" >&2
+    exit 2
+  fi
+fi
+
+# Whether a person is there to answer prompts (`install' asks some).
+[ -t 0 ] && [ -t 1 ] && { __HELLTTY=1; export __HELLTTY; }
+
+hell() {
+  "$EMACS" --batch \
+    -l "$HELL_ROOT/early-init.el" \
+    --eval "(require 'hell-cli)" \
+    -f hell-cli-main -- "$@"
+}
+
+case "$1" in
+  emacs)
+    # Emacs itself, on this checkout (and profile). --vanilla: Emacs with
+    # no config at all (emacs -Q), to tell Hell Emacs' problems from Emacs'.
+    # --sandbox: start Emacs in a throwaway isolated temporary directory.
+    shift
+    case "$1" in
+      --vanilla) shift; exec "$EMACS" -Q "$@" ;;
+      --sandbox)
+        shift
+        SANDBOX_DIR=$(mktemp -d -t hell-sandbox.XXXXXX 2>/dev/null || mktemp -d "/tmp/hell-sandbox.XXXXXX")
+        export XDG_CONFIG_HOME="$SANDBOX_DIR/config"
+        export XDG_DATA_HOME="$SANDBOX_DIR/data"
+        export XDG_CACHE_HOME="$SANDBOX_DIR/cache"
+        export XDG_STATE_HOME="$SANDBOX_DIR/state"
+        export HELLDIR="$SANDBOX_DIR/config/hell-emacs"
+        mkdir -p "$HELLDIR" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
+        echo "Starting Hell Emacs sandbox in $SANDBOX_DIR" >&2
+        [ "$1" = "--" ] && shift
+        "$EMACS" --init-directory "$HELL_ROOT" "$@"
+        ret=$?
+        rm -rf "$SANDBOX_DIR"
+        exit $ret
+        ;;
+    esac
+    [ "$1" = "--" ] && shift
+    exec "$EMACS" --init-directory "$HELL_ROOT" \
+      ${HELL_PROFILE:+--profile "$HELL_PROFILE"} "$@"
+    ;;
+  upgrade|up)
+    shift
+    case " $* " in
+      *" --packages "*) ;;
+      # Update Hell Emacs first (to its channel: --channel stable|main), then
+      # update packages in a fresh Emacs, so that step runs the new code.
+      *) hell upgrade-self "$@" ;;
+    esac
+    hell upgrade "$@"
+    ;;
+  *)
+    hell "$@"
+    ;;
+esac

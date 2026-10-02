@@ -1,0 +1,55 @@
+#!/usr/bin/env hellscript
+;;; bin/hell-gc --- Remove what no profile uses any more -*- lexical-binding: t; mode: emacs-lisp -*-
+
+;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
+;;
+;; Author: petrolal <petrolalucas@gmail.com>
+;; URL: https://github.com/petrolal/hell-emacs
+;; License: GPL-3.0-or-later
+;;
+;; This file is part of Hell Emacs.
+;;
+;; Hell Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Hell Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;; `bin/hell gc' (Doom v3's bin/doom-COMMAND files): loaded by
+;; `hell-cli-main' when the command runs, or run directly through
+;; bin/hellscript. Lives outside `load-path'; see `hell-cli-load'.
+
+;;; Code:
+
+(defun hell-cli-gc (&rest args)
+  "Delete installed packages nothing declares any more.
+With -n or --dry-run in ARGS, only list them."
+  (let ((dry-run (or (member "-n" args) (member "--dry-run" args))))
+    (hell-sync)
+    (let* ((keep (cl-loop for (_ . e) in (elpaca--queued)
+                          collect (file-name-as-directory (elpaca<-build-dir e))
+                          collect (file-name-as-directory (elpaca<-source-dir e))))
+           (orphans (cl-loop for root in (list elpaca-builds-directory elpaca-sources-directory)
+                             when (file-directory-p root)
+                             append (cl-loop for dir in (directory-files root t "\\`[^.]")
+                                             for d = (file-name-as-directory dir)
+                                             when (and (file-directory-p d) (not (member d keep)))
+                                             collect d))))
+      (if (null orphans)
+          (hell-cli--say "Nothing to clean up.")
+        (dolist (dir orphans)
+          (hell-cli--say "%s %s" (if dry-run "Would delete" "Deleting")
+                         (abbreviate-file-name (directory-file-name dir)))
+          (unless dry-run
+            (delete-directory dir 'recursive)))
+        (hell-cli--say "%s %d orphaned package directories."
+                       (if dry-run "Found" "Deleted") (length orphans))))))
+
+;;; hell-gc ends here
