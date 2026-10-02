@@ -59,9 +59,6 @@
   '("banners/banner-960.png" "banners/banner.png" "banners/banner.svg" "banner-960.png" "banner.png" "banner.svg")
   "Graphical banners, in order of preference.")
 
-(defconst hell-dashboard-text-banner "ascii/banner-ascii.txt"
-  "The banner drawn in a terminal.")
-
 ;;; Banner resolution --------------------------------------------------------
 
 (defun hell-dashboard--asset (name)
@@ -81,9 +78,8 @@
 (defun hell-dashboard-banner (&optional frame)
   "The `dashboard-startup-banner' value for FRAME (default: the selected one)."
   (condition-case nil
-      (let ((image (and (display-graphic-p frame) (hell-dashboard--image)))
-            (text (hell-dashboard--asset hell-dashboard-text-banner)))
-        (if (and image text) (cons image text) (or image text 'ascii)))
+      (or (and (display-graphic-p frame) (hell-dashboard--image))
+          'ascii)
     (error 'ascii)))
 
 ;;; Dynamic Footer & Navigator -----------------------------------------------

@@ -438,9 +438,10 @@ iconography (`nerd-icons`):
 - [x] 13.4 GNU Emacs' own layout: the frame keeps the stock menu bar,
       tool bar, scroll bars and tooltips, and the Altar is Emacs' own
       startup screen (`fancy-startup-screen`, `*GNU Emacs*`) with all its
-      features, only themed: Hell Emacs' logo, welcome line, manual row
-      and forge line (2026-10-02: rewrote `modules/hell/+splash.el` as
-      advice on the stock screen, added `assets/banners/splash.svg`,
+      features, only themed: Hell Emacs' chimera skull logo, welcome
+      line, manual row, forge line, and the Altar's buttons at the
+      bottom (2026-10-02: rewrote `modules/hell/+splash.el` as
+      advice on the stock screen, added `assets/banners/splash.svg` (banner-960.png, cropped), deleted the ASCII banner,
       dropped early-init.el's chrome and splash suppression, themed
       `menu`/`tool-bar`/`scroll-bar`; checked with a throwaway sync, GUI
       captures of the full and concise screens, `C-c h s`, and startup

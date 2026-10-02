@@ -26,8 +26,7 @@
 
 (dolist (item '(("banners/banner-960.png" "banner-960.png")
                 ("banners/banner.png" "banner.png")
-                ("banners/banner.svg" "banner.svg")
-                ("ascii/banner-ascii.txt" "banner-ascii.txt")))
+                ("banners/banner.svg" "banner.svg")))
   (let* ((primary (car item))
          (fallback (cadr item))
          (found (or (and (file-readable-p (expand-file-name (concat "assets/" primary) hell-dir)) primary)

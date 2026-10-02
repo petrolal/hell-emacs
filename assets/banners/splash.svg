@@ -1,23 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
-  <!-- The startup screen's logo: the banner's sigil over a wordmark, sized
-       like GNU Emacs' own splash.svg so the stock layout holds. -->
-  <defs>
-    <radialGradient id="emberGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ff6c6b" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#16171d" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-
-  <circle cx="150" cy="68" r="64" fill="url(#emberGlow)"/>
-  <circle cx="150" cy="68" r="54" fill="none" stroke="#da8548" stroke-width="2" stroke-dasharray="3 1.5"/>
-  <circle cx="150" cy="68" r="48" fill="none" stroke="#ff6c6b" stroke-width="1"/>
-  <polygon points="150,116 118.7,41.4 188,69.3 112,69.3 181.3,41.4"
-           fill="none" stroke="#ff6c6b" stroke-width="2" stroke-linejoin="round"/>
-  <circle cx="150" cy="68" r="9" fill="#16171d" stroke="#da8548" stroke-width="1.5"/>
-  <circle cx="150" cy="68" r="3.5" fill="#ecbe7b"/>
-
-  <text x="150" y="178" text-anchor="middle" font-family="serif" font-style="italic"
-        font-weight="bold" font-size="48" letter-spacing="1">
-    <tspan fill="#ff6c6b">Hell</tspan> <tspan fill="#da8548">Emacs</tspan>
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="262 24 436 486" width="218" height="243">
+  <!-- The startup screen's logo: the chimera skull of banner-960.png,
+       cropped to the artwork and sized like GNU Emacs' own splash.svg so
+       the stock layout holds. librsvg resolves the href next to this file. -->
+  <image href="banner-960.png" xlink:href="banner-960.png"
+         x="0" y="0" width="960" height="540" image-rendering="optimizeSpeed"/>
 </svg>

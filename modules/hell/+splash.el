@@ -26,10 +26,11 @@
 ;; layout, keys and features (the concise screen beside files given on
 ;; the command line, the auto-save notice, the newcomer presets, the
 ;; version line, `C-h C-a'), drawn by Emacs' own code. Hell Emacs only
-;; supplies the logo and the words: its sigil instead of the GNU logo,
-;; a Hell Emacs welcome line and manual, and the forge line under the
-;; version. With `hell-ux-enable' nil it is the stock screen, untouched.
+;; supplies the logo and the words: the chimera skull instead of the GNU
+;; logo, a Hell Emacs welcome line and manual, the forge line under the
+;; version, and the Altar's buttons at the bottom. With `hell-ux-enable' nil it is the stock screen, untouched.
 
+(require 'seq)
 (require 'subr-x)
 
 (defvar hell-dir)
@@ -40,6 +41,7 @@
 
 (autoload 'hell-info-manual "lib/help" nil t)
 (autoload 'hell-plugins "hell-plugins" nil t)
+(declare-function projectile-switch-project "ext:projectile")
 
 (defgroup hell-splash nil
   "The Hell Emacs startup screen."
@@ -59,6 +61,18 @@ Nil is `inhibit-startup-screen': Emacs starts on *scratch*."
 (defface hell-splash-altar
   '((t (:inherit font-lock-builtin-face)))
   "Face for the Altar's forge line, under the Emacs version."
+  :group 'hell-splash)
+
+(defface hell-splash-button
+  '((t (:box (:line-width (1 . 1) :color "#3a1c28")
+        :background "#1c1e24" :foreground "#f8f8f2" :weight bold)))
+  "Face for the Altar's buttons, at the bottom of the screen."
+  :group 'hell-splash)
+
+(defface hell-splash-button-active
+  '((t (:box (:line-width (1 . 1) :color "#ff5555")
+        :background "#282a36" :foreground "#ff79c6" :weight bold)))
+  "Face for the Altar's button under the mouse."
   :group 'hell-splash)
 
 (defvar hell-splash-buffer-function nil
@@ -133,7 +147,87 @@ at the Relic Chamber: packages come from `package!', never package.el."
   (let ((start (point)))
     (prog1 (apply fn args)
       (when (hell-splash--themed-p)
-        (hell-splash--theme-tail start)))))
+        (hell-splash--theme-tail start)
+        (save-excursion
+          (goto-char (point-max))
+          (hell-splash--insert-buttons))))))
+
+;;; The buttons ---------------------------------------------------------------
+
+(defun hell-splash--project ()
+  "Switch project: Projectile's when `:tools projectile' is on."
+  (interactive)
+  (call-interactively (if (featurep 'projectile)
+                          #'projectile-switch-project
+                        #'project-switch-project)))
+
+(defun hell-splash--buffer ()
+  "Switch buffer, as `C-x b' does."
+  (interactive)
+  (call-interactively (or (keymap-lookup global-map "C-x b") #'switch-to-buffer)))
+
+(defun hell-splash--shell ()
+  "Open a shell: vterm when installed, else eshell."
+  (interactive)
+  (call-interactively (if (fboundp 'vterm) #'vterm #'eshell)))
+
+(defun hell-splash--releases ()
+  "Show Hell Emacs' changelog, or its releases page."
+  (interactive)
+  (let ((changelog (expand-file-name "CHANGELOG.md" hell-dir)))
+    (if (file-readable-p changelog)
+        (view-file changelog)
+      (browse-url "https://github.com/petrolal/hell-emacs/releases"))))
+
+(defconst hell-splash-buttons
+  `(("Forge..."
+     ("Ignite File" find-file "Find a file (C-x C-f)" "ignite.svg")
+     ("Summon Project" hell-splash--project "Switch project (C-x p p)" "forge.svg")
+     ("Grimoires" hell-splash--buffer "Switch buffer (C-x b)" "skull.svg")
+     ("Hell Shell" hell-splash--shell "Open a shell" "shell.svg")
+     ("Grimoire Manual" hell-info-manual "The Hell Emacs manual (C-c h i)" "manual.svg")
+     ("IntelliJ Exorcism" hell-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg"))
+    ("Portals..."
+     ("Relic Chamber" hell-plugins "Modules and plugins (C-c h p)" "marketplace.svg")
+     ("Forge Source" ,(lambda () (interactive) (browse-url "https://github.com/petrolal/hell-emacs"))
+      "Browse https://github.com/petrolal/hell-emacs" "github.svg")
+     ("Issue Sanctum" ,(lambda () (interactive) (browse-url "https://github.com/petrolal/hell-emacs/issues"))
+      "Browse https://github.com/petrolal/hell-emacs/issues" "github.svg")
+     ("Release Grimoires" hell-splash--releases "The changelog and release notes" "manual.svg")))
+  "The Altar's buttons, by row: (HEADING (LABEL COMMAND HELP ICON)...).")
+
+(autoload 'hell-where-is-intellij "lib/intellij" nil t)
+
+(defun hell-splash--button-icon (file)
+  "Return FILE from assets/buttons/ as an image string, or \"\"."
+  (let ((path (expand-file-name (concat "assets/buttons/" file) hell-dir)))
+    (if (and (display-graphic-p)
+             (image-type-available-p 'svg)
+             (file-readable-p path))
+        (concat (propertize " " 'display
+                            (create-image path 'svg nil :ascent 'center
+                                          :max-height 18 :max-width 18))
+                " ")
+      "")))
+
+(defun hell-splash--insert-buttons ()
+  "Insert the Altar's buttons, aligned like the stock \"To start...\" links."
+  (fancy-splash-insert :face 'variable-pitch "\n")
+  (pcase-dolist (`(,heading . ,buttons) hell-splash-buttons)
+    (fancy-splash-insert :face 'variable-pitch (concat "\n" heading "\t"))
+    (seq-do-indexed
+     (pcase-lambda (`(,label ,command ,help ,icon) i)
+       (when (and (> i 0) (zerop (% i 3)))
+         (fancy-splash-insert :face 'variable-pitch "\n\t"))
+       (insert-text-button (concat " " (hell-splash--button-icon icon) label " ")
+                           'action (lambda (_button) (call-interactively command))
+                           'follow-link t
+                           'help-echo (concat "mouse-2, RET: " help)
+                           'face '(hell-splash-button variable-pitch)
+                           'mouse-face 'hell-splash-button-active)
+       (fancy-splash-insert :face 'variable-pitch " "))
+     buttons))
+  (insert "\n"))
 
 (defun hell-splash--logo ()
   "Return the Altar's logo file, or nil for GNU Emacs' own."
