@@ -277,6 +277,7 @@ idle seconds. Features already loaded by then are skipped."
 ;; aren't what "recent files" means: saving bookmarks, for one, visits
 ;; the bookmarks file.
 (defvar recentf-exclude)
+(defvar recentf-auto-cleanup)
 (with-eval-after-load 'recentf
   (setq recentf-auto-cleanup 'never)
   (advice-add 'recentf-cleanup :around

@@ -38,6 +38,7 @@
 (declare-function hell-module-metadata "hell-modules")
 (declare-function hell-module-key-string "hell-modules")
 (declare-function hell-list-modules "config/default/autoload")
+(declare-function hell-splash "+splash" (&optional title))
 (declare-function hell-jdk-read "lib/jdk")
 
 ;; Register docs/ in Info path

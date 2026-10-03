@@ -43,6 +43,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'xml)
 (require 'hell-lib)
 
 (defvar hell-data-dir)              ; early-init.el
@@ -62,7 +63,7 @@
 
 ;;;###autoload
 (defun hell-jdk-release-name (version)
-  "JDTLS's name for the release of VERSION: \"J2SE-1.5\", \"JavaSE-1.8\", \"JavaSE-21\".
+  "JDTLS's name for release of VERSION: \"J2SE-1.5\", \"JavaSE-1.8\", \"JavaSE-21\".
 VERSION is a string (\"1.8\", \"8\", \"17.0.9\") or a number; nil if it
 isn't a Java version."
   (when-let* ((major (hell-jdk--major version)))
@@ -214,9 +215,9 @@ there is none, so the error names it."
 
 ;;;###autoload
 (defun hell-jdk-lsp-runtimes (jdks default-home)
-  "JDKS as `lsp-java-configuration-runtimes': a vector of (:name :path :default).
-The JDK in DEFAULT-HOME is the default (for projects that name no
-release); without one among JDKS, the newest is."
+  "JDKS as `lsp-java-configuration-runtimes': a vector of plists.
+Each plist has (:name :path :default).  The JDK in DEFAULT-HOME is
+default (for projects naming no release); without one among JDKS, newest is."
   (let* ((norm (lambda (dir) (and dir (directory-file-name (expand-file-name dir)))))
          (default (or (seq-find (lambda (jdk) (equal (funcall norm (cdr jdk)) (funcall norm default-home)))
                                 jdks)
@@ -268,7 +269,7 @@ JDK-HOME is nil for an entry without one."
 
 (defconst hell-jdk--gradle-toolchain-regexp
   "\\(?:JavaLanguageVersion\\.of\\|jvmToolchain\\)(\\s-*\\([0-9]+\\)\\s-*)"
-  "A Gradle toolchain request: Java's `JavaLanguageVersion.of(N)', Kotlin's `jvmToolchain(N)'.")
+  "A Gradle toolchain request in Java or Kotlin build scripts.")
 
 ;;;###autoload
 (defun hell-jdk-parse-gradle-toolchain (content)
@@ -291,7 +292,7 @@ JDK-HOME is nil for an entry without one."
           (cons name line))))))
 
 (defun hell-jdk--maven-request (file)
-  "(RELEASE . LINE) of what maven-toolchains-plugin in pom FILE asks for, or nil.
+  "(RELEASE . LINE) of maven-toolchains-plugin in pom FILE, or nil.
 Its `toolchains' goal's <toolchains><jdk><version>, or 3.2's
 `select-jdk-toolchain' <version>: either way, inside its <configuration>."
   (with-temp-buffer
@@ -307,7 +308,7 @@ Its `toolchains' goal's <toolchains><jdk><version>, or 3.2's
 
 ;;;###autoload
 (defun hell-jdk-build-request (dir)
-  "The JDK the build around DIR asks for: (:tool TOOL :release R :file F :line N).
+  "The JDK build around DIR asks: (:tool TOOL :release R :file F :line N).
 TOOL is `gradle' (a toolchain in the nearest build script, else the
 root's) or `maven' (maven-toolchains-plugin in the nearest pom.xml);
 nil when the build asks for none."
@@ -377,7 +378,7 @@ Gradle's compatibility matrix, newest first; older releases run on 8.")
 
 ;;;###autoload
 (defun hell-jdk-gradle-daemon-range (version)
-  "(MIN . MAX): the Java releases Gradle VERSION runs on, or nil if VERSION isn't one."
+  "(MIN . MAX): Java releases Gradle VERSION runs on, or nil."
   (when-let* ((v (ignore-errors (version-to-list version))))
     (cons (if (version-list-<= '(9) v) 17 8)
           (or (cdr (seq-find (lambda (entry) (version-list-<= (version-to-list (car entry)) v))
@@ -411,9 +412,9 @@ the Gradle user home's gradle.properties."
 
 ;;;###autoload
 (defun hell-jdk-gradle-environment (dir)
-  "The environment the Gradle build around DIR runs in, as \"VAR=value\" strings.
+  "Environment the Gradle build around DIR runs in, as \"VAR=value\" strings.
 JAVA_HOME set to a JDK its wrapper's Gradle release runs on, the newest
-one sync found, when JAVA_HOME's (else the PATH's) doesn't run it. nil
+one sync found, when JAVA_HOME's (else the PATH's) doesn't run it.  nil
 when it does, when none does (Gradle then says why), or when the build
 chooses its own JVM."
   (when-let* ((root (hell-jdk--gradle-wrapper-root dir))

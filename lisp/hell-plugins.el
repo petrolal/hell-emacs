@@ -29,6 +29,8 @@
 (require 'tabulated-list)
 (require 'hell-modules)
 
+(declare-function hell-sync-child "config/default/autoload" ())
+
 (defvar hell-plugins-buffer "*hell-plugins*")
 
 (defvar hell-third-party-plugins (make-hash-table :test #'equal)
@@ -45,8 +47,9 @@ Properties:
     `(puthash ,name-str ',plist hell-third-party-plugins)))
 
 (defun hell-plugins-all ()
-  "Return a list of all available modules and plugins across catalog sources.
-Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC :path PATH)."
+  "Return list of all available modules and plugins across catalog sources.
+Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC
+:path PATH)."
   (when (= (hash-table-count hell-modules) 0)
     (hell-modules-read-config))
   (let (plugins)
@@ -67,7 +70,7 @@ Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC :p
                         (insert-file-contents manifest)
                         (goto-char (point-min))
                         (condition-case nil
-                            (let ((ver (read (current-buffer)))
+                            (let ((_ver (read (current-buffer)))
                                   (data (read (current-buffer))))
                               (setq desc (or (cdr (assq 'doc data)) "")))
                           (error nil))))
@@ -93,19 +96,19 @@ Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC :p
                                    (symbol-name (plist-get b :name)))
                         (string< ga gb)))))))
 
-(defun hell-plugin-find-in-init (init-file group-sym name-sym)
-  "Search INIT-FILE for module GROUP-SYM and NAME-SYM.
+(defun hell-plugin-find-in-init (init-file _group-sym name-sym)
+  "Search INIT-FILE for module _GROUP-SYM and NAME-SYM.
 Returns (FOUND-P . COMMENTED-P)."
   (if (not (file-exists-p init-file))
       (cons nil nil)
     (with-temp-buffer
       (insert-file-contents init-file)
       (goto-char (point-min))
-      (let ((name-str (symbol-name name-sym))
-            (pattern (format "\\([ \t]*;;[ \t]*\\|\\(?1:[ \t]*\\)\\)\\(?:(%s\\|%s\\_>\\)"
-                             (regexp-quote (symbol-name name-sym))
-                             (regexp-quote (symbol-name name-sym))))
-            found commented)
+      (let* ((name-str (symbol-name name-sym))
+             (pattern (format "\\([ \t]*;;[ \t]*\\|\\(?1:[ \t]*\\)\\)\\(?:(%s\\|%s\\_>\\)"
+                              (regexp-quote name-str)
+                              (regexp-quote name-str)))
+             found commented)
         (while (and (not found) (re-search-forward pattern nil t))
           (setq found t)
           (setq commented (not (match-string 1))))
@@ -150,8 +153,8 @@ Returns (FOUND-P . COMMENTED-P)."
         (message "Enabled %s in %s (run `bin/hell sync' or C-c h S)" name-str init-file)
         t))))
 
-(defun hell-plugin-disable (group name)
-  "Disable (comment out) module GROUP and NAME in the user's `init.el'."
+(defun hell-plugin-disable (_group name)
+  "Disable (comment out) module _GROUP and NAME in the user's `init.el'."
   (let* ((user-dir (or hell-user-dir hell-dir))
          (init-file (expand-file-name "init.el" user-dir)))
     (unless (file-exists-p init-file)

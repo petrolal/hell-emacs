@@ -55,6 +55,10 @@
 (eval-and-compile (hell-require 'hell-cli 'sync))
 
 (defvar elpaca-cache-directory)
+(declare-function elpaca-write-lock-file "elpaca" (file))
+(declare-function elpaca<-build-dir "elpaca" (e))
+(declare-function elpaca<-source-dir "elpaca" (e))
+(declare-function elpaca--queued "elpaca" ())
 
 (defconst hell-bundle-format 1
   "Version of the bundle layout; an install refuses any other.")

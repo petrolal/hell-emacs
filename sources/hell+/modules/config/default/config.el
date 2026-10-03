@@ -173,9 +173,12 @@
 (autoload 'hell-where-is-intellij "lib/intellij" "Look up IntelliJ IDEA keys in Hell Emacs." t)
 (autoload 'hell-check "cli/check" "Run Static Analysis and Linting Quality Gate." t)
 (autoload 'hell-lint "cli/check" "Run Static Analysis and Linting Quality Gate." t)
-(autoload 'hell-run-static-analysis "hell-static-analysis" "Run static code analysis suite." t)
-(autoload 'hell-run-static-analysis-current-buffer "hell-static-analysis" "Run static code analysis on current buffer." t)
-(autoload 'hell-save-static-analysis-report "hell-static-analysis" "Save static code analysis report." t)
+(autoload 'hell-static-analysis-run "hell-static-analysis" "Run static code analysis suite." t)
+(autoload 'hell-static-analysis-run-current-buffer "hell-static-analysis" "Run static code analysis on current buffer." t)
+(autoload 'hell-static-analysis-save-report "hell-static-analysis" "Save static code analysis report." t)
+(defalias 'hell-run-static-analysis #'hell-static-analysis-run)
+(defalias 'hell-run-static-analysis-current-buffer #'hell-static-analysis-run-current-buffer)
+(defalias 'hell-save-static-analysis-report #'hell-static-analysis-save-report)
 
 (keymap-set mode-specific-map "h" hell-prefix-map)
 
@@ -195,12 +198,12 @@
   "c"   "code"
   "c x" '("quality check" . hell-check)
   "c l" '("quality lint" . hell-lint)
-  "c s" '("static analysis" . hell-run-static-analysis))
+  "c s" '("static analysis" . hell-static-analysis-run))
 
 ;; Ensure bindings exist directly on mode-specific-map (C-c)
 (keymap-set mode-specific-map "c x" #'hell-check)
 (keymap-set mode-specific-map "c l" #'hell-lint)
-(keymap-set mode-specific-map "c s" #'hell-run-static-analysis)
+(keymap-set mode-specific-map "c s" #'hell-static-analysis-run)
 
 ;; Winner's layout undo, on its own `C-c <left>' / `C-c <right>'.
 (add-hook 'hell-first-input-hook #'winner-mode)

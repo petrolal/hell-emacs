@@ -213,7 +213,7 @@ enough for every startup (three directory listings and a few stats)."
 (defvar hell--initial-load-path (copy-sequence load-path)
   "`load-path' before Hell Emacs or any package touched it: Emacs' own.
 Used to tell whether a package is built into Emacs (`package!'s
-:built-in \='prefer).")
+:built-in \\='prefer).")
 
 (define-obsolete-variable-alias 'hell-var-dir 'hell-cache-dir "0.2")
 (define-obsolete-variable-alias 'hell-etc-dir 'hell-state-dir "0.2")

@@ -42,7 +42,8 @@
   "Hell Emacs' version, MAJOR.MINOR.PATCH (Semantic Versioning).
 A release is the git tag vMAJOR.MINOR.PATCH; CHANGELOG.md says what each
 one changed, and docs/guide.md (\"Staying up to date\") which Emacs versions
-and platforms it supports. Between releases, main carries the next version's number.")
+and platforms it supports.  Between releases, main carries the next
+version's number.")
 
 (defvar hell-init-time nil
   "Seconds (a float) Hell Emacs took to start; nil while still starting.
@@ -132,7 +133,7 @@ With DIR, the directory it's in instead."
 KEYS is ([DIR] TYPE KEY...): the search starts at DIR (a string, else
 `default-directory') for the dotfile of TYPE (see
 `hell-dotfile-names'); each KEY picks a field of the alist, as in
-\(hell-dotfile (list dir \='module \='depth)). Read once, unless NOCACHE."
+\(hell-dotfile (list dir \\='module \\='depth)). Read once, unless NOCACHE."
   (let* ((keys (if (listp keys) (copy-sequence keys) (list keys)))
          (dir (if (stringp (car keys)) (pop keys) default-directory))
          (path (hell-dotfile-locate (pop keys) dir)))
@@ -420,7 +421,7 @@ Pinned installs write the pin they were made from to a marker file."
   (with-temp-file marker (insert value "\n")))
 
 (defun hell-platform ()
-  "This machine as release assets name it: \"linux-x86_64\", \"darwin-aarch64\"...
+  "This machine as release assets name it: \"linux-x86_64\", etc.
 nil on an operating system no pinned download is made for."
   (when-let* ((os (pcase system-type
                     ('gnu/linux "linux") ('darwin "darwin") ('windows-nt "windows"))))
@@ -439,7 +440,7 @@ nil on an operating system no pinned download is made for."
 (defun hell-file-pinned-p (file sha256)
   "Non-nil if FILE exists and its bytes have the SHA-256 SHA256."
   (and (file-exists-p file)
-       (equal (hell-file-sha256 file) sha256)))
+        (equal (hell-file-sha256 file) sha256)))
 
 ;;; Build output -----------------------------------------------------------
 
@@ -451,7 +452,7 @@ nil on an operating system no pinned download is made for."
   "Directories no walk of a project's files looks in: VCS, IDE state, npm's.")
 
 (defconst hell-build-output-dirs '("build" "bin" "out" "target" ".gradle")
-  "Directories Gradle, Maven, IntelliJ (out/) and JDTLS (bin/) write output to.")
+  "Directories Gradle, Maven, IntelliJ (out/) and JDTLS write output to.")
 
 (defun hell-build-output-regexp (root)
   "Matches a directory of `hell-build-output-dirs' in any module under ROOT.
@@ -472,7 +473,7 @@ Only the part after ROOT counts, so a project kept under ~/src is too."
 A list of plists, newest first; read by `bin/hell sbom' and `licenses'.")
 
 (defmacro hell-component! (&rest props)
-  "Declare a pinned download this module installs, for the SBOM and license report.
+  "Declare a pinned download this module installs, for SBOM and license report.
 Put it in the module's +paths.el, next to the pin. PROPS (evaluated):
 
   :name     what it is, as its project calls it (required)

@@ -35,6 +35,9 @@
 ;; gcmh collects garbage while Emacs is idle (see "GC lifecycle" in
 ;; lisp/hell-core.el, which restores a bounded threshold after startup).
 ;; Emacs builds with the incremental GC (igc) don't need it.
+(defvar gcmh-idle-delay)
+(defvar gcmh-auto-idle-delay-factor)
+(defvar gcmh-high-cons-threshold)
 (unless (fboundp 'igc-info)
   (setq gcmh-idle-delay 'auto              ; scale the delay with GC time...
         gcmh-auto-idle-delay-factor 10     ; ...collect after 10x the last GC's duration idle

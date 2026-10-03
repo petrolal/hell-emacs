@@ -76,7 +76,7 @@ commands, it doesn't repeat `C-x C-f' and the like (13.5). DEF is one of:
 
   (hell-leader-def
     \"f\"   \"file\"
-    \"f r\" \='(\"recent file\" . consult-recent-file))
+    \"f r\" \\='(\"recent file\" . consult-recent-file))
 
 Bindings go into `mode-specific-map', the keymap Emacs itself puts on
 `C-c', so bindings made there by the user or by other packages keep
@@ -105,8 +105,8 @@ too, so list `java-mode' and `java-ts-mode' both, as neither derives
 from the other) or a minor mode, where it's on. BINDINGS are as in
 `hell-leader-def', KEY relative to `C-c l':
 
-  (hell-localleader-def \='(java-mode java-ts-mode)
-    \"b\" \='(\"build project\" . lsp-java-build-project))
+  (hell-localleader-def \\='(java-mode java-ts-mode)
+    \"b\" \\='(\"build project\" . lsp-java-build-project))
 
 `C-c l' holds the maps of every mode active in the buffer; outside
 them it's unbound. The keys go into keymaps of Hell Emacs' own, never

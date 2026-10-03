@@ -65,6 +65,11 @@
 (require 'use-package)
 (require 'hell-lib)
 (eval-and-compile (hell-require 'hell-lib 'net))
+(declare-function elpaca-wait "elpaca" (&optional queue))
+(declare-function elpaca-rebuild "elpaca" (package &optional interactive))
+(declare-function elpaca-process-queues "elpaca" (&optional queue))
+(declare-function elpaca<-status "elpaca" (e))
+(declare-function elpaca--queued "elpaca" ())
 
 ;;; Variables --------------------------------------------------------------
 
@@ -76,9 +81,9 @@
           (list hell-modules-dir
                 (expand-file-name "hell+/modules/" hell-sources-dir)))
   "Directories searched for modules, highest priority first.
-Each contains <group>/<name>/ module directories: yours, team layer's (if configured),
-Hell Emacs' own (core's module), then the sources' (the catalog), as Doom v3's
-`doom-module-load-path'.")
+Each contains <group>/<name>/ module directories: yours, team layer's
+\(if configured), Hell Emacs' own, then the sources' (the catalog), as
+Doom v3's `doom-module-load-path'.")
 
 (defvar hell-modules (make-hash-table :test #'equal)
   "Enabled modules: a table of (GROUP . NAME) -> plist.
@@ -143,7 +148,7 @@ A group's own module (NAME nil) is the group's directory: \"hell/\"."
               hell-module-load-path)))
 
 (defun hell-module-metadata (path &optional key)
-  "The alist in module directory PATH's .hellmodule, or its KEY; nil without one.
+  "The alist in module dir PATH's .hellmodule, or its KEY; nil without one.
 Doom v3's .doommodule: `name' (GROUP NAME), and optionally `depth'."
   (when (file-exists-p (expand-file-name ".hellmodule" path))
     (hell-dotfile (if key (list path 'module key) (list path 'module)))))
@@ -304,7 +309,8 @@ Inside a module's own files, the group and name can be left out:
 ;;; Declaring dependencies: depends-on! -------------------------------------
 
 (defmacro depends-on! (group name &rest flags)
-  "Declare that this module needs module GROUP NAME, with FLAGS. Use it in packages.el.
+  "Declare that this module needs module GROUP NAME, with FLAGS.
+Use it in packages.el.
 
   (depends-on! :tools lsp)
 
@@ -326,7 +332,7 @@ declares (lsp-mode, say) comes before what this module builds on it."
     (hell-module--load key "packages.el")))
 
 (defun hell-module-depend (group name flags)
-  "Record that the current module needs GROUP NAME with FLAGS. See `depends-on!'."
+  "Record that current module needs GROUP NAME with FLAGS.  See `depends-on!'."
   (let ((key (or hell--current-module
                  (error "depends-on!: not inside a module's packages.el")))
         (dep (cons group (cons name flags))))
@@ -338,12 +344,12 @@ declares (lsp-mode, say) comes before what this module builds on it."
       (hell-module--read-packages (cons group name)))))
 
 (defun hell-module-missing-dependencies (key)
-  "Return the dependencies of module KEY that aren't enabled, as (GROUP NAME . FLAGS)."
+  "Return dependencies of module KEY not enabled, as (GROUP NAME . FLAGS)."
   (seq-remove (pcase-lambda (`(,group ,name . ,flags)) (hell-module-p group name flags))
               (alist-get key hell-module-dependencies nil nil #'equal)))
 
 (defun hell-module-dependency-string (dep)
-  "DEP, a (GROUP NAME . FLAGS), as the user would write it: \":tools lsp +flag\"."
+  "DEP, a (GROUP NAME . FLAGS), formatted like \":tools lsp +flag\"."
   (mapconcat (lambda (x) (format "%s" x)) dep " "))
 
 (defun hell-modules-check-dependencies ()
@@ -596,7 +602,7 @@ by bin/hell and `hell-sync', never at a normal startup."
         (hell-module--load key "cli.el")))))
 
 (defun hell-modules-read-packages ()
-  "Read lisp/packages.el, every enabled module's packages.el, team packages, then the user's.
+  "Read lisp/packages.el, module packages.el, team packages, then user's.
 Fills `hell-packages' and `hell-module-dependencies'. A module's
 dependencies (`depends-on!') have their packages.el read before its own."
   (setq hell-packages nil
@@ -621,9 +627,9 @@ dependencies (`depends-on!') have their packages.el read before its own."
         (if (file-exists-p team-lock) team-lock user-lock))))
   "Exact commits of every installed package, written by `bin/hell lock'.
 When it exists, packages are installed at these commits instead of the
-latest ones, so a config can be reproduced on another machine. It sits
-next to your config (or in the team layer) so you can version it together. `bin/hell
-upgrade' rewrites it after updating.")
+latest ones, so a config can be reproduced on another machine.  It sits
+next to your config (or in the team layer) so you can version it
+together.  `bin/hell upgrade' rewrites it after updating.")
 
 (defun hell-modules-install-packages (&optional ignore-lock)
   "Read every packages.el, then install and activate the declared packages.

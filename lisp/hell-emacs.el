@@ -43,6 +43,7 @@
       delete-by-moving-to-trash t
       large-file-warning-threshold (* 50 1024 1024))
 
+(require 'autorevert)
 (setq global-auto-revert-non-file-buffers t
       auto-revert-avoid-polling t)     ; file notifications, not a 5s stat of every buffer
 (global-auto-revert-mode 1)

@@ -218,7 +218,7 @@
     (:action "Settings / Preferences"
      :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-x d" :command dired
      :category "Editor & UI" :doc "Dired on your configuration directory: C-x d, then ~/.config/hell-emacs/."))
-  "Complete registry of IntelliJ IDEA / Eclipse actions and their Hell Emacs key equivalents.")
+  "Registry of IntelliJ IDEA / Eclipse actions and Hell Emacs equivalents.")
 
 (defun hell-intellij--format-candidate (entry max-action max-intellij max-key)
   "Format an ENTRY with aligned columns."
@@ -237,9 +237,9 @@
 
 ;;;###autoload
 (defun hell-where-is-intellij (&optional query)
-  "Look up any IntelliJ IDEA or Eclipse key/action and discover its Hell Emacs shortcut.
+  "Look up any IntelliJ/Eclipse key/action and discover its Hell shortcut.
 When invoked interactively, opens a searchable fuzzy prompt.
-Selecting a candidate displays full documentation and offers to run the command."
+Selecting candidate displays documentation and offers to run command."
   (interactive)
   (let* ((max-action 38)
          (max-intellij 28)

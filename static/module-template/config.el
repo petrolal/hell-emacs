@@ -1,4 +1,4 @@
-;;; <group>/<name>/config.el -*- lexical-binding: t; -*-
+;;; <group>/<name>/config.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;; SCAFFOLD for a new module. Copy this directory to
 ;; sources/hell+/modules/<group>/<name>/ (or $HELLDIR/modules/<group>/<name>/ for
@@ -35,6 +35,8 @@
 ;;   - Leader groups belong to exactly one module -- the one that owns
 ;;     that feature. Don't duplicate a binding across modules; layer
 ;;     onto the owning module's group instead.
+
+(defvar example-package-some-option)
 
 (use-package example-package
   :init

@@ -48,6 +48,22 @@
 (require 'hell-treesit)
 (require 'hell-profiles)
 
+(declare-function elpaca-get "elpaca" (id))
+(declare-function elpaca-wait "elpaca" (&optional queue))
+(declare-function elpaca-process-queues "elpaca" (&optional queue))
+(declare-function elpaca-rebuild "elpaca" (package &optional interactive))
+(declare-function elpaca-merge "elpaca" (package &optional interactive))
+(declare-function elpaca-write-lock-file "elpaca" (file))
+(declare-function elpaca-generate-autoloads "elpaca" (package dir))
+(declare-function elpaca--queued "elpaca" ())
+(declare-function elpaca--dependencies "elpaca" (e))
+(declare-function elpaca<-status "elpaca" (e))
+(declare-function elpaca<-recipe "elpaca" (e))
+(declare-function elpaca<-package "elpaca" (e))
+(declare-function elpaca<-id "elpaca" (e))
+(declare-function elpaca<-build-dir "elpaca" (e))
+(declare-function elpaca<-source-dir "elpaca" (e))
+
 (defvar hell-sync-functions nil
   "Functions run, in order, at the end of every `hell-sync'.
 Called with no arguments after packages are installed and the profile
@@ -137,7 +153,7 @@ the proxy and CA bundle `hell-net' uses, and no update check."
                 (and ca (concat "npm_config_cafile=" ca))))))
 
 (defun hell-sync-npm-install (label lock-dir dir)
-  "Install LABEL's npm packages into DIR, exactly as LOCK-DIR's lockfile pins them.
+  "Install LABEL's npm packages into DIR, as LOCK-DIR's lockfile pins them.
 LOCK-DIR (a module's directory) holds package.json and package-lock.json;
 they are copied to DIR and installed with `npm ci', which checks every
 package against the lockfile's integrity hash. Install scripts don't run.
@@ -215,7 +231,7 @@ to be compiled (it loads from source); on failure, leaves no DEST behind."
       (_ (when (file-exists-p dest) (delete-file dest)) nil))))
 
 (defun hell-sync--compile ()
-  "Byte-compile core and the enabled modules' startup files, into `hell-compiled-dir'.
+  "Byte-compile core and enabled module startup files into `hell-compiled-dir'.
 Core is all or nothing (its files inline each other's macros), and
 modules are compiled only with it. Whatever fails loads from source."
   (let ((core-dir (expand-file-name "lisp/" hell-compiled-dir))
@@ -259,7 +275,7 @@ modules are compiled only with it. Whatever fails loads from source."
     (file-exists-p (expand-file-name "stamp" core-dir))))
 
 (defun hell-sync--write-autoloads (files forms header)
-  "Write every package autoloads file in FILES, then FORMS, into one compiled file;
+  "Write every autoloads file in FILES, then FORMS, into one compiled file;
 return its name.
 Startup then loads one file instead of one per package. Each file's
 `#$' (its own name) is spelled out, and its local variables dropped

@@ -250,7 +250,7 @@ and their Info manuals."
        (add-hook 'hell-startup-functions #'hell--startup-loaddefs-packages 70)))))
 
 (defun hell-profile--generate-module-loader (_data)
-  "Part 80: the enabled modules, as sync saw them, then team and your config.el."
+  "Part 80: enabled modules as sync saw them, then team and your config.el."
   (let ((init-modules (hell-module-list :init))
         (config-modules (hell-module-list :config)))
     (hell-profile--write-part
@@ -282,7 +282,7 @@ and their Info manuals."
 ;;; Generating ---------------------------------------------------------------
 
 (defun hell-profile-delete-init ()
-  "Delete the generated init files (every Emacs version's), legacy pre-16.8 init files, and their parts."
+  "Delete generated init files (all Emacs versions), legacy files, and parts."
   (dolist (file (file-expand-wildcards (hell-profile-file "init.*.el*")))
     (delete-file file))
   (dolist (file (list (hell-profile-file "init.el")

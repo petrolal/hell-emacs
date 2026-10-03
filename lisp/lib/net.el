@@ -110,7 +110,7 @@ and Nexus' GitHub, Maven and generic remote repositories.")
 
 (defun hell-net--no-proxy-regexp (hosts)
   "A regexp matching the host names HOSTS describe, for url.el's no_proxy.
-\"corp.example\" or \".corp.example\" matches it and every subdomain; \"*\" all."
+\"corp.example\" or \".corp.example\" matches subdomain; \"*\" matches all."
   (if (member "*" hosts)
       "."
     (concat "\\`\\(?:"
@@ -164,10 +164,10 @@ Written again whenever a file it's made from is newer."
   "The JVMs' truststore: the JDK's CAs and `hell-ca-bundle''s, built by sync.")
 
 (defconst hell-net--truststore-password "changeit"
-  "The truststore's password: the JDK's own, since it only holds public certificates.")
+  "Truststore password: JDK's own, since it only holds public certs.")
 
 (defun hell-net-java-home ()
-  "The JDK whose CAs and keytool the truststore comes from: $JAVA_HOME, else `java''s."
+  "JDK whose CAs and keytool truststore comes from: $JAVA_HOME, else `java''s."
   (or (hell-net--getenv "JAVA_HOME")
       (when-let* ((java (executable-find "java")))
         (file-name-directory (directory-file-name (file-name-directory (file-truename java)))))))
@@ -232,7 +232,7 @@ error saying what's missing (a JDK, its keytool, a readable CA)."
 (declare-function hell-sync--log "cli/sync")
 
 (defun hell-net-sync ()
-  "Build the JVMs' truststore when `hell-ca-bundle' is set. For `hell-sync-functions'."
+  "Build JVMs' truststore when `hell-ca-bundle' is set.  For sync functions."
   (when hell-ca-bundle
     (if (hell-net-truststore-current-p)
         (hell-sync--log "JVM truststore is up to date")
@@ -257,7 +257,7 @@ error saying what's missing (a JDK, its keytool, a readable CA)."
    "|"))
 
 (defun hell-net-jvm-options ()
-  "System properties for the JVMs Hell Emacs starts: the proxy, and the truststore.
+  "System properties for JVMs Hell starts: proxy, and truststore.
 Empty when nothing is set. The truststore only once sync has built it."
   (append
    (when-let* ((proxy (hell-net-proxy)))
@@ -274,8 +274,9 @@ Empty when nothing is set. The truststore only once sync has built it."
 ;;; All of Emacs: proxy and CA ----------------------------------------------------
 
 (defun hell-net-setup ()
-  "Point Emacs at `hell-proxy' and trust `hell-ca-bundle'. Run after your init.el.
-An environment proxy needs nothing: url.el reads $HTTPS_PROXY itself."
+  "Point Emacs at `hell-proxy' and trust `hell-ca-bundle'.
+Run after your init.el.  An environment proxy needs nothing: url.el reads
+$HTTPS_PROXY itself."
   (when hell-proxy
     (let ((host-port (hell-net--host-port hell-proxy)))
       (setq url-proxy-services `(("http" . ,host-port) ("https" . ,host-port)))
@@ -312,7 +313,7 @@ An environment proxy needs nothing: url.el reads $HTTPS_PROXY itself."
               (string-match-p (hell-net--no-proxy-regexp hosts) host)))))
 
 (defun hell-net--probe-connect (host port)
-  "Open a plain connection to HOST:PORT; return the process, or signal an error."
+  "Open plain connection to HOST:PORT; return process, or signal an error."
   (unless (network-lookup-address-info host)
     (error "%s: no such host (DNS)" host))
   (let* ((event nil)
@@ -490,7 +491,7 @@ downloaded.")
                   hell-mirrors)))
 
 (defun hell-net-environment (&optional base-environment)
-  "`process-environment' for Hell Emacs' own fetches, made from BASE-ENVIRONMENT.
+  "`process-environment' for fetches, made from BASE-ENVIRONMENT.
 Git settings go in GIT_CONFIG_COUNT/KEY_n/VALUE_n (after any already
 there), and an explicit proxy's exceptions in NO_PROXY."
   (let* ((env (copy-sequence (or base-environment process-environment)))
@@ -524,7 +525,7 @@ mirrors (`hell-net-environment')."
      ,@body))
 
 (defun hell-net--mirror-a (args)
-  "`url-retrieve-internal' fetches through a mirror, inside `with-hell-network'."
+  "`url-retrieve-internal' fetches through mirror, in `with-hell-network'."
   (if (and hell-net--active hell-mirrors (stringp (car args)))
       (cons (hell-net-rewrite (car args)) (cdr args))
     args))
@@ -547,7 +548,7 @@ whole download in memory first.")
   (if (eq hell-net-curl 'auto) (executable-find "curl") hell-net-curl))
 
 (defun hell-net-download (url file)
-  "Download URL to FILE, as Hell Emacs' fetches go: its mirror, the proxy, the CAs.
+  "Download URL to FILE: its mirror, proxy, and CAs.
 Through curl when there is one, which streams it to disk (JDTLS and the
 Spring server run to tens of megabytes); else url.el's `url-copy-file'.
 An HTTP error status is an error. Refused while `hell-net-offline'."
