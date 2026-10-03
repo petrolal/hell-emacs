@@ -66,14 +66,14 @@
 ;; Localleader shortcuts on `C-c l' for Common Lisp buffers
 (hell-localleader-def 'lisp-mode
   "s" '("slime / repl" . slime)
-  "c" '(:ignore t :which-key "compile")
+  "c" "compile"
   "c c" '("compile defun" . slime-compile-defun)
   "c k" '("compile file" . slime-compile-and-load-file)
-  "e" '(:ignore t :which-key "eval")
+  "e" "eval"
   "e b" '("eval buffer" . slime-eval-buffer)
   "e d" '("eval defun" . slime-eval-defun)
   "e e" '("eval last sexp" . slime-eval-last-expression)
-  "d" '(:ignore t :which-key "doc")
+  "d" "doc"
   "d d" '("describe symbol" . slime-describe-symbol)
   "d a" '("apropos" . slime-apropos)
   "d h" '("hyperspec" . slime-hyperspec-lookup)

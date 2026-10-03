@@ -25,6 +25,7 @@
 ;; Checked by `bin/hell doctor'.
 
 (hell-module-load "+paths")
+(hell-module-load "autoload")
 
 (dolist (name (delq nil (list (and (modulep! :lang java) 'google-java-format)
                               (and (modulep! :lang kotlin) 'ktfmt))))
