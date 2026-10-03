@@ -27,7 +27,7 @@
            theme              ; the Hell Emacs theme, line numbers, current line
            ;;emoji            ; [idea] emoji input and display
            hl-todo            ; highlight TODO/FIXME/HACK/NOTE in comments; M-x hl-todo-next, hl-todo-occur
-           indent-guides      ; [idea] indentation guides
+           indent-guides      ; indentation guides (highlight-indent-guides)
            ;;ligatures        ; [idea] font ligatures in graphical frames
            ;;minimap          ; [idea] a code minimap
            ;;nav-flash        ; [idea] flash the line after a big jump
@@ -45,8 +45,8 @@
            fold               ; code folding on stock C-c @ (treesit-fold, hideshow)
            format             ; formatters: google-java-format, ktfmt, cljfmt, on C-c c f (+onsave)
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys
-           parinfer           ; [idea] indentation-driven Lisp editing
-           smartparens        ; [idea] structural editing for Lisps and brackets
+           ;;parinfer         ; indentation-driven Lisp editing (parinfer-rust-mode)
+           ;;smartparens      ; structural editing for Lisps and brackets
            snippets           ; snippets (tempel): junit, controller, dataclass, deftest, munit; complete a name with C-M-i
            ;;word-wrap        ; [idea] soft wrap that respects indentation
 
@@ -87,11 +87,11 @@
            ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
            editorconfig       ; the project's .editorconfig: indentation, charset, line endings (built in)
            ;;eval             ; [idea] run code in a REPL or inline, per language
-           forge              ; [idea] GitHub/GitLab pull requests from Magit
+           ;;forge            ; GitHub/GitLab pull requests from Magit
            ;;kubernetes       ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
            ;;llm              ; [idea] LLM chat and code actions (gptel)
-           lookup             ; [idea] documentation and definition lookup beyond LSP (devdocs, dash)
-           make               ; [idea] run Makefile targets
+           ;;lookup           ; documentation and definition lookup (devdocs)
+           ;;make             ; run Makefile targets (makefile-executor)
            ;;pass             ; [idea] the pass password store
            ;;pdf              ; [idea] read PDFs (pdf-tools)
            ;;http             ; IntelliJ .http files: restclient, env files (+httpyac: JS handlers, needs Node)
@@ -137,7 +137,7 @@
            ;;agda             ; [idea] Agda: agda-mode (no LSP)
            ;;beancount        ; [idea] Beancount: beancount-language-server
            ;;cmake            ; [idea] CMake: neocmakelsp
-           common-lisp        ; Common Lisp: SLIME (REPL, compiler, evaluation, sblint)
+           ;;common-lisp      ; Common Lisp: SLIME (REPL, compiler, evaluation, sblint)
            ;;coq              ; [idea] Rocq/Coq: coq-lsp, Proof General
            ;;crystal          ; [idea] Crystal: crystalline
            ;;csharp           ; [idea] C#: csharp-ls (Roslyn)
@@ -145,7 +145,7 @@
            ;;dhall            ; [idea] Dhall: dhall-lsp-server
            ;;elixir           ; [idea] Elixir: Expert (elixir-ls)
            ;;elm              ; [idea] Elm: elm-language-server
-           emacs-lisp         ; [idea] Emacs Lisp extras: macrostep, elisp-demos (no LSP)
+           ;;emacs-lisp       ; Emacs Lisp extras: macrostep, elisp-demos (no LSP)
            ;;erlang           ; [idea] Erlang: ELP (erlang_ls)
            ;;ess              ; [idea] R: languageserver, ESS
            ;;fortran          ; [idea] Fortran: fortls

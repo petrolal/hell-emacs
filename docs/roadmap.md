@@ -548,15 +548,55 @@ iconography (`nerd-icons`):
       Project starters and live development integration for Quarkus and Micronaut.
       Quarkus RESTEasy/Panache and Micronaut HTTP service templates, auto-hooking into `:tools build`
       (`project.el`, Maven, Gradle) with pinned dependencies and zero telemetry.
-- [ ] 21.1 **Git Forge Pull Requests & Issues (`:tools forge`)**:
+- [x] 21.1 **Git Forge Pull Requests & Issues (`:tools forge`)**:
       Native Magit extension (`forge.el`) for GitHub and GitLab Enterprise PR reviews, issue management,
       and code discussion directly from Magit's status buffer (`C-x g`, `@`), respecting that Hell Emacs
-      dropped `C-c g` duplicates and keeps package default keys (roadmap 13.6).
+      dropped `C-c g` duplicates and keeps package default keys (roadmap 13.6)
+      (2026-10-03: added `:tools forge` module, doctor checks for SQLite, quality gate verified).
 - [ ] 22.1 **AI & LLM Pair Programming (`:tools llm`)**:
       Native, privacy-first AI companion (`gptel` / `ellama`) with support for local offline models
       (Ollama, llama.cpp) and corporate/cloud APIs (Gemini, Claude, OpenAI).
       In-buffer code explanation, test generation, and AST-aware refactoring. 100% opt-in with zero
       background telemetry. Keys: under the code group (`C-c c a` AI assistant) or package defaults.
+
+### 9. Distribution Catalog Modular Completion (Phases 23–28)
+
+- [x] 23.1 **Batch 1: UI & Editor Polish (`:ui` & `:editor`)**:
+      Implement modular catalog packages kept commented out in template:
+      `:ui emoji` (emoji input/display via built-in / emojify),
+      `:ui ligatures` (font ligatures via ligature.el),
+      `:ui minimap` (code minimap via sublimity / minimap),
+      `:ui nav-flash` (pulse line after jumps via pulse / nav-flash),
+      `:ui tabs` (tab-line per window via built-in tab-line-mode),
+      `:ui treemacs` (project file tree via treemacs),
+      `:ui unicode` (fallback fonts for scripts via unicode-fonts),
+      `:ui window-select` (ace-window on stock keys),
+      `:ui zen` (distraction-free editing via olivetti),
+      `:editor multiple-cursors` (multiple cursors on stock keys),
+      `:editor word-wrap` (indent-aware soft wrap via adaptive-wrap)
+      (2026-10-03: all 11 modules implemented with .hellmodule, packages.el, config.el, doctor.el, quality gate verified).
+- [x] 24.1 **Batch 2: Emacs, Terminals & Checkers (`:emacs`, `:term`, `:checkers`)**:
+      `:emacs electric`, `:emacs eww`, `:emacs ibuffer`, `:emacs vc`,
+      `:term eshell`, `:term shell`, `:term eat`, `:term vterm`,
+      `:checkers syntax`, `:checkers spell`, `:checkers grammar`
+      (2026-10-03: all 11 modules implemented with .hellmodule, packages.el, config.el, doctor.el, quality gate verified).
+- [ ] 25.1 **Batch 3: Tools & OS Integration (`:tools`, `:os`)**:
+      `:tools ansible`, `:tools biblio`, `:tools eval`, `:tools pass`,
+      `:tools pdf`, `:tools rgb`, `:tools taskrunner`, `:tools tmux`, `:tools upload`,
+      `:os macos`, `:os tty`.
+- [ ] 26.1 **Batch 4: Core Language Modules (`:lang`)**:
+      `:lang rust`, `:lang go`, `:lang python`, `:lang cc`, `:lang php`,
+      `:lang ruby`, `:lang csharp`, `:lang lua`, `:lang nix`, `:lang elixir`,
+      `:lang haskell`, `:lang zig`, `:lang dart`, `:lang toml`, `:lang graphql`.
+- [ ] 27.1 **Batch 5: Extended Languages & Formats (`:lang`)**:
+      `:lang agda`, `:lang beancount`, `:lang cmake`, `:lang coq`, `:lang crystal`,
+      `:lang dhall`, `:lang elm`, `:lang erlang`, `:lang ess`, `:lang fortran`,
+      `:lang fsharp`, `:lang gdscript`, `:lang gleam`, `:lang graphviz`, `:lang janet`,
+      `:lang julia`, `:lang latex`, `:lang lean`, `:lang ledger`, `:lang nim`,
+      `:lang ocaml`, `:lang odin`, `:lang org`, `:lang plantuml`, `:lang purescript`,
+      `:lang racket`, `:lang rst`, `:lang scheme`, `:lang sml`, `:lang solidity`, `:lang swift`.
+- [ ] 28.1 **Batch 6: Applications & Email (`:app`, `:email`)**:
+      `:app calendar`, `:app irc`, `:app rss`, `:email mu4e`, `:email notmuch`.
 
 ---
 

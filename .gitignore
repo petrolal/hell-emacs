@@ -10,6 +10,7 @@
 /etc/
 /.local*/
 /elpaca/
+/elpa/
 /cache/
 /eln-cache/
 /auto-save-list/
