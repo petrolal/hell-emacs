@@ -84,16 +84,16 @@
      :intellij "Ctrl+H" :eclipse "F4" :key "C-c l h" :command lsp-java-type-hierarchy
      :category "Navigation" :doc "Inspect supertypes and subtypes hierarchy in Java buffers.")
     (:action "Quick documentation / Hover"
-     :intellij "Ctrl+Q" :eclipse "F2" :key "C-c c k" :command eldoc-doc-buffer
+     :intellij "Ctrl+Q" :eclipse "F2" :key "C-c c k" :command lsp-describe-thing-at-point
      :category "Navigation" :doc "Show documentation and signature at point (or lsp-describe-thing-at-point).")
     (:action "Next error / diagnostic"
-     :intellij "F2" :eclipse "Ctrl+." :key "C-c ! n" :command flymake-goto-next-error
+     :intellij "F2" :eclipse "Ctrl+." :key "M-x flymake-goto-next-error" :command flymake-goto-next-error
      :category "Navigation" :doc "Jump to next compiler error or linter warning (C-c s e to pick one).")
     (:action "Previous error / diagnostic"
-     :intellij "Shift+F2" :eclipse "Ctrl+," :key "C-c ! p" :command flymake-goto-prev-error
+     :intellij "Shift+F2" :eclipse "Ctrl+," :key "M-x flymake-goto-prev-error" :command flymake-goto-prev-error
      :category "Navigation" :doc "Jump to previous compiler error or linter warning.")
     (:action "Problems view / error list"
-     :intellij "Alt+6" :eclipse "Problems View" :key "C-c ! l" :command flymake-show-buffer-diagnostics
+     :intellij "Alt+6" :eclipse "Problems View" :key "M-x flymake-show-buffer-diagnostics" :command flymake-show-buffer-diagnostics
      :category "Navigation" :doc "Open buffer diagnostics popup.")
     (:action "Last edit location"
      :intellij "Ctrl+Shift+Backspace" :eclipse "Ctrl+Q" :key "C-u C-SPC" :command set-mark-command
@@ -216,8 +216,8 @@
      :intellij "Services / Kubernetes" :eclipse "—" :key "C-c o k" :command kubel
      :category "Git & Tools" :doc "Inspect pods, logs, deployments, and port-forwards.")
     (:action "Settings / Preferences"
-     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-c h u" :command hell-visit-user-dir
-     :category "Editor & UI" :doc "Open user configuration directory (~/.config/hell-emacs/)."))
+     :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-x d" :command dired
+     :category "Editor & UI" :doc "Dired on your configuration directory: C-x d, then ~/.config/hell-emacs/."))
   "Complete registry of IntelliJ IDEA / Eclipse actions and their Hell Emacs key equivalents.")
 
 (defun hell-intellij--format-candidate (entry max-action max-intellij max-key)

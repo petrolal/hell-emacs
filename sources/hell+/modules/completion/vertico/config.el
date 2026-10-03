@@ -34,7 +34,6 @@
 
 (hell-leader-def
   "f"   "file"
-  "f R" '("rename file" . rename-visited-file)
   "s"   "search")
 
 ;; Neither is needed before the first command: vertico turns on with it

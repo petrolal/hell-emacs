@@ -25,8 +25,7 @@
 ;; editing (see "Rules" in docs/roadmap.md). Its own
 ;; commands live under `C-c', the prefix Emacs reserves for users,
 ;; laid out like Doom's non-evil leader: `C-c h' Hell Emacs, `C-c c'
-;; code, `C-c f' file, `C-c s' search, `C-c t' toggle,
-;; `C-c w' window, `C-c q' quit, and `C-c l' the localleader: the
+;; code, `C-c f' file, `C-c s' search, and `C-c l' the localleader: the
 ;; commands of the current major mode (and of some minor modes), as
 ;; Doom's `doom-localleader-alt-key'.
 ;;

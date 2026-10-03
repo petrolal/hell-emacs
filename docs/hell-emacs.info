@@ -108,8 +108,6 @@ Magit's ‘C-x g’, lsp-mode's ‘s-l’, diff-hl's ‘C-x v’ hunk keys.
      Debugging (‘C-c d d’ start, ‘C-c d b’ breakpoint).
 ‘C-c s’
      Search (‘C-c s s’ buffer lines, ‘C-c s p’ the project).
-‘C-c t’
-     Toggles (‘C-c t l’ line numbers, ‘C-c t f’ flymake).
 
 
 File: hell-emacs.info,  Node: Installation and Profiles,  Next: Daily JVM Workflow,  Prev: The 40-Year Purist Guarantee,  Up: Top
@@ -437,17 +435,17 @@ Tag Table:
 Node: Top651
 Node: Overview2320
 Node: The 40-Year Purist Guarantee3264
-Node: Installation and Profiles5049
-Node: Daily JVM Workflow5815
-Node: IntelliJ Parity & Key Finder9434
-Node: Enhanced Dired9976
-Node: Workspaces10585
-Node: Modules and Configuration11221
-Node: Enterprise & Team Layer12448
-Node: CLI Reference13335
-Node: Diagnostics and Doctor14352
-Node: Concept Index15034
-Node: Key Index15169
+Node: Installation and Profiles4971
+Node: Daily JVM Workflow5737
+Node: IntelliJ Parity & Key Finder9356
+Node: Enhanced Dired9898
+Node: Workspaces10507
+Node: Modules and Configuration11143
+Node: Enterprise & Team Layer12370
+Node: CLI Reference13257
+Node: Diagnostics and Doctor14274
+Node: Concept Index14956
+Node: Key Index15091
 
 End Tag Table
 

@@ -31,7 +31,6 @@
            ;;ligatures        ; [idea] font ligatures in graphical frames
            ;;minimap          ; [idea] a code minimap
            ;;nav-flash        ; [idea] flash the line after a big jump
-           popup              ; help, builds, tests, REPLs, xref at the bottom; q (where the buffer has it) or C-x 0 closes, C-c w t toggles
            ;;tabs             ; [idea] tab-line tabs per window
            ;;treemacs         ; [idea] a project file tree
            ;;unicode          ; [idea] fallback fonts for every script

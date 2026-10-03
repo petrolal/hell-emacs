@@ -21,19 +21,20 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Hell Emacs' default keybindings and the groups with no natural owning
-;; feature module: `C-c h' (Hell Emacs' own map, `hell-prefix-map'),
-;; `C-c c' (code), `C-c t' (toggles), `C-c q' (quit) and `C-c w'
-;; (windows). Feature modules fill their own groups, e.g. `:completion
-;; vertico' owns `C-c f' and `C-c s', and `C-c l' is the localleader
-;; (`hell-localleader-def').
+;; Hell Emacs' default keybindings: `C-c h' (Hell Emacs' own map,
+;; `hell-prefix-map') and the `C-c c' (code) label. Feature modules fill
+;; their own groups, e.g. `:completion vertico' owns `C-c f' and `C-c s',
+;; and `C-c l' is the localleader (`hell-localleader-def').
 ;;
 ;; Two layers, kept apart (13.5). Traditional: every stock key keeps its
 ;; meaning, and nothing is added inside Emacs' own prefixes (`C-x', `M-g',
 ;; `M-s', `C-x v', `C-x t'). Modern: Hell Emacs' and its packages' keys,
 ;; only under `C-c'. A `C-c' key never repeats a stock key's command --
-;; the groups hold what stock Emacs has no key for -- so there is one key
-;; per command, and the stock one wins. Installed packages keep their own
+;; the groups hold Hell Emacs' and its packages' commands only -- so
+;; there is one way to each command, and the stock one wins. Emacs' own
+;; commands keep their stock key, or `M-x' (`flymake-mode',
+;; `windmove-left', `restart-emacs'...): Hell Emacs adds no key to them
+;; (13.9). Installed packages keep their own
 ;; default keys as they ship them (13.6): nothing of theirs is rebound,
 ;; unset or moved.
 ;;
@@ -54,7 +55,6 @@
 (defun hell-default--name-stock-prefixes ()
   (hell-which-key-labels
    nil
-   "C-c !"         "diagnostics (flymake)"
    "C-c ^"         "merge conflicts (smerge)"
    "C-c l"         "local (this mode)"
    "C-x a"         "abbrevs"
@@ -149,17 +149,15 @@
 ;; which-key labels use Hell Emacs' own names: altar/... for the splash
 ;; and memory, forge/... for the config, crucible/... for the REPL. No
 ;; leading `+': which-key marks groups with it, and these are commands.
-;; Finding a project's file is stock `C-x p f'.
+;; Finding a project's file is stock `C-x p f'; your config directory is
+;; stock `C-x d', memory `M-x memory-report' / `M-x garbage-collect'.
 
 (defvar-keymap hell-prefix-map
   :doc "Hell Emacs' own commands, on `C-c h'."
   "s" (cons "altar/splash" #'hell-splash)
-  "c" (cons "altar/reap" #'hell-reap)
   "r" (cons "crucible/reload" #'hell-crucible-reload)
   "R" (cons "forge/reload-config" #'hell-reload)
   "S" (cons "forge/sync" #'hell-sync-child)
-  "u" (cons "forge/user-config" #'hell-visit-user-dir)
-  "v" (cons "forge/hell-dir" #'hell-visit-dir)
   "i" (cons "forge/manual" #'hell-info-manual)
   "m" (cons "forge/describe-module" #'hell-describe-module)
   "M" (cons "forge/modules-list" #'hell-list-modules)
@@ -175,14 +173,8 @@
 
 (keymap-set mode-specific-map "h" hell-prefix-map)
 
-;;; C-c q -----------------------------------------------------------------------
-;;
-;; Quitting is stock `C-x C-c'; restarting has no stock key.
-
 (hell-leader-def
-  "h"   "hell"                   ; labels the map bound just above
-  "q"   "quit"
-  "q r" '("restart emacs" . restart-emacs))
+  "h" "hell")                    ; labels the map bound just above
 
 ;;; C-c c -- code ---------------------------------------------------------------
 ;;
@@ -191,40 +183,12 @@
 ;; by the language server), `C-x p c' (build, which `:tools build' makes
 ;; the project's), `C-h .' (help at point). `:tools lsp' adds the server's
 ;; actions to this group in its buffers, and lsp-mode's whole map on
-;; its own `s-l'; flymake's diagnostics are on `C-c !'.
+;; its own `s-l'; `C-c s e' jumps to a diagnostic.
 
 (hell-leader-def
-  "c"   "code"
-  "c C" '("recompile" . recompile)
-  "c k" '("documentation at point" . eldoc-doc-buffer)
-  "c w" '("delete trailing whitespace" . delete-trailing-whitespace))
+  "c"   "code")
 
-;;; C-c t -- toggle -------------------------------------------------------------
-;;
-;; Minor modes with no stock key (`C-x C-q' is read-only, `<f11>'
-;; fullscreen).
-
-(hell-leader-def
-  "t"   "toggle"
-  "t c" '("fill column indicator" . display-fill-column-indicator-mode)
-  "t f" '("flymake" . flymake-mode)
-  "t l" '("line numbers" . display-line-numbers-mode)
-  "t s" '("spell checker" . flyspell-mode)
-  "t v" '("visible mode" . visible-mode)
-  "t w" '("soft line wrapping" . visual-line-mode))
-
-;;; C-c w -- windows -----------------------------------------------------------
-;;
-;; What the stock window keys lack: moving by direction (windmove ships
-;; without keys). Splitting, deleting, `C-x o' and balancing stay on
-;; `C-x 2' / `C-x 3' / `C-x 0' / `C-x 1' / `C-x o' / `C-x +', and
-;; winner-mode's layout undo on its own `C-c <left>' / `C-c <right>'.
-
+;; Winner's layout undo, on its own `C-c <left>' / `C-c <right>'.
 (add-hook 'hell-first-input-hook #'winner-mode)
 
-(hell-leader-def
-  "w"   "window"
-  "w b" '("window left" . windmove-left)
-  "w f" '("window right" . windmove-right)
-  "w p" '("window up" . windmove-up)
-  "w n" '("window down" . windmove-down))
+;;; config.el ends here

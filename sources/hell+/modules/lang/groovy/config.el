@@ -32,7 +32,7 @@
 ;; Maven) once the server has started: it shows JVM:igniting until then,
 ;; JVM:ready once the server has it, JVM:failed if the build can't say.
 ;; Completion, navigation, diagnostics and rename come from `:tools lsp'
-;; (`C-c c', `M-.', `C-c ! n'); this module adds `C-c l c' in Groovy
+;; (`C-c c', `M-.', `C-c s e'); this module adds `C-c l c' in Groovy
 ;; buffers (ask the build for the classpath again). With `:tools build',
 ;; `C-x p c' builds (Gradle or Maven, wrapper first) and `C-c l t t' /
 ;; `C-c l t T' run the test at point (JUnit methods, Spock features) /

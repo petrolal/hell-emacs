@@ -39,6 +39,22 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Removed
 
+- `:ui popup` (roadmap 13.10): help, build, test and xref buffers open
+  where Emacs places them. Questions are answered `yes` / `no` again
+  (stock; `use-short-answers` is no longer set). "Extinguish the forge
+  and return to the void?" now only words Emacs' own question when you
+  quit with unsaved buffers.
+
+- Hell Emacs' own stand-ins for what Emacs already does (roadmap 13.9):
+  `C-x C-c` quits as stock Emacs does, asking only when something is
+  unsaved (no more "Extinguish the forge...?" every time); the `C-c t`
+  toggles, `C-c w` windmove, `C-c q r`, `C-c c C/k/w`, `C-c f R`,
+  `C-c w t` and `C-c ! n/p/l` keys on Emacs' own commands (use their
+  stock keys or `M-x`); `C-c h c` (`M-x memory-report`), `C-c h u` /
+  `C-c h v` (`C-x d`), `hell-forge-build` (`C-x p c`); the Altar's
+  buttons for files, projects, buffers, a shell, the manual, the plugins
+  and the repository, which the stock screen and keys already offer.
+
 - More of what Emacs already does (roadmap 13.8): YAML, Dockerfile and
   TypeScript/TSX open in Emacs' own `yaml-ts-mode`, `dockerfile-ts-mode`,
   `typescript-ts-mode` and `tsx-ts-mode`, whose pinned grammars

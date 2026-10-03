@@ -210,12 +210,6 @@ The same line in Java, Kotlin, Groovy and Scala, with or without a `;'."
   (funcall hell-forge-test-class-function))
 
 ;;;###autoload
-(defun hell-forge-build ()
-  "Build the current project with its build tool (Gradle or Maven)."
-  (interactive)
-  (hell-forge--run 'build))
-
-;;;###autoload
 (defun hell-forge-test-at-point ()
   "Run the test method at point with the build tool (the whole class if none).
 Or with `hell-forge-test-run-function', when the language sets one."

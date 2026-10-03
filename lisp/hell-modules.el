@@ -198,7 +198,8 @@ module doesn't exist."
   '(((:ui . dashboard) . "the Altar is GNU Emacs' own startup screen (C-c h s)")
     ((:ui . modeline) . "Emacs' stock mode line shows the JVM status itself")
     ((:tools . projectile) . "Emacs' built-in project.el does it, on C-x p")
-    ((:tools . eglot) . "eglot is built into Emacs; the JVM modules use lsp-mode"))
+    ((:tools . eglot) . "eglot is built into Emacs; the JVM modules use lsp-mode")
+    ((:ui . popup) . "Emacs places help, build and test windows itself (`display-buffer')"))
   "Modules Hell Emacs no longer has (13.7), and what to use instead,
 as Doom's obsolete modules: `hell!' skips them with this reason.")
 

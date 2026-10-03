@@ -33,7 +33,7 @@
 ;; documentation). lsp-mode's own keys are as it ships them (13.6): its
 ;; whole command map on `s-l' (`s-l w r' restart, `T' toggles, `g' goto,
 ;; ...), its mouse menu on `mouse-3', signature help on `C-S-SPC'. Diagnostics are
-;; flymake's, on `C-c !' wherever it runs. Emacs' xref keys work as
+;; flymake's: `C-c s e' jumps to one. Emacs' xref keys work as
 ;; everywhere: `M-.' definition, `M-?' references, `M-,' back,
 ;; `C-M-.' search workspace symbols.
 ;;
@@ -120,11 +120,11 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
 (setq yas-snippet-dirs nil)
 (add-hook 'lsp-mode-hook #'yas-minor-mode)
 
-;; Diagnostics are flymake's (`lsp-diagnostics-provider' above), so its
-;; keys are in flymake's map: they work wherever flymake runs, elisp too.
-;; `C-c' and punctuation is the minor modes' own range.
 ;; The server's actions in the `C-c c' code group (`:config default'),
-;; only where lsp-mode runs; the group's other keys are built-in.
+;; only where lsp-mode runs. Diagnostics are flymake's, built into Emacs
+;; (`lsp-diagnostics-provider' above), so Hell Emacs adds no key to them
+;; (13.9): `C-c s e' jumps to one, `M-x flymake-goto-next-error' and
+;; `M-x flymake-show-buffer-diagnostics' do the rest.
 (defvar lsp-mode-map)
 (after! lsp-mode
   (keymap-set lsp-mode-map "C-c c a" (cons "code action" #'lsp-execute-code-action))
@@ -134,12 +134,6 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
   (keymap-set lsp-mode-map "C-c c i" (cons "find implementations" #'lsp-find-implementation))
   (keymap-set lsp-mode-map "C-c c t" (cons "find type definition" #'lsp-find-type-definition))
   (keymap-set lsp-mode-map "C-c c k" (cons "documentation at point" #'lsp-describe-thing-at-point)))
-
-(defvar flymake-mode-map)
-(after! flymake
-  (keymap-set flymake-mode-map "C-c ! n" #'flymake-goto-next-error)
-  (keymap-set flymake-mode-map "C-c ! p" #'flymake-goto-prev-error)
-  (keymap-set flymake-mode-map "C-c ! l" #'flymake-show-buffer-diagnostics))
 
 ;; Cape's recipe for a server's completion: bust its cache as the input
 ;; changes, so candidates are fetched afresh rather than filtered from a

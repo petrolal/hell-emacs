@@ -58,24 +58,6 @@ manager; then the new init file loads here."
       (user-error "Sync failed; see *hell-sync*"))))
 
 ;;;###autoload
-(defun hell-visit-dir ()
-  "Open a Dired buffer at the Hell Emacs install directory."
-  (interactive)
-  (dired hell-dir))
-
-;;;###autoload
-(defun hell-visit-user-dir ()
-  "Open a Dired buffer at your Hell Emacs config (`hell-user-dir').
-Offers to create it with starter files if it doesn't exist yet."
-  (interactive)
-  (unless (file-directory-p hell-user-dir)
-    (if (y-or-n-p (format "%s doesn't exist. Create it? "
-                          (abbreviate-file-name hell-user-dir)))
-        (hell-init-user-dir)
-      (user-error "No user config directory")))
-  (dired hell-user-dir))
-
-;;;###autoload
 (defun hell-list-modules ()
   "Display the enabled Hell Emacs modules, in load order, with their flags."
   (interactive)
@@ -90,18 +72,6 @@ Offers to create it with starter files if it doesn't exist yet."
                       ", ")))
 
 ;;; Commands behind the infernal `C-c h' map (Phase 7) ------------------------
-
-;;;###autoload
-(defun hell-reap ()
-  "Reap memory: run the garbage collector now and report what's left."
-  (interactive)
-  (let* ((start (float-time))
-         (stats (garbage-collect))
-         (live (cl-loop for (_ size used) in stats
-                        when (and (numberp size) (numberp used))
-                        sum (* size used))))
-    (message "[ALTAR] Reaped in %.3fs; %s still bound (%d garbage collections so far)."
-             (- (float-time) start) (file-size-human-readable live) gcs-done)))
 
 ;;;###autoload
 (defun hell-crucible-reload ()

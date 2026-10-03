@@ -187,7 +187,6 @@ through, so its maps are searched too."
                           (hell-info-manual "Read the Hell Emacs Info manual")
                           (hell-describe-module "Describe a module")
                           (hell-list-modules "List the enabled modules")
-                          (hell-visit-user-dir "Open your configuration directory")
                           (hell-sync-child "Sync packages and compile the profile")
                           (hell-where-is-intellij "IntelliJ IDEA to Emacs key finder"))))
           (insert (propertize (concat title "\n") 'face '(:foreground "#ffb86c" :weight bold)))

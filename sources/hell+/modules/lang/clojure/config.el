@@ -35,7 +35,7 @@
 ;;   C-c C-d d  documentation      C-c C-q  quit the REPL
 ;; Nothing is rebound. `C-c h r' (the Crucible) reloads the buffer into
 ;; the connected REPL. Code intelligence -- rename, references, code
-;; actions, diagnostics -- is `:tools lsp' (`C-c l', `C-c ! n').
+;; actions, diagnostics -- is `:tools lsp' (`C-c l', `C-c s e').
 ;;
 ;; The clojure-lsp binary is installed by `bin/hell sync' (a pinned
 ;; release, checked by SHA-256) into the data directory; a clojure-lsp on

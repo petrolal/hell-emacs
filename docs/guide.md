@@ -281,7 +281,7 @@ when your config changed since.
 ### Modules
 
 ```elisp
-(hell! :ui         theme popup
+(hell! :ui         theme
        :editor     undo
        :completion vertico (corfu +tab)
        :tools      build debugger direnv lsp magit run test editorconfig
@@ -351,7 +351,7 @@ files a module can have are in [development.md](development.md#modules).
 - **`:ui theme`**: `hell-inferno`, Hell Emacs' own theme.
   `(setq hell-theme 'modus-vivendi)` in `init.el` uses another; `nil`,
   none.
-- **The Altar**: the startup screen is GNU Emacs' own (`*GNU Emacs*`, `fancy-startup-screen`), with the same layout and features: the link table, "To start...", the newcomer presets checkbox, the version line, the auto-save recovery notice, and the concise "Dismiss this startup screen" panel beside files opened from the command line. Hell Emacs changes only the logo (the chimera skull, `assets/banners/splash.svg`) and the words: a Hell Emacs welcome line and manual row, a forge line with the profile and startup time under the version, and the Altar's buttons at the bottom: "Forge..." (Ignite File, Summon Project, Grimoires, Hell Shell, Grimoire Manual, IntelliJ Exorcism) and "Portals..." (Relic Chamber, Forge Source, Issue Sanctum, Release Grimoires). "Explore Packages" opens the Relic Chamber (`hell-plugins`), since packages come from `package!`. Stock keys: `TAB`/`S-TAB` move between links, `RET` follows one, `SPC`/`DEL` scroll, `q` dismisses; `C-c h s` brings it back. `(setq hell-splash-enable nil)` starts on `*scratch*` instead; with `hell-ux-enable nil` it is the stock GNU screen.
+- **The Altar**: the startup screen is GNU Emacs' own (`*GNU Emacs*`, `fancy-startup-screen`), with the same layout and features: the link table, "To start...", the newcomer presets checkbox, the version line, the auto-save recovery notice, and the concise "Dismiss this startup screen" panel beside files opened from the command line. Hell Emacs changes only the logo (the chimera skull, `assets/banners/splash.svg`) and the words: a Hell Emacs welcome line and manual row, a forge line with the profile and startup time under the version, and, at the bottom, buttons only for what the stock screen has no link to: IntelliJ Exorcism (the key finder), Issue Sanctum (the issue tracker) and Release Grimoires (the changelog). "Explore Packages" opens the Relic Chamber (`hell-plugins`), since packages come from `package!`. Stock keys: `TAB`/`S-TAB` move between links, `RET` follows one, `SPC`/`DEL` scroll, `q` dismisses; `C-c h s` brings it back. `(setq hell-splash-enable nil)` starts on `*scratch*` instead; with `hell-ux-enable nil` it is the stock GNU screen.
 - **GNU Emacs' frame**: the menu bar, tool bar and scroll bars stay, in
   the theme's colours. `(menu-bar-mode -1)`, `(tool-bar-mode -1)` and
   `(scroll-bar-mode -1)` in your `config.el` turn them off.

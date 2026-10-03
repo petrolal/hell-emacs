@@ -498,6 +498,24 @@ iconography (`nerd-icons`):
       missed. Checked with a throwaway sync (with and without a C
       compiler), the four grammars loading in Emacs 31.1 and 30.2, files
       opening in the ts modes, doctor, licenses and sbom).
+- [x] 13.9 Nothing of Hell Emacs' own for what Emacs already does: no
+      key, command or button stands in for a stock action (2026-10-02:
+      quitting is stock `C-x C-c` again, without Hell's always-ask prompt;
+      removed `hell-reap` (`M-x memory-report`), `hell-visit-dir` /
+      `hell-visit-user-dir` (`C-x d`), `hell-forge-build` (`C-x p c`),
+      the `C-c t`, `C-c w`, `C-c q` groups and `C-c c C/k/w`, `C-c f R`,
+      `C-c w t`, `C-c ! n/p/l` (flymake), which only put keys on Emacs' own commands (now `M-x`,
+      or their stock keys), and the Altar's buttons for files, projects,
+      buffers, shells, the manual, the plugins and the repository, which
+      the stock screen and keys already offer; five icons with them.
+      Checked with a throwaway sync, a key dump against `emacs -Q`, the
+      Altar and doctor).
+- [x] 13.10 Emacs' own window placement and questions (2026-10-02:
+      removed `:ui popup`, so help, builds and tests open where Emacs
+      puts them; `use-short-answers` is stock again (yes / no); "Extinguish
+      the forge and return to the void?" is now only the wording of
+      Emacs' own unsaved-buffers question when quitting. Checked with a
+      throwaway sync and quitting with and without an unsaved buffer).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
 
 - [ ] 18.1 **Structural Code Folding (`:editor fold`)**:

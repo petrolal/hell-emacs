@@ -28,7 +28,7 @@
 ;; spotbugs}/*.xml, SpotBugs with its XML report on), in every module.
 ;;
 ;;   - In Java and Kotlin buffers they are flymake diagnostics, beside the
-;;     language server's: `C-c ! n/p/l' as usual. Only while the file is
+;;     language server's: `C-c s e' as usual. Only while the file is
 ;;     as the build saw it; after an edit they wait for the next build.
 ;;   - `M-x hell-static-findings' lists the project's, from every
 ;;     report, in a compilation buffer (`M-g n' / `M-g p').

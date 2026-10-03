@@ -58,8 +58,8 @@ Parameter hints show in the echo area as you type `(` and `,`.
 localleader, holds Java's own commands. lsp-mode's full map is on
 `s-l` (lsp-mode's own prefix).
 
-**Diagnostics** are flymake's: `C-c ! n` / `C-c ! p` next and previous,
-`C-c ! l` the list, `C-c s e` jump to one.
+**Diagnostics** are flymake's: `C-c s e` jumps to one; `M-x
+flymake-show-buffer-diagnostics` lists them.
 
 **Spring Boot (`+spring`).** Spring Boot's own language server runs beside
 JDTLS: completion and checks in `application*.yml` and `.properties`, and
@@ -195,7 +195,7 @@ exactly as teammates on Eclipse or IntelliJ format.
 
 **Static analysis (`:checkers static`, off).** Checkstyle, PMD and
 SpotBugs findings from your build's own reports, as flymake diagnostics in
-Java and Kotlin buffers (`C-c ! n`); `M-x hell-static-findings` lists
+Java and Kotlin buffers (`C-c s e`); `M-x hell-static-findings` lists
 the project's. `+sonarlint` adds SonarLint's analysis as you type.
 
 **HTTP requests (`:tools http`, off).** IntelliJ's `.http` files as they

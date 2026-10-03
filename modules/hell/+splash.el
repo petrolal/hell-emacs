@@ -28,7 +28,8 @@
 ;; version line, `C-h C-a'), drawn by Emacs' own code. Hell Emacs only
 ;; supplies the logo and the words: the chimera skull instead of the GNU
 ;; logo, a Hell Emacs welcome line and manual, the forge line under the
-;; version, and the Altar's buttons at the bottom. With `hell-ux-enable' nil it is the stock screen, untouched.
+;; version, and buttons at the bottom for what the stock screen lacks.
+;; With `hell-ux-enable' nil it is the stock screen, untouched.
 
 (require 'seq)
 (require 'subr-x)
@@ -149,17 +150,11 @@ at the Relic Chamber: packages come from `package!', never package.el."
           (hell-splash--insert-buttons))))))
 
 ;;; The buttons ---------------------------------------------------------------
-
-
-(defun hell-splash--buffer ()
-  "Switch buffer, as `C-x b' does."
-  (interactive)
-  (call-interactively (or (keymap-lookup global-map "C-x b") #'switch-to-buffer)))
-
-(defun hell-splash--shell ()
-  "Open a shell: vterm when installed, else eshell."
-  (interactive)
-  (call-interactively (if (fboundp 'vterm) #'vterm #'eshell)))
+;;
+;; Only what the stock screen and keys don't already offer (13.9): files,
+;; projects, buffers and shells are `C-x C-f', `C-x p p', `C-x b' and
+;; `M-x eshell'; the manual, the plugins and the repository are links
+;; above ("Hell Emacs Manual", "Explore Packages", "Hell Emacs").
 
 (defun hell-splash--releases ()
   "Show Hell Emacs' changelog, or its releases page."
@@ -170,17 +165,8 @@ at the Relic Chamber: packages come from `package!', never package.el."
       (browse-url "https://github.com/petrolal/hell-emacs/releases"))))
 
 (defconst hell-splash-buttons
-  `(("Forge..."
-     ("Ignite File" find-file "Find a file (C-x C-f)" "ignite.svg")
-     ("Summon Project" project-switch-project "Switch project (C-x p p)" "forge.svg")
-     ("Grimoires" hell-splash--buffer "Switch buffer (C-x b)" "skull.svg")
-     ("Hell Shell" hell-splash--shell "Open a shell" "shell.svg")
-     ("Grimoire Manual" hell-info-manual "The Hell Emacs manual (C-c h i)" "manual.svg")
-     ("IntelliJ Exorcism" hell-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg"))
-    ("Portals..."
-     ("Relic Chamber" hell-plugins "Modules and plugins (C-c h p)" "marketplace.svg")
-     ("Forge Source" ,(lambda () (interactive) (browse-url "https://github.com/petrolal/hell-emacs"))
-      "Browse https://github.com/petrolal/hell-emacs" "github.svg")
+  `(("Portals..."
+     ("IntelliJ Exorcism" hell-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg")
      ("Issue Sanctum" ,(lambda () (interactive) (browse-url "https://github.com/petrolal/hell-emacs/issues"))
       "Browse https://github.com/petrolal/hell-emacs/issues" "github.svg")
      ("Release Grimoires" hell-splash--releases "The changelog and release notes" "manual.svg")))

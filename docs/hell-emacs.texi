@@ -118,8 +118,6 @@ The Localleader: mode-specific commands (Java refactorings, test runners).
 Debugging (@kbd{C-c d d} start, @kbd{C-c d b} breakpoint).
 @item C-c s
 Search (@kbd{C-c s s} buffer lines, @kbd{C-c s p} the project).
-@item C-c t
-Toggles (@kbd{C-c t l} line numbers, @kbd{C-c t f} flymake).
 @end table
 
 @c -----------------------------------------------------------------------------
@@ -283,7 +281,6 @@ Your personal configuration lives in @file{~/.config/hell-emacs/init.el}:
 (hell! :ui
            theme
            workspaces
-           popup
 
            :editor
            undo

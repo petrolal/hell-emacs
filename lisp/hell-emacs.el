@@ -35,8 +35,6 @@
 
 (setq ring-bell-function #'ignore
       visible-bell nil
-      use-short-answers t            ; Emacs 28+: y/n instead of yes/no
-      confirm-kill-emacs #'y-or-n-p
       create-lockfiles nil           ; TRAMP/CI mostly; local editing rarely needs them
       load-prefer-newer t
       sentence-end-double-space nil

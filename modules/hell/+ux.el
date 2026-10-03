@@ -23,8 +23,9 @@
 
 ;; Hell Emacs' voice in Emacs' own prompts and error reports:
 ;;
-;; - Quitting asks "Extinguish the forge and return to the void?"
-;;   (`confirm-kill-emacs'). Same y/n question as before, new words.
+;; - Quitting with unsaved buffers asks "Extinguish the forge and return
+;;   to the void?": Emacs' own "Modified buffers exist; exit anyway?"
+;;   (yes or no), in Hell Emacs' words. Only then, as in stock Emacs.
 ;; - Errors that reach the top level (an unhandled error in a command)
 ;;   are reported as "[CRITICAL FATALITY]: <message>" in inferno crimson,
 ;;   through `command-error-function'. `user-error's (routine "you
@@ -40,6 +41,8 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
 (defgroup hell-ux nil
   "Hell Emacs' thematic prompts and error reporting."
   :group 'hell)
@@ -53,14 +56,23 @@ Read when Hell Emacs starts; set it in your init.el."
   "Face for unhandled errors and JVM exceptions.
 Follows the loaded theme's `error'; the Hell Emacs theme sets its own.")
 
-;;; Quitting ---------------------------------------------------------------
+
+;;; Quitting -------------------------------------------------------------------
 
 (defconst hell-ux-kill-prompt "Extinguish the forge and return to the void? "
-  "Question asked before Emacs exits.")
+  "What Emacs asks before exiting with unsaved buffers.")
 
-(defun hell-ux-confirm-kill-emacs (_prompt)
-  "Ask whether to exit Emacs, in Hell Emacs' words. For `confirm-kill-emacs'."
-  (y-or-n-p hell-ux-kill-prompt))
+(defun hell-ux--kill-emacs-a (fn &rest args)
+  "Around `save-buffers-kill-emacs' (FN with ARGS): its unsaved-buffers
+question in Hell Emacs' words. Emacs asks it only when modified buffers
+are left unsaved; nothing else changes."
+  (let ((ask (symbol-function 'yes-or-no-p)))
+    (cl-letf (((symbol-function 'yes-or-no-p)
+               (lambda (prompt)
+                 (funcall ask (if (string-prefix-p "Modified buffers exist" prompt)
+                                  hell-ux-kill-prompt
+                                prompt)))))
+      (apply fn args))))
 
 ;;; Unhandled errors -----------------------------------------------------------
 
@@ -141,9 +153,7 @@ Language modules add their REPLs' (`:lang clojure' adds CIDER's).")
 (defun hell-ux-activate ()
   "Turn on Hell Emacs' prompts and error reporting, unless disabled."
   (when (and hell-ux-enable (not noninteractive))
-    ;; Over Hell Emacs' own default (hell-emacs.el) only, not yours.
-    (when (eq confirm-kill-emacs #'y-or-n-p)
-      (setq confirm-kill-emacs #'hell-ux-confirm-kill-emacs))
+    (advice-add 'save-buffers-kill-emacs :around #'hell-ux--kill-emacs-a)
     (setq command-error-function #'hell-ux-command-error)
     (dolist (hook hell-ux-jvm-output-hooks)
       (add-hook hook #'hell-ux--highlight-jvm-exceptions-h))))

@@ -372,8 +372,7 @@ Hell Emacs looks and talks like itself; these don't change.
 
   Every text colour is at least 4.5:1 against its background.
 - **The words:** the Altar (GNU Emacs' startup screen, themed), the Forge (projects, stock `C-x p`),
-  the Crucible (hot swap and REPL reload, `C-c h r`), the Reaper (GC,
-  `C-c h c`); `[FORGE IGNITED]`, `[DAEMON READY]`, `[BYTECODE PURGATORY]`,
+  the Crucible (hot swap and REPL reload, `C-c h r`); `[FORGE IGNITED]`, `[DAEMON READY]`, `[BYTECODE PURGATORY]`,
   `[DAEMON BANISHED]`, `[TEST DAMNATION]`.
 - **The banner and logos** in `assets/`.
 - **Neutral mode** for workplaces that ask: `hell-ux-enable nil`,

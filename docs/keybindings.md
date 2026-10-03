@@ -66,45 +66,47 @@ lsp-mode keeps its own mouse keys: `mouse-3` its menu, `C-mouse-1` its actions.
 
 ## `C-c` groups
 
-Laid out as Doom Emacs' non-evil leader. Each group holds only what stock
-Emacs has no key for: finding files, saving, switching or killing
-buffers, splitting windows, going to a definition, building, quitting --
-those are on their stock keys, listed beside each group.
+Laid out as Doom Emacs' non-evil leader, and only for Hell Emacs' and its
+packages' commands. Emacs' own commands keep their stock key, or `M-x`:
+Hell Emacs adds no key to them.
+
+**Stock, for what Emacs already does:**
+
+| To | Key |
+|---|---|
+| Find / save a file, a project's file | **`C-x C-f`** / **`C-x C-s`**, **`C-x p f`** |
+| Switch / kill / revert a buffer | **`C-x b`** / **`C-x k`** / **`C-x x g`** |
+| Dired, your config directory | **`C-x d`**, **`C-x d ~/.config/hell-emacs`** |
+| Split / delete / other window, balance | **`C-x 2`** **`C-x 3`** / **`C-x 0`** **`C-x 1`** / **`C-x o`**, **`C-x +`** |
+| Undo / redo the window layout (winner) | **`C-c <left>`** / **`C-c <right>`** |
+| Definition / references / project symbol | **`M-.`** / **`M-?`** / **`C-M-.`** |
+| Build the project, again | **`C-x p c`**, **`g`** in its buffer (`M-x recompile`) |
+| Occur, a buffer's symbol, a bookmark | **`M-s o`**, **`M-g i`**, **`C-x r b`** |
+| Read-only, fullscreen | **`C-x C-q`**, **`<f11>`** |
+| Quit Emacs (asks only if something is unsaved) | **`C-x C-c`** |
+| Everything else Emacs has (line numbers, flymake, spell checking, windmove, restart, memory, renaming the file...) | **`M-x`** `display-line-numbers-mode`, `flymake-mode`, `flyspell-mode`, `windmove-left`, `restart-emacs`, `memory-report`, `rename-visited-file`... |
 
 ### `C-c h`: Hell Emacs
 
 | Key | Command |
 |---|---|
 | `C-c h s` | The Altar (GNU Emacs' startup screen, themed) |
-| `C-c h i` | Grimoire Manual (open Hell Emacs native Info manual) |
+| `C-c h i` | The Hell Emacs Info manual |
 | `C-c h h` | The help hub: the JVM toolchain's state and the keys |
 | `C-c h k` | IntelliJ Exorcism (Rosetta Stone / IntelliJ key finder) |
 | `C-c h p` | Relic Chamber (Hell Emacs plugin & module manager) |
 | `C-c h r` | The Crucible: hot-swap changed classes into the debugged JVM, or reload into the Clojure REPL |
-| `C-c h c` | The Reaper: collect garbage now, and say how much memory is in use |
 | `C-c h S` | Sync (install what your config declares) |
 | `C-c h R` | Sync in a child Emacs, then reload your config |
-| `C-c h u` / `C-c h v` | Open your config directory / Hell Emacs' directory |
 | `C-c h m` / `C-c h M` | Describe a module / list the enabled modules |
 
-A project's file is stock **`C-x p f`**.
+### `C-c c`: code (`:tools lsp`, in a language server's buffers)
 
-### `C-c c`: code
-
-| Key | Command |
-|---|---|
-| `C-c c C` | Recompile |
-| `C-c c k` | Documentation at point |
-| `C-c c w` | Delete trailing whitespace |
-
-With a language server (`:tools lsp`) the group also has `C-c c a` code
-actions, `C-c c r` rename, `C-c c o` organize imports, `C-c c f` format,
-`C-c c i` / `C-c c t` implementations / type definition. lsp-mode's
-own whole map stays on its `s-l` (`s-l w r` restart the server, `T`
-toggles, `g` goto and the rest; which-key lists them).
-
-Stock: **`M-.`** / **`M-?`** / **`C-M-.`** definition / references /
-project symbol, **`C-x p c`** build the project, **`C-h .`** help at point.
+`C-c c a` code actions, `C-c c r` rename, `C-c c o` organize imports,
+`C-c c f` format, `C-c c i` / `C-c c t` implementations / type definition,
+`C-c c k` documentation at point. lsp-mode's own whole map stays on its
+`s-l` (`s-l w r` restart the server, `T` toggles, `g` goto and the rest;
+which-key lists them).
 
 ### `C-c l`: the localleader
 
@@ -117,46 +119,18 @@ buffers they belong to, unbound elsewhere.
 | Groovy | `c` refresh the classpath |
 | A JVM source with `:tools build` | `t t` / `t T` test at point / class; with `:tools test`, `t r` results, `t f` rerun the failures, `t c` run with coverage, `t s` / `t h` show / hide coverage |
 
-### `C-c f` file, `C-c s` search
+### `C-c f` file, `C-c s` search (consult's)
 
 | Key | Command |
 |---|---|
-| `C-c f r` / `C-c f R` | A recent file / rename the visited file |
+| `C-c f r` | A recent file |
 | `C-c s s` / `C-c s p` | Search the buffer's lines / ripgrep the project |
 | `C-c s f` | Locate a file by name |
 | `C-c s o` / `C-c s e` | Jump to a heading / a diagnostic |
 
-Stock: **`C-x C-f`** find, **`C-x C-s`** save, **`C-x b`** / **`C-x k`**
-switch / kill buffer, **`C-x x g`** revert, **`M-s o`** occur, **`M-g i`**
-a symbol of the buffer, **`C-x r b`** a bookmark.
-
-### `C-c t`: toggle
-
-| Key | Command |
-|---|---|
-| `C-c t l` / `C-c t c` | Line numbers / fill column indicator |
-| `C-c t w` / `C-c t v` | Soft line wrapping / visible mode |
-| `C-c t f` / `C-c t s` | Flymake / the spell checker |
-
-Stock: **`C-x C-q`** read-only, **`<f11>`** fullscreen.
-
-### `C-c w` window, `C-c q` quit
-
-| Key | Command |
-|---|---|
-| `C-c w b` `f` `p` `n` | Move to the window left, right, up, down |
-| `C-c w t` | Hide or bring back the bottom popup (`:ui popup`) |
-| `C-c q r` | Restart Emacs |
-
-Stock: **`C-x 2`** / **`C-x 3`** split, **`C-x 0`** / **`C-x 1`** delete
-this / the others, **`C-x o`** other window, **`C-x +`** balance,
-winner's **`C-c <left>`** / **`C-c <right>`** undo / redo the layout,
-**`C-x C-c`** quit, **`C-x t`** tabs.
-
-### `C-c !`: diagnostics
-
-Flymake's, wherever it runs: `C-c ! n` / `C-c ! p` next / previous,
-`C-c ! l` the list; `C-c s e` jumps to one.
+Diagnostics are flymake's, built into Emacs: `C-c s e` jumps to one,
+**`M-x`** `flymake-goto-next-error` / `flymake-goto-prev-error` /
+`flymake-show-buffer-diagnostics` do the rest.
 
 |---|---|
 | `C-c g g` / `C-c g d` / `C-c g f` | Magit status / dispatch / the current file's actions |
@@ -219,10 +193,10 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 | Go to implementation | `Ctrl+Alt+B` | `Ctrl+T` | `C-c c i` |
 | Go to type declaration | `Ctrl+Shift+B` | — | `C-c c t` |
 | Type hierarchy | `Ctrl+H` | `F4` | `C-c l h` (Java) |
-| Quick documentation | `Ctrl+Q` | `F2` | `C-c c k`; while typing, in the echo area |
+| Quick documentation | `Ctrl+Q` | `F2` | `C-c c k` (with a server); while typing, in the echo area |
 | Parameter info | `Ctrl+P` | `Ctrl+Shift+Space` | Shown by itself after `(` and `,` |
-| Next / previous error | `F2` / `Shift+F2` | `Ctrl+.` / `Ctrl+,` | `C-c ! n` / `C-c ! p`; jump to one: `C-c s e` |
-| All errors of the file | `Alt+6` | Problems view | `C-c ! l` |
+| Next / previous error | `F2` / `Shift+F2` | `Ctrl+.` / `Ctrl+,` | `C-c s e` (pick one); **`M-x`** `flymake-goto-next-error` / `-prev-error` |
+| All errors of the file | `Alt+6` | Problems view | **`M-x`** `flymake-show-buffer-diagnostics` |
 | Last edit location | `Ctrl+Shift+Backspace` | `Ctrl+Q` | **`C-u C-SPC`** (back through the marks) |
 | Bookmark / go to one | `F11` / `Shift+F11` | — | **`C-x r m`** / **`C-x r b`** |
 
@@ -273,7 +247,7 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 | Terminal | `Alt+F12` | — | **`C-x p s`** (shell) or **`C-x p e`** (eshell), in the project |
 | Split the editor | Split Right | — | **`C-x 3`** / **`C-x 2`** |
 | Close a popup | `Esc` | `Esc` | **`C-g`**, or `q` in it |
-| Settings | `Ctrl+Alt+S` | Preferences | `C-c h u` (your config directory) |
+| Settings | `Ctrl+Alt+S` | Preferences | **`C-x d ~/.config/hell-emacs`** (your config directory) |
 
 ## Keys inside modes
 
