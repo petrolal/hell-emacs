@@ -217,6 +217,8 @@ no IntelliJ keymap: these are the Emacs ways to do the same thing.
 | Delete line | `Ctrl+Y` | `Ctrl+D` | **`C-S-<backspace>`** |
 | Duplicate line | `Ctrl+D` | `Ctrl+Alt+Down` | `M-x duplicate-dwim` (no stock key) |
 | Move line | `Ctrl+Shift+Up/Down` | `Alt+Up/Down` | **`C-x C-t`** swaps it with the line above |
+| Fold / unfold at point | `Ctrl+NumPad -` / `+` | `Ctrl+NumPad -` / `+` | **`C-c @ C-c`** |
+| Fold all / Unfold all | `Ctrl+Shift+NumPad -` / `+` | `Ctrl+Shift+NumPad -` / `+` | **`C-c @ C-t`** / **`C-c @ C-a`** |
 | Undo / redo | `Ctrl+Z` / `Ctrl+Shift+Z` | `Ctrl+Z` / `Ctrl+Y` | **`C-/`** / **`C-?`** (**`C-M-_`** in a terminal) |
 | Save all | `Ctrl+S` | `Ctrl+Shift+S` | **`C-x s`** |
 | Close the file | `Ctrl+F4` | `Ctrl+W` | **`C-x k`** |
@@ -256,6 +258,10 @@ These are the modes' own keys, only in their buffers.
 - **Clojure (CIDER):** `C-c M-j` jack in, `C-c M-c` connect, `C-c C-k` load
   the buffer, `C-M-x` evaluate the form, `C-c C-z` REPL, `C-c C-t t` the
   test at point.
+- **Common Lisp (SLIME):** `C-c C-z` switch to REPL, `C-c C-k` compile and load file,
+  `C-c C-c` compile defun, `C-M-x` evaluate defun, `C-c C-d d` describe symbol,
+  `C-c C-d a` apropos, `M-.` / `M-,` jump to/pop definition, `C-c C-m` macroexpand-1;
+  `C-c l` localleader group (`C-c l s` REPL, `C-c l c` compile, `C-c l e` eval, `C-c l d` doc).
 - **`.http` files (`:tools http`):** `C-c C-c` send the request at point,
   `C-c C-e` / `C-c M-e` choose / reload the environment, `C-c C-l` /
   `C-c C-a` run the request / file with httpyac (`+httpyac`).

@@ -148,6 +148,12 @@
     (:action "Undo / Redo"
      :intellij "Ctrl+Z / Ctrl+Shift+Z" :eclipse "Ctrl+Z / Ctrl+Y" :key "C-/ / C-?" :command undo-only
      :category "Refactoring" :doc "Persistent undo/redo history (C-M-_ in terminal).")
+    (:action "Fold / unfold at point"
+     :intellij "Ctrl+NumPad - / +" :eclipse "Ctrl+NumPad - / +" :key "C-c @ C-c" :command hell-fold-toggle
+     :category "Refactoring" :doc "Toggle code folding at point (treesit-fold or hs-minor-mode).")
+    (:action "Fold all / Unfold all"
+     :intellij "Ctrl+Shift+NumPad - / +" :eclipse "Ctrl+Shift+NumPad - / +" :key "C-c @ C-t / C-c @ C-a" :command hell-fold-close-all
+     :category "Refactoring" :doc "Collapse all folds (C-c @ C-t) or expand all folds (C-c @ C-a).")
     (:action "Save all buffers"
      :intellij "Ctrl+S" :eclipse "Ctrl+Shift+S" :key "C-x s" :command save-some-buffers
      :category "Refactoring" :doc "Prompt to save all modified file buffers.")

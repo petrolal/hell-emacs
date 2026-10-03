@@ -42,7 +42,7 @@
            :editor
            undo               ; persistent undo history (undo-fu-session)
            ;;file-templates   ; new files filled from a template (auto-insert): FooTest.java gets its package, imports and class; needs snippets
-           ;;fold             ; [idea] code folding (hideshow, treesit-fold)
+           fold               ; code folding on stock C-c @ (treesit-fold, hideshow)
            ;;format           ; formatters: google-java-format, ktfmt, cljfmt, on C-c c f (+onsave)
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys
            ;;parinfer         ; [idea] indentation-driven Lisp editing
@@ -137,7 +137,7 @@
            ;;agda             ; [idea] Agda: agda-mode (no LSP)
            ;;beancount        ; [idea] Beancount: beancount-language-server
            ;;cmake            ; [idea] CMake: neocmakelsp
-           ;;common-lisp      ; [idea] Common Lisp: SLY (REPL, no LSP)
+           common-lisp        ; Common Lisp: SLIME (REPL, compiler, evaluation, sblint)
            ;;coq              ; [idea] Rocq/Coq: coq-lsp, Proof General
            ;;crystal          ; [idea] Crystal: crystalline
            ;;csharp           ; [idea] C#: csharp-ls (Roslyn)

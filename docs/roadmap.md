@@ -531,11 +531,14 @@ iconography (`nerd-icons`):
       throwaway sync and quitting with and without an unsaved buffer).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
 
-- [ ] 18.1 **Structural Code Folding (`:editor fold`)**:
+- [x] 18.1 **Structural Code Folding (`:editor fold`)**:
       Tree-sitter AST-aware code folding for classes, methods, imports, and docblocks
-      (`treesit-fold` / `ts-fold` with fallback to built-in `hs-minor-mode` / `hideshow`).
+      (`treesit-fold` with fallback to built-in `hs-minor-mode` / `hideshow`).
       Keys: strictly stock `C-c @` chords (`C-c @ C-c` toggle, `C-c @ C-a` unfold all, `C-c @ C-t` fold all),
-      preserving Emacs conventions and avoiding key collisions.
+      preserving Emacs conventions and avoiding key collisions
+      (2026-10-03: added `:editor fold` module with pinned `treesit-fold` commit cc1003b,
+      hs-minor-mode fallback, stock `C-c @` bindings, intellij action mappings, doctor checks,
+      and static analysis quality gate verified).
 - [ ] 19.1 **Multi-Cursor & Simultaneous Refactoring (`:editor multiple-cursors`)**:
       In-buffer concurrent multi-cursor editing and variable renaming (`multiple-cursors` / `iedit`).
       Keys: Upstream package default keys preserved (e.g. `iedit`'s `C-;`), with Doom non-evil code-group
