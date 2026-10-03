@@ -53,6 +53,14 @@ Nil is `inhibit-startup-screen': Emacs starts on *scratch*."
   :type 'boolean
   :group 'hell-splash)
 
+(defcustom hell-splash-line-spacing 0.3
+  "Extra space between the Altar's lines, as `line-spacing', for legibility."
+  :type '(choice (const :tag "Emacs' default" nil) number)
+  :group 'hell-splash)
+
+(defconst hell-splash--buffer-name "*GNU Emacs*"
+  "The Altar's buffer: `fancy-startup-screen' hard-codes this name.")
+
 (defface hell-splash-welcome
   '((t (:inherit font-lock-comment-face)))
   "Face for the Altar's welcome line (stock: `font-lock-comment-face')."
@@ -145,6 +153,8 @@ at the Relic Chamber: packages come from `package!', never package.el."
   (let ((start (point)))
     (prog1 (apply fn args)
       (when (hell-splash--themed-p)
+        ;; Set before Emacs displays (and, when concise, fits) the window.
+        (setq-local line-spacing hell-splash-line-spacing)
         (hell-splash--theme-tail start)
         (save-excursion
           (goto-char (point-max))
@@ -213,19 +223,6 @@ at the Relic Chamber: packages come from `package!', never package.el."
          (file-readable-p file)
          file)))
 
-(defconst hell-splash-line-spacing 0.3
-  "Extra space between the Altar's lines, as `line-spacing', for legibility.")
-
-(defun hell-splash--layout ()
-  "Space the Altar's lines out, after Emacs has drawn it.
-Only the spacing: margins, layout and text stay Emacs' own."
-  (when-let* ((buffer (get-buffer "*GNU Emacs*")))
-    (with-current-buffer buffer
-      (setq-local line-spacing hell-splash-line-spacing))
-    ;; Taller lines can scroll the window off the logo; start at the top.
-    (dolist (window (get-buffer-window-list buffer nil t))
-      (set-window-start window (with-current-buffer buffer (point-min))))))
-
 (defun hell-splash--startup-screen-a (fn &rest args)
   "Around `fancy-startup-screen' (FN with ARGS): Hell Emacs' logo and words."
   (if (not (hell-splash--themed-p))
@@ -233,7 +230,9 @@ Only the spacing: margins, layout and text stay Emacs' own."
     (let ((fancy-startup-text (hell-splash--startup-text fancy-startup-text))
           (fancy-splash-image (or fancy-splash-image (hell-splash--logo))))
       (prog1 (apply fn args)
-        (hell-splash--layout)))))
+        ;; Taller lines can scroll the window off the logo; start at the top.
+        (dolist (window (get-buffer-window-list hell-splash--buffer-name nil t))
+          (set-window-start window 1))))))
 
 (advice-add #'fancy-startup-screen :around #'hell-splash--startup-screen-a)
 (advice-add #'fancy-startup-tail :around #'hell-splash--startup-tail-a)
@@ -242,17 +241,17 @@ Only the spacing: margins, layout and text stay Emacs' own."
 
 (defun hell-splash-buffer ()
   "Return the Altar's buffer, drawn afresh, without displaying it."
-  (when-let* ((old (get-buffer "*GNU Emacs*")))
+  (when-let* ((old (get-buffer hell-splash--buffer-name)))
     (kill-buffer old))
   (save-window-excursion
     (display-startup-screen))
-  (get-buffer "*GNU Emacs*"))
+  (get-buffer hell-splash--buffer-name))
 
 ;;;###autoload
 (defun hell-splash ()
   "Return to the Altar, GNU Emacs' startup screen, drawn afresh."
   (interactive)
-  (when-let* ((old (get-buffer "*GNU Emacs*")))
+  (when-let* ((old (get-buffer hell-splash--buffer-name)))
     (kill-buffer old))
   (display-startup-screen))
 
