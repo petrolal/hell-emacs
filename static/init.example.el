@@ -24,10 +24,10 @@
 ;; yourself, start from static/module-template/.
 
 (hell! :ui
-       theme              ; the Hell Emacs theme, line numbers, current line
+           theme              ; the Hell Emacs theme, line numbers, current line
            ;;emoji            ; [idea] emoji input and display
-           ;;hl-todo          ; highlight TODO/FIXME/HACK/NOTE in comments; M-x hl-todo-next, hl-todo-occur
-           ;;indent-guides    ; [idea] indentation guides
+           hl-todo            ; highlight TODO/FIXME/HACK/NOTE in comments; M-x hl-todo-next, hl-todo-occur
+           indent-guides      ; [idea] indentation guides
            ;;ligatures        ; [idea] font ligatures in graphical frames
            ;;minimap          ; [idea] a code minimap
            ;;nav-flash        ; [idea] flash the line after a big jump
@@ -41,13 +41,13 @@
 
            :editor
            undo               ; persistent undo history (undo-fu-session)
-           ;;file-templates   ; new files filled from a template (auto-insert): FooTest.java gets its package, imports and class; needs snippets
+           file-templates     ; new files filled from a template (auto-insert): FooTest.java gets its package, imports and class; needs snippets
            fold               ; code folding on stock C-c @ (treesit-fold, hideshow)
-           ;;format           ; formatters: google-java-format, ktfmt, cljfmt, on C-c c f (+onsave)
+           format             ; formatters: google-java-format, ktfmt, cljfmt, on C-c c f (+onsave)
            ;;multiple-cursors ; [idea] multiple cursors, on stock keys
-           ;;parinfer         ; [idea] indentation-driven Lisp editing
-           ;;smartparens      ; [idea] structural editing for Lisps and brackets
-           ;;snippets         ; snippets (tempel): junit, controller, dataclass, deftest, munit; complete a name with C-M-i
+           parinfer           ; [idea] indentation-driven Lisp editing
+           smartparens        ; [idea] structural editing for Lisps and brackets
+           snippets           ; snippets (tempel): junit, controller, dataclass, deftest, munit; complete a name with C-M-i
            ;;word-wrap        ; [idea] soft wrap that respects indentation
 
            :completion
@@ -87,11 +87,11 @@
            ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
            editorconfig       ; the project's .editorconfig: indentation, charset, line endings (built in)
            ;;eval             ; [idea] run code in a REPL or inline, per language
-           ;;forge            ; [idea] GitHub/GitLab pull requests from Magit
+           forge              ; [idea] GitHub/GitLab pull requests from Magit
            ;;kubernetes       ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
            ;;llm              ; [idea] LLM chat and code actions (gptel)
-           ;;lookup           ; [idea] documentation and definition lookup beyond LSP (devdocs, dash)
-           ;;make             ; [idea] run Makefile targets
+           lookup             ; [idea] documentation and definition lookup beyond LSP (devdocs, dash)
+           make               ; [idea] run Makefile targets
            ;;pass             ; [idea] the pass password store
            ;;pdf              ; [idea] read PDFs (pdf-tools)
            ;;http             ; IntelliJ .http files: restclient, env files (+httpyac: JS handlers, needs Node)
@@ -122,7 +122,7 @@
            protobuf           ; Protocol Buffers: protobuf-mode, protoc / bufls
            sh                 ; Shell scripts, gradlew/mvnw: bash-language-server; needs Node (+tree-sitter)
            sql                ; SQL: sql-mode, sql-indent, JDBC connections
-           terraform          ; Terraform and HCL: terraform-ls
+           ;;terraform        ; Terraform and HCL: terraform-ls
            web                ; HTML, CSS, Less, SCSS, Thymeleaf, Velocity, FreeMarker, JSP
            yaml               ; YAML: yaml-language-server; needs Node; built-in yaml-ts-mode
 
@@ -145,7 +145,7 @@
            ;;dhall            ; [idea] Dhall: dhall-lsp-server
            ;;elixir           ; [idea] Elixir: Expert (elixir-ls)
            ;;elm              ; [idea] Elm: elm-language-server
-           ;;emacs-lisp       ; [idea] Emacs Lisp extras: macrostep, elisp-demos (no LSP)
+           emacs-lisp         ; [idea] Emacs Lisp extras: macrostep, elisp-demos (no LSP)
            ;;erlang           ; [idea] Erlang: ELP (erlang_ls)
            ;;ess              ; [idea] R: languageserver, ESS
            ;;fortran          ; [idea] Fortran: fortls
