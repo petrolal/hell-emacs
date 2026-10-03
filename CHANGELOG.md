@@ -74,6 +74,8 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Changed
 
+- The Altar spaces its lines out (`line-spacing` 0.3, and a small gap
+  before the forge line) for legibility; margins and layout stay Emacs'.
 - Stock keys untouched, modern keys isolated (roadmap 13.5): Hell
   Emacs' keys live only under `C-c` groups and never repeat a stock
   key's command, and installed packages keep their own default keys as
