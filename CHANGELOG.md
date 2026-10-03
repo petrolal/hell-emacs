@@ -39,6 +39,14 @@ The first tagged release will be 0.9.0. Since the project started
 
 ### Removed
 
+- More of what Emacs already does (roadmap 13.8): YAML, Dockerfile and
+  TypeScript/TSX open in Emacs' own `yaml-ts-mode`, `dockerfile-ts-mode`,
+  `typescript-ts-mode` and `tsx-ts-mode`, whose pinned grammars
+  `bin/hell sync` builds (a C compiler is needed; without one the files
+  open unhighlighted and sync carries on); the yaml-mode, dockerfile-mode
+  and typescript-mode packages are gone, and so is their `+tree-sitter`
+  flag. Kotlin's compile errors use Emacs' own `gradle-kotlin` rule.
+
 - What Emacs already does (roadmap 13.7): `:tools projectile` (use
   built-in `project.el`, `C-x p`), `:ui modeline` (Emacs' own mode line,
   which shows the JVM status), `:tools eglot` (eglot is built in; the
@@ -158,6 +166,11 @@ The first tagged release will be 0.9.0. Since the project started
   without a block gets the defaults.
 
 ### Fixed
+
+- `bin/hell licenses` and `bin/hell sbom` list the tree-sitter grammars;
+  they read none before.
+- The help hub (`C-c h h`) shows the keys as Emacs has them bound, instead
+  of a fixed table that went out of date.
 
 - `bin/hell` runs under any POSIX `sh`: it used bash arrays, so on Debian
   and Ubuntu, whose `sh` is dash, every command failed with

@@ -59,11 +59,27 @@
         (error
          (user-error "Hell Emacs Info manual not found at %s. Run makeinfo docs/hell-emacs.texi" info-file))))))
 
+(defvar hell-localleader-maps)
+
+(defun hell-help--keys (command buffer)
+  "COMMAND's keys as bound in BUFFER (up to two), or \"M-x COMMAND\".
+The `C-c l' localleader's keys are behind a filter `where-is' can't see
+through, so its maps are searched too."
+  (let* ((keys (with-current-buffer buffer
+                 (seq-remove (lambda (key) (memq (aref key 0) '(menu-bar tool-bar)))
+                             (where-is-internal command))))
+         (local (seq-some (lambda (entry) (where-is-internal command (list (cdr entry)) t))
+                          (bound-and-true-p hell-localleader-maps))))
+    (cond (keys (mapconcat #'key-description (seq-take keys 2) ", "))
+          (local (concat "C-c l " (key-description local)))
+          (t (format "M-x %s" command)))))
+
 ;;;###autoload
 (defun hell-help ()
   "Open the interactive Hell Emacs JVM Help & Cheatsheet Hub (C-c h h)."
   (interactive)
-  (let ((buf (get-buffer-create "*Hell Emacs Help*")))
+  (let ((buf (get-buffer-create "*Hell Emacs Help*"))
+        (origin (current-buffer)))
     (with-current-buffer buf
       (help-mode)
       (let* ((inhibit-read-only t)
@@ -128,47 +144,58 @@
           (insert "    · (JDKs automatically mapped during bin/hell sync)\n"))
         (insert "\n")
 
-;; 2.-5. The keys, by group: stock keys first, then Hell Emacs'
-        ;; `C-c' groups, which only hold what stock Emacs has no key for.
+;; 2.-5. The keys, by group, read from Emacs (`where-is') as they
+        ;; are bound in the buffer you called this from, so they can't go
+        ;; stale: a server's keys show in its buffers, `M-x' elsewhere.
         (pcase-dolist (`(,title . ,rows)
-                       '(("2. CODE INTELLIGENCE (stock keys, C-c c in a language server's buffers)"
-                          ("M-." "xref-find-definitions" "Jump to symbol definition")
-                          ("M-?" "xref-find-references" "Find all usages across the project")
-                          ("M-," "xref-go-back" "Jump back to the previous location")
-                          ("C-M-." "xref-find-apropos" "Find a symbol in the project")
-                          ("C-c c a" "lsp-execute-code-action" "Code actions / quick fixes")
-                          ("C-c c r" "lsp-rename" "Rename across the project")
-                          ("C-c c o" "lsp-organize-imports" "Organize imports")
-                          ("C-c c f" "lsp-format-buffer" "Format the buffer")
-                          ("C-c c i / C-c c t" "lsp-find-implementation" "Implementations / type definition")
-                          ("C-c ! n / p / l" "flymake-goto-next-error" "Next / previous diagnostic / the list"))
-                         ("3. DEBUGGER (C-c d)"
-                          ("C-c d d" "dap-debug" "Start a debug session")
-                          ("C-c d b" "dap-breakpoint-toggle" "Toggle a breakpoint on this line")
-                          ("C-c d n / i / o" "hell-debug-next" "Step over / into / out, then n i o alone")
-                          ("C-c d c" "hell-debug-continue" "Continue to the next breakpoint")
-                          ("C-c d r / q" "dap-debug-restart" "Restart / disconnect the session")
-                          ("C-c d E" "dap-eval" "Evaluate an expression in the frame"))
-                         ("4. BUILD, TEST, RUN, GIT (C-x p c, C-c l t, C-c r, C-x g)"
-                          ("C-x p c" "project-compile" "Build the project with its wrapper")
-                          ("C-c l t t / T" "hell-forge-test-at-point" "Run the test at point / the class")
-                          ("C-c l t r" "hell-test-results" "Test results")
-                          ("C-c r r / d / l" "hell-run" "Run / debug / rerun a configuration")
-                          ("C-x g" "magit-status" "Git status (Magit)"))
-                         ("5. HELL EMACS SYSTEM COMMANDS (C-c h)"
-                          ("C-c h s" "hell-splash" "Return to the Altar")
-                          ("C-c h h" "hell-help" "Open this help hub")
-                          ("C-c h i" "hell-info-manual" "Read the Hell Emacs Info manual")
-                          ("C-c h m / M" "hell-describe-module" "Describe a module / list them")
-                          ("C-c h u" "hell-visit-user-dir" "Open your configuration directory")
-                          ("C-c h S" "hell-sync-child" "Sync packages and compile the profile")
-                          ("C-c h k" "hell-where-is-intellij" "IntelliJ IDEA to Emacs key finder"))))
+                       '(("2. CODE INTELLIGENCE"
+                          (xref-find-definitions "Jump to symbol definition")
+                          (xref-find-references "Find all usages across the project")
+                          (xref-go-back "Jump back to the previous location")
+                          (xref-find-apropos "Find a symbol in the project")
+                          (lsp-execute-code-action "Code actions / quick fixes")
+                          (lsp-rename "Rename across the project")
+                          (lsp-organize-imports "Organize imports")
+                          (lsp-format-buffer "Format the buffer")
+                          (lsp-find-implementation "Implementations")
+                          (lsp-find-type-definition "Type definition")
+                          (flymake-goto-next-error "Next diagnostic")
+                          (flymake-goto-prev-error "Previous diagnostic")
+                          (flymake-show-buffer-diagnostics "All diagnostics of the buffer"))
+                         ("3. DEBUGGER"
+                          (dap-debug "Start a debug session")
+                          (dap-breakpoint-toggle "Toggle a breakpoint on this line")
+                          (hell-debug-next "Step over, then n alone")
+                          (hell-debug-step-in "Step into, then i alone")
+                          (hell-debug-step-out "Step out, then o alone")
+                          (hell-debug-continue "Continue to the next breakpoint")
+                          (dap-debug-restart "Restart the session")
+                          (dap-disconnect "Disconnect the session")
+                          (dap-eval "Evaluate an expression in the frame"))
+                         ("4. BUILD, TEST, RUN, GIT"
+                          (project-compile "Build the project with its wrapper")
+                          (hell-forge-test-at-point "Run the test at point")
+                          (hell-forge-test-class "Run the test class")
+                          (hell-test-results "Test results")
+                          (hell-run "Run a configuration")
+                          (hell-run-debug "Debug a configuration")
+                          (hell-run-last "Run the last configuration again")
+                          (magit-status "Git status (Magit)"))
+                         ("5. HELL EMACS SYSTEM COMMANDS"
+                          (hell-splash "Return to the Altar")
+                          (hell-help "Open this help hub")
+                          (hell-info-manual "Read the Hell Emacs Info manual")
+                          (hell-describe-module "Describe a module")
+                          (hell-list-modules "List the enabled modules")
+                          (hell-visit-user-dir "Open your configuration directory")
+                          (hell-sync-child "Sync packages and compile the profile")
+                          (hell-where-is-intellij "IntelliJ IDEA to Emacs key finder"))))
           (insert (propertize (concat title "\n") 'face '(:foreground "#ffb86c" :weight bold)))
           (insert (make-string 76 ?─) "\n")
-          (insert (format "  %-18s  %-30s  %s\n" (propertize "Keychord" 'face 'bold)
-                          (propertize "Command" 'face 'bold) (propertize "Description" 'face 'bold)))
-          (pcase-dolist (`(,key ,command ,description) rows)
-            (insert (format "  %-18s  %-30s  %s\n" key command description)))
+          (insert (format "  %-32s  %s\n" (propertize "Keys" 'face 'bold)
+                          (propertize "Description" 'face 'bold)))
+          (pcase-dolist (`(,command ,description) rows)
+            (insert (format "  %-32s  %s\n" (hell-help--keys command origin) description)))
           (insert "\n"))
 
                 ;; 6. Interactive Quick Actions

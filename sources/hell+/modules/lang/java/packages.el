@@ -32,14 +32,18 @@
 (package! dap-mode)
 (package! lsp-java)                     ; also provides dap-java
 
-;; +spring: application.yml is edited in yaml-mode, which the Spring Boot
-;; server attaches to (lsp-java-boot).
-(when (modulep! +spring)
-  (package! yaml-mode))
-
-;; java-ts-mode is built into Emacs; `bin/hell sync' builds its grammar.
-(when (modulep! +tree-sitter)
-  (hell-treesit!
-   :grammars ((java "https://github.com/tree-sitter/tree-sitter-java" "v0.23.5"
-                    "94703d5a6bed02b98e438d7cad1136c01a60ba2c" :license "MIT"))
-   :remap ((java-mode . java-ts-mode))))
+;; Grammars `bin/hell sync' builds, in one declaration (a module has one):
+;;   +tree-sitter  java-ts-mode, built into Emacs, for Java files.
+;;   +spring       yaml-ts-mode, built into Emacs, for application.yml,
+;;                 which the Spring Boot server attaches to (lsp-java-boot);
+;;                 the same pin as :lang yaml's.
+(when (or (modulep! +tree-sitter) (modulep! +spring))
+  (hell-treesit-declare
+   (append (when (modulep! +tree-sitter)
+             '((java "https://github.com/tree-sitter/tree-sitter-java" "v0.23.5"
+                     "94703d5a6bed02b98e438d7cad1136c01a60ba2c" :license "MIT")))
+           (when (modulep! +spring)
+             '((yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"
+                     "b733d3f5f5005890f324333dd57e1f0badec5c87" :license "MIT"))))
+   (when (modulep! +tree-sitter)
+     '((java-mode . java-ts-mode)))))

@@ -117,7 +117,7 @@ STALE-NOTE and MISSING-NOTE are appended to the error and warning."
   "Check what building and loading LANG's tree-sitter grammar needs.
 Run for every grammar a module declares (`hell-treesit!')."
   (if (not (and (fboundp 'treesit-available-p) (treesit-available-p)))
-      (hell-doctor-error :topic 'emacs "This Emacs has no tree-sitter support, which +tree-sitter needs")
+      (hell-doctor-error :topic 'emacs "This Emacs has no tree-sitter support, which the %s grammar needs" lang)
     (if (hell-treesit-installed-p lang)
         (hell-doctor-ok "tree-sitter %s grammar: %s" lang
                             (abbreviate-file-name (hell-treesit-library lang)))

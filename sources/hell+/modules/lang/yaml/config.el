@@ -22,8 +22,8 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-;; YAML (application.yml, CI pipelines, Kubernetes manifests), in
-;; `yaml-mode' (`yaml-ts-mode' with +tree-sitter), with yaml-language-server
+;; YAML (application.yml, CI pipelines, Kubernetes manifests), in Emacs'
+;; own `yaml-ts-mode' (its grammar built by sync), with yaml-language-server
 ;; through lsp-mode: completion, hover and validation against the schemas
 ;; you map in `lsp-yaml-schemas' or name in a `# yaml-language-server:
 ;; $schema=' comment. No keys of its own.
@@ -50,4 +50,5 @@ pinned by `bin/hell sync'.")
 
 (hell-lsp-pin-installer 'yaml-language-server '(:lang . yaml) 'hell-yaml-sync-install-server)
 
-(add-hook! (yaml-mode yaml-ts-mode) #'lsp-deferred)
+(add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-ts-mode))
+(add-hook 'yaml-ts-mode-hook #'lsp-deferred)

@@ -69,6 +69,13 @@ profile otherwise.")
 (when (fboundp 'treesit-available-p)
   (add-to-list 'treesit-extra-load-path hell-treesit-dir))
 
+;; Emacs 31's tree-sitter modes offer to download a missing grammar
+;; (`treesit-ensure-installed'), unpinned and mid-session; `bin/hell sync'
+;; builds the pinned ones instead. Navigation (`C-M-a', `C-M-e', `C-M-f')
+;; is Emacs' own in every `*-ts-mode' (`treesit-major-mode-setup').
+(defvar treesit-auto-install-grammar)
+(setq treesit-auto-install-grammar 'never)
+
 (defmacro hell-treesit! (&rest args)
   "Declare this module's tree-sitter grammars and the modes they enable.
 Use it in the module's packages.el, under its +tree-sitter flag:
@@ -127,7 +134,7 @@ grammar, a tree-sitter mode fails on every file. Run at startup."
       (if missing
           (display-warning
            'hell
-           (format "Module %s +tree-sitter: the %s grammar%s built yet; run `bin/hell sync'"
+           (format "Module %s: the tree-sitter %s grammar%s built yet; run `bin/hell sync'"
                    (hell-module-key-string key) (mapconcat #'symbol-name missing ", ")
                    (if (cdr missing) "s aren't" " isn't")))
         (dolist (remap (plist-get decl :remap))
@@ -233,22 +240,18 @@ Returns non-nil when it is available afterwards."
     (if (hell-treesit-installed-p lang)
         (hell-sync--log "tree-sitter %s grammar is installed" lang)
       (hell-sync--log "Building the tree-sitter %s grammar..." lang)
-      (unless (hell-treesit-ensure lang)
-        (error "The %s grammar was built but Emacs can't load it (%s)"
-               lang (abbreviate-file-name (hell-treesit-library lang))))
-      (hell-sync--log "tree-sitter %s grammar installed (commit pinned)" lang))))
-
-(defun hell-treesit-setup-navigation ()
-  "Configure standard AST navigation chords for tree-sitter buffers:
-C-M-f, C-M-b, C-M-a, C-M-e, and C-M-k."
-  (when (and (fboundp 'treesit-available-p) (treesit-available-p))
-    (when (boundp 'treesit-mode-map)
-      (when (fboundp 'treesit-beginning-of-defun)
-        (keymap-set treesit-mode-map "C-M-a" #'treesit-beginning-of-defun))
-      (when (fboundp 'treesit-end-of-defun)
-        (keymap-set treesit-mode-map "C-M-e" #'treesit-end-of-defun)))))
-
-(add-hook 'hell-first-file-hook #'hell-treesit-setup-navigation)
+      ;; One grammar failing (no C compiler, say) doesn't stop the rest of
+      ;; the sync: its files still open in their mode, without highlighting,
+      ;; until a later sync builds it; `bin/hell doctor' says why.
+      (condition-case err
+          (progn
+            (unless (hell-treesit-ensure lang)
+              (error "The %s grammar was built but Emacs can't load it (%s)"
+                     lang (abbreviate-file-name (hell-treesit-library lang))))
+            (hell-sync--log "tree-sitter %s grammar installed (commit pinned)" lang))
+        (error
+         (hell-sync--log "Warning: the tree-sitter %s grammar wasn't built: %s; its files open without highlighting until `bin/hell sync' builds it (`bin/hell doctor' says what's missing)"
+                         lang (error-message-string err)))))))
 
 (provide 'hell-treesit)
 ;;; hell-treesit.el ends here

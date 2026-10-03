@@ -115,7 +115,7 @@
 
            ;; Web, Data, Cloud & DevOps (bundled by default, matching IntelliJ IDEA Ultimate)
            data               ; XML, XSLT, XPath, .properties: lemminx on a JDK
-           docker             ; Dockerfile and Compose: docker-language-server (+tree-sitter)
+           docker             ; Dockerfile and Compose: docker-language-server; built-in dockerfile-ts-mode
            javascript         ; JavaScript, TypeScript, JSX/TSX: typescript-language-server
            json               ; JSON: vscode-json-language-server; needs Node (+tree-sitter)
            markdown           ; Markdown: marksman
@@ -125,7 +125,7 @@
            sql                ; SQL: sql-mode, sql-indent, JDBC connections
            terraform          ; Terraform and HCL: terraform-ls
            web                ; HTML, CSS, Less, SCSS, Thymeleaf, Velocity, FreeMarker, JSP
-           yaml               ; YAML: yaml-language-server; needs Node (+tree-sitter)
+           yaml               ; YAML: yaml-language-server; needs Node; built-in yaml-ts-mode
 
            ;; Plugin languages (manage via `bin/hell plugins' or uncomment below)
            ;;cc               ; C, C++, Objective-C: clangd

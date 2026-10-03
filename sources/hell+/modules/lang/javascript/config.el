@@ -21,8 +21,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; JavaScript, TypeScript, JSX/TSX and ESLint support via built-in `js-mode',
-;; `js-ts-mode', `typescript-mode', `typescript-ts-mode', and `tsx-ts-mode'.
+;; JavaScript, TypeScript, JSX/TSX and ESLint support, all in Emacs' own
+;; modes: `js-mode' (JavaScript, JSX), `typescript-ts-mode' and
+;; `tsx-ts-mode' (their grammars built by sync).
 ;; LSP support runs through `:tools lsp' (`lsp-mode') with zero telemetry.
 
 (use-package js
@@ -36,16 +37,13 @@
   (when (fboundp 'js-ts-mode)
     (add-hook 'js-ts-mode-hook #'lsp-deferred)))
 
-(use-package typescript-mode
-  :mode ("\\.ts\\'" . typescript-mode)
+(use-package typescript-ts-mode
+  :ensure nil
+  :mode (("\\.[mc]?ts\\'" . typescript-ts-mode)
+         ("\\.tsx\\'" . tsx-ts-mode))
   :init
-  (setq typescript-indent-level 2)
-  :config
-  (add-hook 'typescript-mode-hook #'lsp-deferred)
-  (when (fboundp 'typescript-ts-mode)
-    (add-hook 'typescript-ts-mode-hook #'lsp-deferred))
-  (when (fboundp 'tsx-ts-mode)
-    (add-hook 'tsx-ts-mode-hook #'lsp-deferred)))
+  (setq typescript-ts-mode-indent-offset 2)
+  (add-hook 'typescript-ts-mode-hook #'lsp-deferred)
+  (add-hook 'tsx-ts-mode-hook #'lsp-deferred))
 
-(add-to-list 'auto-mode-alist '("\\.tsx\\'" . (if (fboundp 'tsx-ts-mode) 'tsx-ts-mode 'typescript-mode)))
-(add-to-list 'auto-mode-alist '("\\.jsx\\'" . (if (fboundp 'js-ts-mode) 'js-ts-mode 'js-mode)))
+(add-to-list 'auto-mode-alist '("\\.jsx\\'" . js-mode))

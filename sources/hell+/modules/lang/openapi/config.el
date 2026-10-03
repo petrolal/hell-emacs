@@ -33,9 +33,7 @@
   (when (and buffer-file-name (hell-openapi-file-p buffer-file-name))
     (lsp-deferred)))
 
-(add-hook 'yaml-mode-hook #'hell-openapi--setup-h)
+(add-hook 'yaml-ts-mode-hook #'hell-openapi--setup-h)
 (add-hook 'json-mode-hook #'hell-openapi--setup-h)
-(when (fboundp 'yaml-ts-mode)
-  (add-hook 'yaml-ts-mode-hook #'hell-openapi--setup-h))
 (when (fboundp 'json-ts-mode)
   (add-hook 'json-ts-mode-hook #'hell-openapi--setup-h))

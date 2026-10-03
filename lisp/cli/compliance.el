@@ -227,6 +227,10 @@ lockfile has none."
 
 (defun hell-compliance--grammars ()
   "Every tree-sitter grammar built from its pinned commit."
+  ;; The modules declare their grammars in their packages.el, which only
+  ;; `sync' reads; `licenses' and `sbom' read them here, or would list none.
+  (unless hell-treesit-declarations
+    (hell-modules-read-packages))
   (delq nil
         (mapcar (lambda (lang)
                   (when (hell-treesit-current-p lang)

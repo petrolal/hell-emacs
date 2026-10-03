@@ -486,6 +486,18 @@ iconography (`nerd-icons`):
       Checked with a throwaway sync (63 packages, was 67), doctor, and a
       started frame: stock mode line with the JVM status, stock Dired `s`,
       the Altar's project button on `project.el`).
+- [x] 13.8 Emacs' own modes and rules where they exist (2026-10-02:
+      YAML, Dockerfile and TypeScript/TSX open in Emacs' built-in
+      `*-ts-mode`s with pinned grammars sync builds, dropping the
+      yaml-mode, dockerfile-mode and typescript-mode packages (kubel keeps
+      yaml-mode, its own dependency); `treesit-auto-install-grammar` is
+      `never`; a grammar sync can't build (no C compiler) no longer stops
+      the sync; Kotlin's compile rules are Emacs' `gradle-kotlin`; dead
+      `hell-treesit-setup-navigation` removed; the help hub reads its
+      keys from Emacs; `licenses` and `sbom` list the grammars, which they
+      missed. Checked with a throwaway sync (with and without a C
+      compiler), the four grammars loading in Emacs 31.1 and 30.2, files
+      opening in the ts modes, doctor, licenses and sbom).
 ### 8. Structural Editing & Cloud-Native Tooling (Phases 18–22)
 
 - [ ] 18.1 **Structural Code Folding (`:editor fold`)**:

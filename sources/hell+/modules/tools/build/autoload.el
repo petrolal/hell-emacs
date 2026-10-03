@@ -403,15 +403,18 @@ Preserves the match data: compile.el reads the line number from it next."
               ,(concat "^[ \t]+[^ \t\n]+ at \\([^ \t\n:/]+\\." hell-forge--source-extension-regexp
                        "\\):\\([0-9]+\\)$")
               hell-forge--basename-file 2)
-             (hell-kotlin-error
-              ;; "e: file:///abs/Foo.kt:6:22 Unresolved reference 'x'."
-              ,(concat "^e: file://\\(/[^:\n]+\\." hell-forge--source-extension-regexp
-                       "\\):\\([0-9]+\\):\\([0-9]+\\)")
-              hell-forge--uri-file 2 3 2)
-             (hell-kotlin-warning
-              ,(concat "^w: file://\\(/[^:\n]+\\." hell-forge--source-extension-regexp
-                       "\\):\\([0-9]+\\):\\([0-9]+\\)")
-              hell-forge--uri-file 2 3 1)
+             ;; Kotlin's "e: file:///abs/Foo.kt:6:22 ..." and "w: ..." lines
+             ;; are Emacs' own `gradle-kotlin' rule; these only stand in
+             ;; for an Emacs without it.
+             ,@(unless (assq 'gradle-kotlin compilation-error-regexp-alist-alist)
+                 `((hell-kotlin-error
+                    ,(concat "^e: file://\\(/[^:\n]+\\." hell-forge--source-extension-regexp
+                             "\\):\\([0-9]+\\):\\([0-9]+\\)")
+                    hell-forge--uri-file 2 3 2)
+                   (hell-kotlin-warning
+                    ,(concat "^w: file://\\(/[^:\n]+\\." hell-forge--source-extension-regexp
+                             "\\):\\([0-9]+\\):\\([0-9]+\\)")
+                    hell-forge--uri-file 2 3 1)))
              (hell-gradle-summary
               ;; Gradle's indented repeat of javac errors: info, so M-g n skips it.
               ,(concat "^[ \t]+\\(/[^:\n]+\\." hell-forge--source-extension-regexp

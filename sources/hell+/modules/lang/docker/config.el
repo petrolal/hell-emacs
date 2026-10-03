@@ -25,8 +25,8 @@
 ;; Dockerfiles and Compose files, with Docker's docker-language-server
 ;; through lsp-mode: completion, hover (image tags, instructions),
 ;; diagnostics (including Docker's build checks) and formatting.
-;; Dockerfiles open in `dockerfile-mode' (`dockerfile-ts-mode' with
-;; +tree-sitter); Compose files (compose.yaml, docker-compose.*.yml) stay
+;; Dockerfiles open in Emacs' own `dockerfile-ts-mode' (its grammar built
+;; by sync); Compose files (compose.yaml, docker-compose.*.yml) stay
 ;; in YAML's mode and get this server instead of the YAML one. No keys of
 ;; its own.
 ;;
@@ -70,7 +70,6 @@
 (after! lsp-mode
   ;; First, so they win over the YAML entries.
   (add-to-list 'lsp-language-id-configuration (cons hell-docker-compose-file-regexp "dockercompose"))
-  (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile"))
   (add-to-list 'lsp-language-id-configuration '(dockerfile-ts-mode . "dockerfile"))
   (lsp-register-custom-settings '(("docker.lsp.telemetry" hell-docker-ls-telemetry-setting)))
   (lsp-register-client
@@ -86,13 +85,13 @@
                                                    #'hell-docker-sync-install-server
                                                        callback error-callback)))))
 
-(add-to-list 'auto-mode-alist '("/\\(?:Dockerfile\\|Containerfile\\)\\(?:\\.[^/]*\\)?\\'" . dockerfile-mode))
-(add-to-list 'auto-mode-alist '("\\.dockerfile\\'" . dockerfile-mode))
+(add-to-list 'auto-mode-alist '("/\\(?:Dockerfile\\|Containerfile\\)\\(?:\\.[^/]*\\)?\\'" . dockerfile-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.dockerfile\\'" . dockerfile-ts-mode))
 
 (defun hell-docker--compose-lsp-h ()
   "Start the server in a Compose file (without :lang yaml, nothing else would)."
   (when (hell-docker-compose-file-p buffer-file-name)
     (lsp-deferred)))
 
-(add-hook! (dockerfile-mode dockerfile-ts-mode) #'lsp-deferred)
-(add-hook! (yaml-mode yaml-ts-mode) #'hell-docker--compose-lsp-h)
+(add-hook 'dockerfile-ts-mode-hook #'lsp-deferred)
+(add-hook 'yaml-ts-mode-hook #'hell-docker--compose-lsp-h)

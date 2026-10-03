@@ -452,7 +452,8 @@ of leaving JDTLS waiting."
     ;; First, so they win over the modes' own (yaml, properties).
     (dolist (entry (reverse hell-spring-language-ids))
       (add-to-list 'lsp-language-id-configuration entry)))
-  (add-hook! (yaml-mode conf-javaprop-mode) #'hell-jvm--spring-lsp-h))
+  (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-ts-mode))
+  (add-hook! (yaml-ts-mode conf-javaprop-mode) #'hell-jvm--spring-lsp-h))
 
 ;; A launched program runs on its project's JDK (a Java 8 project on JDK 8),
 ;; not on the one running JDTLS. java-debug falls back to JDTLS's own

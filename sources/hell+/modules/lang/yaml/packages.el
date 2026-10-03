@@ -26,11 +26,9 @@
 ;; by `bin/hell sync' from this module's package-lock.json).
 (depends-on! :tools lsp)
 
-(package! yaml-mode)
-;; yaml-ts-mode is built into Emacs; this is the commit Emacs 31's own
-;; yaml-ts-mode recommends (ABI 14, so Emacs 29 and 30 load it too).
-(when (modulep! +tree-sitter)
-  (hell-treesit!
-   :grammars ((yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"
-                    "b733d3f5f5005890f324333dd57e1f0badec5c87" :license "MIT"))
-   :remap ((yaml-mode . yaml-ts-mode))))
+;; YAML's mode is Emacs' own `yaml-ts-mode' (13.7): `bin/hell sync' builds
+;; its grammar, the commit Emacs 31's own yaml-ts-mode recommends (ABI 14,
+;; so Emacs 29 and 30 load it too). No third-party yaml-mode.
+(hell-treesit!
+ :grammars ((yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"
+                  "b733d3f5f5005890f324333dd57e1f0badec5c87" :license "MIT")))

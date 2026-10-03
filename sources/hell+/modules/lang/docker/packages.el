@@ -27,11 +27,9 @@
 ;; no client for it, so config.el registers one.
 (depends-on! :tools lsp)
 
-(package! dockerfile-mode)
-;; dockerfile-ts-mode is built into Emacs; this is the commit Emacs 31's
-;; own dockerfile-ts-mode recommends (ABI 14, so Emacs 29 and 30 load it).
-(when (modulep! +tree-sitter)
-  (hell-treesit!
-   :grammars ((dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "Emacs 31's pin"
-                          "087daa20438a6cc01fa5e6fe6906d77c869d19fe" :license "MIT"))
-   :remap ((dockerfile-mode . dockerfile-ts-mode))))
+;; Dockerfiles open in Emacs' own `dockerfile-ts-mode' (13.7): `bin/hell
+;; sync' builds its grammar, the commit Emacs 31's own mode recommends
+;; (ABI 14, so Emacs 29 and 30 load it). No third-party dockerfile-mode.
+(hell-treesit!
+ :grammars ((dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "Emacs 31's pin"
+                        "087daa20438a6cc01fa5e6fe6906d77c869d19fe" :license "MIT")))

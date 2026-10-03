@@ -27,7 +27,7 @@ The rest of this section is each step in detail.
 
 | Tool | Version | For |
 |---|---|---|
-| GNU Emacs | 29.1+ (30.1+ for `clojure-ts-mode`); native-comp and tree-sitter recommended | Everything |
+| GNU Emacs | 29.1+ (30.1+ for `clojure-ts-mode`), built with tree-sitter (YAML, Dockerfile and TypeScript use Emacs' own tree-sitter modes); native-comp recommended | Everything |
 | Git | 2.25+ (2.31+ behind a proxy or mirror) | Packages, Magit, `hell upgrade` |
 | JDK | 21+ | Running JDTLS; your projects can target Java 8 and up |
 | ripgrep, fd | any recent | Project search |
@@ -297,7 +297,7 @@ out: uncomment one (`:lang groovy`, `:tools db`, ...), then sync. Flags
 |---|---|
 | `(corfu +tab)` | `TAB` completes when there's nothing to indent |
 | `(java +lombok +spring)` | Lombok's agent in JDTLS; Spring Boot's language server |
-| `(java +tree-sitter)`, and on most languages | Tree-sitter modes, with pinned grammars |
+| `(java +tree-sitter)`, and on most languages | Tree-sitter modes, with pinned grammars (YAML, Dockerfile and TypeScript always use Emacs' own tree-sitter modes) |
 | `(format +onsave)` | Format on every save |
 | `(test +watch)` | Rerun a class's tests when you save it |
 | `(http +httpyac)` | Run `.http` files' JavaScript handlers (needs Node) |
@@ -545,9 +545,11 @@ fix, run `hell doctor` again.
   `hell sync`: each Emacs version gets its own synced init file.
 - **A development build:** a snapshot Emacs (a version ending in `.50`
   and up) works, but packages may break on it. Use a release if they do.
-- **No tree-sitter support**, which `+tree-sitter` needs: this Emacs was
-  built without it. Install an Emacs built with tree-sitter (most
-  distributions' Emacs 29+ is), or drop `+tree-sitter` from the module.
+- **No tree-sitter support**, which a module's grammar needs (`:lang
+  yaml`, `docker` and `javascript` always; others with `+tree-sitter`):
+  this Emacs was built without it. Install an Emacs built with tree-sitter
+  (most distributions' Emacs 29+ is), or drop `+tree-sitter` from the
+  module.
 - **clojure-ts-mode needs Emacs 30.1:** drop `+tree-sitter` from
   `:lang clojure`, or upgrade Emacs.
 

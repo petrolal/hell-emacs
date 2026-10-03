@@ -23,7 +23,7 @@
 
 ;; kubel runs the developer's own kubectl, in its current context. Its
 ;; dependencies are declared up front, so Elpaca builds each once: dash
-;; and s are shared with lsp-mode and docker.el, yaml-mode with :lang yaml
-;; (kubel edits resources in a mode derived from it).
+;; and s are shared with lsp-mode and docker.el; yaml-mode is kubel's own
+;; (its resource editing mode derives from it), not used for .yml files.
 (package! dash) (package! s) (package! yaml-mode)
 (package! kubel)
