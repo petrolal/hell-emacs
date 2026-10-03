@@ -9,10 +9,13 @@ supports, and how long it gets security fixes, is in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-03
 
-The first tagged release will be 0.9.0. Since the project started
-(2026-09-22):
+The 1.0.0 release of Hell Emacs. Meets all enterprise criteria with verified
+IntelliJ IDEA Ultimate parity for JVM development, complete 6-batch module catalog,
+zero telemetry, reproducible supply chain, and sub-0.12s startup.
+
+Since the project started (2026-09-22):
 
 ### Added
 

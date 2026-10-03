@@ -38,7 +38,7 @@
 (require 'seq)
 (eval-when-compile (require 'subr-x))
 
-(defconst hell-version "0.9.0"
+(defconst hell-version "1.0.0"
   "Hell Emacs' version, MAJOR.MINOR.PATCH (Semantic Versioning).
 A release is the git tag vMAJOR.MINOR.PATCH; CHANGELOG.md says what each
 one changed, and docs/guide.md (\"Staying up to date\") which Emacs versions

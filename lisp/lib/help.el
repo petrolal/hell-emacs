@@ -293,7 +293,7 @@ Shows active status, flags, declared packages, file links, and keybindings."
          (flags (and active-p (hell-module-get key :flags)))
          (dir (hell-module-locate-path group name))
          (meta (and dir (hell-module-metadata dir key)))
-         (version (or (plist-get meta :version) "0.9.0"))
+         (version (or (plist-get meta :version) "1.0.0"))
          (buf-name (format "*Help: %s %s*" group name)))
     (with-current-buffer (get-buffer-create buf-name)
       (help-mode)
