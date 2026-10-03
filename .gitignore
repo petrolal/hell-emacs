@@ -63,6 +63,7 @@ projectile.cache
 .bsp/
 .idea/
 .vscode/
+.elsa/
 
 # Package & backup archives.
 *.tar.gz
