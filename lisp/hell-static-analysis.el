@@ -340,15 +340,21 @@ Returns a list of diagnostic plists:
     (require 'elsa-startup nil t))
   (if (not (fboundp 'elsa-analyse-file))
       (message "Elsa is not available")
-    (let* ((global-state (or (bound-and-true-p elsa-global-state)
-                             (and (fboundp 'elsa-state) (elsa-state))))
-           (result (condition-case err
-                       (elsa-analyse-file file global-state)
-                     (error (list :error err))))
-           (errors (and result
-                        (not (plist-get result :error))
-                        (hell-static-analysis--slot result 'errors)))
-           diags)
+    (let* ((cache-root (expand-file-name "elsa/" (if (boundp 'hell-cache-dir) hell-cache-dir temporary-file-directory)))
+           (_ (make-directory (expand-file-name ".elsa" cache-root) t))
+           (global-state (or (bound-and-true-p elsa-global-state)
+                             (and (fboundp 'elsa-state) (elsa-state)))))
+      (when global-state
+        (condition-case nil
+            (setf (slot-value global-state (intern "project-directory")) cache-root)
+          (error nil)))
+      (let* ((result (condition-case err
+                         (elsa-analyse-file file global-state)
+                       (error (list :error err))))
+             (errors (and result
+                          (not (plist-get result :error))
+                          (hell-static-analysis--slot result 'errors)))
+             diags)
       (dolist (item errors)
         (let ((line (hell-static-analysis--slot item 'line 1))
               (col (hell-static-analysis--slot item 'column 1))
@@ -359,14 +365,14 @@ Returns a list of diagnostic plists:
               (msg (if (fboundp 'elsa-message-format)
                        (elsa-message-format item)
                      (format "%s" item))))
-          (push (list :file file
-                      :line (or line 1)
-                      :col (or col 1)
-                      :severity sev
-                      :tool "elsa"
-                      :message msg)
-                diags)))
-      (nreverse diags))))
+            (push (list :file file
+                        :line (or line 1)
+                        :col (or col 1)
+                        :severity sev
+                        :tool "elsa"
+                        :message msg)
+                  diags)))
+        (nreverse diags)))))
 
 (defun elsa-run-project (&optional dir)
   "Run Elsa static analysis across project at DIR and return diagnostics."
@@ -386,10 +392,15 @@ Returns a list of diagnostic plists:
 
 ;;; Aggregation and Reporting ------------------------------------------------
 
+(defvar hell-static-analysis-last-results nil
+  "The plist returned by the most recent `hell-static-analysis-run'.")
+
 (defvar hell-static-analysis-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map compilation-mode-map)
     (define-key map (kbd "g") #'hell-static-analysis-rerun)
+    (define-key map (kbd "w") #'my/save-static-analysis-report)
+    (define-key map (kbd "s") #'my/save-static-analysis-report)
     map)
   "Keymap for `hell-static-analysis-mode'.")
 
@@ -417,11 +428,82 @@ Returns a list of diagnostic plists:
             tool
             (string-trim (replace-regexp-in-string "\n[ \t]*" " " msg)))))
 
-(defun hell-static-analysis-run (target)
+(defun hell-static-analysis-export-markdown (results &optional output-file)
+  "Format RESULTS plist as a Markdown report and write to OUTPUT-FILE.
+If OUTPUT-FILE is nil, return the generated Markdown string."
+  (let* ((target (plist-get results :target))
+         (files-count (plist-get results :files))
+         (error-count (plist-get results :errors))
+         (warning-count (plist-get results :warnings))
+         (smell-count (plist-get results :smells))
+         (total (+ error-count warning-count smell-count))
+         (elapsed (or (plist-get results :elapsed) 0.0))
+         (timestamp (or (plist-get results :timestamp) (current-time-string)))
+         (diags (plist-get results :diagnostics))
+         (tool-stats (plist-get results :tool-stats)))
+    (with-temp-buffer
+      (insert "# Static Code Analysis Report\n\n")
+      (insert (format "**Generated:** %s  \n" timestamp))
+      (insert (format "**Target:** `%s`  \n" (abbreviate-file-name target)))
+      (insert (format "**Files Scanned:** %d  \n" files-count))
+      (insert (format "**Execution Time:** %.2fs  \n\n" elapsed))
+
+      (insert "## Executive Summary\n\n")
+      (insert "| Metric | Count | Status |\n")
+      (insert "|:-------|------:|:-------|\n")
+      (insert (format "| **Total Issues** | %d | %s |\n"
+                      total (if (zerop total) "PASS" (if (> error-count 0) "FAIL" "WARN"))))
+      (insert (format "| **Errors** | %d | %s |\n"
+                      error-count (if (zerop error-count) "PASS" "ACTION REQUIRED")))
+      (insert (format "| **Warnings** | %d | %s |\n"
+                      warning-count (if (zerop warning-count) "PASS" "REVIEW")))
+      (insert (format "| **Code Smells** | %d | %s |\n\n"
+                      smell-count (if (zerop smell-count) "PASS" "INFO")))
+
+      (when tool-stats
+        (insert "### Tool Breakdown\n\n")
+        (insert "| Linter | Errors | Warnings | Code Smells |\n")
+        (insert "|:-------|-------:|---------:|------------:|\n")
+        (maphash (lambda (tool stats)
+                   (insert (format "| `%s` | %d | %d | %d |\n"
+                                   tool
+                                   (plist-get stats :errors)
+                                   (plist-get stats :warnings)
+                                   (plist-get stats :smells))))
+                 tool-stats)
+        (insert "\n"))
+
+      (insert "## Detailed Findings\n\n")
+      (if (null diags)
+          (insert "No issues detected. Codebase is clean.\n")
+        (insert "| Location | Severity | Tool | Message |\n")
+        (insert "|:---------|:---------|:-----|:--------|\n")
+        (dolist (d diags)
+          (let* ((file (plist-get d :file))
+                 (line (or (plist-get d :line) 1))
+                 (col (or (plist-get d :col) 1))
+                 (sev (upcase (symbol-name (or (plist-get d :severity) 'info))))
+                 (tool (or (plist-get d :tool) "unknown"))
+                 (rel (file-relative-name file (if (file-directory-p target)
+                                                   target
+                                                 (file-name-directory target))))
+                 (msg (replace-regexp-in-string "|" "\\\\|" (plist-get d :message))))
+            (insert (format "| `%s:%d:%d` | **%s** | `%s` | %s |\n"
+                            rel line col sev tool msg)))))
+      (insert "\n---\n*Report generated natively by Hell Emacs Static Analysis Suite.*\n")
+
+      (let ((content (buffer-string)))
+        (when output-file
+          (write-region content nil output-file nil 'quiet)
+          (message "Static analysis report saved to %s" output-file))
+        content))))
+
+(defun hell-static-analysis-run (target &optional report-file)
   "Execute static analysis across TARGET (file or directory).
 Collects all diagnostics from enabled linters, presents results in
 `hell-static-analysis-buffer-name' with clickable error locations,
-and emits summary metrics."
+and emits summary metrics. If REPORT-FILE is non-nil, also exports
+the full report to REPORT-FILE."
   (setq hell-static-analysis-last-target target)
   (let* ((files (hell-static-analysis-find-files target))
          (active-linters hell-static-analysis-linters)
@@ -487,9 +569,20 @@ and emits summary metrics."
                      ((/= line-a line-b) (< line-a line-b))
                      (t (< col-a col-b)))))))
 
-    ;; Render to dedicated compilation buffer
-    (let ((buf (get-buffer-create hell-static-analysis-buffer-name))
-          (elapsed (float-time (time-subtract (current-time) start-time))))
+    (let* ((elapsed (float-time (time-subtract (current-time) start-time)))
+           (buf (get-buffer-create hell-static-analysis-buffer-name))
+           (results (list :target target
+                          :files (length files)
+                          :errors error-count
+                          :warnings warning-count
+                          :smells smell-count
+                          :diagnostics all-diags
+                          :elapsed elapsed
+                          :timestamp (current-time-string start-time)
+                          :tool-stats tool-stats)))
+      (setq hell-static-analysis-last-results results)
+
+      ;; Render to dedicated compilation buffer
       (with-current-buffer buf
         (let ((inhibit-read-only t))
           (erase-buffer)
@@ -533,21 +626,21 @@ and emits summary metrics."
                                      (plist-get stats :smells))))
                    tool-stats)
           (insert (make-string 76 ?=) "\n")
+          (insert "\n[Press 'w' or 's' to save report to file, 'g' to re-run]\n")
           (goto-char (point-min))
           (forward-line 6)))
 
       (display-buffer buf)
 
+      ;; Optional save to report file
+      (when report-file
+        (hell-static-analysis-export-markdown results report-file))
+
       ;; Emit summary message natively
       (message "Static analysis complete: %d errors, %d warnings, %d code smells across %d file(s) (%.2fs)"
                error-count warning-count smell-count (length files) elapsed)
 
-      (list :target target
-            :files (length files)
-            :errors error-count
-            :warnings warning-count
-            :smells smell-count
-            :diagnostics all-diags))))
+      results)))
 
 (defun hell-static-analysis-rerun ()
   "Re-run static analysis on `hell-static-analysis-last-target'."
@@ -557,32 +650,63 @@ and emits summary metrics."
     (call-interactively #'my/run-static-analysis)))
 
 ;;;###autoload
-(defun my/run-static-analysis (&optional target)
+(defun my/save-static-analysis-report (&optional file)
+  "Save the most recent static analysis results as a Markdown report FILE.
+Defaults to `static-analysis-report.md' in the analyzed target's directory."
+  (interactive
+   (let* ((default-dir (if hell-static-analysis-last-target
+                           (if (file-directory-p hell-static-analysis-last-target)
+                               hell-static-analysis-last-target
+                             (file-name-directory hell-static-analysis-last-target))
+                         default-directory))
+          (default-file (expand-file-name "static-analysis-report.md" default-dir)))
+     (list (read-file-name "Save analysis report to: " default-dir default-file nil "static-analysis-report.md"))))
+  (unless hell-static-analysis-last-results
+    (user-error "No static analysis results available; run `my/run-static-analysis' first"))
+  (let ((out (expand-file-name (or file "static-analysis-report.md"))))
+    (hell-static-analysis-export-markdown hell-static-analysis-last-results out)
+    (message "Static analysis report saved to %s" (abbreviate-file-name out))))
+
+;;;###autoload
+(defalias 'hell-save-static-analysis-report #'my/save-static-analysis-report
+  "Alias for `my/save-static-analysis-report'.")
+
+;;;###autoload
+(defun my/run-static-analysis (&optional target report-file)
   "Execute static code analysis suite across project or config `.el' files.
 With prefix argument `C-u', prompt for a specific directory or file.
+With double prefix argument `C-u C-u', also prompt for a REPORT-FILE to save.
 Otherwise defaults to current project root or `default-directory'."
   (interactive
-   (list (if current-prefix-arg
-             (read-file-name "File or directory to analyze: " nil default-directory t)
-           (or (when-let* ((proj (project-current))) (project-root proj))
-               default-directory))))
-  (hell-static-analysis-run (or target default-directory)))
+   (let* ((prompt-report (equal current-prefix-arg '(16)))
+          (tgt (if current-prefix-arg
+                   (read-file-name "File or directory to analyze: " nil default-directory t)
+                 (or (when-let* ((proj (project-current))) (project-root proj))
+                     default-directory)))
+          (rep (when prompt-report
+                 (read-file-name "Save report to: " tgt (expand-file-name "static-analysis-report.md" tgt)))))
+     (list tgt rep)))
+  (hell-static-analysis-run (or target default-directory) report-file))
 
 ;;;###autoload
 (defalias 'hell-run-static-analysis #'my/run-static-analysis
   "Alias for `my/run-static-analysis'.")
 
 ;;;###autoload
-(defun my/run-static-analysis-current-buffer ()
-  "Run the static analysis suite on the current buffer's file."
-  (interactive)
+(defun my/run-static-analysis-current-buffer (&optional report-file)
+  "Run the static analysis suite on the current buffer's file.
+If REPORT-FILE is provided, write the Markdown report to it."
+  (interactive (list (when current-prefix-arg (read-file-name "Save report to: "))))
   (unless (buffer-file-name)
     (user-error "Current buffer is not visiting a file"))
-  (hell-static-analysis-run (buffer-file-name)))
+  (hell-static-analysis-run (buffer-file-name) report-file))
 
 ;;;###autoload
 (defalias 'hell-run-static-analysis-current-buffer #'my/run-static-analysis-current-buffer
   "Alias for `my/run-static-analysis-current-buffer'.")
+
+;; Direct keymap binding on mode-specific-map (C-c)
+(keymap-set mode-specific-map "c s" #'hell-run-static-analysis)
 
 (provide 'hell-static-analysis)
 ;;; hell-static-analysis.el ends here

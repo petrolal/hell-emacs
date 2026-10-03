@@ -163,13 +163,19 @@
   "M" (cons "forge/modules-list" #'hell-list-modules)
   "p" (cons "forge/plugins" #'hell-plugins)
   "h" (cons "forge/help" #'hell-help)
-  "k" (cons "forge/where-is-intellij" #'hell-where-is-intellij))
+  "k" (cons "forge/where-is-intellij" #'hell-where-is-intellij)
+  "c" (cons "forge/check" #'hell-check))
 
 (autoload 'hell-help "lib/help" "Open Hell Emacs JVM Help and shortcuts hub." t)
 (autoload 'hell-info-manual "lib/help" "Open Hell Emacs Info manual." t)
 (autoload 'hell-describe-module "lib/help" "Describe Hell Emacs module." t)
 (autoload 'hell-plugins "hell-plugins" "Open Hell Emacs plugins manager." t)
 (autoload 'hell-where-is-intellij "lib/intellij" "Look up IntelliJ IDEA keys in Hell Emacs." t)
+(autoload 'hell-check "cli/check" "Run Static Analysis and Linting Quality Gate." t)
+(autoload 'hell-lint "cli/check" "Run Static Analysis and Linting Quality Gate." t)
+(autoload 'hell-run-static-analysis "hell-static-analysis" "Run static code analysis suite." t)
+(autoload 'hell-run-static-analysis-current-buffer "hell-static-analysis" "Run static code analysis on current buffer." t)
+(autoload 'hell-save-static-analysis-report "hell-static-analysis" "Save static code analysis report." t)
 
 (keymap-set mode-specific-map "h" hell-prefix-map)
 
@@ -186,7 +192,15 @@
 ;; its own `s-l'; `C-c s e' jumps to a diagnostic.
 
 (hell-leader-def
-  "c"   "code")
+  "c"   "code"
+  "c x" '("quality check" . hell-check)
+  "c l" '("quality lint" . hell-lint)
+  "c s" '("static analysis" . hell-run-static-analysis))
+
+;; Ensure bindings exist directly on mode-specific-map (C-c)
+(keymap-set mode-specific-map "c x" #'hell-check)
+(keymap-set mode-specific-map "c l" #'hell-lint)
+(keymap-set mode-specific-map "c s" #'hell-run-static-analysis)
 
 ;; Winner's layout undo, on its own `C-c <left>' / `C-c <right>'.
 (add-hook 'hell-first-input-hook #'winner-mode)

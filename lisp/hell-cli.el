@@ -40,7 +40,8 @@
   (hell-require 'hell-cli 'bundle)
   (hell-require 'hell-cli 'config)
   (hell-require 'hell-cli 'compliance)
-  (hell-require 'hell-cli 'verify))
+  (hell-require 'hell-cli 'verify)
+  (hell-require 'hell-cli 'check))
 
 ;;; Output -----------------------------------------------------------------------
 
@@ -206,7 +207,7 @@ Hell Emacs' bin/, your config's bin/, then $HELLPATH's directories
 
 (defconst hell-cli-aliases
   '(("s" . "sync") ("up" . "upgrade") ("doc" . "doctor") ("pf" . "profile")
-    ("h" . "help") ("v" . "version"))
+    ("h" . "help") ("v" . "version") ("lint" . "check"))
   "Short names of commands, as `doom's.")
 
 (defun hell-cli-command-file (command)
@@ -321,6 +322,10 @@ Commands (short names in brackets):
              List the modules on by default that your hell! block misses
              (made from an older template?); --add-defaults adds them, keeping
              a backup of init.el. Then run sync.
+  check [lint] [TARGETS...] [-o OUT] [--format FORMAT] [--strict]
+             Run unified static analysis and linting quality gate across
+             detected languages (Clojure, Kotlin, Java, Scala, Groovy,
+             Emacs Lisp, Common Lisp), generating diagnostic report.
   help [h] [COMMAND]
              Show this help, or detailed help and options for COMMAND.
 
