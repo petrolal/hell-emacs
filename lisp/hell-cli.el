@@ -43,6 +43,9 @@
   (hell-require 'hell-cli 'verify)
   (hell-require 'hell-cli 'check))
 
+(require 'subr-x)
+(declare-function backtrace-to-string "subr-x" (&optional frames))
+
 ;;; Output -----------------------------------------------------------------------
 
 (defvar hell-cli--last-topic nil

@@ -63,6 +63,7 @@
 (declare-function elpaca<-id "elpaca" (e))
 (declare-function elpaca<-build-dir "elpaca" (e))
 (declare-function elpaca<-source-dir "elpaca" (e))
+(declare-function hell-verify-record-installed "cli/verify" ())
 
 (defvar hell-sync-functions nil
   "Functions run, in order, at the end of every `hell-sync'.

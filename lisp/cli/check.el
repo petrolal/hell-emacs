@@ -75,6 +75,8 @@
         (cons code (string-trim (buffer-string)))))))
 
 (declare-function hell-cli-help "hell-cli" (&optional command &rest _))
+(declare-function hell-cli--say "hell-cli" (format-string &rest args))
+(declare-function hell-cli--run "hell-cli" (program &rest args))
 
 ;;; Supported Languages & Tool Routing ----------------------------------------
 
