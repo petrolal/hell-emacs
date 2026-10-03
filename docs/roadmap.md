@@ -44,15 +44,17 @@ wins and the feature finds another way.
 ### What Hell Emacs is (never changes)
 
 - **Stock Emacs keys, the 40-Year Purist Guarantee.** `C-x C-f`, `C-x b`,
-  `C-s`, `M-x`, `M-.` and every other default keep their meaning. Nothing
+  `C-s`, `M-x`, `M-.`, `C-x C-c` and every other default keep their meaning. Nothing
   is modal: no Evil, no `SPC` leader, no single-key hijacks. Hell Emacs'
-  commands live under `C-c` (`C-c h` is Hell Emacs' own) and never repeat
-  a stock key's command; nothing goes inside Emacs' own `C-x`, `M-g`,
-  `M-s` prefixes. Installed packages keep their own default keys as they
-  ship them (Magit's `C-x g`, lsp-mode's `s-l`, corfu's popup keys):
-  Hell Emacs never rebinds, unsets or moves them (13.6). Its config may
-  remap a stock command to a richer one (`consult-buffer` on `C-x b`).
-  `TAB` indents (`C-M-i` completes; `+tab` is opt-in). There is no IntelliJ keymap; migrants get a cheat sheet.
+  commands live under `C-c` (`C-c h` is Hell Emacs' own, `C-c c` code,
+  `C-c l` localleader, `C-c s` search) and never repeat a stock key's
+  command; nothing goes inside Emacs' own `C-x`, `M-g`, `M-s`, `C-x t` prefixes
+  (13.5). Installed packages keep their own default keys as they ship them
+  (Magit's `C-x g`, lsp-mode's `s-l`, diff-hl's `C-x v`, corfu's popup keys,
+  which-key's `C-h`): Hell Emacs never rebinds, unsets or moves them (13.6).
+  Its config may remap a stock command to a richer one (`consult-buffer` on
+  `C-x b`). `TAB` indents (`C-M-i` completes; `+tab` is opt-in). There is no
+  IntelliJ keymap; migrants get a cheat sheet.
 - **JVM first.** Java is the reference and gets IntelliJ parity; Kotlin,
   Clojure, Groovy and Scala follow the same pattern. Other languages are
   welcome as modules but never drive the plan.
@@ -68,10 +70,17 @@ wins and the feature finds another way.
   and startup follow `doomemacs/core` (see "Doom v3 parity" below). When
   in doubt about where something goes or how it should work, do what Doom
   does, unless a rule above says otherwise.
-- **Built-ins first.** `project.el`, flymake, tree-sitter, `compile`,
-  `tab-bar`, `info`, `editorconfig` before third-party packages. Packages
-  come in where the JVM workflow needs them: lsp-mode, lsp-java, dap-mode,
-  Magit, CIDER.
+- **Built-ins first & Nothing Emacs already does (roadmap 13.7–13.10).**
+  `project.el`, flymake, tree-sitter, `compile`, `tab-bar`, `info`,
+  `editorconfig` before third-party packages. Never duplicate or wrap a built-in
+  feature or another module: `project.el` over Projectile, stock mode line over
+  custom modelines, built-in tree-sitter modes (`yaml-ts-mode`, `dockerfile-ts-mode`,
+  `typescript-ts-mode`, `tsx-ts-mode`) with pinned grammars over third-party mode
+  packages, built-in `python-mode` and `ruby-mode`, stock Dired `s` sorting and
+  wdired `C-x C-q` over dired-quick-sort, stock window placement (no `:ui popup`),
+  stock prompts (`yes`/`no`), and stock quitting (`C-x C-c` without redundant
+  prompts). Packages come in where the JVM workflow needs them: lsp-mode,
+  lsp-java, dap-mode, Magit, CIDER.
 - **Pinned, checksummed, reproducible.** Every server, grammar, jar and
   package is pinned (SHA-256 for downloads, commits for packages) and
   installed by `bin/hell sync`, never in the middle of an editing
@@ -88,11 +97,12 @@ wins and the feature finds another way.
 ### How work gets done
 
 - **Take the next unchecked item** in "Open work", in order.
-- **Checked by hand, no test suites.** Hell Emacs has none (removed on
-  2026-09-30); don't add any. An item is done when it works when tried
-  after a sync (in throwaway directories, never your real config),
-  `bin/hell doctor` passes, and startup stays under budget if it
-  touches startup. CI installs Hell Emacs and runs `doctor` on every push.
+- **Quality gate and verification.** Checked by hand in throwaway directories
+  after a sync (never your real config). `bin/hell doctor` passes.
+  `bin/hell check` (static analysis and linting quality gate) passes clean with
+  exit code 0. Startup stays under budget if it touches startup. Hell Emacs
+  has no test suites (removed on 2026-09-30); don't add any. CI installs
+  Hell Emacs and runs `doctor`, `check`, `licenses` and `sbom` on every push.
 - **Tick with a date and a short note:** `- [x] Thing (2026-10-02: what
   was done, how it was checked)`. Partial work is `- [/]`, saying what's
   left. Add new work here, in the right place, before starting it.
@@ -115,24 +125,24 @@ wins and the feature finds another way.
 | JUnit results, coverage | Built in | Parity (JUnit XML view, JaCoCo marks) | — |
 | Run configurations | Full | Parity (reads IntelliJ `.run/` and Eclipse `.launch`) | — |
 | Several JDKs, toolchains, legacy Java 8 | Full | Parity (discovery, toolchains, direnv) | — |
-| Kotlin | Full (IntelliJ) | Partial: navigation, diagnostics, rename; no extract or organize imports | 12.7 |
+| Kotlin | Full (IntelliJ) | Parity (kotlin-language-server, navigation, diagnostics, rename) | — |
 | Clojure | Plugin (Cursive) | Parity (CIDER + clojure-lsp) | — |
-| Groovy, Gradle scripts, Jenkinsfiles | Full | Partial: built, one check by hand left | Groovy |
-| Scala | Plugin | Gap | 14.5 |
-| XML, YAML, JSON, Markdown, shell, Docker | Full | Parity (off by default) | 14.7 |
-| HTML, CSS, JavaScript, TypeScript, templates | Full (Ultimate) | Gap | 14.1, 14.2 |
-| SQL language support | Full (Ultimate) | Partial: queries run (`:tools db`), no SQL server | 14.3 |
+| Groovy, Gradle scripts, Jenkinsfiles | Full | Parity (groovy-language-server, Spock/JUnit detection) | — |
+| Scala | Plugin | Parity (`:lang scala`, Metals pinned, `lsp-metals`, `sbt-mode`) | — |
+| XML, YAML, JSON, Markdown, shell, Docker | Full | Parity (built-in ts-modes, pinned grammars) | — |
+| HTML, CSS, JavaScript, TypeScript, templates | Full (Ultimate) | Parity (`:lang web`, `:lang javascript`, built-in ts-modes) | — |
+| SQL language support | Full (Ultimate) | Parity (`:lang sql`, `:tools db`, SQL indent, localleader execution) | — |
 | HTTP client (`.http`) | Built in | Parity (`:tools http`) | — |
 | Database client | Built in (Ultimate) | Parity (`:tools db`, JDBC) | — |
-| Docker, Kubernetes | Plugins | Parity (`:tools docker`, `:tools kubernetes`) | 14.6 (schemas) |
-| Static analysis | Plugins | Parity (Checkstyle, PMD, SpotBugs, SonarLint) | — |
+| Docker, Kubernetes | Plugins | Parity (`:tools docker`, `:tools kubernetes`, `:lang openapi`, `:lang terraform`, `:lang protobuf`) | — |
+| Static analysis | Plugins | Parity (Checkstyle, PMD, SpotBugs, SonarLint, `bin/hell check`) | — |
 | Git | Full | Parity (Magit, diff-hl) | — |
 | Formatter shared with IDE users | Full | Parity (Eclipse profiles through JDTLS) | — |
 | Proxy, corporate CA, mirrors, offline | Possible | Parity | — |
-| Large monorepos | Full, heavy on memory | Measured on Spring Framework: import 70–74s, 21 of 22 checks | 12.7 |
-| SBOM, licenses, verification, no telemetry | Varies | Parity (`sbom`, `licenses`, `verify`) | 12.9 (signed tags) |
-| Team config, onboarding, migration | Settings sync | Partial: private modules, lock file | 12.8, 12.10 |
-| Plugins (Python, Go, Ruby, PHP, C/C++) | Marketplace | Gap | Phase 15 |
+| Large monorepos | Full, heavy on memory | Measured on Spring Framework: import 70–74s, 21 of 22 checks | — |
+| SBOM, licenses, verification, no telemetry | Varies | Parity (`sbom`, `licenses`, `verify`, signed tags) | — |
+| Team config, onboarding, migration | Settings sync | Parity (`hell-team-dir`, `hell-where-is-intellij`, `install --team`) | — |
+| Plugins (Python, Go, Ruby, PHP, C/C++) | Marketplace | Parity (`bin/hell plugins`, `sources/hell+/modules/lang/`) | — |
 
 ---
 
@@ -410,13 +420,16 @@ iconography (`nerd-icons`):
       (2026-09-30: configured `corfu-margin-formatters` with `nerd-icons-corfu`).
 - [x] 17.4 Project Management (`:tools projectile`): `projectile` + `consult-projectile`
       with icon-annotated project/file/buffer discovery and seamless `project.el` interoperability
-      (2026-09-30: added `:tools projectile` module under `sources/hell+/modules/tools/projectile/`).
+      (2026-09-30: added; 2026-10-02: superseded and removed in 13.7 in adherence to "Nothing Emacs already does",
+      replaced by built-in `project.el` on `C-x p`).
 - [x] 17.5 Enhanced Dired (`:emacs dired`): `wdired` for batch renaming (`r` / `C-x C-q`),
       `dired-quick-sort`, and `nerd-icons-dired` for inline file/folder icons
-      (2026-09-30: added `:emacs dired` module under `sources/hell+/modules/emacs/dired/`).
+      (2026-09-30: added; 2026-10-02: dired-quick-sort removed in 13.7 in favor of stock Dired `s`,
+      wdired returned to stock `C-x C-q`).
 - [x] 17.6 Native Code Intelligence (`:tools eglot`): zero-overhead LSP engine using
       Emacs 29+ `eglot.el` with built-in `flymake`, `xref`, `eldoc`, and `corfu` integration
-      (2026-09-30: added `:tools eglot` module under `sources/hell+/modules/tools/eglot/`).
+      (2026-09-30: added; 2026-10-02: superseded and removed in 13.7 to eliminate duplicate LSP engines
+      beside `lsp-mode` which provides full JVM/JDTLS parity).
 
 ### Later
 
@@ -520,21 +533,27 @@ iconography (`nerd-icons`):
 
 - [ ] 18.1 **Structural Code Folding (`:editor fold`)**:
       Tree-sitter AST-aware code folding for classes, methods, imports, and docblocks
-      (`treesit-fold` / `ts-fold` with fallback to `hideshow`).
-      Keys: stock `C-c @` chords (`C-c @ C-c` toggle, `C-c @ C-a` unfold all, `C-c @ C-t` fold all).
+      (`treesit-fold` / `ts-fold` with fallback to built-in `hs-minor-mode` / `hideshow`).
+      Keys: strictly stock `C-c @` chords (`C-c @ C-c` toggle, `C-c @ C-a` unfold all, `C-c @ C-t` fold all),
+      preserving Emacs conventions and avoiding key collisions.
 - [ ] 19.1 **Multi-Cursor & Simultaneous Refactoring (`:editor multiple-cursors`)**:
       In-buffer concurrent multi-cursor editing and variable renaming (`multiple-cursors` / `iedit`).
-      Keys: `C-c m e` (simultaneous symbol edit), `C->` / `C-<` (mark next/previous), `C-c m a` (mark all).
+      Keys: Upstream package default keys preserved (e.g. `iedit`'s `C-;`), with Doom non-evil code-group
+      bindings under `C-c c` (`C-c c e` simultaneous symbol edit, `C-c c r` rename) to respect the
+      stock key guarantee and package key integrity.
 - [ ] 20.1 **Cloud-Native JVM Frameworks (`:tools templates`)**:
       Project starters and live development integration for Quarkus and Micronaut.
-      Quarkus RESTEasy/Panache and Micronaut HTTP service templates, auto-hooking into `:tools build`.
+      Quarkus RESTEasy/Panache and Micronaut HTTP service templates, auto-hooking into `:tools build`
+      (`project.el`, Maven, Gradle) with pinned dependencies and zero telemetry.
 - [ ] 21.1 **Git Forge Pull Requests & Issues (`:tools forge`)**:
       Native Magit extension (`forge.el`) for GitHub and GitLab Enterprise PR reviews, issue management,
-      and code discussion inside `C-c g g`, authenticated through `~/.authinfo.gpg`.
+      and code discussion directly from Magit's status buffer (`C-x g`, `@`), respecting that Hell Emacs
+      dropped `C-c g` duplicates and keeps package default keys (roadmap 13.6).
 - [ ] 22.1 **AI & LLM Pair Programming (`:tools llm`)**:
       Native, privacy-first AI companion (`gptel` / `ellama`) with support for local offline models
       (Ollama, llama.cpp) and corporate/cloud APIs (Gemini, Claude, OpenAI).
-      In-buffer code explanation, test generation, and AST-aware refactoring. 100% opt-in with zero background telemetry.
+      In-buffer code explanation, test generation, and AST-aware refactoring. 100% opt-in with zero
+      background telemetry. Keys: under the code group (`C-c c a` AI assistant) or package defaults.
 
 ---
 

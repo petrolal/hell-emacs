@@ -18,23 +18,25 @@ Everything goes through `bin/hell` (sh wrapper → `emacs --batch` → `hell-cli
 ```sh
 bin/hell sync                 # install packages, build grammars, byte-compile, generate the profile init file
 bin/hell doctor               # health checks (core + each enabled module's doctor.el)
+bin/hell check                # static analysis & linting quality gate (or: bin/hell lint)
 bin/hell -p dev sync          # -p/--profile, --helldir, -D, -! go before the command
 bin/hell -p safe-mode sync    # core only, for bisecting a broken config
 bin/hell emacs                # run this checkout interactively
 bin/hell licenses | sbom      # read every hell-component! / grammar :license pin
 ```
 
-**There are no tests, and none should be added** (removed 2026-09-30). A change is checked by syncing and starting Emacs against throwaway XDG directories, never the real config:
+**There are no tests, and none should be added** (removed 2026-09-30). A change is checked by syncing and starting Emacs against throwaway XDG directories, passing `doctor` and the `check` static analysis quality gate:
 
 ```sh
 T=$(mktemp -d)
 export XDG_CONFIG_HOME=$T/config XDG_DATA_HOME=$T/data \
        XDG_CACHE_HOME=$T/cache XDG_STATE_HOME=$T/state HELLDIR=$T/config/hell-emacs
 bin/hell install --no-env     # creates the config, syncs, runs doctor
+bin/hell check                # static analysis & linting quality gate must pass
 bin/hell emacs                # *Messages* shows "Hell Emacs ready in N.NNs"
 ```
 
-A full sync downloads language servers and takes minutes: run it in the background. CI (`.github/workflows/ci.yml`) runs install, `doctor`, `licenses`, `sbom` on Emacs 29.1 and 30.1.
+A full sync downloads language servers and takes minutes: run it in the background. CI (`.github/workflows/ci.yml`) runs install, `doctor`, `check`, `licenses`, `sbom` on Emacs 29.1 and 30.1.
 
 ## Architecture: the parts that bite
 
@@ -48,16 +50,18 @@ A full sync downloads language servers and takes minutes: run it in the backgrou
 
 ## Rules (from `docs/roadmap.md`)
 
-- **Stock Emacs keys.** No Evil, no `SPC` leader, no modal or single-key hijacks, no IntelliJ keymap. Hell Emacs keys live under `C-c` in Doom's non-evil groups (`C-c h` Hell Emacs' own, `C-c c` code, `C-c t` toggles, ...; `hell-leader-def`), and a mode's own commands on the `C-c l` localleader (`hell-localleader-def`); a `C-c` key never repeats a stock key's command, and nothing is added inside Emacs' own prefixes (`C-x`, `M-g`, `M-s`); installed packages keep their own default keys exactly as they ship them (Magit's `C-x g`, diff-hl's `C-x v`, lsp-mode's `s-l`, corfu's popup keys, which-key's `C-h`): Hell Emacs never rebinds, unsets or moves them; Hell Emacs' own config may remap a stock command to a package's richer one (`consult-buffer` on `C-x b`); `TAB` indents. The deliberate departures (as-you-type completion, `delete-selection-mode`, `electric-pair-mode`) are listed in docs/keybindings.md.
+- **Stock Emacs keys.** No Evil, no `SPC` leader, no modal or single-key hijacks, no IntelliJ keymap. Hell Emacs keys live under `C-c` in Doom's non-evil groups (`C-c h` Hell Emacs' own, `C-c c` code, `C-c l` localleader, `C-c s` search; `hell-leader-def`); a `C-c` key never repeats a stock key's command, and nothing is added inside Emacs' own prefixes (`C-x`, `M-g`, `M-s`, `C-x t`); installed packages keep their own default keys exactly as they ship them (Magit's `C-x g`, diff-hl's `C-x v`, lsp-mode's `s-l`, corfu's popup keys, which-key's `C-h`): Hell Emacs never rebinds, unsets or moves them; Hell Emacs' own config may remap a stock command to a package's richer one (`consult-buffer` on `C-x b`); `TAB` indents. The deliberate departures (as-you-type completion, `delete-selection-mode`, `electric-pair-mode`) are listed in docs/keybindings.md.
+- **Nothing Emacs already does (roadmap 13.7–13.10).** Never duplicate or wrap a built-in feature or another module: `project.el` over Projectile, stock mode-line over custom modelines, built-in tree-sitter modes (`yaml-ts-mode`, `dockerfile-ts-mode`, `typescript-ts-mode`, `tsx-ts-mode`) over third-party packages, built-in `python-mode` and `ruby-mode`, stock Dired `s` and wdired `C-x C-q` over dired-quick-sort, stock window placement (no `:ui popup`), stock prompts (`yes`/`no`), and stock quitting (`C-x C-c`).
 - **`doctor` messages link to docs.** Every `hell-doctor-warn` / `-error` in core and the modules starts with `:topic 'NAME`, matching a `#### Doctor: NAME` entry in docs/guide.md's "What doctor's messages mean"; a new message needs one.
 - **The identity is fixed:** `hell-inferno` theme and palette, banner/logos, the Altar, themed messages (`[FORGE IGNITED]` …). `hell-ux-enable nil` is the neutral opt-out.
 - **Built-ins first** (`project.el`, flymake, treesit, `compile`, …); third-party only where the JVM workflow needs it.
 - **Pinned and reproducible.** Packages only via `package!` in a `packages.el` (never `package-install`). Every download goes through `hell-sync-download-verified` (SHA-256) inside `with-hell-network`, is declared with `hell-component!` in the module's `+paths.el`, and grammars carry a `:license`. Language servers get a pinned installer in the module's `cli.el` registered with `hell-lsp-pin-installer`. Nothing installs mid-session.
 - **XDG only**: never `~/.emacs.d` or `$HOME`; use `hell-data-dir`, `hell-cache-dir`, `hell-state-file`, etc. No telemetry.
 - **Startup under 0.12s** for a synced profile; keep work lazy (autoloads, `after!`, `hell-first-*-hook`).
+- **Quality gate:** Every change must pass `bin/hell check` (static analysis and linting quality gate) clean without errors.
 - Every source file carries the GPL-3.0-or-later header with the `petrolal` copyright.
 - Commits use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
 
 ## Work tracking
 
-Take the next unchecked item in `docs/roadmap.md` → "Open work, in order". When done and verified (throwaway sync, `doctor` passes, startup within budget if touched), tick it as `- [x] Thing (YYYY-MM-DD: what was done, how it was checked)`; partial work is `- [/]`. Add new work to the roadmap before starting it. Code comments cite roadmap item numbers ("12.7", "Phase 16").
+Take the next unchecked item in `docs/roadmap.md` → "Open work, in order". When done and verified (throwaway sync, `doctor` and `check` pass, startup within budget if touched), tick it as `- [x] Thing (YYYY-MM-DD: what was done, how it was checked)`; partial work is `- [/]`. Add new work to the roadmap before starting it. Code comments cite roadmap item numbers ("12.7", "Phase 16").

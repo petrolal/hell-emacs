@@ -321,11 +321,15 @@ Hell Emacs has strict standards for reproducibility and performance:
    ```sh
    bin/hell doctor
    ```
-2. **Verify Checksums & Lock Integrity**:
+2. **Verify Static Analysis & Linting Quality Gate**:
+   ```sh
+   bin/hell check          # or: bin/hell lint
+   ```
+3. **Verify Checksums & Lock Integrity**:
    ```sh
    bin/hell verify
    ```
-3. **Verify Licenses & SBOM**:
+4. **Verify Licenses & SBOM**:
    ```sh
    bin/hell licenses
    bin/hell sbom
@@ -334,7 +338,9 @@ Hell Emacs has strict standards for reproducibility and performance:
 A full sync of the default modules downloads the language servers and
 takes minutes the first time. After changing core or a module, sync again
 before measuring startup: otherwise you're running the last sync's files.
-CI (`.github/workflows/ci.yml`) installs Hell Emacs and runs `doctor`,
+Every change must adhere to the core rules (stock Emacs keys, packages keep
+their own keys, and "Nothing Emacs already does" deduplication). CI
+(`.github/workflows/ci.yml`) installs Hell Emacs and runs `doctor`, `check`,
 `licenses` and `sbom` on Emacs 29.1 and 30.1 for every push.
 
 **Commits** follow Conventional Commits (`feat:`, `fix:`, `docs:`,
