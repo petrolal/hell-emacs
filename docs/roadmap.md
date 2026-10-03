@@ -580,14 +580,16 @@ iconography (`nerd-icons`):
       `:term eshell`, `:term shell`, `:term eat`, `:term vterm`,
       `:checkers syntax`, `:checkers spell`, `:checkers grammar`
       (2026-10-03: all 11 modules implemented with .hellmodule, packages.el, config.el, doctor.el, quality gate verified).
-- [ ] 25.1 **Batch 3: Tools & OS Integration (`:tools`, `:os`)**:
+- [x] 25.1 **Batch 3: Tools & OS Integration (`:tools`, `:os`)**:
       `:tools ansible`, `:tools biblio`, `:tools eval`, `:tools pass`,
       `:tools pdf`, `:tools rgb`, `:tools taskrunner`, `:tools tmux`, `:tools upload`,
-      `:os macos`, `:os tty`.
-- [ ] 26.1 **Batch 4: Core Language Modules (`:lang`)**:
+      `:os macos`, `:os tty`
+      (2026-10-03: all 11 modules implemented with .hellmodule, packages.el, config.el, doctor.el, quality gate verified).
+- [x] 26.1 **Batch 4: Core Language Modules (`:lang`)**:
       `:lang rust`, `:lang go`, `:lang python`, `:lang cc`, `:lang php`,
       `:lang ruby`, `:lang csharp`, `:lang lua`, `:lang nix`, `:lang elixir`,
-      `:lang haskell`, `:lang zig`, `:lang dart`, `:lang toml`, `:lang graphql`.
+      `:lang haskell`, `:lang zig`, `:lang dart`, `:lang toml`, `:lang graphql`
+      (2026-10-03: all 15 modules verified and implemented with .hellmodule, packages.el, config.el, doctor.el, quality gate verified).
 - [ ] 27.1 **Batch 5: Extended Languages & Formats (`:lang`)**:
       `:lang agda`, `:lang beancount`, `:lang cmake`, `:lang coq`, `:lang crystal`,
       `:lang dhall`, `:lang elm`, `:lang erlang`, `:lang ess`, `:lang fortran`,
