@@ -74,7 +74,10 @@
   (hell-modules-read-config)
   (hell-modules-install-packages 'ignore-lock)
   (defvar elpaca-lock-file-functions)
-  (let ((elpaca-lock-file-functions nil)) ; every package, as `bin/hell lock'
+  ;; Every installed package, as `bin/hell lock'; a failed one has no
+  ;; commit to record.
+  (let ((elpaca-lock-file-functions
+         (list (lambda (e) (eq (elpaca<-status e) 'finished)))))
     (elpaca-write-lock-file hell-default-lock-file))
   (let ((failed (cl-loop for (name . plist) in hell-packages
                          for e = (and (hell-package--order name plist) (elpaca-get name))
@@ -82,7 +85,7 @@
                          collect name)))
     (message "Wrote %s%s" (abbreviate-file-name hell-default-lock-file)
              (if failed
-                 (format "\nThese failed to build (their commits are still locked): %s"
+                 (format "\nThese failed to build (not locked): %s"
                          (mapconcat #'symbol-name failed ", "))
                ""))))
 

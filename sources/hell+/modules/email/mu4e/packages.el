@@ -26,7 +26,8 @@
 
 ;;; Code:
 
-(package! mu4e :built-in 'prefer)
+;; mu4e comes with mu (the indexer it needs), not from an archive.
+(package! mu4e :built-in t)
 
 (provide 'hell-email-mu4e-packages)
 ;;; packages.el ends here

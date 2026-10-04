@@ -26,7 +26,10 @@
 
 ;;; Code:
 
-(package! agda2-mode)
+;; Not on any archive: Agda ships it in its own repository.
+(package! agda2-mode
+  :recipe (:host github :repo "agda/agda"
+           :files ("src/data/emacs-mode/*.el")))
 
 (provide 'hell-lang-agda-packages)
 ;;; packages.el ends here

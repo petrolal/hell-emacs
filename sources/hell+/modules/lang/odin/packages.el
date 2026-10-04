@@ -28,7 +28,8 @@
 
 (depends-on! :tools lsp)
 
-(package! odin-mode)
+(package! odin-mode
+  :recipe (:host github :repo "mattt-b/odin-mode"))
 
 (provide 'hell-lang-odin-packages)
 ;;; packages.el ends here

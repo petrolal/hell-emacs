@@ -41,6 +41,15 @@
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
 
+;; Batch sessions (bin/hell) never open Elpaca's log UI. It would show in
+;; the batch frame's window, and Elpaca then re-renders all of it on every
+;; package's every status change: memory and time that grow with the
+;; square of the package count (tens of GB for the whole catalog). Sync
+;; reports failures itself (`hell-sync--check-failures').
+(defvar elpaca-log-functions)
+(when noninteractive
+  (setq elpaca-log-functions nil))
+
 (defun hell-packages-bootstrap ()
   "Load Elpaca, installing it first if needed. Safe to call repeatedly."
   (require 'hell-elpaca))

@@ -28,7 +28,9 @@
 
 (depends-on! :tools lsp)
 
-(package! lean4-mode)
+(package! lean4-mode
+  :recipe (:host github :repo "leanprover-community/lean4-mode"
+           :files ("*.el" "data")))
 
 (provide 'hell-lang-lean-packages)
 ;;; packages.el ends here
