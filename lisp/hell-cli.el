@@ -389,7 +389,9 @@ XDG_STATE_HOME.")))
       (error
        (hell-cli--say "Error: %s" (error-message-string err))
        (when init-file-debug
-         (hell-cli--say "%s" (backtrace-to-string)))
+         (hell-cli--say "%s" (if (fboundp 'backtrace-to-string)
+                                 (backtrace-to-string)
+                               (with-output-to-string (backtrace)))))
        (kill-emacs 2)))))
 
 (provide 'hell-cli)
