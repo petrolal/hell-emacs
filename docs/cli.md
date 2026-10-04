@@ -111,7 +111,8 @@ Manages isolated Hell Emacs profiles:
 **`lock`**
 Records the exact commit of every package in
 `~/.config/hell-emacs/packages.lock.eld`; later syncs install those. Commit it
-with your config to reproduce it elsewhere.
+with your config to reproduce it elsewhere. Without one, sync installs the
+commits Hell Emacs was tested with, from `static/packages.lock.eld`.
 
 **`verify`**
 Checks that every file sync installed still has its SHA-256, and every

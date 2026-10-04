@@ -85,6 +85,19 @@
     (should-not (hell-package-disabled-p 'bar))
     (should-not (hell-package-disabled-p 'baz))))
 
+(ert-deftest hell-test-lock-file-in-use ()
+  (let* ((dir (make-temp-file "hell-test-lock" t))
+         (hell-lock-file (expand-file-name "user.eld" dir))
+         (hell-default-lock-file (expand-file-name "default.eld" dir)))
+    (unwind-protect
+        (progn
+          (should-not (hell-lock-file-in-use))
+          (write-region "()" nil hell-default-lock-file)
+          (should (equal (hell-lock-file-in-use) hell-default-lock-file))
+          (write-region "()" nil hell-lock-file)
+          (should (equal (hell-lock-file-in-use) hell-lock-file)))
+      (delete-directory dir t))))
+
 ;;; hell-cli ---------------------------------------------------------------
 
 (ert-deftest hell-test-cli-flag ()

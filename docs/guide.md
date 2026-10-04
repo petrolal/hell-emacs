@@ -406,6 +406,8 @@ hell lock
 ```
 This writes `~/.config/hell-emacs/packages.lock.eld`. When you commit and share this lockfile, every teammate's `hell sync` will install the exact same commit for every package.
 
+Without a lock file of your own, sync installs from `static/packages.lock.eld`: the commits this Hell Emacs release was tested with. `hell upgrade` moves past them to the newest commits (and rewrites your own lock file, if you have one). Maintainers regenerate the shipped lock with `make lock`.
+
 ---
 
 ### Releases, Channels, and Support

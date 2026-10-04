@@ -644,10 +644,20 @@ latest ones, so a config can be reproduced on another machine.  It sits
 next to your config (or in the team layer) so you can version it
 together.  `bin/hell upgrade' rewrites it after updating.")
 
+(defvar hell-default-lock-file (expand-file-name "static/packages.lock.eld" hell-dir)
+  "The commits Hell Emacs was tested with, written by `make lock'.
+Sync installs from it when there's no `hell-lock-file', so a fresh install
+gets the same packages as everyone else's, not whatever is newest that day.
+It covers every module's packages, with every flag.")
+
+(defun hell-lock-file-in-use ()
+  "The lock file sync installs from: yours, else the default; nil if neither."
+  (seq-find #'file-exists-p (list hell-lock-file hell-default-lock-file)))
+
 (defun hell-modules-install-packages (&optional ignore-lock)
   "Read every packages.el, then install and activate the declared packages.
 Loads Elpaca, and blocks until it has finished, so module config can
-use the packages. Uses `hell-lock-file' unless IGNORE-LOCK."
+use the packages. Uses `hell-lock-file-in-use' unless IGNORE-LOCK."
   (with-hell-network
     (hell-modules--install-packages ignore-lock))
   ;; Inside, the packages' :env only reached the fetching and building (the
@@ -659,9 +669,7 @@ use the packages. Uses `hell-lock-file' unless IGNORE-LOCK."
 Non-nil IGNORE-LOCK installs without the lock file's pins."
   (hell-packages-bootstrap)
   (defvar elpaca-lock-file)
-  (setq elpaca-lock-file (and (not ignore-lock)
-                              (file-exists-p hell-lock-file)
-                              hell-lock-file))
+  (setq elpaca-lock-file (and (not ignore-lock) (hell-lock-file-in-use)))
   (hell-modules-read-packages)
   (hell-packages-apply-env)
   (let ((rebuild (hell-packages--env-changed)))

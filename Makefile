@@ -20,7 +20,7 @@ CORE  := $(filter-out lisp/hell-elpaca.el,$(wildcard lisp/hell-*.el)) \
          $(wildcard lisp/cli/*.el lisp/lib/*.el)
 TESTS := $(wildcard test/*-test.el)
 
-.PHONY: all compile checkdoc test clean
+.PHONY: all compile checkdoc test lock clean
 
 all: compile test
 
@@ -44,6 +44,13 @@ checkdoc:
 ## test: run the ERT suite in test/.
 test:
 	@$(BATCH) -L test $(addprefix -l ,$(TESTS)) -f ert-run-tests-batch-and-exit
+
+## lock: regenerate static/packages.lock.eld, the commits a fresh install gets:
+## every module's packages, newest (or :pin), in its own HELLDIR. Slow and
+## needs the network; test the result before committing it.
+lock: export HELLDIR := $(TMP)/lock
+lock:
+	@$(BATCH) -l scripts/default-lock.el
 
 clean:
 	@rm -rf $(TMP)

@@ -50,6 +50,7 @@
 custom.el
 custom-*.el
 packages.lock.eld
+!/static/packages.lock.eld
 recentf*
 bookmarks*
 places*
