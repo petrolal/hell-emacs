@@ -21,12 +21,16 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; IntelliJ IDEA and Eclipse to Hell Emacs cheat sheet and interactive
 ;; search tool (`M-x hell-where-is-intellij' on `C-c h k').
 ;;
 ;; Loaded on demand through `(hell-require 'hell-lib 'intellij)'.
 
 ;;; Code:
+
+(declare-function hell-provide "hell-lib" (feature part))
 
 (defconst hell-intellij-actions
   '(;; Finding things
@@ -227,7 +231,8 @@
   "Registry of IntelliJ IDEA / Eclipse actions and Hell Emacs equivalents.")
 
 (defun hell-intellij--format-candidate (entry max-action max-intellij max-key)
-  "Format an ENTRY with aligned columns."
+  "Format an ENTRY with aligned columns.
+MAX-ACTION, MAX-INTELLIJ and MAX-KEY are the columns' widths."
   (let* ((action (or (plist-get entry :action) ""))
          (intellij (or (plist-get entry :intellij) ""))
          (key (or (plist-get entry :key) ""))
@@ -245,7 +250,8 @@
 (defun hell-where-is-intellij (&optional query)
   "Look up any IntelliJ/Eclipse key/action and discover its Hell shortcut.
 When invoked interactively, opens a searchable fuzzy prompt.
-Selecting candidate displays documentation and offers to run command."
+Selecting candidate displays documentation and offers to run command.
+QUERY is the key or action to look up."
   (interactive)
   (let* ((max-action 38)
          (max-intellij 28)

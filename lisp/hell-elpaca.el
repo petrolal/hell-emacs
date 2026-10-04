@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Hell Emacs uses Elpaca (https://github.com/progfolio/elpaca) rather
 ;; than straight.el.  Both give reproducible, git-based installs
 ;; instead of package.el's tarball snapshots, but Elpaca installs
@@ -39,7 +41,9 @@
 ;; The bootstrap block below is Elpaca's official installer (see its
 ;; README's "Installer" section), adapted only to redirect Elpaca's
 ;; own directory into `hell-data-dir' instead of
-;; `user-emacs-directory' (the git checkout), and to pin Elpaca itself:
+;; `user-emacs-directory' (the git checkout) -- those directory
+;; variables live in hell-packages.el, which the CLI reads without
+;; loading Elpaca -- and to pin Elpaca itself:
 ;; `:ref' is a commit (it installs every other package, so it's never
 ;; fetched from wherever master is), cloned in full (`:depth' nil),
 ;; since a shallow clone only holds the branch's tip.
@@ -48,10 +52,8 @@
 
 ;;; Code:
 
+(require 'hell-packages)               ; `elpaca-directory' and friends
 (defvar elpaca-installer-version 0.12)
-(defvar elpaca-directory (expand-file-name "elpaca/" hell-data-dir))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
                                :ref "78b8e7cc98c198c8dbeb18140649e2d668126712" ; 2026-09-11
                                :depth nil :inherit ignore

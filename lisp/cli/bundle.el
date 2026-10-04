@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Installing Hell Emacs where there is no internet (Phase 12.1).
 ;;
 ;; `bin/hell bundle OUT.tar.zst', on a connected machine, syncs, then
@@ -297,7 +299,8 @@ every module (with its flags) this config enables."
     (error "The bundle's manifest lists an unsafe file name: %S" name)))
 
 (defun hell-bundle--names (dir &optional prefix)
-  "The names of everything under DIR, relative to it, not following links."
+  "The names of everything under DIR, relative to it, not following links.
+Each name starts with PREFIX."
   (mapcan (lambda (child)
             (let ((name (concat prefix (file-name-nondirectory child))))
               (cons name (and (not (file-symlink-p child)) (file-directory-p child)

@@ -21,10 +21,15 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; The stock settings Hell Emacs changes, in every session (Doom v3's
 ;; lisp/doom-emacs.el). Loaded right after hell-core.el.
 
 ;;; Code:
+
+(declare-function hell-start "hell-core" ())
+(declare-function hell-init-file "hell-core" ())
 
 ;;; Sane global defaults --------------------------------------------------
 

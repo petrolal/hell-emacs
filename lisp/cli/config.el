@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; New modules are enabled by default in static/init.example.el, which is
 ;; copied only when you have no config yet; your init.el is yours and is
 ;; never rewritten behind your back. So a config made before a module
@@ -44,6 +46,7 @@
 
 (defvar hell-dir)                   ; early-init.el
 (defvar hell-user-dir)
+(declare-function hell-module-key-string "hell-modules" (key))
 
 (defvar hell-config-example-file (expand-file-name "static/init.example.el" hell-dir)
   "The config new users start from; what it enables is on by default.")
@@ -134,6 +137,7 @@ defaults apply, so nothing is missing."
                     (hell-config-default-modules))))))
 
 (defun hell-config--key-string (key)
+  "Module KEY as a string, as `hell-module-key-string'."
   (hell-module-key-string key))
 
 (defun hell-config-report-lines (&optional init)
@@ -188,9 +192,11 @@ and strings, and a module's options (`(java :depth 5)'), don't count."
     (nreverse groups)))
 
 (defun hell-config--end-of-group (group groups end)
-  "Where lines join GROUP (in GROUPS, from `hell-config--group-positions'):
-after its last line, before any blank lines that separate it from the
-next group. For the last group, just before the form's closing line."
+  "Return where lines join GROUP in GROUPS.
+GROUPS is from `hell-config--group-positions'. That's after its last
+line, before any blank lines that separate it from the next group.
+For the last group, just before the form's closing line, which ends
+at END."
   (save-excursion
     (let ((next (cadr (member (assq group groups) groups))))
       (if next

@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Packages the engine itself would need, read before any module's
 ;; packages.el. None: like Doom v3's lisp/packages.el, it's empty, and the
 ;; packages every configuration gets are core's own module's

@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Several JDKs side by side (Phase 12.3). `bin/hell sync' looks for
 ;; them where JDKs get installed -- SDKMAN, /usr/lib/jvm, macOS's
 ;; JavaVirtualMachines, asdf, jenv, mise -- and JAVA_HOME, and stores what
@@ -104,9 +106,11 @@ isn't a Java version."
 
 ;;; Finding them -------------------------------------------------------------------
 
-(defvar hell-jdk-roots nil
+(defcustom hell-jdk-roots nil
   "Directories holding one JDK per subdirectory, searched by `bin/hell sync'.
-nil searches `hell-jdk-default-roots'.")
+nil searches `hell-jdk-default-roots'."
+  :type '(repeat directory)
+  :group 'hell)
 
 (defvar hell-jdk-file (expand-file-name "jvm/jdks.eld" hell-data-dir)
   "Where `bin/hell sync' stores the JDKs it found.")

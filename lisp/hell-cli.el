@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; `bin/hell' runs Emacs in batch mode, loads early-init.el and this
 ;; file, and calls `hell-cli-main' with the command-line arguments.
 ;; Each command is a `hell-cli-COMMAND' function; see `hell-cli-help'.
@@ -44,7 +46,7 @@
   (hell-require 'hell-cli 'check))
 
 (require 'subr-x)
-(declare-function backtrace-to-string "subr-x" (&optional frames))
+(declare-function backtrace-to-string "backtrace" (&optional frames))
 
 ;;; Output -----------------------------------------------------------------------
 
@@ -63,13 +65,15 @@ warning of a section points to its troubleshooting entry again."
   "How many `error'-level results `hell-cli--check' printed.")
 
 (defun hell-cli-doctor-docs (topic)
-  "Where TOPIC's troubleshooting entry is: this checkout's guide, so it
-matches the Hell Emacs that printed it, and works offline."
+  "Return where TOPIC's troubleshooting entry is.
+That's this checkout's guide, so it matches the Hell Emacs that printed
+it, and works offline."
   (format "%s#doctor-%s" (abbreviate-file-name (expand-file-name "docs/guide.md" hell-dir))
           topic))
 
 (defun hell-cli--check (level format-string &rest args)
   "Print a check result. LEVEL is `ok', `warn', `error' or `info'.
+FORMAT-STRING and ARGS are as in `format'.
 FORMAT-STRING may be preceded by `:topic' and a symbol: a warning or an
 error then points to that troubleshooting entry in docs/guide.md
 \(\"What doctor's messages mean\"), once for a run of lines on the same
@@ -88,8 +92,10 @@ topic."
         (hell-cli--say "      see %s" (hell-cli-doctor-docs topic)))
       (setq hell-cli--last-topic topic))))
 
-(defvar hell-cli-jobs 16
-  "How many processes `hell-cli--run-all' runs at once.")
+(defcustom hell-cli-jobs 16
+  "How many processes `hell-cli--run-all' runs at once."
+  :type 'natnum
+  :group 'hell)
 
 (defun hell-cli--run-all (commands)
   "Run COMMANDS, each a list (PROGRAM ARG...), up to `hell-cli-jobs' at once.
@@ -137,13 +143,15 @@ An error if it's there without a value."
       value)))
 
 (defun hell-cli--flag (args name)
-  "Whether ARGS say --NAME (t), --no-NAME (`no'), or neither (nil), as Doom's
+  "Return whether ARGS turn the flag NAME on, off, or neither.
+That's t for --NAME, `no' for --no-NAME, else nil, as Doom's
 --flag/--no-flag options."
   (cond ((member (concat "--no-" name) args) 'no)
         ((member (concat "--" name) args) t)))
 
 (defun hell-cli-force-p (&optional args)
-  "Non-nil if every prompt is to be accepted: `bin/hell -!' (--force)."
+  "Non-nil if every prompt is to be accepted: `bin/hell -!' (--force).
+That's when ARGS hold -! or --force, or HELL_FORCE is set."
   (or (member (getenv "HELL_FORCE") '("1" "t" "true" "yes"))
       (and args (or (member "-!" args) (member "--force" args)))))
 
@@ -164,14 +172,20 @@ Without a person to answer (no terminal), return DEFAULT; with
       (error "--modules must start with a group, as in \":lang java kotlin :tools lsp\""))
     modules))
 
-(defvar hell-upgrade-channel 'stable
-  "What `bin/hell upgrade' moves Hell Emacs itself to: `stable', the latest
-release (the tag vMAJOR.MINOR.PATCH), or `main', the development branch.
-`upgrade --channel NAME' overrides it for one run. Set it in your init.el.")
+(defcustom hell-upgrade-channel 'stable
+  "What `bin/hell upgrade' moves Hell Emacs itself to.
+Either `stable', the latest release (the tag vMAJOR.MINOR.PATCH), or
+`main', the development branch.
+`upgrade --channel NAME' overrides it for one run. Set it in your init.el."
+  :type '(choice (const stable) (const main))
+  :group 'hell)
 
-(defvar hell-upgrade-verify-tags nil
-  "Non-nil: the stable channel only checks out a release whose tag's signature
-`git verify-tag' accepts (the signer's key must be in your keyring).")
+(defcustom hell-upgrade-verify-tags nil
+  "Non-nil if the stable channel only checks out signed releases.
+That's a release whose tag's signature `git verify-tag' accepts (the
+signer's key must be in your keyring)."
+  :type 'boolean
+  :group 'hell)
 
 ;;; Commands: bin/hell-COMMAND ------------------------------------------
 
@@ -214,7 +228,8 @@ Hell Emacs' bin/, your config's bin/, then $HELLPATH's directories
   "Short names of commands, as `doom's.")
 
 (defun hell-cli-command-file (command)
-  "The file defining COMMAND: bin/hell-COMMAND, else its family's
+  "Return the file defining COMMAND.
+That's bin/hell-COMMAND, else its family's
 \(upgrade-self is bin/hell-upgrade's), as Doom v3's bin/doom-COMMAND,
 in the first of `hell-cli-load-path' that has it. Nil if there's none."
   (when (string-match-p "\\`[a-z][a-z-]*\\'" command)
@@ -389,9 +404,8 @@ XDG_STATE_HOME.")))
       (error
        (hell-cli--say "Error: %s" (error-message-string err))
        (when init-file-debug
-         (hell-cli--say "%s" (if (fboundp 'backtrace-to-string)
-                                 (backtrace-to-string)
-                               (with-output-to-string (backtrace)))))
+         (require 'backtrace)
+         (hell-cli--say "%s" (backtrace-to-string)))
        (kill-emacs 2)))))
 
 (provide 'hell-cli)

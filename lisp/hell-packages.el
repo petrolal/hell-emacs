@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Hell Emacs uses Elpaca (https://github.com/progfolio/elpaca), not
 ;; package.el or straight.el. Both Elpaca and straight.el give
 ;; reproducible, git-based installs instead of package.el's tarball

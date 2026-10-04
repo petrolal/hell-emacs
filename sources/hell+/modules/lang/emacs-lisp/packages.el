@@ -28,4 +28,3 @@
 (package! elisp-demos
   :recipe (:host github :repo "xuchunyang/elisp-demos")
   :pin "637001834b445e518a7b730266f8864fdcc1d294")
-

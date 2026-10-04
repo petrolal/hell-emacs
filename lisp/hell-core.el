@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Hell Emacs' heart (Doom v3's lisp/doom.el): what every session needs,
 ;; whichever modules are enabled. Everything in `lisp/' is engine
 ;; plumbing: no keybindings, no leader keys, no completion UI, that's
@@ -54,6 +56,15 @@
 ;;; Code:
 
 (require 'hell-lib)
+
+(defvar hell-dir)                  ; early-init.el
+(defvar hell-profile)              ; early-init.el
+(defvar hell-profile-dir)          ; early-init.el
+(defvar hell-user-dir)             ; early-init.el
+(defvar hell-cache-dir)            ; early-init.el
+(defvar hell-state-dir)            ; early-init.el
+(defvar hell--gc-cons-threshold)   ; early-init.el
+(defvar hell--gc-cons-percentage)  ; early-init.el
 
 (defgroup hell nil
   "The Hell Emacs distribution."
@@ -176,11 +187,15 @@ which come after it, from running."
 (defvar hell-incremental-packages nil
   "Features waiting to be loaded by `hell-load-incrementally'.")
 
-(defvar hell-incremental-first-idle-timer (if (daemonp) 0 2.0)
-  "Idle seconds after startup before incremental loading begins.")
+(defcustom hell-incremental-first-idle-timer (if (daemonp) 0 2.0)
+  "Idle seconds after startup before incremental loading begins."
+  :type 'number
+  :group 'hell)
 
-(defvar hell-incremental-idle-timer 0.75
-  "Idle seconds between two incrementally loaded features.")
+(defcustom hell-incremental-idle-timer 0.75
+  "Idle seconds between two incrementally loaded features."
+  :type 'number
+  :group 'hell)
 
 (defun hell-load-incrementally (features)
   "Queue FEATURES (a list of symbols) to load while Emacs is idle.
@@ -241,6 +256,19 @@ idle seconds. Features already loaded by then are skipped."
   (setq backup-directory-alist (list (cons "." backup-dir))
         auto-save-file-name-transforms (list (list ".*" auto-save-dir t))
         auto-save-list-file-prefix (expand-file-name ".saves-" auto-save-dir)))
+
+;; Set before their packages load, so declare them here.
+(defvar bookmark-default-file)
+(defvar savehist-file)
+(defvar save-place-file)
+(defvar recentf-save-file)
+(defvar tramp-persistency-file-name)
+(defvar eshell-directory-name)
+(defvar project-list-file)
+(defvar transient-history-file)
+(defvar transient-levels-file)
+(defvar transient-values-file)
+(defvar lsp-server-install-dir)
 
 (setq abbrev-file-name            (hell-state-file "abbrev_defs")
       bookmark-default-file       (hell-state-file "bookmarks")
@@ -327,8 +355,8 @@ only warns: it mustn't stop Emacs from starting."
 (defun hell-load-env-file (&optional file)
   "Apply the environment saved in FILE (default `hell-env-file').
 Its variables take precedence over the ones Emacs inherited; the rest
-are kept. Updates `exec-path' and `shell-file-name' to match. Returns
-non-nil if FILE existed and could be read."
+are kept. Updates the variables `exec-path' and `shell-file-name' to
+match. Returns non-nil if FILE existed and could be read."
   (let ((file (or file hell-env-file)))
     (when-let* (((file-readable-p file))
                 (vars (hell--read-env-file file)))

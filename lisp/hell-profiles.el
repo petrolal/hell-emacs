@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; As Doom v3's lisp/doom-profiles.el: `bin/hell sync' generates the
 ;; profile's init file, and Emacs starts from it (the entry point in
 ;; lisp/hell-emacs.el, or `hell-start' in batch). Hell Emacs has no
@@ -171,7 +173,7 @@ the file without its extension)."
 ;;; The parts ---------------------------------------------------------------
 
 (defun hell-profile--generate-init (data)
-  "Part 05: the profile's data, and the packages on `load-path'."
+  "Part 05: the profile's DATA, and the packages on `load-path'."
   (hell-profile--write-part
    "05-hell.init.el"
    `((setq hell-profile-generated
@@ -233,8 +235,9 @@ as recorded at sync time."
      (add-hook 'hell-startup-functions #'hell--startup-loaddefs-modules 60))))
 
 (defun hell-profile--generate-loaddefs-packages (data)
-  "Part 70: every package's autoloads (one compiled file, written by sync),
-and their Info manuals."
+  "Part 70: every package's autoloads and Info manuals.
+The autoloads are one compiled file, written by sync; the packages are
+DATA's."
   (let ((info-dirs (seq-filter (lambda (dir) (file-exists-p (expand-file-name "dir" dir)))
                                (plist-get data :load-path))))
     (hell-profile--write-part

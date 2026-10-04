@@ -18,6 +18,7 @@
 # User config in root if $HELLDIR is this checkout.
 /*.el
 !/early-init.el
+!/.dir-locals.el
 /user-lisp/
 /themes/
 /snippets/

@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Every connection Hell Emacs itself makes, set up for a corporate network.
 ;; In your init.el:
 ;;
@@ -50,25 +52,35 @@
 (require 'subr-x)
 (require 'hell-lib)
 
+(defvar hell-dir)       ; early-init.el
+(defvar hell-core-dir)  ; early-init.el
 (defvar url-proxy-services)
 (defvar gnutls-trustfiles)
 
-(defvar hell-proxy nil
+(defcustom hell-proxy nil
   "The HTTP(S) proxy, as a URL (\"http://proxy.corp.example:3128\").
-nil uses $HTTPS_PROXY or $HTTP_PROXY, as `bin/hell env' saved them.")
+nil uses $HTTPS_PROXY or $HTTP_PROXY, as `bin/hell env' saved them."
+  :type '(choice (const :tag "From the environment" nil) string)
+  :group 'hell)
 
-(defvar hell-no-proxy nil
+(defcustom hell-no-proxy nil
   "Hosts reached without `hell-proxy': names, or \".domain\" suffixes.
-nil uses $NO_PROXY.")
+nil uses $NO_PROXY."
+  :type '(repeat string)
+  :group 'hell)
 
-(defvar hell-ca-bundle nil
-  "A PEM file with your company's root CA(s), trusted on top of the system's.")
+(defcustom hell-ca-bundle nil
+  "A PEM file with your company's root CA(s), trusted on top of the system's."
+  :type '(choice (const nil) file)
+  :group 'hell)
 
-(defvar hell-mirrors nil
+(defcustom hell-mirrors nil
   "Alist of (UPSTREAM-PREFIX . MIRROR-PREFIX), for Hell Emacs' own fetches.
 A URL starting with UPSTREAM-PREFIX is fetched from MIRROR-PREFIX
 instead, with the rest of the URL kept. One table covers Artifactory's
-and Nexus' GitHub, Maven and generic remote repositories.")
+and Nexus' GitHub, Maven and generic remote repositories."
+  :type '(alist :key-type string :value-type string)
+  :group 'hell)
 
 ;;; The settings in effect ------------------------------------------------------
 
@@ -173,6 +185,7 @@ Written again whenever a file it's made from is newer."
         (file-name-directory (directory-file-name (file-name-directory (file-truename java)))))))
 
 (defun hell-net--jdk-cacerts ()
+  "The JDK's cacerts file, if there's a JDK and it's readable."
   (when-let* ((home (hell-net-java-home)))
     (let ((file (expand-file-name "lib/security/cacerts" home)))
       (and (file-readable-p file) file))))
@@ -303,8 +316,10 @@ $HTTPS_PROXY itself."
 (declare-function url-user "url-parse")
 (declare-function url-password "url-parse")
 
-(defvar hell-net-probe-timeout 10
-  "Seconds `hell-net-probe' waits for each step.")
+(defcustom hell-net-probe-timeout 10
+  "Seconds `hell-net-probe' waits for each step."
+  :type 'natnum
+  :group 'hell)
 
 (defun hell-net--proxied-p (host)
   "Non-nil if connections to HOST go through the proxy."
@@ -525,7 +540,8 @@ mirrors (`hell-net-environment')."
      ,@body))
 
 (defun hell-net--mirror-a (args)
-  "`url-retrieve-internal' fetches through mirror, in `with-hell-network'."
+  "`url-retrieve-internal' fetches through mirror, in `with-hell-network'.
+Rewrites the URL in ARGS."
   (if (and hell-net--active hell-mirrors (stringp (car args)))
       (cons (hell-net-rewrite (car args)) (cdr args))
     args))
@@ -539,12 +555,15 @@ mirrors (`hell-net-environment')."
 
 ;;; Downloading a file ---------------------------------------------------------
 
-(defvar hell-net-curl 'auto
+(defcustom hell-net-curl 'auto
   "The curl `hell-net-download' streams downloads with.
 `auto' finds it on the PATH; nil always uses url.el, which holds the
-whole download in memory first.")
+whole download in memory first."
+  :type '(choice (const auto) (const :tag "url.el" nil) file)
+  :group 'hell)
 
 (defun hell-net--curl ()
+  "The curl to download with, or nil: `hell-net-curl', found if `auto'."
   (if (eq hell-net-curl 'auto) (executable-find "curl") hell-net-curl))
 
 (defun hell-net-download (url file)

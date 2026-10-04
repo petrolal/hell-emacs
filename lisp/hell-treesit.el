@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Modules that offer a `+tree-sitter' flag (`:lang java', `:lang kotlin',
 ;; `:lang clojure') need a compiled grammar per language. Emacs can build
 ;; them itself (`treesit-install-language-grammar'), but it prompts, puts
@@ -48,10 +50,12 @@
 (require 'hell-core)
 (eval-and-compile (hell-require 'hell-lib 'net))
 
-(defvar hell-treesit-sources nil
-  "Grammar sources you pin yourself, over the modules' own: a list of
-(LANGUAGE URL LABEL COMMIT [DIRECTORY] :license SPDX), as in
-`hell-treesit!'. Set it in your init.el to pin a different release.")
+(defcustom hell-treesit-sources nil
+  "Grammar sources you pin yourself, over the modules' own.
+A list of \(LANGUAGE URL LABEL COMMIT [DIRECTORY] :license SPDX), as in
+`hell-treesit!'. Set it in your init.el to pin a different release."
+  :type '(repeat sexp)
+  :group 'hell)
 
 (defvar hell-treesit-declarations nil
   "Alist: module key -> (:grammars GRAMMARS :remap REMAP), from `hell-treesit!'.
@@ -78,7 +82,8 @@ profile otherwise.")
 
 (defmacro hell-treesit! (&rest args)
   "Declare this module's tree-sitter grammars and the modes they enable.
-Use it in the module's packages.el, under its +tree-sitter flag:
+ARGS is a plist of :grammars and :remap. Use it in the module's
+packages.el, under its +tree-sitter flag:
 
   (when (modulep! +tree-sitter)
     (hell-treesit!

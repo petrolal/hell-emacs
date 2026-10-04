@@ -21,17 +21,22 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Phase 13: Integrated Help, Info Manual & Module Introspection
 ;; - `C-c h h': `hell-help' (interactive JVM & shortcuts hub)
 ;; - `C-c h i': `hell-info-manual'
 ;; - `C-c h m' / `M-x hell-describe-module': module inspection buffer
 ;; - Info directory integration with docs/
 
+;;; Code:
+
 (require 'info)
 (require 'help-mode)
 (require 'subr-x)
 
 (defvar hell-dir)
+(declare-function hell-provide "hell-lib" (feature part))
 (declare-function hell-module-list "hell-modules")
 (declare-function hell-module-get "hell-modules")
 (declare-function hell-module-locate-path "hell-modules")
@@ -228,7 +233,7 @@ through, so its maps are searched too."
              (append active all)))))
 
 (defun hell-module-parse-key (str)
-  "Parse a module string like `:lang java' into a key cons `(:lang . java)'."
+  "Parse a module string STR like `:lang java' into a key `(:lang . java)'."
   (when (string-match "\\`\\(:[a-z]+\\)[ \t]+\\([a-z0-9-]+\\)\\'" (string-trim str))
     (cons (intern (match-string 1 str))
           (intern (match-string 2 str)))))

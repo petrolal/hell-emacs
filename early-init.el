@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; This file is loaded before `package.el', before `init.el', and
 ;; before the first frame is created.  Everything here exists to
 ;; make startup fast.  The frame keeps stock Emacs' chrome (menu bar,
@@ -74,7 +76,8 @@ Its library is in lib/ and the CLI's parts in cli/ (see `hell-require').")
   "Hell Emacs' own modules/: core's module, hell/ (Doom v3's modules/doom/).")
 
 (defconst hell-sources-dir (expand-file-name "sources/" hell-dir)
-  "Module sources: each holds a modules/ tree. The catalog is hell+/,
+  "Directory of module sources, each holding a modules/ tree.
+The catalog is hell+/,
 in this repository (Doom v3's sources/doom+/, a submodule there).")
 
 (defconst hell-profile

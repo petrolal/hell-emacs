@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Small macros and helpers every other Hell Emacs file (core and
 ;; modules alike) may use. Modeled on Doom Emacs' `doom-lib.el', cut
 ;; down to what Hell Emacs actually needs.
@@ -289,7 +291,7 @@ followed by either:
        nil)))
 
 (defmacro remove-hook! (hooks &rest rest)
-  "Remove functions from HOOKS. Takes the same arguments as `add-hook!'.
+  "Remove functions from HOOKS. REST is as in `add-hook!'.
 Lambdas can't be removed this way; use named functions (e.g. `defun'
 forms) for anything you may want to remove later."
   (declare (indent defun))
@@ -339,9 +341,10 @@ loaded. Unlike `with-eval-after-load', the feature name is not quoted.
     :around #\\='save-buffer
     (let ((inhibit-message t)) (apply fn args)))
 
-After the docstring come one or more HOW TARGET pairs, where HOW is an
+ARGLIST is the advice's argument list, and DOCSTRING its documentation.
+In BODY, one or more HOW TARGET pairs come first, where HOW is an
 `advice-add' combinator (:around, :before, :override, ...) and TARGET a
-function or quoted list of functions; then the body."
+function or quoted list of functions; then the body proper."
   (declare (indent defun) (doc-string 3))
   (unless (stringp docstring)
     (push docstring body)

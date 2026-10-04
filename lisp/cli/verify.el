@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; `bin/hell verify' (12.9, supply chain). Every download is checked
 ;; against its pinned SHA-256 when it's installed, and every package is
 ;; installed at a commit; this checks, any time later, that nothing has
@@ -129,6 +131,7 @@ Elpaca loaded."
 ;;; Checking ---------------------------------------------------------------------
 
 (defun hell-verify--read (file)
+  "FILE's data, if it's readable and in `hell-verify-format'; else nil."
   (when (file-readable-p file)
     (with-temp-buffer
       (insert-file-contents file)
@@ -189,8 +192,8 @@ Elpaca loaded."
     (sort problems #'string<)))
 
 (defun hell-verify--package-problems (packages lock)
-  "What differs between PACKAGES, (ID DIR COMMIT) as sync recorded them, the
-checkouts, and LOCK."
+  "Return what differs between PACKAGES, the checkouts, and LOCK.
+PACKAGES are (ID DIR COMMIT), as sync recorded them."
   (let ((locked (hell-verify--lock-refs lock))
         problems)
     (pcase-dolist (`(,id ,dir ,commit) packages)
@@ -215,9 +218,9 @@ checkouts, and LOCK."
     (nreverse problems)))
 
 (defun hell-verify-problems (manifest &optional lock)
-  "Everything installed that isn't as MANIFEST (installed.eld) recorded it,
-or as LOCK (a lock file) pins it: a list of one-line descriptions, nil
-when all is well."
+  "Return everything installed that isn't as recorded or pinned.
+That's as MANIFEST (installed.eld) recorded it, or as LOCK (a lock file)
+pins it: a list of one-line descriptions, nil when all is well."
   (if-let* ((recorded (hell-verify--read manifest)))
       (append (hell-verify--file-problems recorded)
               (hell-verify--package-problems (plist-get recorded :packages) lock))

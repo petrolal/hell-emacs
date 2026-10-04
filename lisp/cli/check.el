@@ -208,7 +208,9 @@ Return a plist (:files ALL-FILES :by-language ALIST-OF-(LANG . FILES))."
 ;;; Diagnostic Structure ------------------------------------------------------
 
 (defun hell-check--make-diag (lang tool severity file line col rule-id message)
-  "Create a unified diagnostic plist."
+  "Create a unified diagnostic plist.
+LANG and TOOL say what reported it; SEVERITY, FILE, LINE, COL, RULE-ID
+and MESSAGE what was reported."
   (let* ((sev (pcase (if (symbolp severity) (symbol-name severity) (downcase (or severity "warning")))
                 ((or "error" "err" "e") "Error")
                 ((or "warning" "warn" "w" "smell") "Warning")
@@ -360,7 +362,8 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
 ;;; JVM & Other Language Runners ----------------------------------------------
 
 (defun hell-check--parse-standard-diagnostics (lang tool output)
-  "Parse standard file:line:col or file:line diagnostic lines from OUTPUT."
+  "Parse standard file:line:col or file:line diagnostic lines from OUTPUT.
+LANG and TOOL are what produced it."
   (let (diags
         (lines (split-string output "\n" t)))
     (dolist (line lines)
@@ -384,7 +387,7 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
     (nreverse diags)))
 
 (defun hell-check-run-clojure (files)
-  "Run Clojure quality checks: kibit (linter) & clj-kondo (AST analysis)."
+  "Run Clojure quality checks on FILES: kibit & clj-kondo."
   (let (diags)
     ;; 1. clj-kondo
     (if (executable-find "clj-kondo")
@@ -419,7 +422,7 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
     diags))
 
 (defun hell-check-run-kotlin (files)
-  "Run Kotlin quality checks: ktlint (linter) & detekt (AST/complexity)."
+  "Run Kotlin quality checks on FILES: ktlint & detekt."
   (let (diags)
     ;; 1. ktlint
     (if (executable-find "ktlint")
@@ -458,7 +461,7 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
     diags))
 
 (defun hell-check-run-java (files)
-  "Run Java quality checks: checkstyle (linter) & spotbugs (AST/bytecode)."
+  "Run Java quality checks on FILES: checkstyle & spotbugs."
   (let (diags)
     ;; 1. checkstyle
     (if (executable-find "checkstyle")
@@ -497,7 +500,7 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
     diags))
 
 (defun hell-check-run-scala (files)
-  "Run Scala quality checks: scalafmt (linter) & scalafix (semantic analysis)."
+  "Run Scala quality checks on FILES: scalafmt & scalafix."
   (let (diags)
     ;; 1. scalafmt
     (if (executable-find "scalafmt")
@@ -535,7 +538,7 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
     diags))
 
 (defun hell-check-run-groovy-gradle (files)
-  "Run Groovy & Gradle quality checks: npm-groovy-lint / codenarc."
+  "Run Groovy & Gradle quality checks on FILES: npm-groovy-lint / codenarc."
   (let (diags)
     (cond
      ((executable-find "npm-groovy-lint")
@@ -588,7 +591,8 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
       default-directory)))
 
 (defun hell-check-run-gradle (wrapper jvm-files)
-  "Invoke Gradle wrapper standard check tasks (`check', `detekt') on JVM project."
+  "Run the Gradle WRAPPER's check tasks (`check', `detekt') on its project.
+JVM-FILES are the project's source files."
   (let* ((root (file-name-directory wrapper))
          (default-directory root)
          ;; Attempt ./gradlew check detekt as specified in Requirement 2
@@ -845,8 +849,9 @@ Returns a plist containing results, summary, tool listing, and diagnostics."
 ;;; Terminal Output & Quality Gate --------------------------------------------
 
 (defun hell-check-render-terminal (results report-file strict-p)
-  "Render a clean terminal summary with clickable file locations and counts.
-Returns non-nil if quality gate passes, nil otherwise."
+  "Render a terminal summary of RESULTS with clickable file locations and counts.
+REPORT-FILE is where the full report went. Returns non-nil if the
+quality gate passes (with STRICT-P, warnings fail it too), nil otherwise."
   (let* ((targets (plist-get results :targets))
          (tools (plist-get results :tools))
          (files-count (plist-get results :total-files))
@@ -910,6 +915,7 @@ Returns non-nil if quality gate passes, nil otherwise."
 (defun hell-cli-check (&rest args)
   "Static Analysis and Linting Quality Gate.
 Evaluates code against surface style linters and deep AST/semantic analyzers.
+ARGS are the command line's:
 
 Options:
   -o, --output FILE   Write diagnostic report to FILE

@@ -21,9 +21,13 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Plugin manager for Hell Emacs modules and third-party plugins (Phase 15).
 ;; Allows listing, searching, enabling, disabling and updating modules
 ;; both via CLI (`bin/hell plugins') and interactively (`M-x hell-plugins' on C-c h p).
+
+;;; Code:
 
 (require 'cl-lib)
 (require 'tabulated-list)

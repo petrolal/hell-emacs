@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; Modeled on Doom Emacs' module system (`doom!', `modulep!',
 ;; `package!'), minus its v2 compatibility layers.
 ;;
@@ -70,6 +72,15 @@
 (declare-function elpaca-process-queues "elpaca" (&optional queue))
 (declare-function elpaca<-status "elpaca" (e))
 (declare-function elpaca--queued "elpaca" ())
+(declare-function hell-packages-bootstrap "hell-packages" ())
+
+(defvar hell-dir)           ; early-init.el
+(defvar hell-core-dir)      ; early-init.el
+(defvar hell-modules-dir)   ; early-init.el
+(defvar hell-sources-dir)   ; early-init.el
+(defvar hell-user-dir)      ; early-init.el
+(defvar hell-team-dir)      ; early-init.el
+(defvar hell-compiled-dir)  ; early-init.el
 
 ;;; Variables --------------------------------------------------------------
 
@@ -102,7 +113,7 @@ from the synced profile otherwise.")
 (declare-function hell-treesit-apply "hell-treesit")
 
 (defvar hell-unpinned-packages nil
-  "Packages whose `:pin' is ignored: `t' for every package. See `unpin!'.")
+  "Packages whose `:pin' is ignored: t for every package. See `unpin!'.")
 
 (defvar hell-before-modules-init-hook nil
   "Run before the modules' init.el files load, at startup.")
@@ -172,6 +183,15 @@ If FILE begins with `;;;###if FORM', evaluate FORM; if nil, return nil."
           t))
     nil))
 
+(defconst hell-module-removed
+  '(((:ui . dashboard) . "the Altar is GNU Emacs' own startup screen (C-c h s)")
+    ((:ui . modeline) . "Emacs' stock mode line shows the JVM status itself")
+    ((:tools . projectile) . "Emacs' built-in project.el does it, on C-x p")
+    ((:tools . eglot) . "eglot is built into Emacs; the JVM modules use lsp-mode")
+    ((:ui . popup) . "Emacs places help, build and test windows itself (`display-buffer')"))
+  "Modules Hell Emacs no longer has (13.7), and what to use instead.
+As Doom's obsolete modules: `hell!' skips them with this reason.")
+
 (defun hell-module-enable (group name &optional flags depth init-depth config-depth)
   "Enable module GROUP NAME with FLAGS (a list of +symbols) at DEPTH.
 Supports separate INIT-DEPTH and CONFIG-DEPTH (by default DEPTH, then
@@ -198,15 +218,6 @@ module doesn't exist."
                        (format "Unknown module %s, skipped"
                                (hell-module-key-string (cons group name)))))
     nil))
-
-(defconst hell-module-removed
-  '(((:ui . dashboard) . "the Altar is GNU Emacs' own startup screen (C-c h s)")
-    ((:ui . modeline) . "Emacs' stock mode line shows the JVM status itself")
-    ((:tools . projectile) . "Emacs' built-in project.el does it, on C-x p")
-    ((:tools . eglot) . "eglot is built into Emacs; the JVM modules use lsp-mode")
-    ((:ui . popup) . "Emacs places help, build and test windows itself (`display-buffer')"))
-  "Modules Hell Emacs no longer has (13.7), and what to use instead,
-as Doom's obsolete modules: `hell!' skips them with this reason.")
 
 (defmacro hell! (&rest modules)
   "Enable MODULES, in order. Use it once, in your init.el.
@@ -292,6 +303,7 @@ A flag written -foo means +foo must NOT be enabled."
 
 (defmacro modulep! (&rest args)
   "Return non-nil if a module (and optionally its flags) is enabled.
+ARGS are the module's group and name, then any flags:
 
   (modulep! :completion corfu)        ; is the module enabled?
   (modulep! :completion corfu +tab)   ; ...with the +tab flag?
@@ -485,7 +497,8 @@ Nil means the package shouldn't be installed."
 ;; lives in some module's `use-package' block, so the block would
 ;; otherwise try to load a package that was never installed.
 (defun hell--use-package-disabled-a (fn name &rest args)
-  "Expand to nothing if package NAME was disabled with `package!'."
+  "Expand to nothing if package NAME was disabled with `package!'.
+Otherwise call FN, `use-package', with NAME and ARGS."
   (unless (hell-package-disabled-p name)
     (apply fn name args)))
 (advice-add 'use-package :around #'hell--use-package-disabled-a)
@@ -586,7 +599,7 @@ every configuration gets, whatever its `hell!' block says."
   (hell-module-enable :hell nil))
 
 (defvar hell--loaded-cli-files nil
-  "cli.el files `hell-modules-load-cli-files' has loaded this session.")
+  "The cli.el files `hell-modules-load-cli-files' has loaded this session.")
 
 (defun hell-modules-load-cli-files ()
   "Load every enabled module's cli.el, which extends `bin/hell'.
@@ -642,7 +655,8 @@ use the packages. Uses `hell-lock-file' unless IGNORE-LOCK."
   (hell-packages-apply-env))
 
 (defun hell-modules--install-packages (ignore-lock)
-  "`hell-modules-install-packages', inside `with-hell-network'."
+  "`hell-modules-install-packages', inside `with-hell-network'.
+Non-nil IGNORE-LOCK installs without the lock file's pins."
   (hell-packages-bootstrap)
   (defvar elpaca-lock-file)
   (setq elpaca-lock-file (and (not ignore-lock)
@@ -705,8 +719,10 @@ use the packages. Uses `hell-lock-file' unless IGNORE-LOCK."
               ((file-exists-p file)
                (delete-file file)))))))
 
-(defvar hell-elpaca-stall-timeout 30
-  "Seconds of no progress, with only blocked packages left, before giving up.")
+(defcustom hell-elpaca-stall-timeout 30
+  "Seconds of no progress, with only blocked packages left, before giving up."
+  :type 'natnum
+  :group 'hell)
 
 (defun hell--elpaca-wait ()
   "Like `elpaca-wait', but give up if Elpaca stops making progress.

@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; `hell-sync' is the equivalent of `doom sync'. Run it (usually as
 ;; `bin/hell sync') whenever you change your `hell!' block, a
 ;; packages.el, or a module's autoload.el. It:
@@ -135,10 +137,10 @@ executable, and MARKER records SHA256 (`hell-marker-current-p')."
   (hell-marker-write marker sha256))
 
 (defconst hell-npm-registry "https://registry.npmjs.org/"
-  "npm's registry; `hell-mirrors' can point it at a company mirror.")
+  "The npm registry; `hell-mirrors' can point it at a company mirror.")
 
 (defun hell-npm-environment ()
-  "npm's settings for Hell Emacs' installs, as environment entries.
+  "Return npm's settings for Hell Emacs' installs, as environment entries.
 Its cache under Hell Emacs' own (not ~/.npm), the registry (or its mirror),
 the proxy and CA bundle `hell-net' uses, and no update check."
   (let ((proxy (hell-net-proxy))
@@ -276,8 +278,8 @@ modules are compiled only with it. Whatever fails loads from source."
     (file-exists-p (expand-file-name "stamp" core-dir))))
 
 (defun hell-sync--write-autoloads (files forms header)
-  "Write every autoloads file in FILES, then FORMS, into one compiled file;
-return its name.
+  "Write every autoloads file in FILES, then FORMS, into one compiled file.
+Return its name. HEADER is the file's first line.
 Startup then loads one file instead of one per package. Each file's
 `#$' (its own name) is spelled out, and its local variables dropped
 \(they say not to byte-compile it)."

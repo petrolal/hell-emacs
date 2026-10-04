@@ -21,6 +21,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
 ;; The `[FORGE IGNITED]' / `[DAEMON READY]' / `[BYTECODE PURGATORY]' /
 ;; `[DAEMON BANISHED]' messages and the mode-line's JVM:... segment, for
 ;; every language server a `:lang' module registers:
@@ -73,7 +75,8 @@
     (ready    hell-jvm-ready  "[DAEMON READY] %s indexed in %.1fs"      "%s indexed in %.1fs")
     (failed   hell-jvm-failed "[BYTECODE PURGATORY] %s failed to import: %s" "%s failed to import: %s")
     (banished hell-jvm-failed "[DAEMON BANISHED] %s for %s exited"      "%s for %s exited"))
-  "Status messages: (EVENT FACE THEMED PLAIN). `ignited' and `banished'
+  "Status messages, as (EVENT FACE THEMED PLAIN).
+`ignited' and `banished'
 take the server's label and the project; `slow' those and seconds;
 `ready' the project and seconds; `failed' the project and the reason."
   :type '(repeat (list symbol face string string))
@@ -110,6 +113,7 @@ each notification's or request's method and params."
   (lsp--workspace-root workspace))
 
 (defun hell-lsp-status--label (server)
+  "SERVER's label, or its name if it has none."
   (or (plist-get (alist-get server hell-lsp-status--servers) :label)
       (symbol-name server)))
 
@@ -138,6 +142,7 @@ the lsp-mode workspace the session is, once it has started (nil for an
 outcome reported before that).")
 
 (defun hell-lsp-status--key (server root)
+  "The key of SERVER's session in project ROOT."
   (cons server (directory-file-name (file-truename root))))
 
 (defun hell-lsp-status--shown (session)
@@ -256,7 +261,7 @@ It gets WORKSPACE's root, then ARGS."
     (hell-lsp-status-ignite server (hell-lsp-status--root workspace) workspace)))
 
 (defun hell-lsp-status--banished-h (workspace)
-  "For `lsp-after-uninitialized-functions'."
+  "Forget WORKSPACE, for `lsp-after-uninitialized-functions'."
   (hell-lsp-status--forget-workspace workspace)
   (when-let* ((server (hell-lsp-status--server workspace)))
     (hell-lsp-status-banish server (hell-lsp-status--root workspace) workspace)))

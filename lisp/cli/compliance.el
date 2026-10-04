@@ -84,6 +84,7 @@
                         "or-later" "only")))))))))
 
 (defun hell-compliance--gnu-prefix (qualifier)
+  "The GNU license family a QUALIFIER (Lesser, Affero...) names."
   (pcase (and qualifier (upcase (string-trim qualifier)))
     ((or "LESSER" "LIBRARY") "LGPL") ("AFFERO" "AGPL") (_ "GPL")))
 
@@ -175,7 +176,7 @@ Only its first LIMIT characters are read, if given."
                  version))))
 
 (defun hell-compliance--integrity-hex (integrity)
-  "npm's sha512-BASE64 INTEGRITY as a hex string, or nil."
+  "Return npm's sha512-BASE64 INTEGRITY as a hex string, or nil."
   (when (and integrity (string-prefix-p "sha512-" integrity))
     (mapconcat (lambda (b) (format "%02x" b))
                (base64-decode-string (substring integrity 7)) "")))
@@ -260,12 +261,13 @@ Each has :kind (`package', `download', `npm' or `grammar'), :name,
             (lambda (a b) (equal (hell-compliance--ref a) (hell-compliance--ref b)))))
 
 (defun hell-compliance--ref (component)
-  "COMPONENT's bom-ref: unique, where package URLs aren't (magit and
-magit-section come from one repository)."
+  "Return COMPONENT's bom-ref: unique, where package URLs aren't.
+\(magit and magit-section come from one repository.)"
   (format "%s:%s@%s" (plist-get component :kind) (plist-get component :name)
           (or (plist-get component :version) "")))
 
 (defun hell-compliance--label (component)
+  "COMPONENT's name and version, as one string."
   (format "%s %s" (plist-get component :name) (or (plist-get component :version) "")))
 
 ;;;###autoload
@@ -309,6 +311,7 @@ ones come first."
   (seq-remove (lambda (cell) (null (cdr cell))) alist))
 
 (defun hell-compliance--cyclonedx-component (c)
+  "Component C as a CycloneDX component alist."
   (let ((url (plist-get c :url)))
     (hell-compliance--compact
      `((type . ,(plist-get c :type))
