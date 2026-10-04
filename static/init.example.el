@@ -137,7 +137,7 @@
            ;;agda             ; [idea] Agda: agda-mode (no LSP)
            ;;beancount        ; [idea] Beancount: beancount-language-server
            ;;cmake            ; [idea] CMake: neocmakelsp
-           ;;common-lisp      ; Common Lisp: SLIME (REPL, compiler, evaluation, sblint)
+           common-lisp        ; Common Lisp: SLIME (REPL, compiler, evaluation, sblint)
            ;;coq              ; [idea] Rocq/Coq: coq-lsp, Proof General
            ;;crystal          ; [idea] Crystal: crystalline
            ;;csharp           ; [idea] C#: csharp-ls (Roslyn)
@@ -145,7 +145,7 @@
            ;;dhall            ; [idea] Dhall: dhall-lsp-server
            ;;elixir           ; [idea] Elixir: Expert (elixir-ls)
            ;;elm              ; [idea] Elm: elm-language-server
-           ;;emacs-lisp       ; Emacs Lisp extras: macrostep, elisp-demos (no LSP)
+           emacs-lisp         ; Emacs Lisp extras: macrostep, elisp-demos (no LSP)
            ;;erlang           ; [idea] Erlang: ELP (erlang_ls)
            ;;ess              ; [idea] R: languageserver, ESS
            ;;fortran          ; [idea] Fortran: fortls
