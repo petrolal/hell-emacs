@@ -55,6 +55,7 @@
 (defun hell-default--name-stock-prefixes ()
   (hell-which-key-labels
    nil
+   "C-c @"         "code folding (hs-minor-mode)"
    "C-c ^"         "merge conflicts (smerge)"
    "C-c l"         "local (this mode)"
    "C-x a"         "abbrevs"
@@ -199,11 +200,6 @@
   "c x" '("quality check" . hell-check)
   "c l" '("quality lint" . hell-lint)
   "c s" '("static analysis" . hell-static-analysis-run))
-
-;; Ensure bindings exist directly on mode-specific-map (C-c)
-(keymap-set mode-specific-map "c x" #'hell-check)
-(keymap-set mode-specific-map "c l" #'hell-lint)
-(keymap-set mode-specific-map "c s" #'hell-static-analysis-run)
 
 ;; Winner's layout undo, on its own `C-c <left>' / `C-c <right>'.
 (add-hook 'hell-first-input-hook #'winner-mode)

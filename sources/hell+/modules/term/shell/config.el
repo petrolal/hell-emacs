@@ -34,8 +34,7 @@
   :commands (shell)
   :init
   (hell-leader-def
-    "o s" '("shell" . shell)
-    "p s" '("project shell" . project-shell)))
+    "o s" '("shell" . shell)))
 
 (provide 'term-shell-config)
 ;;; config.el ends here

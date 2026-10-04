@@ -34,8 +34,7 @@
   :commands (eshell)
   :init
   (hell-leader-def
-    "o e" '("eshell" . eshell)
-    "p e" '("project eshell" . project-eshell)))
+    "o e" '("eshell" . eshell)))
 
 (provide 'term-eshell-config)
 ;;; config.el ends here

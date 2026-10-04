@@ -35,10 +35,7 @@
   :defer t
   :commands (flycheck-mode flycheck-list-errors)
   :init
-  (add-hook 'prog-mode-hook #'flycheck-mode)
-  (define-key global-map (kbd "C-c ! n") #'flycheck-next-error)
-  (define-key global-map (kbd "C-c ! p") #'flycheck-previous-error)
-  (define-key global-map (kbd "C-c ! l") #'flycheck-list-errors))
+  (add-hook 'prog-mode-hook #'flycheck-mode))
 
 (provide 'checkers-syntax-config)
 ;;; config.el ends here

@@ -34,8 +34,7 @@
   :commands (treemacs)
   :init
   (hell-leader-def
-    "o p" '("project tree" . treemacs)
-    "t t" '("toggle treemacs" . treemacs))
+    "o p" '("project tree" . treemacs))
   :config
   (with-eval-after-load 'treemacs-nerd-icons
     (treemacs-load-theme "nerd-icons")))

@@ -35,7 +35,7 @@
   :init
   (hell-leader-def
     "o T" '("terminal (eat)" . eat)
-    "p T" '("project terminal (eat)" . eat-project)))
+    "o P" '("project terminal (eat)" . eat-project)))
 
 (provide 'term-eat-config)
 ;;; config.el ends here

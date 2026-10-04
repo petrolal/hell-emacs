@@ -32,8 +32,6 @@
 
 (use-package ibuffer
   :defer t
-  :init
-  (define-key global-map [remap list-buffers] #'ibuffer)
   :config
   (add-hook 'ibuffer-hook
             (lambda ()

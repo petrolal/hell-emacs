@@ -35,8 +35,9 @@
   :commands (gptel gptel-send gptel-menu)
   :init
   (hell-leader-def
-    "c a" '("ai chat" . gptel)
-    "c A" '("ai menu" . gptel-menu)))
+    "c A" '("ai assistant" . gptel)
+    "o a" '("ai chat" . gptel)
+    "o A" '("ai menu" . gptel-menu)))
 
 (provide 'tools-llm-config)
 ;;; config.el ends here

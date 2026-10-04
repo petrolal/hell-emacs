@@ -32,10 +32,8 @@
   :defer t
   :commands (ace-window)
   :init
-  ;; Remap other-window (C-x o) to ace-window, and leader binding
-  (define-key global-map [remap other-window] #'ace-window)
-  (hell-leader-def
-    "w w" '("ace window" . ace-window)))
+  ;; Remap other-window (C-x o) to ace-window
+  (define-key global-map [remap other-window] #'ace-window))
 
 (provide 'ui-window-select-config)
 ;;; config.el ends here

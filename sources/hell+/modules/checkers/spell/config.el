@@ -34,7 +34,7 @@
   :commands (jinx-mode jinx-correct)
   :init
   (add-hook 'text-mode-hook #'jinx-mode)
-  (define-key global-map (kbd "M-$") #'jinx-correct))
+  (keymap-global-set "<remap> <ispell-word>" #'jinx-correct))
 
 (provide 'checkers-spell-config)
 ;;; config.el ends here
