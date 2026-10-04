@@ -32,7 +32,7 @@
   (add-hook 'janet-mode-hook #'lsp-deferred))
 
 (hell-localleader-def 'janet-mode
-  "r" '("run file" . (lambda () (interactive) (compile (format "janet %s" (buffer-file-name)))))
+  "r" '("run file" . (lambda () (interactive) (compile (format "janet %s" (shell-quote-argument (buffer-file-name))))))
   "t" '("jpm test" . (lambda () (interactive) (compile "jpm test")))
   "b" '("jpm build" . (lambda () (interactive) (compile "jpm build"))))
 

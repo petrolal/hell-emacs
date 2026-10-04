@@ -32,7 +32,7 @@
   (add-hook 'julia-mode-hook #'lsp-deferred))
 
 (hell-localleader-def 'julia-mode
-  "r" '("run julia file" . (lambda () (interactive) (compile (format "julia %s" (buffer-file-name)))))
+  "r" '("run julia file" . (lambda () (interactive) (compile (format "julia %s" (shell-quote-argument (buffer-file-name))))))
   "t" '("run tests" . (lambda () (interactive) (compile "julia --project -e 'using Pkg; Pkg.test()'"))))
 
 (provide 'lang-julia-config)

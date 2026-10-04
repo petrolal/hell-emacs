@@ -32,4 +32,4 @@
 
 (hell-localleader-def '(php-mode php-ts-mode)
   "b" '("composer test" . (lambda () (interactive) (compile "composer test")))
-  "r" '("run php" . (lambda () (interactive) (compile (format "php %s" (buffer-file-name))))))
+  "r" '("run php" . (lambda () (interactive) (compile (format "php %s" (shell-quote-argument (buffer-file-name)))))))

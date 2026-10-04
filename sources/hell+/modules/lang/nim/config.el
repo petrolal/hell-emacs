@@ -32,8 +32,8 @@
   (add-hook 'nim-mode-hook #'lsp-deferred))
 
 (hell-localleader-def 'nim-mode
-  "c" '("nim compile" . (lambda () (interactive) (compile (format "nim c %s" (buffer-file-name)))))
-  "r" '("nim run" . (lambda () (interactive) (compile (format "nim c -r %s" (buffer-file-name)))))
+  "c" '("nim compile" . (lambda () (interactive) (compile (format "nim c %s" (shell-quote-argument (buffer-file-name))))))
+  "r" '("nim run" . (lambda () (interactive) (compile (format "nim c -r %s" (shell-quote-argument (buffer-file-name))))))
   "t" '("nimble test" . (lambda () (interactive) (compile "nimble test"))))
 
 (provide 'lang-nim-config)

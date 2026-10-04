@@ -36,4 +36,4 @@
 
 (hell-localleader-def '(python-mode python-ts-mode)
   "b" '("build/test" . (lambda () (interactive) (compile "pytest")))
-  "r" '("run script" . (lambda () (interactive) (compile (format "python3 %s" (buffer-file-name))))))
+  "r" '("run script" . (lambda () (interactive) (compile (format "python3 %s" (shell-quote-argument (buffer-file-name)))))))

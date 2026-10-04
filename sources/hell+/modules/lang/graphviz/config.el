@@ -31,7 +31,7 @@
 
 (hell-localleader-def 'graphviz-dot-mode
   "p" '("preview graph" . (lambda () (interactive) (if (fboundp 'compile-dot) (compile-dot) (compile "dot -Tpng -O"))))
-  "c" '("compile graph" . (lambda () (interactive) (compile (format "dot -Tsvg %s -o %s.svg" (buffer-file-name) (file-name-sans-extension (buffer-file-name)))))))
+  "c" '("compile graph" . (lambda () (interactive) (compile (format "dot -Tsvg %s -o %s" (shell-quote-argument (buffer-file-name)) (shell-quote-argument (concat (file-name-sans-extension (buffer-file-name)) ".svg")))))))
 
 (provide 'lang-graphviz-config)
 ;;; config.el ends here

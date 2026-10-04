@@ -34,4 +34,4 @@ script=$1
 shift
 name=$(basename -- "$script")
 cmd=${name#hell-}
-exec "$(CDPATH= cd -- "$(dirname -- "$script")" && pwd)/hell" "$cmd" "$@"
+exec "$(CDPATH='' cd -- "$(dirname -- "$script")" && pwd)/hell" "$cmd" "$@"

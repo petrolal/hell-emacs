@@ -30,9 +30,9 @@
   :mode ("\\.rkt\\'" . racket-mode))
 
 (hell-localleader-def 'racket-mode
-  "r" '("run racket" . (lambda () (interactive) (if (fboundp 'racket-run-and-switch-to-repl) (racket-run-and-switch-to-repl) (compile (format "racket %s" (buffer-file-name))))))
-  "t" '("test racket" . (lambda () (interactive) (if (fboundp 'racket-test) (racket-test) (compile (format "raco test %s" (buffer-file-name))))))
-  "b" '("raco make" . (lambda () (interactive) (compile (format "raco make %s" (buffer-file-name))))))
+  "r" '("run racket" . (lambda () (interactive) (if (fboundp 'racket-run-and-switch-to-repl) (racket-run-and-switch-to-repl) (compile (format "racket %s" (shell-quote-argument (buffer-file-name)))))))
+  "t" '("test racket" . (lambda () (interactive) (if (fboundp 'racket-test) (racket-test) (compile (format "raco test %s" (shell-quote-argument (buffer-file-name)))))))
+  "b" '("raco make" . (lambda () (interactive) (compile (format "raco make %s" (shell-quote-argument (buffer-file-name)))))))
 
 (provide 'lang-racket-config)
 ;;; config.el ends here

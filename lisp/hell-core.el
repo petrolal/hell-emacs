@@ -319,7 +319,10 @@ idle seconds. Features already loaded by then are skipped."
 ;; None of these are needed until the user actually does something, so
 ;; start them lazily instead of paying their file IO at boot.
 (add-hook 'hell-first-input-hook #'savehist-mode)
-(add-hook 'hell-first-file-hook (lambda () (let ((inhibit-message t)) (recentf-mode 1))))
+(defun hell--recentf-mode-h ()
+  "Turn on `recentf-mode' without its cleanup message."
+  (let ((inhibit-message t)) (recentf-mode 1)))
+(add-hook 'hell-first-file-hook #'hell--recentf-mode-h)
 (add-hook 'hell-first-file-hook #'save-place-mode)
 
 ;;; Shell environment ------------------------------------------------------

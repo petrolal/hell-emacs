@@ -34,7 +34,7 @@
 (hell-localleader-def 'sml-mode
   "s" '("run SML REPL" . (lambda () (interactive) (if (fboundp 'sml-prog-proc) (sml-prog-proc) (compile "sml"))))
   "b" '("load file" . (lambda () (interactive) (if (fboundp 'sml-load-file) (sml-load-file (buffer-file-name)) (compile "sml"))))
-  "c" '("compile with mlton" . (lambda () (interactive) (compile (format "mlton %s" (buffer-file-name))))))
+  "c" '("compile with mlton" . (lambda () (interactive) (compile (format "mlton %s" (shell-quote-argument (buffer-file-name)))))))
 
 (provide 'lang-sml-config)
 ;;; config.el ends here

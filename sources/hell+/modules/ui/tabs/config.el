@@ -29,7 +29,7 @@
 (defvar global-tab-line-mode)
 (declare-function global-tab-line-mode "tab-line" (&optional arg))
 
-(add-hook 'hell-first-file-hook (lambda () (global-tab-line-mode 1)))
+(add-hook 'hell-first-file-hook #'global-tab-line-mode)
 
 (provide 'ui-tabs-config)
 ;;; config.el ends here

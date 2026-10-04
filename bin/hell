@@ -36,7 +36,7 @@
 
 set -e
 
-HELL_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+HELL_ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 case "$EMACS" in *term*) EMACS=emacs ;; *) EMACS=${EMACS:-emacs} ;; esac
 command -v "$EMACS" >/dev/null 2>&1 || [ -x "$EMACS" ] || {
   echo "Error: couldn't run Emacs with the command '$EMACS'." >&2
