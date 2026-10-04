@@ -22,5 +22,5 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (package! eat
-  :recipe (:host nil :repo "https://codeberg.org/akib/emacs-eat"
+  :recipe (:host github :repo "emacsmirror/eat"
            :files ("*.el" ("term" "term/*.el") "*.texi" "*.ti")))
