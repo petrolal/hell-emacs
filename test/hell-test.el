@@ -548,6 +548,76 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
           (should (string-match-p "bad\\.el didn't compile: .*[Ee]nd of file" (car logged))))
       (delete-directory dir t))))
 
+;;; hell-profiles ----------------------------------------------------------
+
+(ert-deftest hell-test-profile-generate ()
+  (hell-test--with-profile-dir
+    (hell-test--with-modules
+      (let* ((hell-profile nil)
+             (hell-profile-generate-functions
+              (append hell-profile-generate-functions
+                      ;; Yours, between core's 30 and 60, by its number.
+                      (list (lambda (_) (hell-profile--write-part "50-mine.init.el"
+                                                                  '((setq hell-test--part 50)))))))
+             (file (hell-profile-generate '(:load-path ("/pkg/a") :autoloads "/pkg/autoloads.el")))
+             (text (hell-test--read file)))
+        (should (equal file (hell-init-file)))
+        ;; Every part, once, in NN order.
+        (let ((pos 0))
+          (dolist (part '("05-hell" "10-hell-loaddefs" "20-user" "30-hell-package-envs"
+                          "50-mine" "60-hell-module-loaddefs" "70-hell-package-loaddefs"
+                          "80-hell-modules"))
+            (let ((at (string-search (concat ";;; " part ".init.el\n") text)))
+              (should at)
+              (should (> at pos))
+              (setq pos at))))
+        (should (string-match-p "(add-to-list 'load-path dir)" text))
+        (should (string-match-p "\"/pkg/a\"" text))
+        ;; Every form reads back: no half-printed part.
+        (with-temp-buffer
+          (insert text)
+          (goto-char (point-min))
+          (should (> (cl-loop while (condition-case nil (progn (read (current-buffer)) t)
+                                      (end-of-file nil))
+                              count t)
+                     7)))
+        ;; Generating again replaces it all.
+        (let ((hell-profile-generate-functions
+               (remq (car (last hell-profile-generate-functions)) hell-profile-generate-functions)))
+          (hell-profile-generate '(:load-path nil :autoloads nil)))
+        (should-not (string-search "50-mine" (hell-test--read file)))))))
+
+
+;;; lib/net: git's settings ---------------------------------------------------
+
+(ert-deftest hell-test-net-environment ()
+  (let ((hell-proxy "http://proxy.corp:3128")
+        (hell-no-proxy '("localhost" ".corp"))
+        (hell-ca-bundle nil)
+        (hell-mirrors '(("https://github.com/" . "https://mirror.corp/gh/")))
+        (hell-net-offline t)
+        (base '("GIT_CONFIG_COUNT=1" "GIT_CONFIG_KEY_0=core.autocrlf"
+                "GIT_CONFIG_VALUE_0=false" "HOME=/home/me")))
+    (let ((env (hell-net-environment base)))
+      (cl-flet ((get (var) (getenv-internal var env)))
+        ;; After the one already there: offline rules, the proxy, the mirror.
+        (should (equal (get "GIT_CONFIG_COUNT") "8"))
+        (should (equal (get "GIT_CONFIG_KEY_0") "core.autocrlf"))
+        (should (equal (list (get "GIT_CONFIG_KEY_1") (get "GIT_CONFIG_VALUE_1"))
+                       '("protocol.allow" "never")))
+        (should (equal (list (get "GIT_CONFIG_KEY_6") (get "GIT_CONFIG_VALUE_6"))
+                       '("http.proxy" "http://proxy.corp:3128")))
+        (should (equal (list (get "GIT_CONFIG_KEY_7") (get "GIT_CONFIG_VALUE_7"))
+                       '("url.https://mirror.corp/gh/.insteadOf" "https://github.com/")))
+        (should (equal (get "NO_PROXY") "localhost,.corp"))
+        (should (equal (get "HOME") "/home/me"))))
+    ;; Nested, it's made again from the outer environment: nothing twice.
+    (let ((process-environment base))
+      (with-hell-network
+        (let ((once (getenv "GIT_CONFIG_COUNT")))
+          (with-hell-network
+            (should (equal (getenv "GIT_CONFIG_COUNT") once))))))))
+
 ;;; cli/bundle -------------------------------------------------------------
 
 (defmacro hell-test--with-bundle-root (&rest body)

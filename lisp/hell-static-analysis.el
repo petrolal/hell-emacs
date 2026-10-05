@@ -114,8 +114,8 @@ Supported symbols are `byte-compile', `package-lint', `relint', and `elsa'."
   "Run BODY in a temporary buffer holding FILE's text, in `emacs-lisp-mode'.
 FILE isn't visited: no buffer is left behind, and neither its local
 variables, its directory's .dir-locals.el nor mode hooks apply.
-`buffer-file-name' is FILE while BODY runs, for checks that look at
-the file's name (package-lint does)."
+The variable `buffer-file-name' is FILE while BODY runs, for checks that
+look at the file's name (package-lint does)."
   (declare (indent 1) (debug t))
   (let ((name (make-symbol "file")))
     `(let ((,name (expand-file-name ,file)))

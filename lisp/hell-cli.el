@@ -240,7 +240,7 @@ in the first of `hell-cli-load-path' that has it. Nil if there's none."
 (defun hell-cli--command (command)
   "The function bin/hell COMMAND runs (an alias resolved), or nil if none.
 Registered by Hell Emacs, a module's cli.el or COMMAND's file
-(`hell-cli-command-file'), which is loaded if it must be."
+\\(`hell-cli-command-file'), which is loaded if it must be."
   (let ((name (or (cdr (assoc command hell-cli-aliases)) command)))
     (cl-flet ((registered () (plist-get (gethash name hell-cli-commands) :fn)))
       (or (registered)

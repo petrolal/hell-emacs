@@ -138,7 +138,7 @@
 (defvar hell-check-only nil
   "The languages this check is limited to (`check --only'), or nil for all.
 Symbols of `hell-check-languages'. Limited, the whole-project wrappers
-(trunk, pre-commit) don't run.")
+\\(trunk, pre-commit) don't run.")
 
 (defun hell-check-discover-files (targets)
   "Scan TARGETS (list of files or directories).
@@ -226,8 +226,9 @@ FUNCTION returns hell-static-analysis.el's diagnostics for a file.
 RUNS-CODE: it runs the file's macros and `eval-when-compile' forms.")
 
 (defun hell-check--elisp-tool-names (run-code)
-  "The Emacs Lisp tools that run: in `hell-static-analysis-linters', and
-only with RUN-CODE those that run the files' code."
+  "The names of the Emacs Lisp tools that run, as strings.
+Those in `hell-static-analysis-linters'; without RUN-CODE, not those
+that run the files' code."
   (cl-loop for (name _ runs-code) in hell-check--elisp-tools
            when (and (memq name hell-static-analysis-linters) (or run-code (not runs-code)))
            collect (symbol-name name)))
