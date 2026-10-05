@@ -73,6 +73,24 @@
                (should (equal (car (hell-process-output file)) 126)))
       (delete-file file))))
 
+(ert-deftest hell-test-atomic-file ()
+  (let* ((dir (file-name-as-directory (make-temp-file "hell-test-atomic" t)))
+         (file (expand-file-name "f.eld" dir)))
+    (unwind-protect
+        (progn
+          (should (eq (with-hell-atomic-file file (insert "one") 'done) 'done))
+          (should (equal (hell-test--read file) "one"))
+          (should (= (file-modes file) (logand #o666 (default-file-modes))))
+          ;; A body that fails leaves the old file whole.
+          (should-error (with-hell-atomic-file file (insert "two") (error "Boom")))
+          (should (equal (hell-test--read file) "one"))
+          (with-hell-atomic-file file (insert "three"))
+          (should (equal (hell-test--read file) "three"))
+          ;; Nothing left beside it.
+          (should (equal (directory-files dir nil directory-files-no-dot-files-regexp)
+                         '("f.eld"))))
+      (delete-directory dir t))))
+
 (defmacro hell-test--with-tree (&rest body)
   "Run BODY with `base' holding r/a.txt (\"a\"), r/d/b.txt (\"bb\"), r/l -> a.txt."
   (declare (indent 0))

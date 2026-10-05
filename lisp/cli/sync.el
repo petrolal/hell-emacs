@@ -277,7 +277,7 @@ Follows the recipe's :autoloads, as `elpaca-activate' does."
 (defun hell-sync--write (file header data)
   "Write DATA (a list of forms) to FILE, after the comment HEADER."
   (make-directory (file-name-directory file) t)
-  (with-temp-file file
+  (with-hell-atomic-file file
     (let ((print-length nil) (print-level nil) (print-circle nil)
           (print-escape-newlines t) (print-quoted t))
       (insert header "\n")

@@ -157,7 +157,7 @@ Written again whenever a file it's made from is newer."
       (unless (and (file-exists-p hell-net-ca-file)
                    (seq-every-p (lambda (f) (file-newer-than-file-p hell-net-ca-file f)) sources))
         (make-directory (file-name-directory hell-net-ca-file) t)
-        (with-temp-file hell-net-ca-file
+        (with-hell-atomic-file hell-net-ca-file
           (dolist (f sources)
             (insert-file-contents f)
             (goto-char (point-max))

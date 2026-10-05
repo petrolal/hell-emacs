@@ -55,7 +55,7 @@ ROOTS are relative to `hell-data-dir'; PACKAGES is a list of
                     :entries (hell-tree-entries hell-data-dir roots)
                     :packages packages)))
     (make-directory (file-name-directory file) t)
-    (with-temp-file file
+    (with-hell-atomic-file file
       (let ((print-length nil) (print-level nil) (print-escape-newlines t))
         (insert ";; -*- mode: lisp-data -*-\n"
                 ";; What `bin/hell sync' installed, for `bin/hell verify'; don't edit.\n")

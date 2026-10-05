@@ -455,6 +455,27 @@ are hashed together (`hell-files-sha256'). Missing roots are skipped."
                   entry))
               (nreverse entries)))))
 
+(defmacro with-hell-atomic-file (file &rest body)
+  "Like `with-temp-file' FILE BODY, but no reader ever sees FILE half-written.
+The text goes to a new file beside it, which then replaces it in one
+rename: a reader (a git fetch, a starting Emacs) gets the old file or
+the new one. Its permissions are what `default-file-modes' gives a new
+file. Returns BODY's value."
+  (declare (indent 1) (debug t))
+  (let ((target (make-symbol "file"))
+        (tmp (make-symbol "tmp")))
+    `(let ((,target (expand-file-name ,file)))
+       (with-temp-buffer
+         (prog1 (progn ,@body)
+           (let ((,tmp (make-temp-file (expand-file-name ".atomic-" (file-name-directory ,target)))))
+             (condition-case err
+                 (progn
+                   (write-region nil nil ,tmp nil 'silent)
+                   (set-file-modes ,tmp (logand #o666 (default-file-modes)))
+                   (rename-file ,tmp ,target t))
+               (error (ignore-errors (delete-file ,tmp))
+                      (signal (car err) (cdr err))))))))))
+
 (defun hell-marker-current-p (marker value)
   "Non-nil if the file MARKER exists and holds VALUE (whitespace aside).
 Pinned installs write the pin they were made from to a marker file."
