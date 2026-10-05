@@ -26,8 +26,7 @@
 ;; Hell Emacs uses Elpaca (https://github.com/progfolio/elpaca), not
 ;; package.el or straight.el. Both Elpaca and straight.el give
 ;; reproducible, git-based installs instead of package.el's tarball
-;; snapshots, but Elpaca installs in parallel and its
-;; `elpaca-use-package-mode' integration is simple.
+;; snapshots, but Elpaca installs in parallel.
 ;;
 ;; Elpaca itself is only loaded when something has to be installed or
 ;; built: by `hell-sync' (bin/hell sync). Startup never loads it:
@@ -76,9 +75,8 @@
       use-package-always-ensure nil
       use-package-expand-minimally t)
 
-;; An explicit `:ensure' only works when Elpaca is loaded (where
-;; `elpaca-use-package-mode' takes it over). On a synced startup it
-;; would otherwise fall through to package.el, so point it here.
+;; An explicit `:ensure' would fall through to package.el, installing
+;; outside any sync; point it here, where it only warns.
 (setq use-package-ensure-function #'hell--use-package-ensure)
 
 ;; `:defer-incrementally', as in Doom: load a deferred package (or the

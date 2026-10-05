@@ -155,19 +155,18 @@ on a detached HEAD, which has no upstream to update from."
   (hell-sync--check-elpaca)
   ;; Install from the lock first, so upgrading starts from what's locked.
   (hell-modules-install-packages)
-  (let ((pinned (cl-loop for (name . plist) in hell-packages
-                         when (plist-get plist :pin) collect name))
-        (ids (mapcar #'car (elpaca--queued))))
+  (let* ((queued (mapcar #'car (elpaca--queued)))
+         (ids (seq-filter #'hell-package-upgradable-p queued))
+         (skipped (- (length queued) (length ids))))
     (hell-sync--log "Updating %d packages%s..."
-                    (- (length ids) (length pinned))
-                        (if pinned (format " (%d pinned, skipped)" (length pinned)) ""))
-    (let ((ids (seq-remove (lambda (id) (memq id pinned)) ids)))
-      ;; Usually none is detached (only after installing from the lock):
-      ;; every checkout is asked at once, and only those are fixed.
-      (mapc #'hell-cli--reattach
-            (hell-cli--detached (delq nil (mapcar #'elpaca-get ids))))
-      (dolist (id ids)
-        (elpaca-merge id 'fetch)))
+                    (length ids)
+                    (if (> skipped 0) (format " (%d pinned, skipped)" skipped) ""))
+    ;; Usually none is detached (only after installing from the lock):
+    ;; every checkout is asked at once, and only those are fixed.
+    (mapc #'hell-cli--reattach
+          (hell-cli--detached (delq nil (mapcar #'elpaca-get ids))))
+    (dolist (id ids)
+      (elpaca-merge id 'fetch))
     (elpaca-process-queues)
     (hell--elpaca-wait))
   ;; As every sync ends: an upgraded Hell Emacs may pin new servers,

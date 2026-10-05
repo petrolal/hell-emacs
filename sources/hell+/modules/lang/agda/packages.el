@@ -26,10 +26,13 @@
 
 ;;; Code:
 
-;; Not on any archive: Agda ships it in its own repository.
+;; Not on any archive: Agda ships it in its own repository. Pinned to
+;; a release (v2.8.0.2): the mode refuses to start with any Agda but
+;; its own version, and master's is never a released one.
 (package! agda2-mode
   :recipe (:host github :repo "agda/agda"
-           :files ("src/data/emacs-mode/*.el")))
+           :files ("src/data/emacs-mode/*.el"))
+  :pin "cccf42fa88eae25ccbe2623f489021d2075f6f73")
 
 (provide 'hell-lang-agda-packages)
 ;;; packages.el ends here

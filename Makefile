@@ -66,7 +66,7 @@ test:
 ## needs the network; test the result before committing it.
 lock: export HELLDIR := $(TMP)/lock
 lock:
-	@$(BATCH) -l scripts/default-lock.el
+	@$(BATCH) -l scripts/default-lock.el -f hell-default-lock-write
 
 clean:
 	@rm -rf $(TMP)

@@ -154,6 +154,20 @@ so core and `:tools` never name a language: `hell-reload-function`
 `C-c l t` once `hell-forge-setup-build-h` has run), and
 `(hell-lsp-status-register SERVER ...)` (the mode line and messages).
 
+Which commit a package gets: its `:pin`, else the lock file's
+(`packages.lock.eld` next to your config, else `static/packages.lock.eld`,
+written by `make lock` for every module and flag as Emacs 29 reads them;
+`hell-test-default-lock-covers-catalog` fails when a package is missing
+from it), else the newest. `unpin!` overrides both. Already-installed
+packages, dependencies included, follow too: every sync records what
+each was built from (`hell-packages--build-inputs`), then checks out and
+rebuilds the ones whose inputs changed. A `:pin` always holds; a lock's
+commit is followed when the lock changes (a teammate's lock, a new
+default with Hell Emacs), never just because a checkout moved past it,
+so `bin/hell upgrade` isn't undone. A changed `:recipe` or `:env`
+rebuilds. `bin/hell upgrade` moves everything but pinned packages and
+Elpaca, whose pin in `lisp/hell-elpaca.el` the bootstrap enforces.
+
 Useful hooks: `hell-first-input-hook`, `-first-file-hook`,
 `-first-buffer-hook` (defer work until needed),
 `hell-{before,after}-modules-{init,config}-hook`,

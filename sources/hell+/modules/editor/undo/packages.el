@@ -21,5 +21,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;; From its GitHub mirror, on purpose: upstream is on Codeberg, whose
+;; 503s failed installs. :host must stay: MELPA's recipe, which this
+;; inherits, says :fetcher codeberg. For an outage of the mirror, see
+;; `hell-mirrors'.
 (package! undo-fu-session
   :recipe (:host github :repo "emacsmirror/undo-fu-session"))

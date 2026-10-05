@@ -58,7 +58,7 @@
 (declare-function elpaca-write-lock-file "elpaca" (file))
 (declare-function elpaca-generate-autoloads "elpaca" (package dir))
 (declare-function elpaca--queued "elpaca" ())
-(declare-function elpaca--dependencies "elpaca" (e))
+(declare-function elpaca--dependencies "elpaca" (e &optional recache))
 (declare-function elpaca<-status "elpaca" (e))
 (declare-function elpaca<-recipe "elpaca" (e))
 (declare-function elpaca<-package "elpaca" (e))
@@ -472,8 +472,8 @@ would fail the same way. Removing it lets that sync clone again."
 
 (defun hell-sync--check-elpaca ()
   "Signal an error naming any of `hell-sync--elpaca-functions' Elpaca lacks.
-Elpaca is pinned (lisp/hell-elpaca.el), but `upgrade' moves it on,
-and its internals change without notice."
+Elpaca is pinned (lisp/hell-elpaca.el), but a checkout can still be
+moved by hand, and its internals change without notice."
   (when-let* ((missing (seq-remove #'fboundp hell-sync--elpaca-functions)))
     (error "This Elpaca lacks %s, which Hell Emacs uses; it changed since \
 lisp/hell-elpaca.el's pin. Reinstall it at the pin (delete %s, then sync)"

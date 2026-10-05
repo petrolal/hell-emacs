@@ -154,6 +154,162 @@
     (should-not (hell-package-disabled-p 'bar))
     (should-not (hell-package-disabled-p 'baz))))
 
+(ert-deftest hell-test-package-order-pins ()
+  (hell-test--with-modules
+    (let ((hell-unpinned-packages nil))
+      (setq hell-packages '((foo :pin "abc")
+                            (bar :recipe (:host github :repo "u/bar"))
+                            (baz)))
+      (should (equal (hell-package--order 'foo '(:pin "abc")) '(foo :ref "abc")))
+      ;; No :ref of its own: the lock file's applies.
+      (should (equal (hell-package--order 'bar '(:recipe (:host github :repo "u/bar")))
+                     '(bar :host github :repo "u/bar")))
+      (should (eq (hell-package--order 'baz nil) 'baz))
+      (hell-package-unpin '(foo baz))
+      ;; Unpinned: an explicit nil :ref, overriding the lock file's.
+      (should (equal (hell-package--order 'foo '(:pin "abc")) '(foo :ref nil)))
+      (should (equal (hell-package--order 'baz nil) '(baz :ref nil))))))
+
+(ert-deftest hell-test-package-upgradable-p ()
+  (hell-test--with-modules
+    (let ((hell-unpinned-packages nil))
+      (setq hell-packages '((foo :pin "abc") (bar)))
+      (should-not (hell-package-upgradable-p 'foo))
+      (should (hell-package-upgradable-p 'bar))
+      ;; A dependency, not declared.
+      (should (hell-package-upgradable-p 'dash))
+      (should-not (hell-package-upgradable-p 'elpaca))
+      (hell-package-unpin '(foo))
+      (should (hell-package-upgradable-p 'foo))
+      (hell-package-unpin '(t))
+      (should-not (hell-package-upgradable-p 'elpaca)))))
+
+(defmacro hell-test--with-elpaca-stubs (recipes &rest body)
+  "Run BODY with Elpaca's records faked: package ID's recipe in RECIPES.
+Every package is queued, finished, with its checkout in `hell-test--repo'."
+  (declare (indent 1))
+  `(cl-letf (((symbol-function 'elpaca-get) #'identity)
+             ((symbol-function 'elpaca--queued)
+              (lambda () (mapcar (lambda (r) (cons (car r) (car r))) ,recipes)))
+             ((symbol-function 'elpaca<-recipe) (lambda (id) (alist-get id ,recipes)))
+             ((symbol-function 'elpaca<-status) (lambda (_) 'finished))
+             ((symbol-function 'elpaca<-source-dir) (lambda (_) hell-test--repo)))
+     ,@body))
+
+(defvar hell-test--repo nil "The fake package checkout of `hell-test--with-elpaca-stubs'.")
+
+(defun hell-test--git (dir &rest args)
+  "Run git with ARGS in DIR; return its first line of output."
+  (let ((default-directory dir))
+    (car (apply #'process-lines "git" "-c" "user.name=t" "-c" "user.email=t@t" args))))
+
+(ert-deftest hell-test-build-inputs ()
+  (hell-test--with-modules
+    (let ((hell-unpinned-packages nil)
+          (hell-data-dir (file-name-as-directory (make-temp-file "hell-test-data" t)))
+          (recipes '((foo :ref "abc") (bar) (dep :ref "def"))))
+      (unwind-protect
+          (hell-test--with-elpaca-stubs recipes
+            (setq hell-packages '((foo :pin "abc" :env (("A" . "1")))
+                                  (bar :recipe (:files ("*.el")))))
+            (should (equal (hell-packages--build-inputs 'foo)
+                           '(:env (("A" . "1")) :ref "abc")))
+            (should (equal (hell-packages--build-inputs 'bar) '(:recipe (:files ("*.el")))))
+            ;; A dependency: only its commit.
+            (should (equal (hell-packages--build-inputs 'dep) '(:ref "def")))
+            (should (hell-packages--inputs-changed-p 'bar))
+            (hell-packages--write-build-stamps)
+            (should-not (hell-packages--inputs-changed-p 'bar))
+            (should (equal (hell-packages--recorded-inputs 'dep) '(:ref "def")))
+            ;; A stamp from before :recipe and :ref were recorded: the :env alone.
+            (write-region "((\"A\" . \"1\"))" nil (hell-packages--build-stamp-file 'foo))
+            (should (equal (hell-packages--recorded-inputs 'foo) '(:env (("A" . "1")))))
+            (should-not (hell-packages--inputs-changed-p 'foo)))
+        (delete-directory hell-data-dir t)))))
+
+(ert-deftest hell-test-new-dependencies ()
+  (defvar elpaca-ignored-dependencies)
+  (let ((elpaca-ignored-dependencies '(seq))
+        (deps '((foo (emacs "29.1") (dash "2") (seq "2") (newdep "1"))
+                (bar (newdep "1") (other "1")))))
+    (hell-test--with-elpaca-stubs '((foo) (bar) (dash))
+      (cl-letf (((symbol-function 'elpaca--dependencies)
+                 (lambda (id &optional recache)
+                   (should recache)       ; the checkout may have moved
+                   (alist-get id deps))))
+        (should (equal (hell-packages--new-dependencies '(foo bar)) '(newdep other)))
+        (should-not (hell-packages--new-dependencies nil))))))
+
+(ert-deftest hell-test-ref-to-check-out ()
+  (hell-test--with-modules
+    (let* ((hell-unpinned-packages nil)
+           (hell-data-dir (file-name-as-directory (make-temp-file "hell-test-data" t)))
+           (upstream (file-name-as-directory (make-temp-file "hell-test-upstream" t)))
+           (hell-test--repo (file-name-as-directory (make-temp-file "hell-test-repo" t)))
+           (recipes (list (list 'foo :ref nil)))
+           (target (lambda (ref) (setf (plist-get (alist-get 'foo recipes) :ref) ref)))
+           (stamp (lambda (ref) (with-temp-file (hell-packages--build-stamp-file 'foo)
+                                  (prin1 (list :ref ref) (current-buffer)))))
+           (head (lambda () (hell-test--git hell-test--repo "rev-parse" "HEAD"))))
+      (unwind-protect
+          (hell-test--with-elpaca-stubs recipes
+            (make-directory (file-name-directory (hell-packages--build-stamp-file 'foo)) t)
+            (hell-test--git upstream "init" "-q")
+            (hell-test--git upstream "commit" "-q" "--allow-empty" "-m" "one")
+            (let ((one (hell-test--git upstream "rev-parse" "HEAD")))
+              (hell-test--git upstream "commit" "-q" "--allow-empty" "-m" "two")
+              (hell-test--git hell-test--repo "clone" "-q" upstream ".")
+              (let ((two (funcall head)))
+                (funcall target one)
+                ;; Never stamped: a checkout past the lock is left alone.
+                (should-not (hell-packages--ref-to-check-out 'foo))
+                ;; Stamped at the lock's commit, moved past it by an upgrade.
+                (funcall stamp one)
+                (should-not (hell-packages--ref-to-check-out 'foo))
+                ;; The lock moved since: followed.
+                (funcall stamp two)
+                (should (equal (hell-packages--ref-to-check-out 'foo) one))
+                (hell-packages--check-out 'foo one)
+                (should (equal (funcall head) one))
+                ;; Already there.
+                (should-not (hell-packages--ref-to-check-out 'foo))
+                ;; A pin always holds, stamped or not.
+                (delete-file (hell-packages--build-stamp-file 'foo))
+                (setq hell-packages `((foo :pin ,two)))
+                (funcall target two)
+                (should (equal (hell-packages--ref-to-check-out 'foo) two))
+                (hell-packages--check-out 'foo two)
+                (should (equal (funcall head) two))
+                ;; A commit the checkout doesn't have yet is fetched.
+                (hell-test--git upstream "commit" "-q" "--allow-empty" "-m" "three")
+                (let ((three (hell-test--git upstream "rev-parse" "HEAD")))
+                  (setq hell-packages `((foo :pin ,three)))
+                  (funcall target three)
+                  (hell-packages--check-out 'foo (hell-packages--ref-to-check-out 'foo))
+                  (should (equal (funcall head) three))))))
+        (dolist (dir (list upstream hell-test--repo hell-data-dir))
+          (delete-directory dir t))))))
+
+(declare-function hell-default-lock-packages "../scripts/default-lock" ())
+
+(ert-deftest hell-test-default-lock-covers-catalog ()
+  "Every catalog package, read as any supported Emacs reads it, is locked."
+  (load (expand-file-name "scripts/default-lock.el" hell-dir) nil t)
+  (hell-test--with-modules
+    (let* ((hell-user-dir (file-name-as-directory (make-temp-file "hell-test-user" t)))
+           (hell-team-dir nil)
+           (hell-modules-override nil)
+           (hell-unpinned-packages nil)
+           (hell-module-dependencies nil)
+           (hell-treesit-declarations nil)
+           (locked (with-temp-buffer
+                     (insert-file-contents hell-default-lock-file)
+                     (mapcar #'car (read (current-buffer))))))
+      (unwind-protect
+          (should-not (seq-remove (lambda (name) (memq name locked))
+                                  (hell-default-lock-packages)))
+        (delete-directory hell-user-dir t)))))
+
 (ert-deftest hell-test-lock-file-in-use ()
   (let* ((dir (make-temp-file "hell-test-lock" t))
          (hell-lock-file (expand-file-name "user.eld" dir))

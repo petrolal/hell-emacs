@@ -27,9 +27,7 @@
 ;; than straight.el.  Both give reproducible, git-based installs
 ;; instead of package.el's tarball snapshots, but Elpaca installs
 ;; packages asynchronously/in parallel, which matters directly for
-;; Hell Emacs' startup-time goals, and its `elpaca-use-package-mode'
-;; integration keeps every module's `use-package' block declarative
-;; with no separate recipe step. straight.el remains the better
+;; Hell Emacs' sync times. straight.el remains the better
 ;; choice if you need its build-caching across machines or its
 ;; longer track record; Elpaca is the better choice for a
 ;; startup-performance-first, single-machine distribution, which is
@@ -46,7 +44,10 @@
 ;; loading Elpaca -- and to pin Elpaca itself:
 ;; `:ref' is a commit (it installs every other package, so it's never
 ;; fetched from wherever master is), cloned in full (`:depth' nil),
-;; since a shallow clone only holds the branch's tip.
+;; since a shallow clone only holds the branch's tip. Its
+;; `(add-hook 'after-init-hook #'elpaca-process-queues)' is left out:
+;; this only loads after init (bin/hell's scripts, `M-x hell-sync'), so
+;; it never ran, and `elpaca-wait' below processes the queues.
 ;; Do not hand-edit it piecemeal; replace the whole block from
 ;; upstream when updating Elpaca's installer version.
 
@@ -59,6 +60,32 @@
                                :depth nil :inherit ignore
                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                                :build (:not elpaca-activate)))
+
+;; Not part of the installer. It only clones a missing checkout, and
+;; Elpaca never checks out a built package's :ref again, so a checkout
+;; at another commit (an older pin, or a manual update) stays there.
+;; Put it back at the pin, recompiled, and drop its build and autoloads
+;; for Elpaca and the installer to redo.
+(let* ((repo (expand-file-name "elpaca/" elpaca-sources-directory))
+       (ref (plist-get (cdr elpaca-order) :ref))
+       (default-directory repo)
+       (git (lambda (&rest args) (zerop (apply #'call-process "git" nil nil nil args)))))
+  (when (and ref (file-directory-p (expand-file-name ".git" repo))
+             (not (equal (car (process-lines-ignore-status "git" "rev-parse" "HEAD")) ref)))
+    (message "Moving Elpaca to its pin, %s" ref)
+    (unless (or (funcall git "cat-file" "-e" (concat ref "^{commit}"))
+                (funcall git "fetch" "-q" "origin"))
+      (error "Couldn't fetch Elpaca's pin %s; check the network and sync again" ref))
+    (unless (funcall git "-c" "advice.detachedHead=false" "checkout" "-q" ref)
+      (error "Couldn't move Elpaca to its pin %s; delete %s and sync again"
+             ref (abbreviate-file-name repo)))
+    (call-process (concat invocation-directory invocation-name) nil nil nil
+                  "-Q" "-L" "." "--batch" "--eval" "(byte-recompile-directory \".\" 0 'force)")
+    (let ((autoloads (expand-file-name "elpaca-autoloads.el" repo)))
+      (when (file-exists-p autoloads)
+        (delete-file autoloads)))
+    (delete-directory (expand-file-name "elpaca/" elpaca-builds-directory) t)))
+
 (let* ((repo  (expand-file-name "elpaca/" elpaca-sources-directory))
        (build (expand-file-name "elpaca/" elpaca-builds-directory))
        (order (cdr elpaca-order))
@@ -88,16 +115,14 @@
     (require 'elpaca)
     (elpaca-generate-autoloads "elpaca" repo)
     (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
-(add-hook 'after-init-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
-;; `elpaca-use-package-mode' makes an explicit `:ensure t' route through
-;; Elpaca instead of package.el. Modules don't use it -- they declare
-;; packages with `package!' -- but a user's config.el may.
-(elpaca elpaca-use-package
-  (elpaca-use-package-mode))
+;; No `elpaca-use-package-mode': packages are declared with `package!',
+;; and `:ensure' only warns (`hell--use-package-ensure'). The mode would
+;; take `:ensure' over for the rest of a session that ran `M-x hell-sync',
+;; installing packages no sync records.
 
-;; Block until Elpaca + elpaca-use-package are installed and activated.
+;; Block until Elpaca is installed.
 (elpaca-wait)
 
 (provide 'hell-elpaca)

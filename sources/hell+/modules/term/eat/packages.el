@@ -22,5 +22,12 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (package! eat
+  ;; From its GitHub mirror, on purpose: upstream is on Codeberg, whose
+  ;; 503s failed installs. Its :files as MELPA's recipe: NonGNU ELPA's
+  ;; leaves out the compiled terminfo (its tarball build makes it) and
+  ;; the shell integration scripts.
   :recipe (:host github :repo "emacsmirror/eat"
-           :files ("*.el" ("term" "term/*.el") "*.texi" "*.ti")))
+           :files ("*.el" ("term" "term/*.el") "*.texi" "*.ti"
+                   ("terminfo/e" "terminfo/e/*") ("terminfo/65" "terminfo/65/*")
+                   ("integration" "integration/*")
+                   (:exclude ".dir-locals.el" "*-tests.el"))))

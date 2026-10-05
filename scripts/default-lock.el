@@ -67,12 +67,53 @@
           (push (if flags (cons (intern name) flags) (intern name)) args))))
     (nreverse args)))
 
-(let ((init (expand-file-name "init.el" hell-user-dir)))
+;; The lock covers every supported Emacs, not just the one running this:
+;; packages.el files are read as the oldest would read them (a package
+;; declared only below Emacs 31, say), and `:built-in prefer' packages
+;; are installed, as an Emacs without them built in would.
+(defconst hell-default-lock--oldest-emacs '(29 . 1)
+  "The oldest Emacs Hell Emacs supports, as (MAJOR . MINOR).")
+
+(defun hell-default-lock--as-oldest-emacs-a (fn &rest args)
+  "Call FN with ARGS as the oldest supported Emacs would."
+  (let ((emacs-major-version (car hell-default-lock--oldest-emacs))
+        (emacs-minor-version (cdr hell-default-lock--oldest-emacs)))
+    (apply fn args)))
+
+(defmacro hell-default-lock--as-oldest-emacs (&rest body)
+  "Run BODY reading packages.el files as the oldest supported Emacs.
+Only the reading: packages are still built by this Emacs."
+  (declare (indent 0))
+  `(unwind-protect
+       (progn
+         (advice-add 'hell-modules-read-packages :around #'hell-default-lock--as-oldest-emacs-a)
+         (advice-add 'hell-package-built-in-p :override #'ignore)
+         ,@body)
+     (advice-remove 'hell-modules-read-packages #'hell-default-lock--as-oldest-emacs-a)
+     (advice-remove 'hell-package-built-in-p #'ignore)))
+
+(defun hell-default-lock--write-init ()
+  "Write an init.el in `hell-user-dir' enabling every module and flag."
   (make-directory hell-user-dir t)
-  (with-temp-file init
-    (prin1 `(hell! ,@(hell-default-lock--modules)) (current-buffer)))
-  (hell-modules-read-config)
-  (hell-modules-install-packages 'ignore-lock)
+  (with-temp-file (expand-file-name "init.el" hell-user-dir)
+    (prin1 `(hell! ,@(hell-default-lock--modules)) (current-buffer))))
+
+(defun hell-default-lock-packages ()
+  "The packages the default lock must cover. For the tests.
+Replaces the init.el in `hell-user-dir' with one enabling everything."
+  (hell-default-lock--write-init)
+  (hell-default-lock--as-oldest-emacs
+    (hell-modules-read-config)
+    (hell-modules-read-packages)
+    (cl-loop for (name . plist) in hell-packages
+             when (hell-package--order name plist) collect name)))
+
+(defun hell-default-lock-write ()
+  "Install every package, then write `hell-default-lock-file'. For `make lock'."
+  (hell-default-lock--write-init)
+  (hell-default-lock--as-oldest-emacs
+    (hell-modules-read-config)
+    (hell-modules-install-packages 'ignore-lock))
   (defvar elpaca-lock-file-functions)
   ;; Every installed package, as `bin/hell lock'; a failed one has no
   ;; commit to record.

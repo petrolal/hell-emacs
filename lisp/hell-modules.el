@@ -70,6 +70,10 @@
 (declare-function elpaca-rebuild "elpaca" (package &optional interactive))
 (declare-function elpaca-process-queues "elpaca" (&optional queue))
 (declare-function elpaca<-status "elpaca" (e))
+(declare-function elpaca<-source-dir "elpaca" (e))
+(declare-function elpaca<-recipe "elpaca" (e))
+(declare-function elpaca--dependencies "elpaca" (e &optional recache))
+(declare-function elpaca-get "elpaca" (id))
 (declare-function elpaca--queued "elpaca" ())
 (declare-function hell-packages-bootstrap "hell-packages" ())
 
@@ -397,7 +401,9 @@ config.el. PLIST accepts:
 
   :recipe PLIST   an Elpaca recipe (:host github :repo \"user/repo\" ...)
                   for packages not on (M)ELPA, or to change its source
-  :pin REF        a commit, tag or branch to install
+  :pin REF        a commit (or tag) to install, and keep installed. A
+                  branch name would be pinned at whatever commit it
+                  was on; to follow a branch, give the recipe :branch
   :built-in BOOL  don't install; Emacs provides it. \\='prefer means
                   install only if this Emacs doesn't have it built in
   :disable BOOL   don't install it, and ignore every `use-package'
@@ -432,7 +438,8 @@ one, so your packages.el (read last) can change a module's."
 
 (defmacro unpin! (&rest targets)
   "Install TARGETS at their latest version, ignoring their `:pin'.
-Use it in your packages.el. Each target is a package name, a module
+The lock file's commit is ignored too, and `bin/hell upgrade' updates
+them. Use it in your packages.el. Each target is a package name, a module
 written (GROUP NAME) or (GROUP) -- every package that module or group
 declares -- or t, for every package.
 
@@ -461,6 +468,17 @@ declares -- or t, for every package.
   "Non-nil if package NAME's `:pin' is ignored (`unpin!')."
   (or (eq hell-unpinned-packages t)
       (memq name hell-unpinned-packages)))
+
+(defun hell-package-pinned-p (name)
+  "Non-nil if package NAME has a `:pin' that isn't ignored (`unpin!')."
+  (and (plist-get (alist-get name hell-packages) :pin)
+       (not (hell-package-unpinned-p name))))
+
+(defun hell-package-upgradable-p (name)
+  "Non-nil if `bin/hell upgrade' may move package NAME to its latest commit.
+Not if it's pinned, nor Elpaca itself, which only its pin moves
+\(lisp/hell-elpaca.el)."
+  (not (or (eq name 'elpaca) (hell-package-pinned-p name))))
 
 (defun hell-package-declare (name plist)
   "Record PLIST for package NAME in `hell-packages'. See `package!'."
@@ -501,9 +519,12 @@ Nil means the package shouldn't be installed."
                 (eq built-in t)
                 (and (eq built-in 'prefer) (hell-package-built-in-p name)))
       (let ((recipe (copy-sequence (plist-get plist :recipe))))
-        (when-let* ((pin (and (not (hell-package-unpinned-p name))
-                              (plist-get plist :pin))))
-          (setq recipe (plist-put recipe :ref pin)))
+        (cond ((hell-package-unpinned-p name)
+               ;; An explicit nil: the lock file's recipe, which Elpaca
+               ;; inherits, would otherwise still pin it.
+               (setq recipe (plist-put recipe :ref nil)))
+              ((plist-get plist :pin)
+               (setq recipe (plist-put recipe :ref (plist-get plist :pin)))))
         (if recipe (cons name recipe) name)))))
 
 ;; `:disable' also has to silence the package's configuration, which
@@ -713,58 +734,148 @@ Non-nil IGNORE-LOCK installs without the lock file's pins."
   (setq elpaca-lock-file (and (not ignore-lock) (hell-lock-file-in-use)))
   (hell-modules-read-packages)
   (hell-packages-apply-env)
-  (let ((rebuild (hell-packages--env-changed)))
+  ;; Elpaca itself is kept at its pin by its bootstrap (lisp/hell-elpaca.el).
+  (let ((built (delq 'elpaca (hell-packages--built-ids))))
     (pcase-dolist (`(,name . ,plist) (reverse hell-packages))
       (when-let* ((order (hell-package--order name plist)))
         (eval `(elpaca ,order) t)))
     (hell--elpaca-wait)
-    ;; Already-built packages whose :env changed were compiled without
-    ;; it; Elpaca doesn't notice, so rebuild them explicitly.
-    (when rebuild
-      (dolist (name rebuild)
-        (elpaca-rebuild name))
+    ;; Elpaca doesn't notice when what an already-built package was built
+    ;; from changes, so its checkout is moved and it's rebuilt here.
+    (when-let* ((rebuild
+                 (cl-loop for id in (seq-intersection (hell-packages--queued-ids) built)
+                          for ok = (eq (elpaca<-status (elpaca-get id)) 'finished)
+                          for ref = (and ok (hell-packages--ref-to-check-out id))
+                          when ref do (hell-packages--check-out id ref)
+                          when (and ok (or ref (hell-packages--inputs-changed-p id)))
+                          collect id)))
+      ;; A rebuild doesn't install dependencies: a commit needing a new
+      ;; one gets it here, first, so the package compiles against it.
+      (when-let* ((deps (hell-packages--new-dependencies rebuild)))
+        (message "Installing new dependencies: %s" (mapconcat #'symbol-name deps ", "))
+        (dolist (dep deps)
+          (eval `(elpaca ,dep) t))
+        (hell--elpaca-wait))
+      (message "Rebuilding %d changed packages: %s" (length rebuild)
+               (mapconcat #'symbol-name rebuild ", "))
+      (mapc #'elpaca-rebuild rebuild)
       (elpaca-process-queues)
       (hell--elpaca-wait))
-    (hell-packages--write-env-stamps)))
+    (hell-packages--write-build-stamps)))
 
-;;; Build environment stamps ---------------------------------------------------
+;;; Build stamps -------------------------------------------------------------
 ;;
-;; `package!'s :env only affects a package when it's compiled, so each
-;; package's :env is recorded when it's built, and a package whose :env
-;; changes since is rebuilt.
+;; Elpaca builds a package once, and never looks at it again: a `package!'
+;; :env only reaches it when it's compiled, a :recipe (its :files, say)
+;; when its build is linked, and its commit when it's cloned. So what
+;; every package, dependencies too, was built from is recorded, and the
+;; next sync moves and rebuilds the ones whose inputs changed since.
+;;
+;; Its commit is its :ref in the recipe Elpaca resolved: its `:pin', else
+;; the lock file's. A pin always holds: a checkout anywhere else is put
+;; back. A lock's commit is only followed when the lock changes (yours
+;; from a teammate, or the default with Hell Emacs): `bin/hell upgrade'
+;; moves checkouts past it, and a sync mustn't put them back.
 
-(defun hell-packages--env-stamp-file (name)
-  "Where the :env package NAME was last built with is recorded."
-  (expand-file-name (format "build-env/%s.eld" name) hell-data-dir))
+(defun hell-packages--built-ids ()
+  "The packages Elpaca has built, before this sync queues any."
+  (defvar elpaca-builds-directory)
+  (when (file-directory-p elpaca-builds-directory)
+    (mapcar #'intern (directory-files elpaca-builds-directory nil "\\`[^.]"))))
 
-(defun hell-packages--recorded-env (name)
-  "Return the :env package NAME was last built with, or nil."
-  (let ((file (hell-packages--env-stamp-file name)))
+(defun hell-packages--queued-ids ()
+  "Every package Elpaca has queued, declared or a dependency, once each."
+  (seq-uniq (mapcar #'car (elpaca--queued))))
+
+(defun hell-packages--ref (id)
+  "The commit (or tag) package ID is installed at, by its resolved recipe."
+  (when-let* ((e (elpaca-get id)))
+    (plist-get (elpaca<-recipe e) :ref)))
+
+(defun hell-packages--build-inputs (id)
+  "What package ID's build depends on, as a plist; nil if nothing.
+Its `package!' :env and :recipe, and its :ref (`hell-packages--ref')."
+  (let ((plist (alist-get id hell-packages)))
+    (append (when-let* ((env (plist-get plist :env))) (list :env env))
+            (when-let* ((recipe (plist-get plist :recipe))) (list :recipe recipe))
+            (when-let* ((ref (hell-packages--ref id))) (list :ref ref)))))
+
+(defun hell-packages--build-stamp-file (id)
+  "Where what package ID was last built from is recorded."
+  (expand-file-name (format "build-env/%s.eld" id) hell-data-dir))
+
+(defun hell-packages--recorded-inputs (id)
+  "Return the build inputs package ID was last built from, or nil.
+See `hell-packages--build-inputs'."
+  (let ((file (hell-packages--build-stamp-file id)))
     (when (file-exists-p file)
       (with-temp-buffer
         (insert-file-contents file)
-        (ignore-errors (read (current-buffer)))))))
+        (let ((data (ignore-errors (read (current-buffer)))))
+          ;; Written before :recipe and :ref were recorded: the :env alone.
+          (if (consp (car-safe data)) (list :env data) data))))))
 
-(defun hell-packages--env-changed ()
-  "Return the installed packages whose :env differs from their last build."
-  (defvar elpaca-builds-directory)
-  (cl-loop for (name . plist) in hell-packages
-           when (and (hell-package--order name plist)
-                     (file-directory-p (expand-file-name (symbol-name name)
-                                                         elpaca-builds-directory))
-                     (not (equal (plist-get plist :env)
-                                 (hell-packages--recorded-env name))))
-           collect name))
+(defun hell-packages--inputs-changed-p (id)
+  "Non-nil if package ID's :env or :recipe changed since its last build."
+  (let ((now (hell-packages--build-inputs id))
+        (then (hell-packages--recorded-inputs id)))
+    (not (and (equal (plist-get now :env) (plist-get then :env))
+              (equal (plist-get now :recipe) (plist-get then :recipe))))))
 
-(defun hell-packages--write-env-stamps ()
-  "Record the :env every installed package was just built with."
-  (pcase-dolist (`(,name . ,plist) hell-packages)
-    (when (hell-package--order name plist)
-      (let ((file (hell-packages--env-stamp-file name))
-            (env (plist-get plist :env)))
-        (cond (env
+(defun hell-packages--at-ref-p (id ref)
+  "Non-nil if package ID's checkout is at REF (a commit or tag)."
+  (let ((default-directory (file-name-as-directory (elpaca<-source-dir (elpaca-get id)))))
+    (when-let* ((head (car (process-lines-ignore-status "git" "rev-parse" "HEAD"))))
+      (equal head (car (process-lines-ignore-status
+                        "git" "rev-parse" "-q" "--verify" (concat ref "^{commit}")))))))
+
+(defun hell-packages--ref-to-check-out (id)
+  "The commit installed package ID's checkout must move to, or nil.
+Its pin, when it isn't there; a lock's commit, only when it changed
+since the last build (see \"Build stamps\" above)."
+  (when-let* ((ref (hell-packages--ref id))
+              ((or (hell-package-pinned-p id)
+                   (let ((then (plist-member (hell-packages--recorded-inputs id) :ref)))
+                     (and then (not (equal (cadr then) ref))))))
+              ((not (hell-packages--at-ref-p id ref))))
+    ref))
+
+(defun hell-packages--check-out (id ref)
+  "Check out REF in package ID's checkout, fetching it first if it's missing."
+  (let* ((default-directory (file-name-as-directory (elpaca<-source-dir (elpaca-get id))))
+         (git (lambda (&rest args) (zerop (apply #'call-process "git" nil nil nil args)))))
+    (unless (or (funcall git "cat-file" "-e" (concat ref "^{commit}"))
+                (funcall git "fetch" "-q" "--tags" "origin"))
+      (error "Couldn't fetch %s's commit %s" id ref))
+    (unless (funcall git "-c" "advice.detachedHead=false" "checkout" "-q" ref)
+      (error "Couldn't check out %s's commit %s in %s" id ref
+             (abbreviate-file-name default-directory)))))
+
+(defun hell-packages--new-dependencies (ids)
+  "The dependencies packages IDS declare that Elpaca hasn't queued.
+Read again from their checkouts, which may have just moved. Emacs
+itself and what Elpaca leaves to it (`elpaca-ignored-dependencies')
+don't count."
+  (defvar elpaca-ignored-dependencies)
+  (let ((queued (hell-packages--queued-ids)))
+    (seq-uniq
+     (cl-loop for id in ids
+              append (cl-loop for (dep . _) in (elpaca--dependencies (elpaca-get id) t)
+                              unless (or (eq dep 'emacs)
+                                         (memq dep elpaca-ignored-dependencies)
+                                         (memq dep queued))
+                              collect dep)))))
+
+(defun hell-packages--write-build-stamps ()
+  "Record what every queued package was just built from.
+A package that failed keeps its old record, so the next sync retries it."
+  (dolist (id (hell-packages--queued-ids))
+    (when (eq (elpaca<-status (elpaca-get id)) 'finished)
+      (let ((file (hell-packages--build-stamp-file id))
+            (inputs (hell-packages--build-inputs id)))
+        (cond (inputs
                (make-directory (file-name-directory file) t)
-               (with-temp-file file (prin1 env (current-buffer))))
+               (with-temp-file file (prin1 inputs (current-buffer))))
               ((file-exists-p file)
                (delete-file file)))))))
 

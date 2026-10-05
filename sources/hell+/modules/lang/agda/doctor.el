@@ -23,9 +23,29 @@
 
 ;;; Code:
 
+(defvar elpaca-builds-directory)
+
+(defun hell-agda--mode-version ()
+  "The Agda version the installed agda2-mode needs, or nil."
+  (let ((file (expand-file-name "agda2-mode/agda2-mode.el" elpaca-builds-directory)))
+    (when (file-exists-p file)
+      (with-temp-buffer
+        (insert-file-contents file)
+        (when (re-search-forward "^(defvar agda2-version \"\\([^\"]+\\)\"" nil t)
+          (match-string 1))))))
+
 ;; Checked by `bin/hell doctor'.
 (if-let* ((agda (executable-find "agda")))
-    (hell-doctor-ok "Agda compiler: %s" (abbreviate-file-name agda))
+    (let* ((output (cdr (hell-process-output agda "--version")))
+           (version (and (string-match "Agda version \\([0-9.]+\\)" output)
+                         (match-string 1 output)))
+           (wanted (hell-agda--mode-version)))
+      (if (and version wanted (not (equal version wanted)))
+          (hell-doctor-error "agda is %s, but agda2-mode only starts with Agda %s; \
+install Agda %s, or pin agda2-mode to your release's tag in your packages.el"
+                             version wanted wanted)
+        (hell-doctor-ok "Agda compiler: %s%s" (abbreviate-file-name agda)
+                        (if version (format " (%s)" version) ""))))
   (hell-doctor-info "agda not found in PATH"))
 
 (if-let* ((agda-mode (executable-find "agda-mode")))
