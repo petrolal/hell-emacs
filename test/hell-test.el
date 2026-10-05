@@ -33,7 +33,9 @@
 (require 'hell-cli)
 (require 'hell-modules)
 (require 'hell-plugins)
-(eval-and-compile (hell-require 'hell-cli 'config))
+(eval-and-compile
+  (hell-require 'hell-lib 'block)
+  (hell-require 'hell-cli 'config))
 (eval-and-compile (hell-require 'hell-lib 'net))
 
 (defmacro hell-test--with-modules (&rest body)
@@ -541,7 +543,7 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
           (init (expand-file-name "init.el" hell-user-dir))
           (inhibit-message t))
      (unwind-protect
-         (cl-flet ((modules () (mapcar #'car (hell-config--modules (hell-config--block-spec init)))))
+         (cl-flet ((modules () (mapcar #'car (hell-block-modules (hell-block-spec init)))))
            (with-temp-file init (insert hell-test--init))
            ,@body)
        (delete-directory hell-user-dir t))))
@@ -574,10 +576,10 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
 (ert-deftest hell-test-plugins-flags-and-groups ()
   (hell-test--with-init
     (should (hell-plugin-disable :lang 'java))
-    (should-not (assoc '(:lang . java) (hell-config--modules (hell-config--block-spec init))))
+    (should-not (assoc '(:lang . java) (hell-block-modules (hell-block-spec init))))
     (should (hell-plugin-enable "lang" 'java))   ; back, flags and all
     (should (member '((:lang . java) . (java +lombok))
-                    (hell-config--modules (hell-config--block-spec init))))
+                    (hell-block-modules (hell-block-spec init))))
     (should (hell-plugin-enable 'editor 'multiple-cursors))
     (should (member '(:editor . multiple-cursors) (modules)))
     ;; A group the block lacks is made.
@@ -590,6 +592,22 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
     (should (hell-plugin-enable 'ui 'theme))
     (should (member '(:ui . theme) (modules)))
     (should (equal (hell-plugin-find-in-init init 'ui 'theme) '(t . nil)))))
+
+;;; cli/config -------------------------------------------------------------
+
+(ert-deftest hell-test-config-add-defaults ()
+  (hell-test--with-init
+    ;; Only `theme' and `default' on, `lsp' commented out: your choice.
+    (with-temp-file init
+      (insert "(hell! :ui theme\n       :tools\n       ;;lsp\n       :config default)\n"))
+    (let* ((defaults (mapcar #'car (hell-config-default-modules)))
+           (added (mapcar #'car (hell-config-add-defaults init))))
+      (should added)
+      (should-not (member '(:tools . lsp) added))
+      (should (seq-set-equal-p (modules)
+                               (remove '(:tools . lsp) defaults)))
+      (should (file-exists-p hell-config-last-backup))
+      (should-not (hell-config-add-defaults init)))))
 
 ;;; bin/hell-upgrade -------------------------------------------------------
 

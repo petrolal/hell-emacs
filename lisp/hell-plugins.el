@@ -105,14 +105,14 @@ Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC
 ;;
 ;; Enabling or disabling a module changes only its own line, inside its own
 ;; group of the `hell!' form: `:tools docker' and `:lang docker' are two
-;; modules. The form is read as `bin/hell config --add-defaults' reads it
-;; (lisp/cli/config.el).
+;; modules. The form is read with lisp/lib/block.el, as `bin/hell config
+;; --add-defaults' reads it.
 
-(declare-function hell-config--block "cli/config" (file))
-(declare-function hell-config--block-spec "cli/config" (file))
-(declare-function hell-config--modules "cli/config" (spec))
-(declare-function hell-config--group-positions "cli/config" (start end))
-(declare-function hell-config--end-of-group "cli/config" (group groups end))
+(declare-function hell-block-read "lib/block" (file))
+(declare-function hell-block-spec "lib/block" (file))
+(declare-function hell-block-modules "lib/block" (spec))
+(declare-function hell-block-group-positions "lib/block" (start end))
+(declare-function hell-block-end-of-group "lib/block" (group groups end))
 
 (defun hell-plugins--group-keyword (group)
   "GROUP (`lang', `:lang' or \"lang\") as the keyword `hell!' uses."
@@ -128,7 +128,7 @@ START and END bound the form. Returns (active BEG . END), the module as
 written, flags and all; (commented BEG . END), the comment marker of a
 `;;NAME' line among GROUP's; (group) if GROUP is there without NAME;
 nil if GROUP isn't there."
-  (let* ((groups (hell-config--group-positions start end))
+  (let* ((groups (hell-block-group-positions start end))
          (here (assq group groups))
          (depth (1+ (car (syntax-ppss start))))
          (name-re (concat "\\_<" (regexp-quote (symbol-name name)) "\\_>")))
@@ -171,7 +171,7 @@ nil if GROUP isn't there."
 (defun hell-plugins--enable-here (group name start end where)
   "Enable GROUP NAME in the `hell!' form between START and END.
 WHERE is from `hell-plugins--locate'. Returns non-nil if it changed it."
-  (let ((groups (hell-config--group-positions start end)))
+  (let ((groups (hell-block-group-positions start end)))
     (pcase where
       (`(active . ,_) nil)
       (`(commented ,b . ,e)
@@ -184,7 +184,7 @@ WHERE is from `hell-plugins--locate'. Returns non-nil if it changed it."
            (insert (make-string width ?\s))))
        t)
       (`(group)
-       (goto-char (hell-config--end-of-group group groups end))
+       (goto-char (hell-block-end-of-group group groups end))
        (insert (make-string (hell-plugins--group-column group groups) ?\s)
                (symbol-name name) "\n")
        t)
@@ -214,7 +214,7 @@ Returns non-nil if it changed it."
        ;; column; what followed it (the closing paren too) to the next line.
        (let* ((text (buffer-substring b e))
               (indent (make-string (hell-plugins--group-column
-                                    group (hell-config--group-positions start end))
+                                    group (hell-block-group-positions start end))
                                    ?\s))
               (rest (save-excursion (goto-char e) (skip-chars-forward " \t")
                                     (and (not (looking-at "$\\|;")) (point)))))
@@ -230,14 +230,14 @@ Returns non-nil if it changed it."
 Only GROUP's lines change. init.el is copied to init.el~ first, and put
 back if the result doesn't read back as asked. Returns non-nil if
 anything changed."
-  (hell-require 'hell-cli 'config)
+  (hell-require 'hell-lib 'block)
   (let* ((init (hell-plugins--init-file))
          (group (hell-plugins--group-keyword group))
-         (block (or (and (file-exists-p init) (hell-config--block init))
+         (block (or (and (file-exists-p init) (hell-block-read init))
                     (error "No (hell! ...) block in %s" (abbreviate-file-name init))))
          (backup (concat init "~"))
          (key (cons group name))
-         (before (mapcar #'car (hell-config--modules (nth 2 block))))
+         (before (mapcar #'car (hell-block-modules (nth 2 block))))
          changed)
     (with-temp-buffer
       (insert-file-contents init)
@@ -253,7 +253,7 @@ anything changed."
     ;; Read back: that module changed, and no other.
     (when changed
       (unless (seq-set-equal-p
-               (mapcar #'car (hell-config--modules (hell-config--block-spec init)))
+               (mapcar #'car (hell-block-modules (hell-block-spec init)))
                (if enable (cons key before) (remove key before)))
         (copy-file backup init t)
         (error "Couldn't %s %s %s in %s; it's unchanged"
@@ -263,8 +263,8 @@ anything changed."
 (defun hell-plugin-find-in-init (init-file group-sym name-sym)
   "Search INIT-FILE's `hell!' block for module GROUP-SYM NAME-SYM.
 Returns (FOUND-P . COMMENTED-P)."
-  (hell-require 'hell-cli 'config)
-  (if-let* ((block (and (file-exists-p init-file) (hell-config--block init-file))))
+  (hell-require 'hell-lib 'block)
+  (if-let* ((block (and (file-exists-p init-file) (hell-block-read init-file))))
       (with-temp-buffer
         (insert-file-contents init-file)
         (emacs-lisp-mode)

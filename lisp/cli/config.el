@@ -43,6 +43,7 @@
 (require 'seq)
 (require 'subr-x)
 (require 'hell-lib)
+(eval-and-compile (hell-require 'hell-lib 'block))
 
 (defvar hell-dir)                   ; early-init.el
 (defvar hell-user-dir)
@@ -54,61 +55,13 @@
 (defvar hell-config-last-backup nil
   "The backup `hell-config-add-defaults' made last.")
 
-;;; Reading a hell! block ----------------------------------------------------------
-
-(defun hell-config--block (file)
-  "(START END SPEC) of the `hell!' form in FILE, or nil if it has none."
-  (when (file-readable-p file)
-    (with-temp-buffer
-      (insert-file-contents file)
-      (emacs-lisp-mode)
-      (goto-char (point-min))
-      (catch 'found
-        (condition-case nil
-            (while t
-              (forward-comment (buffer-size))
-              (let* ((start (point))
-                     (form (read (current-buffer))))
-                (when (eq (car-safe form) 'hell!)
-                  (throw 'found (list start (point) (cdr form))))))
-          ((end-of-file invalid-read-syntax) nil))))))
-
-(defun hell-config--block-spec (file)
-  "The arguments of the `hell!' form in FILE, or nil."
-  (nth 2 (hell-config--block file)))
-
-(defun hell-config--modules (spec)
-  "The modules SPEC (a `hell!' form's arguments) enables, as (KEY . ITEM).
-KEY is (GROUP . NAME); ITEM is the module as written, flags and all."
-  (let (group modules)
-    (dolist (item spec)
-      (cond ((keywordp item) (setq group item))
-            ((and group (or (symbolp item) (and (consp item) (symbolp (car item)))))
-             (push (cons (cons group (if (consp item) (car item) item)) item) modules))))
-    (nreverse modules)))
-
-(defun hell-config--block-lines (file)
-  "The lines of the `hell!' form in FILE."
-  (when-let* ((block (hell-config--block file)))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (split-string (buffer-substring-no-properties (nth 0 block) (nth 1 block)) "\n"))))
-
-(defun hell-config--commented (file)
-  "The module names commented out in FILE's `hell!' form.
-As in `;;modeline' or `;;(java +x)'."
-  (delq nil (mapcar (lambda (line)
-                      (when (string-match "\\`[ \t]*;+[ \t]*(?\\([a-z][a-z0-9-]*\\)\\_>" line)
-                        (intern (match-string 1 line))))
-                    (hell-config--block-lines file))))
-
 ;;; The defaults, and what's missing -----------------------------------------------------
 
 (defun hell-config-default-modules ()
   "The modules on by default, in order, as (KEY . LINE).
 LINE is the module's line in `hell-config-example-file', with its
 description; KEY is (GROUP . NAME)."
-  (let ((lines (hell-config--block-lines hell-config-example-file)))
+  (let ((lines (hell-block-lines hell-config-example-file)))
     (mapcar (lambda (module)
               (let ((name (symbol-name (cdr (car module)))))
                 (cons (car module)
@@ -116,7 +69,7 @@ description; KEY is (GROUP . NAME)."
                                       (string-match-p (concat "\\`[ \t]*(?" (regexp-quote name) "\\_>") line))
                                     lines)
                           (format "           %s" (cdr module))))))
-            (hell-config--modules (hell-config--block-spec hell-config-example-file)))))
+            (hell-block-modules (hell-block-spec hell-config-example-file)))))
 
 (defun hell-config--init (init)
   "INIT, or the user's init.el."
@@ -128,9 +81,9 @@ INIT defaults to your init.el. As (KEY . LINE), see
 `hell-config-default-modules'. Without a block of your own the
 defaults apply, so nothing is missing."
   (let ((init (hell-config--init init)))
-    (when-let* ((spec (hell-config--block-spec init)))
-      (let ((enabled (mapcar #'car (hell-config--modules spec)))
-            (commented (hell-config--commented init)))
+    (when-let* ((spec (hell-block-spec init)))
+      (let ((enabled (mapcar #'car (hell-block-modules spec)))
+            (commented (hell-block-commented init)))
         (seq-remove (lambda (default)
                       (or (member (car default) enabled)
                           (memq (cdr (car default)) commented)))
@@ -171,42 +124,6 @@ nil if nothing's missing."
     (copy-file file name)
     name))
 
-(defun hell-config--group-positions (start end)
-  "(GROUP . POSITION) of each group keyword between START and END, in the buffer.
-POSITION is the start of the keyword's line when the keyword starts it,
-else the keyword itself (as in `(hell! :ui'). Keywords in comments
-and strings, and a module's options (`(java :depth 5)'), don't count."
-  (let ((depth (1+ (car (syntax-ppss start))))   ; the form's own elements
-        groups)
-    (save-excursion
-      (goto-char start)
-      (while (re-search-forward ":\\([a-z]+\\)\\_>" end t)
-        ;; Not a module's option, as in `(java :depth 5)'.
-        (unless (or (nth 8 (syntax-ppss)) (/= (car (syntax-ppss)) depth))
-          (let ((keyword (match-beginning 0)))
-            (push (cons (intern (concat ":" (match-string 1)))
-                        (if (save-excursion (goto-char keyword) (skip-chars-backward " \t") (bolp))
-                            (line-beginning-position)
-                          keyword))
-                  groups)))))
-    (nreverse groups)))
-
-(defun hell-config--end-of-group (group groups end)
-  "Return where lines join GROUP in GROUPS.
-GROUPS is from `hell-config--group-positions'. That's after its last
-line, before any blank lines that separate it from the next group.
-For the last group, just before the form's closing line, which ends
-at END."
-  (save-excursion
-    (let ((next (cadr (member (assq group groups) groups))))
-      (if next
-          (progn (goto-char (cdr next))
-                 (skip-chars-backward " \t\n")
-                 (forward-line 1)
-                 (point))
-        (goto-char (1- end))            ; the closing paren
-        (line-beginning-position)))))
-
 (defun hell-config-add-defaults (&optional init)
   "Add the default modules INIT's `hell!' block misses; return them.
 Each goes in its group, as the example writes it; a missing group is
@@ -218,20 +135,20 @@ back with them, it is restored. Nothing to add leaves INIT untouched."
     (when missing
       (let* ((order (delete-dups (mapcar (lambda (d) (car (car d))) (hell-config-default-modules))))
              (backup (hell-config--backup init))
-             (example-lines (hell-config--block-lines hell-config-example-file))
+             (example-lines (hell-block-lines hell-config-example-file))
              inserts)
         (setq hell-config-last-backup backup)
         (with-temp-buffer
           (insert-file-contents init)
           (emacs-lisp-mode)
-          (pcase-let* ((`(,start ,end ,_) (hell-config--block init))
-                       (groups (hell-config--group-positions start end)))
+          (pcase-let* ((`(,start ,end ,_) (hell-block-read init))
+                       (groups (hell-block-group-positions start end)))
             (dolist (group (delete-dups (mapcar (lambda (m) (car (car m))) missing)))
               (let ((lines (mapconcat (lambda (m) (concat (cdr m) "\n"))
                                       (seq-filter (lambda (m) (eq (car (car m)) group)) missing)
                                       "")))
                 (if (assq group groups)
-                    (push (cons (hell-config--end-of-group group groups end) lines) inserts)
+                    (push (cons (hell-block-end-of-group group groups end) lines) inserts)
                   ;; A new group: before the next one you have, in the example's order.
                   (let* ((later (cdr (memq group order)))
                          (before (seq-some (lambda (g) (assq g groups)) later))
@@ -267,7 +184,7 @@ back with them, it is restored. Nothing to add leaves INIT untouched."
                 (goto-char (car insert))
                 (insert (cdr insert)))))
           (write-region nil nil init nil 'silent))
-        (when (or (not (hell-config--block-spec init))
+        (when (or (not (hell-block-spec init))
                   (hell-config-missing-defaults init))
           (copy-file backup init t)
           (error "Couldn't add the modules to %s; it's unchanged. Add them by hand: %s"
