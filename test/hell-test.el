@@ -232,6 +232,47 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
                     "REPO=git@github.com:a/b.git" "SSH_URL=ssh://git@host/x" "EMPTY=")
                    . ("DATABASE_URL" "HTTPS_PROXY")))))
 
+;;; cli/sync ---------------------------------------------------------------
+
+(defmacro hell-test--with-profile-dir (&rest body)
+  "Run BODY with `hell-profile-dir' a fresh temporary directory."
+  (declare (indent 0))
+  `(let ((hell-profile-dir (file-name-as-directory (make-temp-file "hell-test-profile" t))))
+     (unwind-protect (progn ,@body)
+       (delete-directory hell-profile-dir t))))
+
+(ert-deftest hell-test-sync-lock ()
+  (hell-test--with-profile-dir
+    (let ((file (hell-sync-lock-file)))
+      (with-hell-sync-lock
+        (should (equal (hell-sync--lock-holder file) (cons (emacs-pid) (system-name))))
+        ;; Nested (`gc' syncs inside its own lock): no deadlock.
+        (with-hell-sync-lock (should (file-exists-p file))))
+      (should-not (file-exists-p file))
+      ;; Released when BODY fails too.
+      (ignore-errors (with-hell-sync-lock (error "Boom")))
+      (should-not (file-exists-p file)))))
+
+(ert-deftest hell-test-sync-lock-held-elsewhere ()
+  (hell-test--with-profile-dir
+    (let ((file (hell-sync-lock-file))
+          (ran nil))
+      ;; A live process on this host has it: refused, BODY never runs.
+      (with-temp-file file (prin1 (cons (emacs-pid) (system-name)) (current-buffer)))
+      (should-error (with-hell-sync-lock (setq ran t)))
+      (should-not ran)
+      (should (file-exists-p file))
+      ;; Another host's can't be checked: refused too.
+      (with-temp-file file (prin1 (cons 1 "some-other-host.example") (current-buffer)))
+      (should-error (with-hell-sync-lock (setq ran t)))
+      ;; A dead sync's, or a half-written one, is taken over.
+      (dolist (stale (list (prin1-to-string (cons 999999999 (system-name))) "(12"))
+        (with-temp-file file (insert stale))
+        (with-hell-sync-lock (setq ran t))
+        (should ran)
+        (setq ran nil)
+        (should-not (file-exists-p file))))))
+
 ;;; cli/bundle -------------------------------------------------------------
 
 (defmacro hell-test--with-bundle-root (&rest body)

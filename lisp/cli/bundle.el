@@ -440,42 +440,43 @@ run with `hell-net-offline' set."
     (unless (file-readable-p bundle)
       (error "Can't read the bundle %s" (abbreviate-file-name bundle)))
     (hell-bundle-check-sha256 bundle sha256)
-    (make-directory hell-data-dir t)
-    ;; Unpacked on the same file system, so it moves into place whole.
-    (let ((stage (make-temp-file (expand-file-name ".bundle-" hell-data-dir) t)))
-      (unwind-protect
-          (progn
-            (hell-sync--log "Unpacking %s..." (abbreviate-file-name bundle))
-            ;; Owned by whoever installs, root included (in a container,
-            ;; say): the builder's user means nothing here.
-            (hell-bundle--tar "-x" "--no-same-owner" "-f" bundle "-C" stage)
-            (let ((manifest (hell-bundle--read-manifest stage))
-                  (lock (expand-file-name (concat hell-bundle--meta "/packages.lock.eld") stage))
-                  (data (expand-file-name "data" stage)))
-              (hell-sync--log "Bundle made %s with Emacs %s, for %s"
-                              (plist-get manifest :created) (plist-get manifest :emacs-version)
-                                  (plist-get manifest :platform))
-              (hell-bundle-check manifest)
-              (hell-sync--log "Checking %d files..."
-                              (cl-count :file (plist-get manifest :entries) :key #'cadr))
-              (hell-bundle-verify manifest data)
-              (unless (equal (ignore-errors (hell-file-sha256 lock))
-                             (plist-get manifest :lock-sha256))
-                (error "The bundle is damaged or was altered: its lock file doesn't match its manifest"))
-              (hell-bundle--place manifest data)
-              (unless no-lock
-                (hell-bundle--install-lock lock))
-              (let ((theirs (plist-get manifest :hell))
-                    (ours (hell-bundle--hell-commit)))
-                (when (and theirs ours (not (equal theirs ours)))
-                  (hell-sync--log "Note: the bundle was made with Hell Emacs %s, this is %s; \
+    (with-hell-sync-lock
+      (make-directory hell-data-dir t)
+      ;; Unpacked on the same file system, so it moves into place whole.
+      (let ((stage (make-temp-file (expand-file-name ".bundle-" hell-data-dir) t)))
+        (unwind-protect
+            (progn
+              (hell-sync--log "Unpacking %s..." (abbreviate-file-name bundle))
+              ;; Owned by whoever installs, root included (in a container,
+              ;; say): the builder's user means nothing here.
+              (hell-bundle--tar "-x" "--no-same-owner" "-f" bundle "-C" stage)
+              (let ((manifest (hell-bundle--read-manifest stage))
+                    (lock (expand-file-name (concat hell-bundle--meta "/packages.lock.eld") stage))
+                    (data (expand-file-name "data" stage)))
+                (hell-sync--log "Bundle made %s with Emacs %s, for %s"
+                                (plist-get manifest :created) (plist-get manifest :emacs-version)
+                                (plist-get manifest :platform))
+                (hell-bundle-check manifest)
+                (hell-sync--log "Checking %d files..."
+                                (cl-count :file (plist-get manifest :entries) :key #'cadr))
+                (hell-bundle-verify manifest data)
+                (unless (equal (ignore-errors (hell-file-sha256 lock))
+                               (plist-get manifest :lock-sha256))
+                  (error "The bundle is damaged or was altered: its lock file doesn't match its manifest"))
+                (hell-bundle--place manifest data)
+                (unless no-lock
+                  (hell-bundle--install-lock lock))
+                (let ((theirs (plist-get manifest :hell))
+                      (ours (hell-bundle--hell-commit)))
+                  (when (and theirs ours (not (equal theirs ours)))
+                    (hell-sync--log "Note: the bundle was made with Hell Emacs %s, this is %s; \
 if their pins differ, the sync names what's missing"
-                                  (substring theirs 0 7) (substring ours 0 7))))
-              (hell-sync--log "Installed %d files (%s) from the bundle (each matches its manifest)"
-                              (cl-count :file (plist-get manifest :entries) :key #'cadr)
-                                  (file-size-human-readable (hell-bundle-size manifest)))
-              manifest))
-        (delete-directory stage t)))))
+                                    (substring theirs 0 7) (substring ours 0 7))))
+                (hell-sync--log "Installed %d files (%s) from the bundle (each matches its manifest)"
+                                (cl-count :file (plist-get manifest :entries) :key #'cadr)
+                                (file-size-human-readable (hell-bundle-size manifest)))
+                manifest))
+          (delete-directory stage t))))))
 
 (hell-provide 'hell-cli 'bundle)
 ;;; bundle.el ends here

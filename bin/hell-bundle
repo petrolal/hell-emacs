@@ -37,23 +37,24 @@ before this runs, by `hell-cli-main')."
          (out (car files)))
     (unless (and out (null (cdr files)))
       (error "Usage: bin/hell bundle OUT.tar.zst [--modules SPEC]"))
-    (hell-sync)
-    (hell-cli--say "Packing the bundle...")
-    (let ((manifest (hell-bundle-create out)))
-      (hell-cli--say "Bundled %d files (%s before compression) into %s"
-                         (cl-count :file (plist-get manifest :entries) :key #'cadr)
-                         (file-size-human-readable (hell-bundle-size manifest))
-                         (abbreviate-file-name (expand-file-name out)))
-      (hell-cli--say "  For %s, Emacs %s; modules: %s"
-                         (plist-get manifest :platform) emacs-major-version
-                         (mapconcat (lambda (m) (hell-bundle--module-string (car m) (cadr m)))
-                                    (plist-get manifest :modules) ", "))
-      (let ((sha256 (hell-file-sha256 out)))
-        (hell-cli--say "  SHA-256: %s" sha256)
-        (hell-cli--say "Install it with:  bin/hell install --from-bundle %s --sha256 %s"
-                       (file-name-nondirectory out) sha256))
-      (when spec
-        (hell-cli--say "\nNote: this machine's profile is now synced for those modules; \
-`bin/hell sync' goes back to yours. (`bin/hell --profile NAME bundle ...' keeps them apart.)")))))
+    (with-hell-sync-lock
+      (hell-sync)
+      (hell-cli--say "Packing the bundle...")
+      (let ((manifest (hell-bundle-create out)))
+        (hell-cli--say "Bundled %d files (%s before compression) into %s"
+                       (cl-count :file (plist-get manifest :entries) :key #'cadr)
+                       (file-size-human-readable (hell-bundle-size manifest))
+                       (abbreviate-file-name (expand-file-name out)))
+        (hell-cli--say "  For %s, Emacs %s; modules: %s"
+                       (plist-get manifest :platform) emacs-major-version
+                       (mapconcat (lambda (m) (hell-bundle--module-string (car m) (cadr m)))
+                                  (plist-get manifest :modules) ", "))
+        (let ((sha256 (hell-file-sha256 out)))
+          (hell-cli--say "  SHA-256: %s" sha256)
+          (hell-cli--say "Install it with:  bin/hell install --from-bundle %s --sha256 %s"
+                         (file-name-nondirectory out) sha256))
+        (when spec
+          (hell-cli--say "\nNote: this machine's profile is now synced for those modules; \
+`bin/hell sync' goes back to yours. (`bin/hell --profile NAME bundle ...' keeps them apart.)"))))))
 
 ;;; hell-bundle ends here

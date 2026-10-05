@@ -137,12 +137,13 @@ on a detached HEAD, which has no upstream to update from."
 `bin/hell upgrade' runs `upgrade-self' before this, unless given
 --packages. Rewrites the lock file if you have one."
   (let ((locked (file-exists-p hell-lock-file)))
-    (hell-sync--log "Reading modules and packages...")
-    (hell-modules-read-config)
-    (with-hell-network
-      (hell-cli--upgrade-packages))
-    (when locked
-      (hell-cli--write-lock))
+    (with-hell-sync-lock
+      (hell-sync--log "Reading modules and packages...")
+      (hell-modules-read-config)
+      (with-hell-network
+        (hell-cli--upgrade-packages))
+      (when locked
+        (hell-cli--write-lock)))
     ;; New default modules come with updates; your block may miss them.
     (when-let* ((lines (hell-config-report-lines)))
       (hell-cli--say "")

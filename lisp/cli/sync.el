@@ -86,6 +86,72 @@ module needs. An error fails the sync.")
         (princ (concat msg "\n"))
       (message "Hell Emacs sync: %s" msg))))
 
+;;; One sync at a time -----------------------------------------------------------
+;;
+;; A sync deletes and rewrites the profile, the compiled core and Elpaca's
+;; checkouts. Two at once -- `bin/hell sync' in a terminal and `C-c h R' in
+;; Emacs, say -- would leave each other's half. So every command that
+;; changes what's installed holds the profile's lock: a file holding the
+;; PID and host of whoever has it, made only if it doesn't exist yet. One
+;; left by a sync that died (its process gone, on this host) is taken over.
+
+(defvar hell-profile-dir)                ; early-init.el
+
+(defvar hell-sync--lock-held nil
+  "Non-nil while this session holds the profile's sync lock.")
+
+(defun hell-sync-lock-file ()
+  "The profile's sync lock: `with-hell-sync-lock'."
+  (expand-file-name "sync.lock" hell-profile-dir))
+
+(defun hell-sync--lock-holder (file)
+  "(PID . HOST) in the lock FILE, or nil if it can't be read."
+  (ignore-errors
+    (with-temp-buffer
+      (insert-file-contents file)
+      (let ((data (read (current-buffer))))
+        (and (consp data) (natnump (car data)) (stringp (cdr data)) data)))))
+
+(defun hell-sync--lock-stale-p (holder)
+  "Non-nil if HOLDER, (PID . HOST) or nil, can't still be syncing.
+An unreadable lock is a sync that died writing it; one on another host
+\(a shared home directory) can't be checked, so it's never stale."
+  (or (null holder)
+      (and (equal (cdr holder) (system-name))
+           (not (process-attributes (car holder))))))
+
+(defun hell-sync--acquire-lock ()
+  "Take the profile's sync lock, or signal an error naming who has it."
+  (let ((file (hell-sync-lock-file)))
+    (make-directory (file-name-directory file) t)
+    (catch 'taken
+      (dotimes (_ 2)
+        (condition-case nil
+            (progn
+              ;; `excl': made only if it isn't there, in one step.
+              (write-region (prin1-to-string (cons (emacs-pid) (system-name)))
+                            nil file nil 'silent nil 'excl)
+              (throw 'taken t))
+          (file-already-exists
+           (let ((holder (hell-sync--lock-holder file)))
+             (unless (hell-sync--lock-stale-p holder)
+               (error "Another sync is running (PID %d on %s); wait for it, \
+or delete %s if it isn't" (car holder) (cdr holder) (abbreviate-file-name file)))
+             (delete-file file)))))
+      (error "Couldn't take the sync lock %s" (abbreviate-file-name file)))))
+
+(defmacro with-hell-sync-lock (&rest body)
+  "Run BODY holding the profile's sync lock; nested, BODY just runs.
+Signals an error, before BODY, if another sync holds it."
+  (declare (indent 0) (debug t))
+  `(if hell-sync--lock-held
+       (progn ,@body)
+     (hell-sync--acquire-lock)
+     (unwind-protect
+         (let ((hell-sync--lock-held t))
+           ,@body)
+       (ignore-errors (delete-file (hell-sync-lock-file))))))
+
 (defun hell-sync-download-verified (url dest sha256 label)
   "Download URL to DEST, but only keep it if its SHA-256 is SHA256.
 LABEL names the file in errors. It goes through a .part file, so
@@ -395,10 +461,11 @@ module's autoload.el. Signals an error if a package fails to install."
     (defvar elpaca-after-init-time)
     (setq elpaca-after-init-time (or (bound-and-true-p elpaca-after-init-time)
                                      after-init-time)))
-  (hell-sync--log "Reading modules and packages...")
-  (hell-modules-read-config)
-  (with-hell-network
-    (hell-sync--run)))
+  (with-hell-sync-lock
+    (hell-sync--log "Reading modules and packages...")
+    (hell-modules-read-config)
+    (with-hell-network
+      (hell-sync--run))))
 
 (defun hell-sync--run ()
   "The rest of `hell-sync', once the config is read."
