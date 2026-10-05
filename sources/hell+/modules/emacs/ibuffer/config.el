@@ -30,13 +30,15 @@
 (declare-function ibuffer-project-generate-filter-groups "ibuffer-project")
 (declare-function nerd-icons-ibuffer-mode "nerd-icons-ibuffer" (&optional arg))
 
+(defun hell-ibuffer--project-filter-groups-h ()
+  "Group this `ibuffer' buffer's entries by project."
+  (when (fboundp 'ibuffer-project-generate-filter-groups)
+    (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))))
+
 (use-package ibuffer
   :defer t
   :config
-  (add-hook 'ibuffer-hook
-            (lambda ()
-              (when (fboundp 'ibuffer-project-generate-filter-groups)
-                (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))))))
+  (add-hook 'ibuffer-hook #'hell-ibuffer--project-filter-groups-h))
 
 (use-package nerd-icons-ibuffer
   :after ibuffer

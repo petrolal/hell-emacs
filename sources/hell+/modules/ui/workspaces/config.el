@@ -66,9 +66,7 @@
       (format "%s %s" (or icon "") (or buf "*scratch*")))))
 
 
-;; Configure tab-bar-mode
-(setq tab-bar-show hell-workspaces-show
-      tab-bar-close-button-show nil
+(setq tab-bar-close-button-show nil
       tab-bar-tab-hints t
       tab-bar-tab-name-function #'hell-workspaces-tab-name
       tab-bar-format '(tab-bar-format-history
@@ -77,7 +75,16 @@
                        tab-bar-format-align-right
                        tab-bar-format-global))
 
-;; Enable tab-bar-mode
-(tab-bar-mode 1)
+;; `hell-workspaces-show' and `tab-bar-mode' wait for the user's own
+;; config.el (loaded after this module) to have had a chance to
+;; `setq' or customize `hell-workspaces-show'; `tab-bar-show' also has
+;; a `:set' function (it updates frames with tabs already showing),
+;; which a plain `setq' here would skip.
+(defun hell-workspaces--enable-h ()
+  "Turn on `tab-bar-mode' with `hell-workspaces-show' applied."
+  (customize-set-variable 'tab-bar-show hell-workspaces-show)
+  (tab-bar-mode 1))
+
+(add-hook 'emacs-startup-hook #'hell-workspaces--enable-h)
 
 ;;; config.el ends here

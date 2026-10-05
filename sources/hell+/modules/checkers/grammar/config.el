@@ -32,10 +32,7 @@
   :defer t
   :commands (flymake-languagetool-load)
   :init
-  (add-hook 'text-mode-hook
-            (lambda ()
-              (when (fboundp 'flymake-languagetool-load)
-                (flymake-languagetool-load)))))
+  (add-hook 'text-mode-hook #'flymake-languagetool-load))
 
 (provide 'checkers-grammar-config)
 ;;; config.el ends here

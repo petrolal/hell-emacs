@@ -40,12 +40,14 @@
     "c e" '("edit all symbols" . iedit-mode)))
 
 (use-package multiple-cursors
-  :defer t
-  :commands (mc/mark-next-like-this mc/mark-previous-like-this mc/mark-all-like-this)
+  :bind (("C->" . mc/mark-next-like-this)
+         ("C-<" . mc/mark-previous-like-this))
+  :commands (mc/mark-all-like-this)
   :init
-  (define-key global-map (kbd "C->") #'mc/mark-next-like-this)
-  (define-key global-map (kbd "C-<") #'mc/mark-previous-like-this)
-  (define-key global-map (kbd "C-c C-<") #'mc/mark-all-like-this))
+  ;; `C-c' followed by a control character is major modes' own
+  ;; territory (13.5); `mark-all-like-this' goes on the leader instead.
+  (hell-leader-def
+    "c m" '("mark all like this" . mc/mark-all-like-this)))
 
 (provide 'editor-multiple-cursors-config)
 ;;; config.el ends here

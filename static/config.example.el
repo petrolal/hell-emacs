@@ -6,8 +6,10 @@
 ;; Hell Emacs' helper macros are available: `after!', `add-hook!',
 ;; `setq-hook!', `defadvice!' and `cmd!' (see lisp/hell-lib.el).
 
-;; Settings for a built-in feature:
-;; (setq fill-column 100)
+;; Settings for a built-in feature (`setq-default': `fill-column' and
+;; most editing variables go buffer-local the moment they're set, so a
+;; plain `setq' here would only change the buffer this file loads in):
+;; (setq-default fill-column 100)
 
 ;; Per-mode settings:
 ;; (setq-hook! 'java-ts-mode-hook tab-width 4 fill-column 120)

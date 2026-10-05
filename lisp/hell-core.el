@@ -307,12 +307,14 @@ idle seconds. Features already loaded by then are skipped."
 ;; the bookmarks file.
 (defvar recentf-exclude)
 (defvar recentf-auto-cleanup)
+(defun hell--recentf-cleanup-quietly-a (orig-fn &rest args)
+  "Run ORIG-FN (`recentf-cleanup') with ARGS without its \"Cleaning...\" message."
+  (let ((inhibit-message t))
+    (apply orig-fn args)))
+
 (with-eval-after-load 'recentf
   (setq recentf-auto-cleanup 'never)
-  (advice-add 'recentf-cleanup :around
-              (lambda (orig-fn &rest args)
-                (let ((inhibit-message t))
-                  (apply orig-fn args))))
+  (advice-add 'recentf-cleanup :around #'hell--recentf-cleanup-quietly-a)
   (dolist (dir (hell--own-dirs))
     (add-to-list 'recentf-exclude (concat "\\`" (regexp-quote (file-truename dir))))
     (add-to-list 'recentf-exclude (concat "\\`" (regexp-quote (abbreviate-file-name dir))))))

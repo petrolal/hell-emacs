@@ -33,11 +33,13 @@
   :commands (nav-flash-show))
 
 ;; Flash line on xref jumps and large buffer switches
+(defun hell-nav-flash--show-a (&rest _)
+  "Flash the current line after an `xref-pop-to-location' jump."
+  (when (fboundp 'nav-flash-show)
+    (nav-flash-show)))
+
 (with-eval-after-load 'xref
-  (advice-add 'xref-pop-to-location :after
-              (lambda (&rest _)
-                (when (fboundp 'nav-flash-show)
-                  (nav-flash-show)))))
+  (advice-add 'xref-pop-to-location :after #'hell-nav-flash--show-a))
 
 (provide 'ui-nav-flash-config)
 ;;; config.el ends here

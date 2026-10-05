@@ -42,16 +42,15 @@
                            (treesit-parser-list))
                   (treesit-fold-mode 1))))))
 
-;; Stock C-c @ keybindings (matching Emacs' hs-minor-mode conventions):
-;; `C-c @ C-c' toggles fold at point
-;; `C-c @ C-a' opens all folds
-;; `C-c @ C-t' closes all folds
+;; Remaps, not the stock `C-c @' keys themselves (13.5): whichever key
+;; the user (or another package) has hs-toggle-hiding/hs-show-all/
+;; hs-hide-all on also reaches these.
 (with-eval-after-load 'hideshow
-  (define-key hs-minor-mode-map (kbd "C-c @ C-c") #'hell-fold-toggle)
-  (define-key hs-minor-mode-map (kbd "C-c @ C-a") #'hell-fold-open-all)
-  (define-key hs-minor-mode-map (kbd "C-c @ C-t") #'hell-fold-close-all))
+  (keymap-set hs-minor-mode-map "<remap> <hs-toggle-hiding>" #'hell-fold-toggle)
+  (keymap-set hs-minor-mode-map "<remap> <hs-show-all>" #'hell-fold-open-all)
+  (keymap-set hs-minor-mode-map "<remap> <hs-hide-all>" #'hell-fold-close-all))
 
 (with-eval-after-load 'treesit-fold
-  (define-key treesit-fold-mode-map (kbd "C-c @ C-c") #'hell-fold-toggle)
-  (define-key treesit-fold-mode-map (kbd "C-c @ C-a") #'hell-fold-open-all)
-  (define-key treesit-fold-mode-map (kbd "C-c @ C-t") #'hell-fold-close-all))
+  (keymap-set treesit-fold-mode-map "C-c @ C-c" #'hell-fold-toggle)
+  (keymap-set treesit-fold-mode-map "C-c @ C-a" #'hell-fold-open-all)
+  (keymap-set treesit-fold-mode-map "C-c @ C-t" #'hell-fold-close-all))

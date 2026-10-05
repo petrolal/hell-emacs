@@ -59,9 +59,10 @@
   (setq slime-contribs '(slime-fancy))
   (slime-setup '(slime-fancy))
   ;; Seamless in-buffer completion integration for Corfu via completion-at-point
-  (add-hook 'slime-mode-hook
-            (lambda ()
-              (add-hook 'completion-at-point-functions #'slime-completion-at-point nil t))))
+  (defun hell-common-lisp--slime-capf-h ()
+    "Add `slime-completion-at-point' to this buffer's completion functions."
+    (add-hook 'completion-at-point-functions #'slime-completion-at-point nil t))
+  (add-hook 'slime-mode-hook #'hell-common-lisp--slime-capf-h))
 
 ;; Localleader shortcuts on `C-c l' for Common Lisp buffers
 (hell-localleader-def 'lisp-mode
