@@ -264,6 +264,35 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
                                       (and msg (compilation--message->type msg))))
                    '(2 1 0)))))
 
+(defvar hell-test--local-var nil)
+
+(ert-deftest hell-test-static-analysis-reads-without-visiting ()
+  (let* ((dir (file-name-as-directory (make-temp-file "hell-test-sa" t)))
+         (file (expand-file-name "x.el" dir))
+         (buffers (buffer-list)))
+    (unwind-protect
+        (progn
+          (hell-test--write file (concat ";;; x.el --- t -*- lexical-binding: t; hell-test--local-var: 42 -*-\n"
+                                         "(defun hell-test--x ()\n"
+                                         "  hell-test--free-variable)\n"))
+          (hell-test--write (expand-file-name ".dir-locals.el" dir)
+                            "((nil . ((hell-test--local-var . 7))))\n")
+          (hell-static-analysis--with-file file
+            (should (equal buffer-file-name file))
+            (should (derived-mode-p 'emacs-lisp-mode))
+            (should-not hell-test--local-var))
+          (let ((diags (hell-static-analysis--check-byte-compile file)))
+            (should (seq-find (lambda (d) (and (string-match-p "hell-test--free-variable" (plist-get d :message))
+                                               (= (plist-get d :line) 3)))
+                              diags)))
+          ;; Nothing visits the file, and no buffer was left behind (but
+          ;; the byte-compiler's own, which it reuses: " *Compiler Input*").
+          (should-not (find-buffer-visiting file))
+          (should (seq-set-equal-p
+                   (seq-remove (lambda (b) (string-prefix-p " *Compiler" (buffer-name b))) (buffer-list))
+                   buffers)))
+      (delete-directory dir t))))
+
 ;;; bin/hell-env -----------------------------------------------------------
 
 (declare-function hell-env--savable "../bin/hell-env" (environment))

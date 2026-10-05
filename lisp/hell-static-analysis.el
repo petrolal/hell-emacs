@@ -161,6 +161,42 @@ Skips ignored directories and non-source files."
 
 ;;; 1. Byte Compilation Checker ----------------------------------------------
 
+(defmacro hell-static-analysis--with-file (file &rest body)
+  "Run BODY in a temporary buffer holding FILE's text, in `emacs-lisp-mode'.
+FILE isn't visited: no buffer is left behind, and neither its local
+variables, its directory's .dir-locals.el nor mode hooks apply.
+`buffer-file-name' is FILE while BODY runs, for checks that look at
+the file's name (package-lint does)."
+  (declare (indent 1) (debug t))
+  (let ((name (make-symbol "file")))
+    `(let ((,name (expand-file-name ,file)))
+       (with-temp-buffer
+         (insert-file-contents ,name)
+         (setq buffer-file-name ,name)
+         (delay-mode-hooks (emacs-lisp-mode))
+         (set-buffer-modified-p nil)
+         (unwind-protect (progn ,@body)
+           (setq buffer-file-name nil)
+           (set-buffer-modified-p nil))))))
+
+(defvar byte-compile-current-buffer)
+(defvar byte-compile-last-position)
+(declare-function byte-compile--warning-source-offset "bytecomp" ())
+
+(defun hell-static-analysis--warning-position ()
+  "(LINE . COLUMN) of what the byte-compiler is warning about right now.
+Counted in the buffer it compiles, as its own \"file:line:col:\" prefix
+is; (1 . 1) when it can't say."
+  (let ((offset (if (fboundp 'byte-compile--warning-source-offset)
+                    (ignore-errors (byte-compile--warning-source-offset))
+                  (and (integerp byte-compile-last-position) byte-compile-last-position))))
+    (if (and (integerp offset) (buffer-live-p byte-compile-current-buffer))
+        (with-current-buffer byte-compile-current-buffer
+          (save-excursion
+            (goto-char (max (point-min) (min offset (point-max))))
+            (cons (line-number-at-pos) (1+ (current-column)))))
+      '(1 . 1))))
+
 (defun hell-static-analysis--check-byte-compile (file)
   "Run `byte-compile' on FILE programmatically, treating warnings as errors.
 Returns a list of diagnostic plists:
@@ -172,43 +208,16 @@ Returns a list of diagnostic plists:
         diags)
     (unwind-protect
         (let ((byte-compile-dest-file-function (lambda (_) temp-dest)))
-          ;; Intercept compiler warnings and errors
+          ;; Intercept compiler warnings and errors, where they are.
           (cl-letf (((symbol-function 'byte-compile-log-warning)
-                     (lambda (string &optional pos fill level)
-                       (let* ((line (cond
-                                     ((and pos (markerp pos))
-                                      (with-current-buffer (marker-buffer pos)
-                                        (save-excursion (goto-char pos) (line-number-at-pos))))
-                                     ((and pos (integerp pos))
-                                      (with-current-buffer (find-file-noselect file)
-                                        (save-excursion (goto-char pos) (line-number-at-pos))))
-                                     ((and (boundp 'byte-compile-last-position)
-                                           byte-compile-last-position)
-                                      (if (markerp byte-compile-last-position)
-                                          (with-current-buffer (marker-buffer byte-compile-last-position)
-                                            (save-excursion (goto-char byte-compile-last-position) (line-number-at-pos)))
-                                        (if (integerp byte-compile-last-position)
-                                            (with-current-buffer (find-file-noselect file)
-                                              (save-excursion (goto-char byte-compile-last-position) (line-number-at-pos)))
-                                          1)))
-                                     (t 1)))
-                              (col (cond
-                                    ((and pos (markerp pos))
-                                     (with-current-buffer (marker-buffer pos)
-                                       (save-excursion (goto-char pos) (1+ (current-column)))))
-                                    ((and pos (integerp pos))
-                                     (with-current-buffer (find-file-noselect file)
-                                       (save-excursion (goto-char pos) (1+ (current-column)))))
-                                    (t 1)))
-                              (sev (if (or byte-compile-error-on-warn
-                                           (eq fill :error)
-                                           (eq level 'error))
-                                       'error
-                                     'warning)))
+                     (lambda (string &optional _fill level)
+                       (pcase-let ((`(,line . ,col) (hell-static-analysis--warning-position)))
                          (push (list :file file
                                      :line line
                                      :col col
-                                     :severity sev
+                                     :severity (if (or byte-compile-error-on-warn (eq level :error))
+                                                   'error
+                                                 'warning)
                                      :tool "byte-compile"
                                      :message string)
                                diags)))))
@@ -254,16 +263,15 @@ Returns a list of diagnostic plists:
     (require 'package-lint nil t))
   (if (not (fboundp 'package-lint-buffer))
       (message "package-lint is not available")
-    (let ((buf (find-file-noselect file))
-          diags)
-      (with-current-buffer buf
+    (let (diags)
+      (hell-static-analysis--with-file file
         (save-excursion
           (save-restriction
             (widen)
             (condition-case err
                 (when (and (fboundp 'package-lint-looks-like-a-package-p)
                            (package-lint-looks-like-a-package-p))
-                  (let ((raw (package-lint-buffer buf)))
+                  (let ((raw (package-lint-buffer (current-buffer))))
                     (dolist (item raw)
                       (pcase-let ((`(,line ,col ,type ,msg) item))
                         (push (list :file file
@@ -299,17 +307,13 @@ Returns a list of diagnostic plists:
     (require 'relint nil t))
   (if (not (fboundp 'relint-buffer))
       nil
-    (let ((buf (find-file-noselect file))
-          diags)
-      (with-current-buffer buf
+    (let (diags)
+      (hell-static-analysis--with-file file
         (save-excursion
           (save-restriction
             (widen)
-            ;; Ensure emacs-lisp-mode for relint AST inspection
-            (unless (derived-mode-p 'emacs-lisp-mode)
-              (emacs-lisp-mode))
             (condition-case err
-                (let ((raw (relint-buffer buf)))
+                (let ((raw (relint-buffer (current-buffer))))
                   (dolist (d raw)
                     (let* ((pos (and (fboundp 'relint-diag-beg-pos) (relint-diag-beg-pos d)))
                            (line (if pos (save-excursion (goto-char pos) (line-number-at-pos)) 1))
