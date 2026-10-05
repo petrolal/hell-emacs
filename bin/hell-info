@@ -38,7 +38,7 @@
             (match-string 1))))
       (symbol-name system-type)))
 
-(defun hell-cli-info (&rest _)
+(defcli! info (&rest _)
   "Print Hell Emacs', Emacs', the system's and the config's details."
   (let ((described (hell-process-output "git" "-C" hell-dir "describe" "--tags" "--always" "--dirty"))
         (init-file (hell-init-file)))

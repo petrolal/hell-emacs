@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hell-cli-bundle (&rest args)
+(defcli! bundle (&rest args)
   "Sync, then pack everything installed into an offline bundle.
 ARGS: the bundle's file name, and optionally --modules SPEC (read
 before this runs, by `hell-cli-main')."

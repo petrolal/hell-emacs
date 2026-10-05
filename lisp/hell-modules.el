@@ -604,7 +604,7 @@ every configuration gets, whatever its `hell!' block says."
 (defun hell-modules-load-cli-files ()
   "Load every enabled module's cli.el, which extends `bin/hell'.
 A cli.el may add to `hell-sync-functions' or define
-`hell-cli-COMMAND' functions (new bin/hell commands). Loaded
+`defcli!' commands (new bin/hell commands). Loaded
 by bin/hell and `hell-sync', never at a normal startup."
   (dolist (key (hell-module-list))
     (let ((file (expand-file-name "cli.el" (hell-module-get key :path))))

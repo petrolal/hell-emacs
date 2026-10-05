@@ -119,7 +119,7 @@ Every file is optional:
 | `autoload.el`, `autoload/*.el` | autoloaded at startup | Commands and helpers others call (`;;;###autoload`) |
 | `init.el` | startup, before any `config.el` | Early settings |
 | `config.el` | startup | The configuration (`use-package`) |
-| `cli.el` | `bin/hell` only | Sync steps (`hell-sync-functions`), commands (`hell-cli-NAME`) |
+| `cli.el` | `bin/hell` only | Sync steps (`hell-sync-functions`), commands (`defcli! NAME`) |
 | `doctor.el` | `bin/hell doctor` | Checks: `hell-doctor-ok`, `-info`, `-warn`, `-error` (a leading `:topic 'jdk` links a warning or error to that entry of the guide's "What doctor's messages mean"), `-executable`, `-pinned` |
 | `+paths.el` | loaded by `config.el` and `cli.el` | A language server's paths and pins (`hell-component!`) |
 | `+NAME.el` | loaded with `(hell-module-load "+NAME")` | Splitting a big config |
@@ -185,7 +185,7 @@ Useful hooks: `hell-first-input-hook`, `-first-file-hook`,
 | A step of the startup | A part in `hell-profile-generate-functions` (`lisp/hell-profiles.el`) |
 | A library called on demand | `lisp/lib/NAME.el`, ending with `(hell-provide 'hell-lib 'NAME)` |
 | Code only the CLI needs | `lisp/cli/NAME.el`, or the command's own file |
-| A command | `bin/hell-NAME` (executable, `#!/usr/bin/env hellscript`), defining `hell-cli-NAME` |
+| A command | `bin/hell-NAME` (executable, `#!/usr/bin/env hellscript`), defining it with `(defcli! NAME (&rest args) "Doc." ...)` |
 | Something every config gets, user-facing or needing a package | Core's own module, `modules/hell/` |
 | An optional feature or a language | A module in `sources/hell+/modules/<group>/<name>/` |
 | A theme | Its module: `sources/hell+/modules/ui/theme/themes/` |

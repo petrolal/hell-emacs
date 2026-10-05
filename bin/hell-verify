@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hell-cli-verify (&rest _)
+(defcli! verify (&rest _)
   "Check that everything sync installed is still as it left it.
 And as the lock file pins it. Every installed file against the SHA-256 sync recorded, every package
 against its commit (and your lock file); fails on any difference."

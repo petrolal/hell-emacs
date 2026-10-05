@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hell-cli-version (&rest _)
+(defcli! version (&rest _)
   "Say Hell Emacs' version (and its commit), its update channel and Emacs'."
   (let ((described (hell-process-output "git" "-C" hell-dir "describe" "--tags" "--always" "--dirty")))
     (hell-cli--say "Hell Emacs %s%s" hell-version

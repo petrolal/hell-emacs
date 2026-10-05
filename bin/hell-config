@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hell-cli-config (&rest args)
+(defcli! config (&rest args)
   "List the default modules your `hell!' block misses.
 With --add-defaults in ARGS, add them (keeping a backup of init.el)."
   (if (not (member "--add-defaults" args))

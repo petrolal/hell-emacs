@@ -37,7 +37,7 @@
   (hell-cli--say "Locked %d packages in %s"
                      (length (elpaca--queued)) (abbreviate-file-name hell-lock-file)))
 
-(defun hell-cli-lock (&rest _)
+(defcli! lock (&rest _)
   "Sync, then record the exact commit of every installed package."
   (with-hell-sync-lock
     (hell-sync)

@@ -90,7 +90,7 @@ From a release (a detached HEAD), the branch is checked out first."
                                      (truncate-string-to-width before 7)
                                      (truncate-string-to-width after 7))))))))
 
-(defun hell-cli-upgrade-self (&rest args)
+(defcli! upgrade-self (&rest args)
   "Move Hell Emacs itself to its channel's latest, with git, when that's safe.
 ARGS may hold --channel stable|main (default `hell-upgrade-channel').
 Run by `bin/hell upgrade' first, so the package update that follows

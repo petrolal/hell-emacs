@@ -35,7 +35,7 @@
             (if (eq (plist-get c :kind) 'package) (truncate-string-to-width version 12) version)
             (plist-get c :kind))))
 
-(defun hell-cli-licenses (&rest _)
+(defcli! licenses (&rest _)
   "List the license of everything installed; fail if one isn't known."
   (let* ((components (sort (hell-compliance-components)
                            (lambda (a b)

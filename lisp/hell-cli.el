@@ -25,7 +25,8 @@
 
 ;; `bin/hell' runs Emacs in batch mode, loads early-init.el and this
 ;; file, and calls `hell-cli-main' with the command-line arguments.
-;; Each command is a `hell-cli-COMMAND' function; see `hell-cli-help'.
+;; Each command is registered by `defcli!' (`hell-cli-commands'), and
+;; only those run; see `hell-cli-help'.
 ;;
 ;; Commands print plain text on stdout. Exit codes, as `doom's:
 ;;   0  success
@@ -201,12 +202,13 @@ NAME is a symbol or list of symbols (for subcommands, e.g. `(profile list)')."
        (defun ,fn-name ,arglist
          ,doc
          ,@actual-body)
-       (puthash ,cmd-name
-                (list :name ',name
-                      :fn ',fn-name
-                      :doc ,doc
-                      :arglist ',arglist)
-                hell-cli-commands))))
+       (hell-cli-register ,cmd-name #',fn-name))))
+
+(defun hell-cli-register (name fn)
+  "Make NAME, a string, the bin/hell command that runs FN.
+`defcli!' does it for the commands it defines. Only registered
+commands run: `hell-cli-main' never calls a function for its name."
+  (puthash name (list :name name :fn fn) hell-cli-commands))
 
 (defvar hell-cli-load-path
   (append (list (expand-file-name "bin/" hell-dir)
@@ -235,6 +237,25 @@ in the first of `hell-cli-load-path' that has it. Nil if there's none."
                           hell-cli-load-path))
               (list command (car (split-string command "-"))))))
 
+(defun hell-cli--command (command)
+  "The function bin/hell COMMAND runs (an alias resolved), or nil if none.
+Registered by Hell Emacs, a module's cli.el or COMMAND's file
+(`hell-cli-command-file'), which is loaded if it must be."
+  (let ((name (or (cdr (assoc command hell-cli-aliases)) command)))
+    (cl-flet ((registered () (plist-get (gethash name hell-cli-commands) :fn)))
+      (or (registered)
+          (when-let* ((file (hell-cli-command-file name)))
+            (hell-cli-load name)
+            (or (registered)
+                ;; A command file written before `defcli!' (a plain
+                ;; `hell-cli-NAME', in your bin/ or on $HELLPATH): a file
+                ;; named for it -- not its family's -- makes it a command.
+                (let ((fn (intern-soft (concat "hell-cli-" name))))
+                  (when (and (fboundp fn)
+                             (equal (file-name-nondirectory file) (concat "hell-" name)))
+                    (hell-cli-register name fn)
+                    fn))))))))
+
 (defvar hell-cli--loaded-commands nil
   "Command files `hell-cli-load' has loaded this session.")
 
@@ -254,11 +275,8 @@ in the first of `hell-cli-load-path' that has it. Nil if there's none."
   "Print usage for COMMAND or overall usage if COMMAND is nil."
   (if (and command (not (string-empty-p command)))
       (let* ((cmd (or (cdr (assoc command hell-cli-aliases)) command))
-             (fn (intern-soft (concat "hell-cli-" cmd))))
-        (unless (and fn (fboundp fn))
-          (hell-cli-load cmd)
-          (setq fn (intern-soft (concat "hell-cli-" cmd))))
-        (if (and fn (fboundp fn))
+             (fn (hell-cli--command cmd)))
+        (if fn
             (let ((doc (documentation fn t)))
               (hell-cli--say "Usage: bin/hell %s [OPTIONS] [ARGS]\n" cmd)
               (if (and doc (not (string-empty-p doc)))
@@ -385,11 +403,8 @@ XDG_STATE_HOME.")))
     (hell-modules-read-config)
     (hell-modules-load-cli-files)
     ;; A module's cli.el may define the command; else it's bin/hell-COMMAND.
-    (unless (fboundp (intern-soft (concat "hell-cli-" command)))
-      (when-let* ((file (hell-cli-command-file command)))
-        (hell-cli-load command)))
-    (setq fn (intern-soft (concat "hell-cli-" command)))
-    (unless (and fn (fboundp fn) (not (string-prefix-p "-" command)))
+    (setq fn (hell-cli--command command))
+    (unless fn
       (hell-cli--say "bin/hell: unknown command `%s'\n" command)
       (hell-cli-help)
       (kill-emacs 5))
@@ -405,6 +420,10 @@ XDG_STATE_HOME.")))
          (require 'backtrace)
          (hell-cli--say "%s" (backtrace-to-string)))
        (kill-emacs 2)))))
+
+;; lisp/cli/check.el loads before `defcli!' is defined (and from Emacs
+;; without hell-cli), so its command is registered here.
+(hell-cli-register "check" #'hell-cli-check)
 
 (provide 'hell-cli)
 ;;; hell-cli.el ends here

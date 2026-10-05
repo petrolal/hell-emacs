@@ -165,6 +165,26 @@
     (setenv "HELL_FORCE" "1")
     (should (hell-cli-force-p nil))))
 
+(ert-deftest hell-test-cli-dispatch-registry ()
+  ;; Internals are no commands, whatever their names.
+  (dolist (name '("main" "load" "force-p" "help" "command-file" "doctor-docs"))
+    (should-not (hell-cli--command name)))
+  (should (eq (hell-cli--command "check") #'hell-cli-check))
+  (should (eq (hell-cli--command "lint") #'hell-cli-check))
+  (should (eq (hell-cli--command "version") 'hell-cli-version))   ; bin/hell-version
+  (should (eq (hell-cli--command "upgrade-self") 'hell-cli-upgrade-self)) ; bin/hell-upgrade's
+  ;; A command of your own, written before `defcli!', still runs.
+  (let* ((dir (file-name-as-directory (make-temp-file "hell-test-bin" t)))
+         (hell-cli-load-path (cons dir hell-cli-load-path)))
+    (unwind-protect
+        (progn
+          (hell-test--write (expand-file-name "hell-mine" dir)
+                            "(defun hell-cli-mine (&rest _) \"Mine.\" 'ran)\n")
+          (should (eq (funcall (hell-cli--command "mine")) 'ran))
+          (should (gethash "mine" hell-cli-commands)))
+      (remhash "mine" hell-cli-commands)
+      (delete-directory dir t))))
+
 ;;; lib/net ----------------------------------------------------------------
 
 (ert-deftest hell-test-net-rewrite ()

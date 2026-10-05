@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hell-cli-gc (&rest args)
+(defcli! gc (&rest args)
   "Delete installed packages nothing declares any more.
 With -n or --dry-run in ARGS, only list them."
   (with-hell-sync-lock

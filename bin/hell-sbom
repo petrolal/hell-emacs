@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun hell-cli-sbom (&rest args)
+(defcli! sbom (&rest args)
   "Write a CycloneDX bill of materials of everything installed.
 ARGS: the file to write it to; without one, it goes to stdout."
   (let ((files (seq-remove (lambda (a) (string-prefix-p "-" a)) args)))

@@ -69,7 +69,7 @@ working value Emacs inherits from your shell: a saved one would win."
               (t (push entry saved)))))
     (cons (nreverse saved) (sort withheld #'string<))))
 
-(defun hell-cli-env (&rest args)
+(defcli! env (&rest args)
   "Save the current shell environment for Emacs to load at startup.
 With --clear in ARGS, delete the saved environment instead."
   (if (member "--clear" args)

@@ -234,7 +234,7 @@ mirror, the proxy, the CAs. Only when doctor checks the network."
    (t
     (hell-cli--check 'ok "Platform: %s (%s)" (symbol-name system-type) (or (and (boundp 'system-configuration) system-configuration) "unix")))))
 
-(defun hell-cli-doctor (&rest args)
+(defcli! doctor (&rest args)
   "Check Emacs, required and optional tools, and the state of the config.
 With --network in ARGS, also check that the hosts Hell Emacs fetches from
 can be reached (always done when a proxy, CA bundle or mirror is set)."
