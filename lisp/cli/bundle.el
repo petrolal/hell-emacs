@@ -129,20 +129,6 @@ recorded relative to it, so it's remade there on the installing machine."
         (list name :data-link rel)
       (list name :link target))))
 
-(defun hell-bundle--walk (file name)
-  "Manifest entries for FILE, called NAME in the bundle, and all it holds.
-Symbolic links are recorded, never followed."
-  (cond ((file-symlink-p file)
-         (list (hell-bundle--link-entry name (file-symlink-p file))))
-        ((file-directory-p file)
-         (cons (list name :dir)
-               (mapcan (lambda (child)
-                         (hell-bundle--walk child (concat name "/" (file-name-nondirectory child))))
-                       (directory-files file t directory-files-no-dot-files-regexp))))
-        ((file-regular-p file)
-         (list (list name :file (file-attribute-size (file-attributes file))
-                     (hell-file-sha256 file))))))
-
 (defun hell-bundle--entries (roots)
   "Manifest entries for ROOTS (see `hell-bundle--roots'), sorted by name.
 Each is (NAME :dir), (NAME :file SIZE SHA256), (NAME :link TARGET) or
@@ -160,8 +146,11 @@ directories holding each root are listed too."
         (let (prefix)
           (dolist (part (butlast (split-string root "/")))
             (setq prefix (if prefix (concat prefix "/" part) part))
-            (add (list prefix :dir))))
-        (mapc #'add (hell-bundle--walk (expand-file-name root hell-data-dir) root))))
+            (add (list prefix :dir)))))
+      (dolist (entry (hell-tree-entries hell-data-dir roots t))
+        (add (if (eq (cadr entry) :link)
+                 (hell-bundle--link-entry (car entry) (nth 2 entry))
+               entry))))
     (sort entries (lambda (a b) (string< (car a) (car b))))))
 
 ;;; Making one ---------------------------------------------------------------

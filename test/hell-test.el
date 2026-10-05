@@ -71,6 +71,42 @@
                (should (equal (car (hell-process-output file)) 126)))
       (delete-file file))))
 
+(defmacro hell-test--with-tree (&rest body)
+  "Run BODY with `base' holding r/a.txt (\"a\"), r/d/b.txt (\"bb\"), r/l -> a.txt."
+  (declare (indent 0))
+  `(let ((base (file-name-as-directory (make-temp-file "hell-test-tree" t))))
+     (unwind-protect
+         (progn
+           (hell-test--write (expand-file-name "r/a.txt" base) "a")
+           (hell-test--write (expand-file-name "r/d/b.txt" base) "bb")
+           (make-symbolic-link "a.txt" (expand-file-name "r/l" base))
+           ,@body)
+       (delete-directory base t))))
+
+(ert-deftest hell-test-tree-entries ()
+  (hell-test--with-tree
+    (let ((files `(("r/a.txt" :file 1 ,(secure-hash 'sha256 "a"))
+                   ("r/d/b.txt" :file 2 ,(secure-hash 'sha256 "bb"))
+                   ("r/l" :link "a.txt"))))
+      (should (equal (sort (hell-tree-entries base '("r" "missing")) (lambda (a b) (string< (car a) (car b))))
+                     files))
+      (should (equal (sort (hell-tree-entries base '("r") t) (lambda (a b) (string< (car a) (car b))))
+                     (sort (append '(("r" :dir) ("r/d" :dir)) files)
+                           (lambda (a b) (string< (car a) (car b)))))))))
+
+(ert-deftest hell-test-verify-round-trip ()
+  (hell-test--with-tree
+    (let ((hell-data-dir base)
+          (record (expand-file-name "installed.eld" base)))
+      (hell-verify-record record '("r") nil)
+      (should-not (hell-verify-problems record))
+      (hell-test--write (expand-file-name "r/d/b.txt" base) "BB")
+      (hell-test--write (expand-file-name "r/new.txt" base) "n")
+      (delete-file (expand-file-name "r/a.txt" base))
+      (should (equal (hell-verify-problems record)
+                     '("r/a.txt: missing" "r/d/b.txt: changed since sync (SHA-256 differs)"
+                       "r/new.txt: not installed by sync"))))))
+
 ;;; hell-core --------------------------------------------------------------
 
 (ert-deftest hell-test-state-file ()
@@ -393,6 +429,24 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
     ;; A root that leaves the data directory, or that no entry vouches for.
     (should-error (hell-bundle-verify (plist-put (copy-sequence manifest) :roots '("../a")) root))
     (should-error (hell-bundle-verify (plist-put (copy-sequence manifest) :roots '("c")) root))))
+
+(ert-deftest hell-test-bundle-entries ()
+  (hell-test--with-tree
+    (let ((hell-data-dir base))
+      ;; Elpaca's links are absolute, into the data directory.
+      (make-symbolic-link (expand-file-name "r/a.txt" base) (expand-file-name "r/d/abs" base))
+      (make-directory (expand-file-name "x" base))
+      (rename-file (expand-file-name "r" base) (expand-file-name "x/r" base))
+      (should (equal (hell-bundle--entries '("x/r"))
+                     `(("x" :dir)
+                       ("x/r" :dir)
+                       ("x/r/a.txt" :file 1 ,(secure-hash 'sha256 "a"))
+                       ("x/r/d" :dir)
+                       ("x/r/d/abs" :data-link "r/a.txt")
+                       ("x/r/d/b.txt" :file 2 ,(secure-hash 'sha256 "bb"))
+                       ("x/r/l" :link "a.txt"))))
+      (hell-test--write (expand-file-name "x/r/bad\nname" base) "")
+      (should-error (hell-bundle--entries '("x/r"))))))
 
 (ert-deftest hell-test-bundle-check-sha256 ()
   (let ((file (make-temp-file "hell-test-bundle" nil ".tar" "bundle")))

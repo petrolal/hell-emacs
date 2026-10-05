@@ -425,6 +425,36 @@ one; else each read into Emacs (`hell-file-sha256')."
         (puthash (expand-file-name file) (hell-file-sha256 file) table)))
     table))
 
+(defun hell-tree-entries (base roots &optional dirs)
+  "Everything under ROOTS (relative to BASE), never following a link.
+A list of (NAME :file SIZE SHA256) and (NAME :link TARGET), NAME
+relative to BASE; with DIRS, (NAME :dir) for each directory too. Files
+are hashed together (`hell-files-sha256'). Missing roots are skipped."
+  (let (entries)
+    (cl-labels ((walk (file name)
+                  (cond ((file-symlink-p file)
+                         (push (list name :link (file-symlink-p file)) entries))
+                        ((file-directory-p file)
+                         (when dirs (push (list name :dir) entries))
+                         (dolist (child (directory-files file nil directory-files-no-dot-files-regexp t))
+                           (walk (expand-file-name child file) (concat name "/" child))))
+                        ((file-regular-p file)
+                         (push (list name :file) entries)))))
+      (dolist (root roots)
+        (let ((file (expand-file-name root base)))
+          (when (or (file-exists-p file) (file-symlink-p file))
+            (walk file root)))))
+    (let ((hashes (hell-files-sha256
+                   (cl-loop for (name kind) in entries
+                            when (eq kind :file) collect (expand-file-name name base)))))
+      (mapcar (lambda (entry)
+                (if (eq (cadr entry) :file)
+                    (let ((file (expand-file-name (car entry) base)))
+                      (list (car entry) :file (file-attribute-size (file-attributes file))
+                            (gethash file hashes)))
+                  entry))
+              (nreverse entries)))))
+
 (defun hell-marker-current-p (marker value)
   "Non-nil if the file MARKER exists and holds VALUE (whitespace aside).
 Pinned installs write the pin they were made from to a marker file."

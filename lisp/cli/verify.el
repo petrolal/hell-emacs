@@ -43,41 +43,6 @@
 (defconst hell-verify-format 1
   "Version of installed.eld's layout.")
 
-;;; The walk -------------------------------------------------------------------
-
-(defun hell-verify--walk (roots)
-  "Everything under ROOTS (relative to `hell-data-dir'), not following links.
-A list of (NAME :file) and (NAME :link TARGET), NAME relative to
-`hell-data-dir'."
-  (let (entries)
-    (cl-labels ((walk (file name)
-                  (cond ((file-symlink-p file)
-                         (push (list name :link (file-symlink-p file)) entries))
-                        ((file-directory-p file)
-                         (dolist (child (directory-files file nil directory-files-no-dot-files-regexp t))
-                           (walk (expand-file-name child file) (concat name "/" child))))
-                        ((file-regular-p file)
-                         (push (list name :file) entries)))))
-      (dolist (root roots)
-        (let ((file (expand-file-name root hell-data-dir)))
-          (when (or (file-exists-p file) (file-symlink-p file))
-            (walk file root)))))
-    (nreverse entries)))
-
-(defun hell-verify--hash (entries)
-  "ENTRIES from `hell-verify--walk', each file's with its size and SHA-256:
-\(NAME :file SIZE SHA256)."
-  (let ((hashes (hell-files-sha256
-                 (cl-loop for (name kind) in entries
-                          when (eq kind :file) collect (expand-file-name name hell-data-dir)))))
-    (mapcar (lambda (entry)
-              (if (eq (cadr entry) :file)
-                  (let ((file (expand-file-name (car entry) hell-data-dir)))
-                    (list (car entry) :file (file-attribute-size (file-attributes file))
-                          (gethash file hashes)))
-                entry))
-            entries)))
-
 ;;; Recording --------------------------------------------------------------------
 
 (defun hell-verify-record (file roots packages)
@@ -87,7 +52,7 @@ ROOTS are relative to `hell-data-dir'; PACKAGES is a list of
   (let ((data (list :format hell-verify-format
                     :recorded (format-time-string "%FT%T%z")
                     :roots roots
-                    :entries (hell-verify--hash (hell-verify--walk roots))
+                    :entries (hell-tree-entries hell-data-dir roots)
                     :packages packages)))
     (make-directory (file-name-directory file) t)
     (with-temp-file file
@@ -157,11 +122,8 @@ Elpaca loaded."
   "What differs between the RECORDED entries and what's on disk now."
   (let* ((roots (plist-get recorded :roots))
          (was (make-hash-table :test #'equal))
-         (now (hell-verify--walk roots))
+         (now (hell-tree-entries hell-data-dir roots))
          (now-names (make-hash-table :test #'equal))
-         (hashes (hell-files-sha256
-                  (cl-loop for (name kind) in now
-                           when (eq kind :file) collect (expand-file-name name hell-data-dir))))
          problems)
     (dolist (entry (plist-get recorded :entries))
       (puthash (car entry) entry was))
@@ -179,7 +141,7 @@ Elpaca loaded."
                   problems)))
          ((not (eq (cadr before) :file))
           (push (format "%s: a file, where sync left a link to %s" name (nth 2 before)) problems))
-         ((not (equal (gethash (expand-file-name name hell-data-dir) hashes) (nth 3 before)))
+         ((not (equal (nth 3 entry) (nth 3 before)))
           (push (format "%s: changed since sync (SHA-256 differs)" name) problems)))))
     (maphash (lambda (name _)
                (unless (gethash name now-names)
