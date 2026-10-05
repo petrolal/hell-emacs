@@ -273,6 +273,53 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
         (setq ran nil)
         (should-not (file-exists-p file))))))
 
+(defun hell-test--write (file text)
+  "Write TEXT to FILE, making its directory."
+  (make-directory (file-name-directory file) t)
+  (with-temp-file file (insert text)))
+
+(defun hell-test--read (file)
+  "FILE's text, or nil if it doesn't exist."
+  (and (file-exists-p file) (with-temp-buffer (insert-file-contents file) (buffer-string))))
+
+(ert-deftest hell-test-sync-compile-swaps ()
+  (hell-test--with-profile-dir
+    (let* ((hell-compiled-dir (expand-file-name "compiled/" hell-profile-dir))
+           (old-file (expand-file-name "lisp/cli/check.elc" hell-compiled-dir))
+           (inside nil))
+      (hell-test--write old-file "old")
+      (hell-test--write (expand-file-name "lisp/stamp" hell-compiled-dir) "old")
+      ;; Built elsewhere, while the old files are all still in place.
+      (cl-letf (((symbol-function 'hell-sync--compile-into)
+                 (lambda ()
+                   (setq inside (list hell-compiled-dir (hell-test--read old-file)))
+                   (hell-test--write (expand-file-name "lisp/cli/check.elc" hell-compiled-dir) "new")
+                   (hell-test--write (expand-file-name "lisp/stamp" hell-compiled-dir) "new")
+                   t)))
+        (should (hell-sync--compile)))
+      (should-not (equal (car inside) hell-compiled-dir))
+      (should (equal (cadr inside) "old"))
+      ;; Then swapped in whole, nothing left beside it.
+      (should (equal (hell-test--read old-file) "new"))
+      (should (equal (directory-files hell-profile-dir nil "\\`compiled") '("compiled"))))))
+
+(ert-deftest hell-test-sync-compile-failure-keeps-files ()
+  (hell-test--with-profile-dir
+    (let* ((hell-compiled-dir (expand-file-name "compiled/" hell-profile-dir))
+           (file (expand-file-name "lisp/cli/check.elc" hell-compiled-dir))
+           (stamp (expand-file-name "lisp/stamp" hell-compiled-dir)))
+      (hell-test--write file "old")
+      (hell-test--write stamp "old")
+      (cl-letf (((symbol-function 'hell-sync--compile-into)
+                 (lambda ()
+                   (hell-test--write (expand-file-name "lisp/half.elc" hell-compiled-dir) "x")
+                   nil)))
+        (should-not (hell-sync--compile)))
+      ;; Running sessions' files stay; startup, without the stamp, uses source.
+      (should (equal (hell-test--read file) "old"))
+      (should-not (file-exists-p stamp))
+      (should (equal (directory-files hell-profile-dir nil "\\`compiled") '("compiled"))))))
+
 ;;; cli/bundle -------------------------------------------------------------
 
 (defmacro hell-test--with-bundle-root (&rest body)

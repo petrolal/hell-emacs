@@ -96,6 +96,7 @@ module needs. An error fails the sync.")
 ;; left by a sync that died (its process gone, on this host) is taken over.
 
 (defvar hell-profile-dir)                ; early-init.el
+(defvar hell-compiled-dir)
 
 (defvar hell-sync--lock-held nil
   "Non-nil while this session holds the profile's sync lock.")
@@ -301,8 +302,32 @@ to be compiled (it loads from source); on failure, leaves no DEST behind."
 
 (defun hell-sync--compile ()
   "Byte-compile core and enabled module startup files into `hell-compiled-dir'.
+Built next to it (compiled.new/), then swapped in whole: a running
+Emacs's autoloads name files there, so they're never missing while a
+sync works. If core doesn't compile, the old files stay, without their
+stamp: startup then loads core from source, as it must, and running
+sessions still find theirs. Returns non-nil if core compiled."
+  (let* ((final (directory-file-name hell-compiled-dir))
+         (new (concat final ".new"))
+         (old (concat final ".old"))
+         (compiled (let ((hell-compiled-dir (file-name-as-directory new)))
+                     (hell-sync--compile-into))))
+    (if compiled
+        (progn
+          (when (file-directory-p old) (delete-directory old t))
+          (when (file-directory-p final) (rename-file final old))
+          (rename-file new final)
+          (when (file-directory-p old) (delete-directory old t)))
+      (when (file-directory-p new) (delete-directory new t))
+      (let ((stamp (expand-file-name "lisp/stamp" hell-compiled-dir)))
+        (when (file-exists-p stamp) (delete-file stamp))))
+    compiled))
+
+(defun hell-sync--compile-into ()
+  "Byte-compile core and enabled module startup files into `hell-compiled-dir'.
 Core is all or nothing (its files inline each other's macros), and
-modules are compiled only with it. Whatever fails loads from source."
+modules are compiled only with it. Whatever fails loads from source.
+Returns non-nil if core compiled. See `hell-sync--compile'."
   (let ((core-dir (expand-file-name "lisp/" hell-compiled-dir))
         ;; packages.el is read, never loaded.
         (sources (seq-remove (lambda (src) (equal (file-name-nondirectory src) "packages.el"))
