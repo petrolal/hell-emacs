@@ -178,8 +178,15 @@ If FILE begins with `;;;###if FORM', evaluate FORM; if nil, return nil."
         (insert-file-contents file nil 0 512)
         (goto-char (point-min))
         (if (re-search-forward "^;;;###if[ \t]+\\(.+\\)$" nil t)
-            (let ((form (condition-case nil (read (match-string 1)) (error nil))))
-              (condition-case nil (eval form t) (error nil)))
+            (let ((text (match-string 1)))
+              (condition-case err
+                  (eval (car (read-from-string text)) t)
+                (error
+                 ;; Skipped, as a false condition is: but say why.
+                 (display-warning
+                  'hell (format "%s isn't loaded: its `;;;###if %s' failed: %s"
+                                (abbreviate-file-name file) text (error-message-string err)))
+                 nil)))
           t))
     nil))
 

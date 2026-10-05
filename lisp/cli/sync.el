@@ -295,10 +295,28 @@ to be compiled (it loads from source); on failure, leaves no DEST behind."
         (byte-compile-verbose nil)
         (inhibit-message t)
         (hell--current-module module))
-    (pcase (condition-case nil (byte-compile-file src) (error nil))
+    (when-let* ((log (get-buffer byte-compile-log-buffer)))
+      (with-current-buffer log (let ((inhibit-read-only t)) (erase-buffer))))
+    (pcase (condition-case err (byte-compile-file src)
+             (error (list 'failed (error-message-string err))))
       ('t t)
       ('no-byte-compile 'no-byte-compile)
-      (_ (when (file-exists-p dest) (delete-file dest)) nil))))
+      (result
+       (when (file-exists-p dest) (delete-file dest))
+       (hell-sync--log "  %s didn't compile: %s" (abbreviate-file-name src)
+                       (or (pcase result (`(failed ,message) message))
+                           (hell-sync--compile-error)
+                           "no reason given"))
+       nil))))
+
+(defun hell-sync--compile-error ()
+  "The byte-compiler's last error in its log, or nil."
+  (when-let* ((log (get-buffer byte-compile-log-buffer)))
+    (with-current-buffer log
+      (save-excursion
+        (goto-char (point-max))
+        (when (re-search-backward "Error: \\(.+\\)" nil t)
+          (match-string 1))))))
 
 (defun hell-sync--compile ()
   "Byte-compile core and enabled module startup files into `hell-compiled-dir'.

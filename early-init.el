@@ -113,7 +113,7 @@ Returns an alist of (NAME . PLIST)."
       (with-temp-buffer
         (insert-file-contents file)
         (goto-char (point-min))
-        (condition-case nil
+        (condition-case err
             (while (not (eobp))
               (let ((form (read (current-buffer))))
                 (pcase form
@@ -126,7 +126,13 @@ Returns an alist of (NAME . PLIST)."
                            profiles)))
                   ((and (pred consp) (guard (symbolp (car form))))
                    (push (cons (symbol-name (car form)) (cdr form)) profiles)))))
-          (error nil))))
+          ;; How reading every form ends.
+          (end-of-file nil)
+          ;; A typo: the profiles before it count, and you're told.
+          (error (display-warning
+                  'hell (format "%s can't be read past line %d (%s); profiles after it are ignored"
+                                (abbreviate-file-name file) (line-number-at-pos)
+                                (error-message-string err)))))))
     (nreverse profiles)))
 
 (defun hell--user-dir (profile)

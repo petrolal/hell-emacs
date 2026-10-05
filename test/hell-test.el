@@ -495,6 +495,59 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
       (delete-directory fake-dir t)
       (when (get-buffer "*hell-sync*") (kill-buffer "*hell-sync*")))))
 
+;;; Errors are said, not swallowed ---------------------------------------------
+
+(defmacro hell-test--warnings (&rest body)
+  "Run BODY; return (VALUE . WARNINGS), the messages `display-warning' got."
+  (declare (indent 0))
+  `(let (warnings)
+     (cl-letf (((symbol-function 'display-warning)
+                (lambda (_type message &rest _) (push message warnings))))
+       (cons (progn ,@body) (nreverse warnings)))))
+
+(ert-deftest hell-test-file-active-p-says-why ()
+  (let ((file (make-temp-file "hell-test-active" nil ".el")))
+    (unwind-protect
+        (progn
+          (hell-test--write file ";;;###if (> 2 1)\n")
+          (should (equal (hell-test--warnings (hell-file-active-p file)) '(t)))
+          (hell-test--write file ";;;###if (< 2 1)\n")
+          (should (equal (hell-test--warnings (hell-file-active-p file)) '(nil)))
+          ;; A condition that fails: skipped, with the reason.
+          (hell-test--write file ";;;###if (hell-test-no-such-function)\n")
+          (pcase-let ((`(,value . ,warnings) (hell-test--warnings (hell-file-active-p file))))
+            (should-not value)
+            (should (string-match-p "hell-test-no-such-function" (car warnings)))))
+      (delete-file file))))
+
+(ert-deftest hell-test-read-profiles-says-why ()
+  (let ((dir (file-name-as-directory (make-temp-file "hell-test-profiles" t))))
+    (unwind-protect
+        (progn
+          (hell-test--write (expand-file-name "profiles.el" dir)
+                            ";; Two profiles.\n(profile! a :user-dir \"/a\")\n(profile! b :user-dir \"/b\")\n")
+          (should (equal (hell-test--warnings (hell--read-profiles-el dir))
+                         '((("a" :user-dir "/a") ("b" :user-dir "/b")))))
+          (hell-test--write (expand-file-name "profiles.el" dir)
+                            "(profile! a :user-dir \"/a\")\n)\n(profile! b :user-dir \"/b\")\n")
+          (pcase-let ((`(,value . ,warnings) (hell-test--warnings (hell--read-profiles-el dir))))
+            (should (equal value '(("a" :user-dir "/a"))))
+            (should (string-match-p "line 2" (car warnings)))))
+      (delete-directory dir t))))
+
+(ert-deftest hell-test-sync-byte-compile-says-why ()
+  (let* ((dir (file-name-as-directory (make-temp-file "hell-test-bc" t)))
+         (src (expand-file-name "bad.el" dir))
+         (logged nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'hell-sync--log)
+                   (lambda (format-string &rest args) (push (apply #'format format-string args) logged))))
+          (hell-test--write src ";;; bad.el -*- lexical-binding: t; -*-\n(defun bad ()\n  (let ((x 1)))\n")
+          (should-not (hell-sync--byte-compile src (expand-file-name "bad.elc" dir)))
+          (should-not (file-exists-p (expand-file-name "bad.elc" dir)))
+          (should (string-match-p "bad\\.el didn't compile: .*[Ee]nd of file" (car logged))))
+      (delete-directory dir t))))
+
 ;;; cli/bundle -------------------------------------------------------------
 
 (defmacro hell-test--with-bundle-root (&rest body)
