@@ -422,8 +422,10 @@ what was deprecated or raise the minimum Emacs.
 **Channels.** `upgrade` follows `stable` by default, the latest release;
 `main` is the development branch. `hell upgrade --channel main` for one
 run, or `(setq hell-upgrade-channel 'main)` in `init.el`.
-`(setq hell-upgrade-verify-tags t)` refuses tags not signed by a key in
-your GPG keyring. Your lock file applies on either channel.
+On `stable`, `upgrade` refuses a release whose tag isn't signed by a key in
+your GPG keyring (import the maintainer's key once); `(setq
+hell-upgrade-verify-tags nil)` takes unsigned ones. Your lock file applies
+on either channel.
 
 **Support.** Each release states the Emacs versions (29.1+), platforms and
 JDKs it supports. The latest release gets every fix; the one before gets
@@ -497,8 +499,9 @@ doctor` shows what's in use and checks each host can be reached through it
 **No internet.** On a connected machine of the same platform and Emacs
 version: `hell bundle hell-bundle.tar.zst` (`--modules` packs another
 module set). On the offline one: `hell install --from-bundle
-hell-bundle.tar.zst`, which checks every file's SHA-256 and never touches the
-network.
+hell-bundle.tar.zst --sha256 HEX`, with the SHA-256 `bundle` printed (carry it
+separately: the bundle's own manifest only proves it's whole), which checks
+every file's SHA-256 and never touches the network.
 
 **Compliance.** `hell sbom` writes a CycloneDX bill of materials of
 everything installed; `hell licenses` reports each license and fails

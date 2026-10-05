@@ -48,8 +48,10 @@ before this runs, by `hell-cli-main')."
                          (plist-get manifest :platform) emacs-major-version
                          (mapconcat (lambda (m) (hell-bundle--module-string (car m) (cadr m)))
                                     (plist-get manifest :modules) ", "))
-      (hell-cli--say "  SHA-256: %s" (hell-file-sha256 out))
-      (hell-cli--say "Install it with:  bin/hell install --from-bundle %s" (file-name-nondirectory out))
+      (let ((sha256 (hell-file-sha256 out)))
+        (hell-cli--say "  SHA-256: %s" sha256)
+        (hell-cli--say "Install it with:  bin/hell install --from-bundle %s --sha256 %s"
+                       (file-name-nondirectory out) sha256))
       (when spec
         (hell-cli--say "\nNote: this machine's profile is now synced for those modules; \
 `bin/hell sync' goes back to yours. (`bin/hell --profile NAME bundle ...' keeps them apart.)")))))

@@ -58,8 +58,9 @@
 (require 'hell-static-analysis)
 
 (defvar hell-cli--problems 0)
-(defvar hell-cli-commands (make-hash-table :test #'equal))
 
+;; Interactively (`M-x hell-check'), hell-cli itself may not be loaded;
+;; under bin/hell, hell-cli.el loads this file first, then defines its own.
 (unless (fboundp 'hell-cli--say)
   (defun hell-cli--say (format-string &rest args)
     "Fallback print when hell-cli is not loaded."
@@ -233,30 +234,32 @@ and MESSAGE what was reported."
 
 ;;; Headless Lisp Pipelines ---------------------------------------------------
 
-(defun hell-check-run-elisp (files)
+(defun hell-check-run-elisp (files &optional run-code)
   "Run the Emacs Lisp dual-layer static analysis suite across FILES.
-Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
-\(AST and static analysis)."
+Covers `package-lint' (linter) and `relint'; with RUN-CODE, also
+`byte-compile' and `elsa', which run the files' macros and
+`eval-when-compile' forms (see `hell-check--code-runners')."
   (let (diags)
     (dolist (file files)
       ;; 1. Byte-compile (AST / compiler diagnostics, warnings-as-errors)
-      (condition-case err
-          (let ((res (hell-static-analysis--check-byte-compile file)))
-            (dolist (d res)
-              (push (hell-check--make-diag
-                     "Emacs Lisp"
-                     "byte-compile"
-                     (plist-get d :severity)
-                     (plist-get d :file)
-                     (plist-get d :line)
-                     (plist-get d :col)
-                     "byte-compile"
-                     (plist-get d :message))
-                    diags)))
-        (error
-         (push (hell-check--make-diag "Emacs Lisp" "byte-compile" "Error" file 1 1 "byte-compile"
-                                      (format "Byte-compilation failure: %s" err))
-               diags)))
+      (when run-code
+        (condition-case err
+            (let ((res (hell-static-analysis--check-byte-compile file)))
+              (dolist (d res)
+                (push (hell-check--make-diag
+                       "Emacs Lisp"
+                       "byte-compile"
+                       (plist-get d :severity)
+                       (plist-get d :file)
+                       (plist-get d :line)
+                       (plist-get d :col)
+                       "byte-compile"
+                       (plist-get d :message))
+                      diags)))
+          (error
+           (push (hell-check--make-diag "Emacs Lisp" "byte-compile" "Error" file 1 1 "byte-compile"
+                                        (format "Byte-compilation failure: %s" err))
+                 diags))))
 
       ;; 2. Package-lint (style & packaging standard linter)
       (condition-case _
@@ -291,20 +294,21 @@ Covers `package-lint' (linter) and `elsa', `relint', `byte-compile'
         (error nil))
 
       ;; 4. Elsa (gradual typing and semantic AST analysis)
-      (condition-case _
-          (let ((res (hell-static-analysis--check-elsa file)))
-            (dolist (d res)
-              (push (hell-check--make-diag
-                     "Emacs Lisp"
-                     "elsa"
-                     (plist-get d :severity)
-                     (plist-get d :file)
-                     (plist-get d :line)
-                     (plist-get d :col)
-                     "elsa"
-                     (plist-get d :message))
-                    diags)))
-        (error nil)))
+      (when run-code
+        (condition-case _
+            (let ((res (hell-static-analysis--check-elsa file)))
+              (dolist (d res)
+                (push (hell-check--make-diag
+                       "Emacs Lisp"
+                       "elsa"
+                       (plist-get d :severity)
+                       (plist-get d :file)
+                       (plist-get d :line)
+                       (plist-get d :col)
+                       "elsa"
+                       (plist-get d :message))
+                      diags)))
+          (error nil))))
     (nreverse diags)))
 
 (defun hell-check-run-common-lisp (files)
@@ -1001,33 +1005,5 @@ Interactively, prompt for target directory or file (defaults to project root)."
 (defalias 'hell-lint #'hell-check
   "Alias for `hell-check'.")
 
-;; Bind leader keys C-c c x (quality check) and C-c c l (quality lint)
-(with-eval-after-load 'hell-keybinds
-  (when (fboundp 'hell-leader-def)
-    (hell-leader-def
-      "c x" '("quality check" . hell-check)
-      "c l" '("quality lint" . hell-lint))))
-
-;; Direct keymap bindings on mode-specific-map (C-c)
-(keymap-set mode-specific-map "c x" #'hell-check)
-(keymap-set mode-specific-map "c l" #'hell-lint)
-(keymap-set mode-specific-map "h c" #'hell-check)
-
-;; Register with defcli! if available
-(eval-after-load 'hell-cli
-  '(progn
-     (puthash "check"
-              (list :name 'check
-                    :fn 'hell-cli-check
-                    :doc (documentation #'hell-cli-check t)
-                    :arglist '(&rest args))
-              hell-cli-commands)
-     (puthash "lint"
-              (list :name 'lint
-                    :fn 'hell-cli-lint
-                    :doc (documentation #'hell-cli-lint t)
-                    :arglist '(&rest args))
-              hell-cli-commands)))
-
-(provide 'hell-cli-check)
+(hell-provide 'hell-cli 'check)
 ;;; check.el ends here

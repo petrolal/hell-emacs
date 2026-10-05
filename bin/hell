@@ -103,6 +103,10 @@ case "$1" in
       --sandbox)
         shift
         SANDBOX_DIR=$(mktemp -d -t hell-sandbox.XXXXXX 2>/dev/null || mktemp -d "/tmp/hell-sandbox.XXXXXX")
+        # Removed however this ends: Emacs failing (set -e), C-c, or a kill.
+        trap 'rm -rf "$SANDBOX_DIR"' EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
         export XDG_CONFIG_HOME="$SANDBOX_DIR/config"
         export XDG_DATA_HOME="$SANDBOX_DIR/data"
         export XDG_CACHE_HOME="$SANDBOX_DIR/cache"
@@ -111,9 +115,8 @@ case "$1" in
         mkdir -p "$HELLDIR" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
         echo "Starting Hell Emacs sandbox in $SANDBOX_DIR" >&2
         [ "$1" = "--" ] && shift
-        "$EMACS" --init-directory "$HELL_ROOT" "$@"
-        ret=$?
-        rm -rf "$SANDBOX_DIR"
+        ret=0
+        "$EMACS" --init-directory "$HELL_ROOT" "$@" || ret=$?
         exit $ret
         ;;
     esac

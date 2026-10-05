@@ -30,6 +30,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'subr-x)
 (require 'tabulated-list)
 (require 'hell-modules)
 
@@ -100,84 +101,193 @@ Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC
                                    (symbol-name (plist-get b :name)))
                         (string< ga gb)))))))
 
-(defun hell-plugin-find-in-init (init-file _group-sym name-sym)
-  "Search INIT-FILE for module _GROUP-SYM and NAME-SYM.
-Returns (FOUND-P . COMMENTED-P)."
-  (if (not (file-exists-p init-file))
-      (cons nil nil)
+;;; Editing init.el's hell! block ------------------------------------------------
+;;
+;; Enabling or disabling a module changes only its own line, inside its own
+;; group of the `hell!' form: `:tools docker' and `:lang docker' are two
+;; modules. The form is read as `bin/hell config --add-defaults' reads it
+;; (lisp/cli/config.el).
+
+(declare-function hell-config--block "cli/config" (file))
+(declare-function hell-config--block-spec "cli/config" (file))
+(declare-function hell-config--modules "cli/config" (spec))
+(declare-function hell-config--group-positions "cli/config" (start end))
+(declare-function hell-config--end-of-group "cli/config" (group groups end))
+
+(defun hell-plugins--group-keyword (group)
+  "GROUP (`lang', `:lang' or \"lang\") as the keyword `hell!' uses."
+  (intern (concat ":" (string-remove-prefix ":" (format "%s" group)))))
+
+(defun hell-plugins--init-file ()
+  "The init.el whose `hell!' block the plugin commands edit."
+  (expand-file-name "init.el" (or hell-user-dir hell-dir)))
+
+(defun hell-plugins--locate (group name start end)
+  "Where module GROUP NAME is in the current buffer's `hell!' form.
+START and END bound the form. Returns (active BEG . END), the module as
+written, flags and all; (commented BEG . END), the comment marker of a
+`;;NAME' line among GROUP's; (group) if GROUP is there without NAME;
+nil if GROUP isn't there."
+  (let* ((groups (hell-config--group-positions start end))
+         (here (assq group groups))
+         (depth (1+ (car (syntax-ppss start))))
+         (name-re (concat "\\_<" (regexp-quote (symbol-name name)) "\\_>")))
+    (when here
+      (let ((beg (cdr here))
+            (limit (if-let* ((next (cadr (memq here groups)))) (cdr next) (1- end))))
+        (save-excursion
+          (or (progn
+                (goto-char beg)
+                (catch 'found
+                  (while (re-search-forward name-re limit t)
+                    (let* ((mb (match-beginning 0))
+                           (me (match-end 0))
+                           (ppss (save-excursion (syntax-ppss mb))))
+                      (unless (nth 8 ppss)    ; in a comment or a string
+                        (cond ((= (car ppss) depth)
+                               (throw 'found (cons 'active (cons mb me))))
+                              ;; (NAME +flag ...)
+                              ((and (= (car ppss) (1+ depth)) (eq (char-before mb) ?\())
+                               (throw 'found (cons 'active (cons (1- mb) (scan-sexps (1- mb) 1)))))))))))
+              (progn
+                (goto-char beg)
+                ;; Only the module on its line (with its flags and a comment):
+                ;; never prose that starts with its name.
+                (when (re-search-forward (concat "^[ \t]*\\(;+[ \t]*\\)\\(?:" name-re "\\|(" name-re
+                                                 "[^()\n]*)\\)[ \t]*\\(?:;.*\\)?$")
+                                         limit t)
+                  (cons 'commented (cons (match-beginning 1) (match-end 1)))))
+              (list 'group)))))))
+
+(defun hell-plugins--group-column (group groups)
+  "The column GROUP's keyword is at in GROUPS; else the first group's, else 11."
+  (if-let* ((here (or (assq group groups) (car groups))))
+      (save-excursion
+        (goto-char (cdr here))
+        (skip-chars-forward " \t")
+        (current-column))
+    11))
+
+(defun hell-plugins--enable-here (group name start end where)
+  "Enable GROUP NAME in the `hell!' form between START and END.
+WHERE is from `hell-plugins--locate'. Returns non-nil if it changed it."
+  (let ((groups (hell-config--group-positions start end)))
+    (pcase where
+      (`(active . ,_) nil)
+      (`(commented ,b . ,e)
+       ;; `;;name   ; why' becomes `name     ; why', still aligned.
+       (let ((width (- e b)))
+         (delete-region b e)
+         (goto-char b)
+         (forward-sexp)
+         (when (looking-at "[ \t]+;")
+           (insert (make-string width ?\s))))
+       t)
+      (`(group)
+       (goto-char (hell-config--end-of-group group groups end))
+       (insert (make-string (hell-plugins--group-column group groups) ?\s)
+               (symbol-name name) "\n")
+       t)
+      (_
+       (let ((indent (make-string (hell-plugins--group-column group groups) ?\s)))
+         (goto-char (1- end))
+         (insert "\n\n" indent (symbol-name group) "\n" indent (symbol-name name)))
+       t))))
+
+(defun hell-plugins--disable-here (group start end where)
+  "Disable GROUP's module WHERE says is active, in the `hell!' form.
+START and END bound the form; WHERE is from `hell-plugins--locate'.
+Returns non-nil if it changed it."
+  (pcase where
+    (`(active ,b . ,e)
+     (if (and (save-excursion (goto-char b) (skip-chars-backward " \t") (bolp))
+              (save-excursion (goto-char e) (looking-at "[ \t]*\\(?:;.*\\)?$")))
+         ;; Alone on its line: comment it out there, keeping the alignment.
+         (progn
+           (goto-char b)
+           (insert ";;")
+           (goto-char (+ e 2))
+           (when (looking-at " \\{3,\\};")
+             (delete-char 2)))
+       ;; Sharing a line (`(hell! :ui theme', `lsp magit', `default)'): it
+       ;; moves, commented, to a line of its own right there, at the group's
+       ;; column; what followed it (the closing paren too) to the next line.
+       (let* ((text (buffer-substring b e))
+              (indent (make-string (hell-plugins--group-column
+                                    group (hell-config--group-positions start end))
+                                   ?\s))
+              (rest (save-excursion (goto-char e) (skip-chars-forward " \t")
+                                    (and (not (looking-at "$\\|;")) (point)))))
+         (delete-region b (or rest e))
+         (goto-char b)
+         (delete-horizontal-space)
+         (unless (bolp) (insert "\n"))
+         (insert indent ";;" text (if rest (concat "\n" indent) ""))))
+     t)))
+
+(defun hell-plugins--edit (group name enable)
+  "Enable module GROUP NAME in init.el's `hell!' block; ENABLE nil disables.
+Only GROUP's lines change. init.el is copied to init.el~ first, and put
+back if the result doesn't read back as asked. Returns non-nil if
+anything changed."
+  (hell-require 'hell-cli 'config)
+  (let* ((init (hell-plugins--init-file))
+         (group (hell-plugins--group-keyword group))
+         (block (or (and (file-exists-p init) (hell-config--block init))
+                    (error "No (hell! ...) block in %s" (abbreviate-file-name init))))
+         (backup (concat init "~"))
+         (key (cons group name))
+         (before (mapcar #'car (hell-config--modules (nth 2 block))))
+         changed)
     (with-temp-buffer
-      (insert-file-contents init-file)
-      (goto-char (point-min))
-      (let* ((name-str (symbol-name name-sym))
-             (pattern (format "\\([ \t]*;;[ \t]*\\|\\(?1:[ \t]*\\)\\)\\(?:(%s\\|%s\\_>\\)"
-                              (regexp-quote name-str)
-                              (regexp-quote name-str)))
-             found commented)
-        (while (and (not found) (re-search-forward pattern nil t))
-          (setq found t)
-          (setq commented (not (match-string 1))))
-        (cons found commented)))))
+      (insert-file-contents init)
+      (emacs-lisp-mode)
+      (pcase-let* ((`(,start ,end ,_) block)
+                   (where (hell-plugins--locate group name start end)))
+        (setq changed (if enable
+                          (hell-plugins--enable-here group name start end where)
+                        (hell-plugins--disable-here group start end where))))
+      (when changed
+        (copy-file init backup t)
+        (write-region nil nil init nil 'silent)))
+    ;; Read back: that module changed, and no other.
+    (when changed
+      (unless (seq-set-equal-p
+               (mapcar #'car (hell-config--modules (hell-config--block-spec init)))
+               (if enable (cons key before) (remove key before)))
+        (copy-file backup init t)
+        (error "Couldn't %s %s %s in %s; it's unchanged"
+               (if enable "enable" "disable") group name (abbreviate-file-name init))))
+    changed))
+
+(defun hell-plugin-find-in-init (init-file group-sym name-sym)
+  "Search INIT-FILE's `hell!' block for module GROUP-SYM NAME-SYM.
+Returns (FOUND-P . COMMENTED-P)."
+  (hell-require 'hell-cli 'config)
+  (if-let* ((block (and (file-exists-p init-file) (hell-config--block init-file))))
+      (with-temp-buffer
+        (insert-file-contents init-file)
+        (emacs-lisp-mode)
+        (pcase (car (hell-plugins--locate (hell-plugins--group-keyword group-sym) name-sym
+                                          (nth 0 block) (nth 1 block)))
+          ('active (cons t nil))
+          ('commented (cons t t))
+          (_ (cons nil nil))))
+    (cons nil nil)))
 
 (defun hell-plugin-enable (group name)
-  "Enable module GROUP and NAME in the user's `init.el'."
-  (let* ((user-dir (or hell-user-dir hell-dir))
-         (init-file (expand-file-name "init.el" user-dir)))
-    (unless (file-exists-p init-file)
-      (error "init.el not found in %s" user-dir))
-    (with-temp-buffer
-      (insert-file-contents init-file)
-      (goto-char (point-min))
-      (let ((name-str (symbol-name name))
-            (group-kw (intern (format ":%s" group)))
-            modified)
-        ;; Look for commented occurrence
-        (while (re-search-forward (format "^[ \t]*;;+[ \t]*\\(%s\\_>\\|(%s[ \t+].*\\)"
-                                          (regexp-quote name-str)
-                                          (regexp-quote name-str))
-                                  nil t)
-          (let ((line (match-string 0)))
-            (replace-match (string-trim-left (string-trim-left line "[ \t]*;;+[ \t]*")) t t)
-            (setq modified t)))
-        (unless modified
-          ;; Insert under group keyword
-          (goto-char (point-min))
-          (if (re-search-forward (format "^[ \t]*%s\\_>" (regexp-quote (symbol-name group-kw))) nil t)
-              (progn
-                (forward-line 1)
-                (insert (format "           %s\n" name-str))
-                (setq modified t))
-            ;; Append to hell! block
-            (if (re-search-forward "(hell!" nil t)
-                (progn
-                  (goto-char (match-end 0))
-                  (insert (format "\n           %s\n           %s" group-kw name-str))
-                  (setq modified t))
-              (error "Could not find (hell! ...) block in %s" init-file))))
-        (write-region (point-min) (point-max) init-file)
-        (message "Enabled %s in %s (run `bin/hell sync' or C-c h S)" name-str init-file)
-        t))))
+  "Enable module GROUP NAME in the user's `init.el'."
+  (when (hell-plugins--edit group name t)
+    (message "Enabled %s %s in %s (run `bin/hell sync' or C-c h S)"
+             (hell-plugins--group-keyword group) name (hell-plugins--init-file))
+    t))
 
-(defun hell-plugin-disable (_group name)
-  "Disable (comment out) module _GROUP and NAME in the user's `init.el'."
-  (let* ((user-dir (or hell-user-dir hell-dir))
-         (init-file (expand-file-name "init.el" user-dir)))
-    (unless (file-exists-p init-file)
-      (error "init.el not found in %s" user-dir))
-    (with-temp-buffer
-      (insert-file-contents init-file)
-      (goto-char (point-min))
-      (let ((name-str (symbol-name name))
-            modified)
-        (while (re-search-forward (format "^\\([ \t]*\\)\\(%s\\_>\\|(%s[ \t+].*?\\)"
-                                          (regexp-quote name-str)
-                                          (regexp-quote name-str))
-                                  nil t)
-          (replace-match (concat (match-string 1) ";;" (match-string 2)) t t)
-          (setq modified t))
-        (when modified
-          (write-region (point-min) (point-max) init-file)
-          (message "Disabled %s in %s (run `bin/hell sync' or C-c h S)" name-str init-file)
-          t)))))
+(defun hell-plugin-disable (group name)
+  "Disable (comment out) module GROUP NAME in the user's `init.el'."
+  (when (hell-plugins--edit group name nil)
+    (message "Disabled %s %s in %s (run `bin/hell sync' or C-c h S)"
+             (hell-plugins--group-keyword group) name (hell-plugins--init-file))
+    t))
 
 ;;; UI mode --------------------------------------------------------------------
 

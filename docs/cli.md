@@ -44,7 +44,9 @@ that would win over Hell Emacs, creates your config from `static/`, syncs,
 offers to save your environment, runs `doctor`. `--no-config`,
 `--no-install` and `--env`/`--no-env` skip or answer those steps.
 `--from-bundle` installs from an offline bundle (see `bundle`), checking
-every file's SHA-256, with no network at all.
+every file's SHA-256, with no network at all. Add `--sha256 HEX`, the
+SHA-256 `bundle` printed, to prove it's that bundle: its manifest travels
+inside it (`hell-bundle-require-sha256` makes it mandatory).
 
 **`sync`** [`s`]
 Installs every package and language server your modules and `packages.el`
@@ -136,7 +138,7 @@ and one Emacs major version. It carries your modules, or SPEC's:
 `--modules ":lang (java +lombok) kotlin :tools lsp build"`; that also
 syncs this machine for those modules, so use its own profile:
 `hell -p bundle bundle ...`. Install it with
-`hell install --from-bundle FILE`.
+`hell install --from-bundle FILE --sha256 HEX`, with the SHA-256 it printed.
 
 **`help`** [`h`]
 All of the above, briefly.

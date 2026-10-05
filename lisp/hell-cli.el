@@ -180,10 +180,11 @@ Either `stable', the latest release (the tag vMAJOR.MINOR.PATCH), or
   :type '(choice (const stable) (const main))
   :group 'hell)
 
-(defcustom hell-upgrade-verify-tags nil
+(defcustom hell-upgrade-verify-tags t
   "Non-nil if the stable channel only checks out signed releases.
 That's a release whose tag's signature `git verify-tag' accepts (the
-signer's key must be in your keyring)."
+signer's key must be in your keyring). Releases are signed, so it's on;
+nil checks out whatever tag the remote has, signed or not."
   :type 'boolean
   :group 'hell)
 
@@ -283,13 +284,14 @@ Options (before the command):
   -!, --force          Don't ask: accept every prompt.
 
 Commands (short names in brackets):
-  install [--[no-]config] [--[no-]env] [--[no-]install] [--aot] [--from-bundle FILE]
+  install [--[no-]config] [--[no-]env] [--[no-]install] [--aot] [--from-bundle FILE [--sha256 HEX]]
              First-time setup: create your config (~/.config/hell-emacs), sync,
              save your shell environment (it asks, unless --env or --no-env),
              then run doctor. --no-install: don't sync yet.
              --aot: native-compile packages ahead of time.
              --from-bundle: install from an offline bundle (see `bundle'),
-             checking every file's SHA-256, with no network access at all.
+             checking every file's SHA-256, with no network access at all;
+             --sha256: the SHA-256 `bundle' printed, proving it's that bundle.
   sync [s]   Install/build every package your modules and packages.el declare,
              and generate the init file Emacs starts from. Run it after
              changing your hell! block, a packages.el or a module's

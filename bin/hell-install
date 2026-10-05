@@ -40,6 +40,7 @@ Options:
   --aot               Native-compile installed packages ahead of time
   --team URL          Configure shared team layer from git repository or directory URL
   --from-bundle FILE  Install from an offline bundle, with no network access
+  --sha256 HEX        The bundle's SHA-256, as `bin/hell bundle' printed it
 
   1. create your config (`hell-user-dir', ~/.config/hell-emacs) with
      starter init.el, config.el and packages.el (static/*.example.el),
@@ -93,7 +94,8 @@ start Emacs with `%s', or move ~/.emacs.d away"
     (when bundle
       ;; Without a config directory, there's nowhere for the lock file:
       ;; the packages stay at the bundle's commits anyway.
-      (hell-bundle-install bundle (not (file-directory-p hell-user-dir))))
+      (hell-bundle-install bundle (not (file-directory-p hell-user-dir))
+                           (hell-cli--option args "--sha256")))
     (if (eq install 'no)
         (hell-cli--say "  - Not syncing, as asked (--no-install); run `bin/hell sync' before starting Emacs")
       (hell-sync)

@@ -791,5 +791,12 @@ Running the sync again usually finishes the job." (length pending)))
               hell-compliance-license-problems hell-compliance-cyclonedx-sbom))
   (autoload fn (hell--part-file 'hell-cli 'compliance)))
 
+;; The quality gate, `bin/hell check' and `C-c c x' / `C-c c l' (:config
+;; default): lisp/cli/ isn't scanned for autoloads, so they're named here.
+(autoload 'hell-check (hell--part-file 'hell-cli 'check)
+  "Run the unified Static Analysis and Linting Quality Gate on TARGET." t)
+(autoload 'hell-lint (hell--part-file 'hell-cli 'check)
+  "Alias for `hell-check'." t)
+
 (provide 'hell-modules)
 ;;; hell-modules.el ends here

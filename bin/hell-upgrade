@@ -59,7 +59,9 @@ GIT runs git in `hell-dir'."
       (when hell-upgrade-verify-tags
         (let ((verify (funcall git "verify-tag" release)))
           (unless (zerop (car verify))
-            (error "Release %s isn't signed by a key you trust (`hell-upgrade-verify-tags'); not checked out:\n%s"
+            (error "Release %s isn't signed by a key you trust, so it wasn't checked out:\n%s\n\
+Import the maintainer's public key (gpg --import KEY.asc) and run upgrade again; \
+or, to take unsigned releases, (setq hell-upgrade-verify-tags nil) in your init.el"
                    release (cdr verify)))))
       (let ((checkout (funcall git "checkout" "--quiet" release)))
         (unless (zerop (car checkout))
@@ -167,8 +169,12 @@ on a detached HEAD, which has no upstream to update from."
         (elpaca-merge id 'fetch)))
     (elpaca-process-queues)
     (hell--elpaca-wait))
+  ;; The rest is `hell-sync--run''s: an upgraded Hell Emacs may pin new
+  ;; servers, grammars or dependencies, which its sync steps install.
+  (hell-modules-check-dependencies)
   (hell-sync--check-failures)
   (hell-sync--log "Synced %d packages" (length (hell-sync--write-profile)))
+  (run-hooks 'hell-sync-functions)
   (hell-verify-record-installed))
 
 ;;; hell-upgrade ends here

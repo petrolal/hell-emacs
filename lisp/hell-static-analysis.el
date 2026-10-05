@@ -512,6 +512,7 @@ If OUTPUT-FILE is nil, return the generated Markdown string."
           (message "Static analysis report saved to %s" output-file))
         content))))
 
+;;;###autoload
 (defun hell-static-analysis-run (&optional target report-file)
   "Execute static analysis across TARGET (file or directory).
 Collects all diagnostics from enabled linters, presents results in
@@ -699,9 +700,6 @@ If REPORT-FILE is provided, write the Markdown report to it."
   (unless (buffer-file-name)
     (user-error "Current buffer is not visiting a file"))
   (hell-static-analysis-run (buffer-file-name) report-file))
-
-;; Direct keymap binding on mode-specific-map (C-c)
-(keymap-set mode-specific-map "c s" #'hell-static-analysis-run)
 
 (provide 'hell-static-analysis)
 ;;; hell-static-analysis.el ends here

@@ -313,6 +313,13 @@ Each name starts with PREFIX."
 Every file must have its size and SHA-256; nothing may be missing or
 extra."
   (let ((listed (make-hash-table :test #'equal))
+        ;; Every file at once: a bundle holds thousands of them.
+        (hashes (hell-files-sha256
+                 (cl-loop for (name kind) in (plist-get manifest :entries)
+                          for file = (expand-file-name name root)
+                          when (and (eq kind :file) (not (file-symlink-p file))
+                                    (file-regular-p file))
+                          collect file)))
         bad)
     (dolist (entry (plist-get manifest :entries))
       (let* ((name (car entry))
@@ -326,9 +333,15 @@ extra."
                   (:dir (and (not (file-symlink-p file)) (file-directory-p file)))
                   (:file (and (not (file-symlink-p file)) (file-regular-p file)
                               (eql (file-attribute-size (file-attributes file)) (nth 2 entry))
-                              (equal (hell-file-sha256 file) (nth 3 entry))))
+                              (equal (gethash file hashes) (nth 3 entry))))
                   ((or :link :data-link) (file-symlink-p file)))
           (push name bad))))
+    ;; The roots are what install moves into `hell-data-dir': each must be a
+    ;; safe name, and one of the entries just checked.
+    (dolist (root (plist-get manifest :roots))
+      (hell-bundle--check-name root)
+      (unless (gethash root listed)
+        (error "The bundle's manifest moves %S into place, but doesn't list it" root)))
     (dolist (name (hell-bundle--names root))
       (unless (gethash name listed)
         (push (concat name " (not in the manifest)") bad)))
@@ -389,14 +402,44 @@ A different lock file already there is kept, renamed .before-bundle."
       (make-directory (file-name-directory lock) t)
       (copy-file file lock t))))
 
-(defun hell-bundle-install (bundle &optional no-lock)
+(defcustom hell-bundle-require-sha256 nil
+  "Non-nil if `install --from-bundle' refuses a bundle without --sha256.
+A bundle's manifest travels inside it, so on its own it only proves
+the bundle is whole, not that it's the one `bin/hell bundle' made: the
+SHA-256 that command printed, given as --sha256 on the installing
+machine, does. Set it where bundles cross from an untrusted place."
+  :type 'boolean
+  :group 'hell)
+
+(defun hell-bundle-check-sha256 (bundle sha256)
+  "Signal an error unless the file BUNDLE's SHA-256 is SHA256.
+Without SHA256: an error if `hell-bundle-require-sha256', else a
+warning saying what isn't checked."
+  (cond
+   (sha256
+    (unless (string-match-p "\\`[0-9a-fA-F]\\{64\\}\\'" sha256)
+      (error "--sha256 must be 64 hexadecimal digits, as `bin/hell bundle' prints it"))
+    (let ((actual (hell-file-sha256 bundle)))
+      (unless (equal actual (downcase sha256))
+        (error "The bundle %s has SHA-256 %s, not %s: it isn't the bundle you meant; not installed"
+               (abbreviate-file-name bundle) actual (downcase sha256)))))
+   (hell-bundle-require-sha256
+    (error "Give the bundle's SHA-256 with --sha256 (`hell-bundle-require-sha256' is set)"))
+   (t
+    (hell-sync--log "  ! No --sha256: the bundle's files are checked only against its own \
+manifest. Its SHA-256 is %s; compare it with the one `bin/hell bundle' printed"
+                    (hell-file-sha256 bundle)))))
+
+(defun hell-bundle-install (bundle &optional no-lock sha256)
   "Unpack BUNDLE into `hell-data-dir', after checking every file in it.
-Also installs its lock file, unless NO-LOCK. Returns the manifest.
-Needs no network; the sync that follows should run with
-`hell-net-offline' set."
+Also installs its lock file, unless NO-LOCK. With SHA256, the bundle
+itself must have that SHA-256 (`hell-bundle-check-sha256').
+Returns the manifest. Needs no network; the sync that follows should
+run with `hell-net-offline' set."
   (let ((bundle (expand-file-name bundle)))
     (unless (file-readable-p bundle)
       (error "Can't read the bundle %s" (abbreviate-file-name bundle)))
+    (hell-bundle-check-sha256 bundle sha256)
     (make-directory hell-data-dir t)
     ;; Unpacked on the same file system, so it moves into place whole.
     (let ((stage (make-temp-file (expand-file-name ".bundle-" hell-data-dir) t)))
@@ -428,7 +471,7 @@ Needs no network; the sync that follows should run with
                   (hell-sync--log "Note: the bundle was made with Hell Emacs %s, this is %s; \
 if their pins differ, the sync names what's missing"
                                   (substring theirs 0 7) (substring ours 0 7))))
-              (hell-sync--log "Installed %d files (%s) from the bundle (SHA-256 verified)"
+              (hell-sync--log "Installed %d files (%s) from the bundle (each matches its manifest)"
                               (cl-count :file (plist-get manifest :entries) :key #'cadr)
                                   (file-size-human-readable (hell-bundle-size manifest)))
               manifest))
