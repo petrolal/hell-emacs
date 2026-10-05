@@ -112,6 +112,12 @@ start Emacs with `%s', or move ~/.emacs.d away"
       (hell-cli-env))
     (hell-cli--say "")
     (hell-cli-doctor)
+    ;; What doctor found is this machine's to fix (a JDK, Node...), said
+    ;; above; the install itself succeeded, so it doesn't fail on them.
+    ;; `bin/hell doctor' on its own still does.
+    (unless (zerop hell-cli--problems)
+      (hell-cli--say "\nInstalled; fix what doctor found above, then run `bin/hell doctor' again.")
+      (setq hell-cli--problems 0))
     (hell-cli--say "\nDone. Start Emacs with:  %s" (hell-cli--start-command hell-dir))
     (hell-cli--say "(or `bin/hell emacs'). Put %s on your PATH to run `hell' from anywhere."
                    (abbreviate-file-name (expand-file-name "bin" hell-dir)))))

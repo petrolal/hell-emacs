@@ -27,17 +27,16 @@
 ;;; Code:
 
 (declare-function ligature-set-ligatures "ligature" (modes ligatures))
-(declare-function global-ligature-mode "ligature" (&optional arg))
 
+;; Loads with the first real buffer, not at startup.
 (use-package ligature
-  :defer t
-  :init
-  (when (display-graphic-p)
-    (ligature-set-ligatures 'prog-mode
-                            '("-->" "//" "/**" "/*" "*/" "<!--" ":=" "->>" "+++" "-->"
-                              "::" ":=" "==" "!=" "<=" ">=" "=>>" "=~" "<=>" "=~"
-                              "|>" "||" "&&" "::=" "..." ".." "/*" "*/" "<!--"))
-    (global-ligature-mode 1)))
+  :when (display-graphic-p)
+  :hook (hell-first-buffer . global-ligature-mode)
+  :config
+  (ligature-set-ligatures 'prog-mode
+                          '("-->" "//" "/**" "/*" "*/" "<!--" ":=" "->>" "+++" "-->"
+                            "::" ":=" "==" "!=" "<=" ">=" "=>>" "=~" "<=>" "=~"
+                            "|>" "||" "&&" "::=" "..." ".." "/*" "*/" "<!--")))
 
 (provide 'ui-ligatures-config)
 ;;; config.el ends here

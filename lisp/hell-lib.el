@@ -36,7 +36,15 @@
 
 ;;; Code:
 
-(require 'cl-lib)
+;; cl-lib loads Emacs' own cl-loaddefs, which is never native-compiled
+;; (`no-native-compile'). Loaded with JIT compilation on, it still queues
+;; a request per definition, and Emacs then loads its native compiler and
+;; byte-compiler (some 10 ms) after startup only to skip it. cl-lib
+;; itself ships natively compiled, so nothing is lost.
+(defvar native-comp-jit-compilation)
+(eval-and-compile
+  (let ((native-comp-jit-compilation nil))
+    (require 'cl-lib)))
 (require 'seq)
 (eval-when-compile (require 'subr-x))
 

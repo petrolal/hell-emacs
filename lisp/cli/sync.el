@@ -372,7 +372,7 @@ Returns non-nil if core compiled. See `hell-sync--compile'."
       ;; Written last: without it, startup ignores the compiled core.
       (with-temp-file (expand-file-name "stamp" core-dir) (insert emacs-version))
       (dolist (key (hell-module-list))
-        (dolist (file hell-module--compiled-files)
+        (dolist (file (hell-module-compiled-files key))
           (let ((src (expand-file-name file (hell-module-get key :path))))
             (when (file-exists-p src)
               (if (hell-sync--byte-compile src (hell-module-compiled-file key file) key)

@@ -35,6 +35,14 @@
 (add-to-list 'custom-theme-load-path
              (expand-file-name "themes/" (hell-module-get hell--current-module :path)))
 
+;; The compiled copy from the sync, when there is one for `hell-theme'
+;; and its source wasn't edited since: its directory goes first.
+(when hell-theme
+  (let ((file (hell-module-file-to-load
+               hell--current-module (format "themes/%s-theme.el" hell-theme))))
+    (when (string-suffix-p ".elc" file)
+      (add-to-list 'custom-theme-load-path (file-name-directory file)))))
+
 (column-number-mode 1)
 (size-indication-mode 1)
 ;; Line numbers only where they're actually useful for navigation.

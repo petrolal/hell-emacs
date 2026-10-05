@@ -135,11 +135,25 @@ As Doom Emacs: clone it as your Emacs directory, then run its installer.
    git clone https://github.com/petrolal/hell-emacs.git ~/.config/emacs
    ~/.config/emacs/bin/hell install
    ```
+   Or with `make`, from the checkout:
+   ```bash
+   cd ~/.config/emacs && make install
+   ```
 4. **Put `hell` on your `PATH`**:
    `echo 'export PATH="$HOME/.config/emacs/bin:$PATH"' >> ~/.bashrc`
 5. **Start it**: `emacs`. `hell doctor` checks everything if something's off.
 
 `install` creates your config in `~/.config/hell-emacs/`, installs every package and language server (each checked by SHA-256), offers to save your shell environment, and runs `doctor`. Don't clone with `--depth 1` (`upgrade` follows release tags).
+
+**With `make`.** `make install`, `make sync` and `make doctor` run `bin/hell install`, `sync` and `doctor` on your real config and directories (your own `HELLDIR` and `XDG_*_HOME`, if you set them). Options go in `ARGS`:
+
+```bash
+make install ARGS="--no-env --aot"   # don't ask about the environment; native-compile ahead of time
+make sync                            # after changing init.el or packages.el
+make doctor ARGS=--network           # also check the hosts Hell Emacs fetches from
+```
+
+The Makefile's other targets (`compile`, `test`, `checkdoc`) are developer checks: they run in a throwaway `.make-tmp/` and never read or touch your config. See the [development guide](docs/development.md).
 
 The [install guide](docs/guide.md#1-install) has each step in detail, plus proxies, offline machines, Docker, moving from Hellmacs and uninstalling.
 

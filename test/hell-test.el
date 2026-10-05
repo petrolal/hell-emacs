@@ -360,6 +360,22 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
                    buffers)))
       (delete-directory dir t))))
 
+;;; bin/hell-install -------------------------------------------------------
+
+(declare-function hell-cli-install "../bin/hell-install" (&rest args))
+
+(ert-deftest hell-test-install-not-failed-by-doctor ()
+  (hell-cli-load "install")
+  (let ((hell-cli--problems 0)
+        (said nil))
+    (cl-letf (((symbol-function 'hell-cli-doctor) (lambda (&rest _) (setq hell-cli--problems 9)))
+              ((symbol-function 'hell-cli--say)
+               (lambda (format-string &rest args) (push (apply #'format format-string args) said))))
+      (hell-cli-install "--no-config" "--no-install" "--no-env"))
+    ;; bin/hell exits 0: installed, with doctor's findings said.
+    (should (zerop hell-cli--problems))
+    (should (seq-find (lambda (line) (string-match-p "fix what doctor found" line)) said))))
+
 ;;; bin/hell-env -----------------------------------------------------------
 
 (declare-function hell-env--savable "../bin/hell-env" (environment))

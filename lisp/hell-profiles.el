@@ -181,6 +181,8 @@ the file without its extension)."
                    :emacs emacs-version
                    :time (format-time-string "%F %T")))
      (defun hell--startup-vars (_profile)
+       ;; Before part 60: module autoloads name compiled files too.
+       (setq hell--use-compiled (bound-and-true-p hell--compiled-core-p))
        (setq hell-packages ',hell-packages
              hell-unpinned-packages ',hell-unpinned-packages
              hell-module-dependencies ',hell-module-dependencies
@@ -230,9 +232,26 @@ as recorded at sync time."
           (file-expand-wildcards (expand-file-name "lib/*.el" hell-core-dir))
           ;; lib/jdk: `load-path' has the compiled core first.
           (lambda (file) (concat "lib/" (file-name-base file))))
-       ,@(hell-profile--scan-autoloads
-          (mapcan #'hell-module-autoload-files (hell-module-list))))
+       ,@(hell-profile--module-autoloads))
      (add-hook 'hell-startup-functions #'hell--startup-loaddefs-modules 60))))
+
+(defun hell-profile--module-autoloads ()
+  "Autoload forms of every enabled module, one `let' per file.
+Each file's autoloads load it by the name `hell-module--autoload-name'
+gives at startup: its compiled copy from the sync, unless the source
+was edited since."
+  (let ((placeholder (make-string 1 0)))
+    (cl-loop for key in (hell-module-list)
+             for dir = (hell-module-get key :path)
+             append (cl-loop for file in (hell-module-autoload-files key)
+                             for forms = (hell-profile--scan-autoloads
+                                          (list file) (lambda (_) placeholder))
+                             when forms
+                             collect `(let ((hell--autoload-file
+                                             (hell-module--autoload-name
+                                              ',key ,(file-relative-name file dir))))
+                                        ,@(cl-subst 'hell--autoload-file placeholder
+                                                    forms :test #'equal))))))
 
 (defun hell-profile--generate-loaddefs-packages (data)
   "Part 70: every package's autoloads and Info manuals.
@@ -244,13 +263,23 @@ DATA's."
      "70-hell-package-loaddefs.init.el"
      `((defun hell--startup-loaddefs-packages (_profile)
          ,@(when-let* ((autoloads (plist-get data :autoloads)))
-             `((load ,(file-name-sans-extension autoloads) nil 'nomessage)))
+             ;; Never native-compiled: JIT off, as for the init file.
+             `((let ((native-comp-jit-compilation nil))
+                 (load ,(file-name-sans-extension autoloads) nil 'nomessage))))
          ,@(when info-dirs
              `((with-eval-after-load 'info
                  (info-initialize)
                  (dolist (dir ',info-dirs)
                    (add-to-list 'Info-directory-list dir))))))
        (add-hook 'hell-startup-functions #'hell--startup-loaddefs-packages 70)))))
+
+(defun hell-profile--module-load (key file path)
+  "The form part 80 loads module KEY's FILE (at PATH) with.
+Without a `;;;###if' line in it now, it's marked unconditional: startup
+then doesn't read it again while it's unchanged (`hell-module--load')."
+  (if (hell-file-condition path)
+      `(hell-module--load ',key ,file)
+    `(hell-module--load ',key ,file 'unconditional)))
 
 (defun hell-profile--generate-module-loader (_data)
   "Part 80: enabled modules as sync saw them, then team and your config.el."
@@ -260,7 +289,6 @@ DATA's."
      "80-hell-modules.init.el"
      `((setq hell-modules ,hell-modules)
        (defun hell--startup-modules (_profile)
-         (setq hell--use-compiled (bound-and-true-p hell--compiled-core-p))
          (hell-modules-check-dependencies)
          (hell-treesit-apply)
          (with-hell-context 'module
@@ -268,13 +296,13 @@ DATA's."
            ,@(cl-loop for key in init-modules
                       for path = (expand-file-name "init.el" (hell-module-get key :path))
                       if (and (file-exists-p path) (hell-file-active-p path))
-                      collect `(hell-module--load ',key "init.el"))
+                      collect (hell-profile--module-load key "init.el" path))
            (hell-run-hooks 'hell-after-modules-init-hook)
            (hell-run-hooks 'hell-before-modules-config-hook)
            ,@(cl-loop for key in config-modules
                       for path = (expand-file-name "config.el" (hell-module-get key :path))
                       if (and (file-exists-p path) (hell-file-active-p path))
-                      collect `(hell-module--load ',key "config.el"))
+                      collect (hell-profile--module-load key "config.el" path))
            (hell-run-hooks 'hell-after-modules-config-hook))
          (when (and (bound-and-true-p hell-team-dir)
                     (file-exists-p (expand-file-name "config.el" hell-team-dir)))

@@ -31,13 +31,23 @@
       undo-strong-limit 3000000
       undo-outer-limit 48000000)
 
+(declare-function undo-fu-session-recover "undo-fu-session" ())
+(defvar undo-fu-session-mode)
+
+;; On with the first file, which it then restores itself: its own
+;; `find-file-hook' function, added by turning it on there, misses the
+;; file that turned it on.
+(defun hell-undo--start-h ()
+  "Turn on `undo-fu-session-global-mode', and restore the file it opened on."
+  (undo-fu-session-global-mode 1)
+  (when (and buffer-file-name undo-fu-session-mode)
+    (undo-fu-session-recover)))
+
 (use-package undo-fu-session
-  :defer 1
+  :hook (hell-first-file . hell-undo--start-h)
   :init
   (setq undo-fu-session-directory (hell-state-file "undo-fu-session/")
         undo-fu-session-linear t
         ;; One file per file ever edited otherwise, forever: the oldest
         ;; are deleted past this many.
-        undo-fu-session-file-limit 200)
-  :config
-  (global-undo-fu-session-mode 1))
+        undo-fu-session-file-limit 200))

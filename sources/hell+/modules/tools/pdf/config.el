@@ -30,7 +30,6 @@
 
 (use-package pdf-tools
   :defer t
-  :mode ("\\.pdf\\'" . pdf-view-mode)
   :init
   (when (display-graphic-p)
     (pdf-loader-install t)))

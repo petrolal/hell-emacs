@@ -112,7 +112,11 @@
    "C-x 8 N"       "№"
    "C-x 8 O"       "Œ"))
 
+;; On with the first real buffer. Not with the first command, as vertico:
+;; that runs after a whole key sequence, so the first `C-c' typed would
+;; show nothing. The idle load covers sitting on the splash first.
 (use-package which-key
+  :hook (hell-first-buffer . which-key-mode)
   :defer 1
   :init
   (setq which-key-idle-delay 0.4

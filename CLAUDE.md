@@ -16,6 +16,8 @@ make lock       # regenerate static/packages.lock.eld (slow, needs network)
 make clean      # remove .make-tmp/
 ```
 
+`make install`, `make sync` and `make doctor` are the exception: they run `bin/hell` on the user's **real** config and directories (the user's own `HELLDIR`/`XDG_*` restored, `.make-tmp/` ones removed), with options in `ARGS="..."`. Don't run them to test changes.
+
 Run a single ERT test (same env as `make test`; pass the test name or a regexp as the selector):
 
 ```sh

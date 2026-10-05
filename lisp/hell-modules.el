@@ -64,7 +64,6 @@
 
 ;;; Code:
 
-(require 'use-package)
 (require 'hell-lib)
 (eval-and-compile (hell-require 'hell-lib 'net))
 (declare-function elpaca-wait "elpaca" (&optional queue))
@@ -170,24 +169,31 @@ Doom v3's .doommodule: `name' (GROUP NAME), and optionally `depth'."
               (name (hell-module-metadata dir 'name)))
     (cons (car name) (cadr name))))
 
+(defun hell-file-condition (file)
+  "The text of FORM if FILE begins with `;;;###if FORM', else nil."
+  (with-temp-buffer
+    ;; A fixed coding system: detecting one runs `auto-coding-functions',
+    ;; and editorconfig's would load editorconfig at every startup.
+    (let ((coding-system-for-read 'utf-8-unix))
+      (insert-file-contents file nil 0 512))
+    (goto-char (point-min))
+    (when (re-search-forward "^;;;###if[ \t]+\\(.+\\)$" nil t)
+      (match-string 1))))
+
 (defun hell-file-active-p (file)
   "Return non-nil if FILE should be loaded.
 If FILE begins with `;;;###if FORM', evaluate FORM; if nil, return nil."
   (if (and file (file-exists-p file))
-      (with-temp-buffer
-        (insert-file-contents file nil 0 512)
-        (goto-char (point-min))
-        (if (re-search-forward "^;;;###if[ \t]+\\(.+\\)$" nil t)
-            (let ((text (match-string 1)))
-              (condition-case err
-                  (eval (car (read-from-string text)) t)
-                (error
-                 ;; Skipped, as a false condition is: but say why.
-                 (display-warning
-                  'hell (format "%s isn't loaded: its `;;;###if %s' failed: %s"
-                                (abbreviate-file-name file) text (error-message-string err)))
-                 nil)))
-          t))
+      (if-let* ((text (hell-file-condition file)))
+          (condition-case err
+              (eval (car (read-from-string text)) t)
+            (error
+             ;; Skipped, as a false condition is: but say why.
+             (display-warning
+              'hell (format "%s isn't loaded: its `;;;###if %s' failed: %s"
+                            (abbreviate-file-name file) text (error-message-string err)))
+             nil))
+        t)
     nil))
 
 (defconst hell-module-removed
@@ -508,7 +514,8 @@ Nil means the package shouldn't be installed."
 Otherwise call FN, `use-package', with NAME and ARGS."
   (unless (hell-package-disabled-p name)
     (apply fn name args)))
-(advice-add 'use-package :around #'hell--use-package-disabled-a)
+(with-eval-after-load 'use-package-core
+  (advice-add 'use-package :around #'hell--use-package-disabled-a))
 
 ;;; Loading ----------------------------------------------------------------
 
@@ -526,29 +533,54 @@ in your config leaves you with a working editor to fix it in."
                         (abbreviate-file-name file) (error-message-string err))
           :error))))))
 
-(defconst hell-module--compiled-files '("init.el" "config.el")
-  "Module files `bin/hell sync' byte-compiles: the ones every startup loads.")
+(defun hell-module-compiled-files (key)
+  "Module KEY's files `bin/hell sync' byte-compiles: the ones a startup loads.
+Its init.el and config.el, its +NAME.el (`hell-module-load'), its
+autoload files and its themes (themes/NAME-theme.el), relative to its
+directory."
+  (let ((dir (hell-module-get key :path)))
+    (append '("init.el" "config.el")
+            (mapcar (lambda (file) (file-relative-name file dir))
+                    (append (file-expand-wildcards (expand-file-name "+*.el" dir))
+                            (hell-module-autoload-files key)
+                            (file-expand-wildcards
+                             (expand-file-name "themes/*-theme.el" dir)))))))
 
 (defun hell-module-compiled-file (key file)
   "Where `bin/hell sync' puts module KEY's FILE compiled."
   (expand-file-name (concat "modules/" (hell-module--rel-dir (car key) (cdr key)) file "c")
                     hell-compiled-dir))
 
-(defun hell-module--load (key file)
-  "Load FILE from module KEY's directory, if it exists and is active.
-The compiled FILE from the last sync is loaded instead when it may be
+(defun hell-module-file-to-load (key file)
+  "The file to load module KEY's FILE from.
+Its compiled copy from the last sync when that may be used
 \(`hell--use-compiled') and is newer than FILE, so an edited file
-loads from source until the next sync. Errors warn instead of aborting
+loads from source until the next sync; else FILE itself."
+  (let ((src (expand-file-name file (hell-module-get key :path))))
+    (or (and hell--use-compiled
+             (let ((compiled (hell-module-compiled-file key file)))
+               (and (file-exists-p src) (file-newer-than-file-p compiled src)
+                    compiled)))
+        src)))
+
+(defun hell-module--autoload-name (key file)
+  "The name autoloads load module KEY's autoload FILE by.
+As `hell-module-file-to-load', without its extension: an autoload
+loads by a name that must take a suffix."
+  (file-name-sans-extension (hell-module-file-to-load key file)))
+
+(defun hell-module--load (key file &optional unconditional)
+  "Load FILE from module KEY's directory, if it exists and is active.
+From its compiled copy when it can be (`hell-module-file-to-load').
+UNCONDITIONAL means sync found no `;;;###if' line in FILE: while that
+sync's compiled copy is the one loaded (the source unchanged since), the
+source isn't read again to look. Errors warn instead of aborting
 startup: one broken module should degrade Hell Emacs, not brick it."
-  (let* ((src (expand-file-name file (hell-module-get key :path)))
-         (path src)
-         (compiled (and hell--use-compiled
-                        (member file hell-module--compiled-files)
-                        (hell-module-compiled-file key file))))
+  (let ((src (expand-file-name file (hell-module-get key :path)))
+        (path (hell-module-file-to-load key file)))
     ;; Only while the source exists and its ;;;###if condition holds
-    (when (and (file-exists-p src) (hell-file-active-p src))
-      (when (and compiled (file-exists-p compiled) (file-newer-than-file-p compiled src))
-        (setq path compiled))
+    (when (or (and unconditional (not (equal path src)))
+              (hell-file-active-p src))
       (let ((hell--current-module key))
         (with-hell-context 'module
           (condition-case-unless-debug err
@@ -570,11 +602,13 @@ startup: one broken module should degrade Hell Emacs, not brick it."
 (defun hell-module-load (name)
   "Load NAME (like \"+paths\") from the directory of the module being loaded.
 For a module's files to load their siblings: unlike `load-file-name',
-this still points at the module when its config.el runs compiled."
-  (load (expand-file-name name (if hell--current-module
-                                   (hell-module-get hell--current-module :path)
-                                 (file-name-directory (or load-file-name buffer-file-name))))
-        nil 'nomessage))
+this still points at the module when its config.el runs compiled.
+Within a module, NAME loads compiled when it can (`hell-module-file-to-load')."
+  (if hell--current-module
+      (load (hell-module-file-to-load hell--current-module (concat name ".el"))
+            nil 'nomessage 'nosuffix)
+    (load (expand-file-name name (file-name-directory (or load-file-name buffer-file-name)))
+          nil 'nomessage)))
 
 (defvar hell-modules-override nil
   "When non-nil, a `hell!' argument list enabled instead of the user's.

@@ -40,7 +40,7 @@
   (setq tab-always-indent 'complete))
 
 (use-package corfu
-  :defer 1
+  :hook (hell-first-input . global-corfu-mode)
   :init
   (setq corfu-auto t
         corfu-auto-delay 0.15
@@ -51,7 +51,6 @@
         ;; as an IDE shows it; quicker still as you move on.
         corfu-popupinfo-delay '(0.5 . 0.2))
   :config
-  (global-corfu-mode 1)
   (corfu-popupinfo-mode 1)
   ;; Candidates you pick come first next time, across sessions: it
   ;; saves itself with savehist, which core turns on.

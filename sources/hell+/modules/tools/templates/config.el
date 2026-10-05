@@ -27,8 +27,11 @@
 
 ;;; Code:
 
-(require 'project)
 (require 'subr-x)
+
+;; project.el loads with the first `project-current'.
+(declare-function project-current "project" (&optional maybe-prompt directory))
+(declare-function project-root "project" (project))
 
 (defgroup hell-templates nil
   "Cloud-native JVM project starters and templates for Hell Emacs."

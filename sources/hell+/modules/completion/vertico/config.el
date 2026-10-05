@@ -52,9 +52,7 @@
         completion-category-overrides '((file (styles partial-completion)))))
 
 (use-package marginalia
-  :defer 1
-  :config
-  (marginalia-mode 1))
+  :hook (hell-first-input . marginalia-mode))
 
 (use-package nerd-icons-completion
   :after marginalia

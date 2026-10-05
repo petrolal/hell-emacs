@@ -1,11 +1,19 @@
-# Developer checks for Hell Emacs' engine (lisp/). Every target runs Emacs
-# the way bin/hell does: batch, early-init.el first. HELLDIR and the XDG
-# directories point into a throwaway directory, so your own config and
-# packages are never read or touched.
+# Installing Hell Emacs (install, sync, doctor), and developer checks for
+# its engine (lisp/). The checks run Emacs the way bin/hell does: batch,
+# early-init.el first, with HELLDIR and the XDG directories pointing into a
+# throwaway directory, so your own config and packages are never read or
+# touched. install, sync and doctor are bin/hell's, on your real ones.
 
 EMACS ?= emacs
 # Gitignored, as every root dotfile.
 TMP   := $(CURDIR)/.make-tmp
+
+# The variables below point the checks away from your directories. Your own
+# values of them, if you set any, as NAME='VALUE' for env(1): install, sync
+# and doctor run bin/hell with these, and without the checks' ones.
+USER_DIRS := HELLDIR XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME XDG_STATE_HOME
+USER_ENV  := $(foreach v,$(USER_DIRS),$(if $(filter environment%,$(origin $(v))),'$(v)=$($(v))'))
+HELL      := env $(addprefix -u ,$(USER_DIRS)) $(USER_ENV) $(CURDIR)/bin/hell
 
 export HELLDIR        := $(TMP)/config
 export XDG_CONFIG_HOME := $(TMP)/xdg/config
@@ -20,9 +28,17 @@ CORE  := $(filter-out lisp/hell-elpaca.el,$(wildcard lisp/hell-*.el)) \
          $(wildcard lisp/cli/*.el lisp/lib/*.el)
 TESTS := $(wildcard test/*-test.el)
 
-.PHONY: all compile checkdoc test lock clean
+.PHONY: all install sync doctor compile checkdoc test lock clean
 
 all: compile test
+
+## install: install Hell Emacs for you, as `bin/hell install' does: your
+## config (~/.config/hell-emacs), packages, language servers, grammars, then
+## doctor. Options go in ARGS: make install ARGS="--no-env --aot".
+## sync: install what your config declares, after changing it (bin/hell sync).
+## doctor: check Emacs, tools and your config for problems (bin/hell doctor).
+install sync doctor:
+	@$(HELL) $@ $(ARGS)
 
 ## compile: byte-compile the engine; any warning fails. The .elc files go to
 ## a temporary directory, never next to the sources.

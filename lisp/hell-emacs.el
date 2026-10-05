@@ -48,10 +48,12 @@
       delete-by-moving-to-trash t
       large-file-warning-threshold (* 50 1024 1024))
 
-(require 'autorevert)
+(defvar global-auto-revert-non-file-buffers)
+(defvar auto-revert-avoid-polling)
 (setq global-auto-revert-non-file-buffers t
-      auto-revert-avoid-polling t)     ; file notifications, not a 5s stat of every buffer
-(global-auto-revert-mode 1)
+      auto-revert-avoid-polling t)    ; file notifications, not a 5s stat of every buffer
+;; Nothing to revert before the first file (or directory) is open.
+(add-hook 'hell-first-file-hook #'global-auto-revert-mode)
 ;; The two departures from stock behaviour (docs/keybindings.md): typing
 ;; replaces the region, and brackets and quotes come in pairs.
 (delete-selection-mode 1)

@@ -57,6 +57,7 @@
 
 (require 'hell-lib)
 
+(defvar native-comp-jit-compilation)
 (defvar hell-dir)                  ; early-init.el
 (defvar hell-profile)              ; early-init.el
 (defvar hell-profile-dir)          ; early-init.el
@@ -454,8 +455,11 @@ sync' (or `install') writes it."
               (list (format "%s doesn't exist; run `bin/hell%s sync'"
                             (abbreviate-file-name init-file)
                             (if hell-profile (format " --profile %s" hell-profile) "")))))
-    ;; The compiled one, when there is one (`load' prefers it).
-    (load (file-name-sans-extension init-file) nil 'nomessage)
+    ;; The compiled one, when there is one (`load' prefers it). It's never
+    ;; native-compiled (`no-native-compile'): JIT off, or Emacs would
+    ;; load its compiler after startup only to skip it (see hell-lib.el).
+    (let ((native-comp-jit-compilation nil))
+      (load (file-name-sans-extension init-file) nil 'nomessage))
     (hell-startup)))
 
 (defun hell-startup ()

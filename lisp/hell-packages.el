@@ -60,7 +60,13 @@
 ;; what to install with `package!' in their packages.el (see
 ;; `hell-modules'), and configure it with `use-package' in their
 ;; config.el. So `use-package' doesn't install anything by default.
-(require 'use-package)
+;;
+;; Only at compile time: compiled modules hold its expansions, never a
+;; call into it, and loading it loads the byte-compiler too. Anything
+;; else expanding a `use-package' (your config.el, sync's compiler) loads
+;; it through its autoload. Its options are custom variables, so set
+;; before it loads, they keep these values.
+(eval-when-compile (require 'use-package))
 
 ;; Modules should never eagerly load a package just by mentioning it.
 ;; Every `use-package' block opts into loading explicitly via
@@ -81,9 +87,10 @@
 ;;
 ;;   (use-package consult :defer-incrementally t ...)
 ;;   (use-package cider :defer-incrementally (clojure-mode sesman) ...)
-(push :defer-incrementally use-package-deferring-keywords)
-(setq use-package-keywords
-      (use-package-list-insert :defer-incrementally use-package-keywords :after))
+(with-eval-after-load 'use-package-core
+  (push :defer-incrementally use-package-deferring-keywords)
+  (setq use-package-keywords
+        (use-package-list-insert :defer-incrementally use-package-keywords :after)))
 
 (defalias 'use-package-normalize/:defer-incrementally #'use-package-normalize-symlist)
 
