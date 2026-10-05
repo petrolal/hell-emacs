@@ -29,15 +29,19 @@
 (declare-function erc "erc")
 (declare-function circe "circe")
 
+(defun hell-irc-open ()
+  "Start Circe, or ERC if Circe isn't available."
+  (interactive)
+  (if (fboundp 'circe)
+      (call-interactively 'circe)
+    (call-interactively 'erc)))
+
 (use-package circe
   :defer t
   :commands (circe)
   :init
   (hell-leader-def
-    "o i" '("IRC" . (lambda () (interactive)
-                      (if (fboundp 'circe)
-                          (call-interactively 'circe)
-                        (call-interactively 'erc))))))
+    "o i" '("IRC" . hell-irc-open)))
 
 (use-package erc
   :ensure nil

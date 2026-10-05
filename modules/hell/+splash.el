@@ -175,10 +175,15 @@ at the Relic Chamber: packages come from `package!', never package.el."
         (view-file changelog)
       (browse-url "https://github.com/petrolal/hell-emacs/releases"))))
 
+(defun hell-splash--issues ()
+  "Browse Hell Emacs' issue tracker."
+  (interactive)
+  (browse-url "https://github.com/petrolal/hell-emacs/issues"))
+
 (defconst hell-splash-buttons
-  `(("Portals..."
+  '(("Portals..."
      ("IntelliJ Exorcism" hell-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg")
-     ("Issue Sanctum" ,(lambda () (interactive) (browse-url "https://github.com/petrolal/hell-emacs/issues"))
+     ("Issue Sanctum" hell-splash--issues
       "Browse https://github.com/petrolal/hell-emacs/issues" "github.svg")
      ("Release Grimoires" hell-splash--releases "The changelog and release notes" "manual.svg")))
   "The Altar's buttons, by row: (HEADING (LABEL COMMAND HELP ICON)...).")

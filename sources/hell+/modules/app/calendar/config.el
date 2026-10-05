@@ -28,15 +28,19 @@
 
 (declare-function cfw:open-calendar-buffer "calfw")
 
+(defun hell-calendar-open ()
+  "Open calfw's calendar buffer, or the stock calendar if unavailable."
+  (interactive)
+  (if (fboundp 'cfw:open-calendar-buffer)
+      (cfw:open-calendar-buffer)
+    (calendar)))
+
 (use-package calfw
   :defer t
   :commands (cfw:open-calendar-buffer)
   :init
   (hell-leader-def
-    "o c" '("calendar" . (lambda () (interactive)
-                           (if (fboundp 'cfw:open-calendar-buffer)
-                               (cfw:open-calendar-buffer)
-                             (calendar))))))
+    "o c" '("calendar" . hell-calendar-open)))
 
 (use-package calfw-org
   :after (calfw org))
