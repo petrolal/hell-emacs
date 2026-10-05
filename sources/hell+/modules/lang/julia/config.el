@@ -31,9 +31,19 @@
   :config
   (add-hook 'julia-mode-hook #'lsp-deferred))
 
+(defun hell-julia-run ()
+  "Run the current Julia file."
+  (interactive)
+  (compile (format "julia %s" (shell-quote-argument (buffer-file-name)))))
+
+(defun hell-julia-test ()
+  "Run the current Julia project's tests."
+  (interactive)
+  (compile "julia --project -e 'using Pkg; Pkg.test()'"))
+
 (hell-localleader-def 'julia-mode
-  "r" '("run julia file" . (lambda () (interactive) (compile (format "julia %s" (shell-quote-argument (buffer-file-name))))))
-  "t" '("run tests" . (lambda () (interactive) (compile "julia --project -e 'using Pkg; Pkg.test()'"))))
+  "r" '("run julia file" . hell-julia-run)
+  "t" '("run tests" . hell-julia-test))
 
 (provide 'lang-julia-config)
 ;;; config.el ends here

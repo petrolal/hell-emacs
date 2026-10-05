@@ -29,9 +29,21 @@
 (use-package ledger-mode
   :mode ("\\.\(?:ledger\\|journal\)\\'" . ledger-mode))
 
+(defun hell-ledger-balance-report ()
+  "Show the current ledger's balance report."
+  (interactive)
+  (if (fboundp 'ledger-report)
+      (ledger-report "bal" nil)
+    (compile "ledger bal")))
+
+(defun hell-ledger-reconcile ()
+  "Reconcile the current ledger."
+  (interactive)
+  (when (fboundp 'ledger-reconcile) (ledger-reconcile nil)))
+
 (hell-localleader-def 'ledger-mode
-  "b" '("balance report" . (lambda () (interactive) (if (fboundp 'ledger-report) (ledger-report "bal" nil) (compile "ledger bal"))))
-  "c" '("reconcile" . (lambda () (interactive) (when (fboundp 'ledger-reconcile) (ledger-reconcile nil)))))
+  "b" '("balance report" . hell-ledger-balance-report)
+  "c" '("reconcile" . hell-ledger-reconcile))
 
 (provide 'lang-ledger-config)
 ;;; config.el ends here

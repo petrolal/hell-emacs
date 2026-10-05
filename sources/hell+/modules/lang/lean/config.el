@@ -31,10 +31,25 @@
   :config
   (add-hook 'lean4-mode-hook #'lsp-deferred))
 
+(defun hell-lean-build ()
+  "Build the current Lean project."
+  (interactive)
+  (compile "lake build"))
+
+(defun hell-lean-test ()
+  "Run the current Lean project's tests."
+  (interactive)
+  (compile "lake test"))
+
+(defun hell-lean-run ()
+  "Run the current Lean project."
+  (interactive)
+  (compile "lake run"))
+
 (hell-localleader-def 'lean4-mode
-  "b" '("lake build" . (lambda () (interactive) (compile "lake build")))
-  "t" '("lake test" . (lambda () (interactive) (compile "lake test")))
-  "r" '("lake run" . (lambda () (interactive) (compile "lake run"))))
+  "b" '("lake build" . hell-lean-build)
+  "t" '("lake test" . hell-lean-test)
+  "r" '("lake run" . hell-lean-run))
 
 (provide 'lang-lean-config)
 ;;; config.el ends here

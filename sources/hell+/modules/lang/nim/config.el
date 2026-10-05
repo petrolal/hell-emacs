@@ -31,10 +31,25 @@
   :config
   (add-hook 'nim-mode-hook #'lsp-deferred))
 
+(defun hell-nim-compile ()
+  "Compile the current Nim file."
+  (interactive)
+  (compile (format "nim c %s" (shell-quote-argument (buffer-file-name)))))
+
+(defun hell-nim-run ()
+  "Compile and run the current Nim file."
+  (interactive)
+  (compile (format "nim c -r %s" (shell-quote-argument (buffer-file-name)))))
+
+(defun hell-nim-test ()
+  "Run the current nimble project's tests."
+  (interactive)
+  (compile "nimble test"))
+
 (hell-localleader-def 'nim-mode
-  "c" '("nim compile" . (lambda () (interactive) (compile (format "nim c %s" (shell-quote-argument (buffer-file-name))))))
-  "r" '("nim run" . (lambda () (interactive) (compile (format "nim c -r %s" (shell-quote-argument (buffer-file-name))))))
-  "t" '("nimble test" . (lambda () (interactive) (compile "nimble test"))))
+  "c" '("nim compile" . hell-nim-compile)
+  "r" '("nim run" . hell-nim-run)
+  "t" '("nimble test" . hell-nim-test))
 
 (provide 'lang-nim-config)
 ;;; config.el ends here

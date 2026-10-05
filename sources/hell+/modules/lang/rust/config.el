@@ -33,11 +33,31 @@
   (when (fboundp 'rust-ts-mode)
     (add-hook 'rust-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-rust-build ()
+  "Build the current cargo project."
+  (interactive)
+  (compile "cargo build"))
+
+(defun hell-rust-test ()
+  "Run the current cargo project's tests."
+  (interactive)
+  (compile "cargo test"))
+
+(defun hell-rust-run ()
+  "Run the current cargo project."
+  (interactive)
+  (compile "cargo run"))
+
+(defun hell-rust-check ()
+  "Check the current cargo project without producing binaries."
+  (interactive)
+  (compile "cargo check"))
+
 (hell-localleader-def '(rust-mode rust-ts-mode)
-  "b" '("cargo build" . (lambda () (interactive) (compile "cargo build")))
-  "t" '("cargo test" . (lambda () (interactive) (compile "cargo test")))
-  "r" '("cargo run" . (lambda () (interactive) (compile "cargo run")))
-  "c" '("cargo check" . (lambda () (interactive) (compile "cargo check"))))
+  "b" '("cargo build" . hell-rust-build)
+  "t" '("cargo test" . hell-rust-test)
+  "r" '("cargo run" . hell-rust-run)
+  "c" '("cargo check" . hell-rust-check))
 
 (provide 'lang-rust-config)
 ;;; config.el ends here

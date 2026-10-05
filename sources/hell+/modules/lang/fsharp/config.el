@@ -31,11 +31,31 @@
   :config
   (add-hook 'fsharp-mode-hook #'lsp-deferred))
 
+(defun hell-fsharp-build ()
+  "Build the current .NET project."
+  (interactive)
+  (compile "dotnet build"))
+
+(defun hell-fsharp-test ()
+  "Run the current .NET project's tests."
+  (interactive)
+  (compile "dotnet test"))
+
+(defun hell-fsharp-run ()
+  "Run the current .NET project."
+  (interactive)
+  (compile "dotnet run"))
+
+(defun hell-fsharp-interactive ()
+  "Start an F# interactive session."
+  (interactive)
+  (if (fboundp 'run-fsharp) (run-fsharp) (compile "dotnet fsi")))
+
 (hell-localleader-def 'fsharp-mode
-  "b" '("dotnet build" . (lambda () (interactive) (compile "dotnet build")))
-  "t" '("dotnet test" . (lambda () (interactive) (compile "dotnet test")))
-  "r" '("dotnet run" . (lambda () (interactive) (compile "dotnet run")))
-  "s" '("F# interactive" . (lambda () (interactive) (if (fboundp 'run-fsharp) (run-fsharp) (compile "dotnet fsi")))))
+  "b" '("dotnet build" . hell-fsharp-build)
+  "t" '("dotnet test" . hell-fsharp-test)
+  "r" '("dotnet run" . hell-fsharp-run)
+  "s" '("F# interactive" . hell-fsharp-interactive))
 
 (provide 'lang-fsharp-config)
 ;;; config.el ends here

@@ -39,9 +39,20 @@
   :config
   (add-hook 'fortran-mode-hook #'lsp-deferred))
 
+(defun hell-fortran-compile ()
+  "Compile the current Fortran file with gfortran."
+  (interactive)
+  (compile (format "gfortran -Wall -c %s" (shell-quote-argument (buffer-file-name)))))
+
+(defun hell-fortran-run ()
+  "Compile and run the current Fortran file with gfortran."
+  (interactive)
+  (compile (format "gfortran -Wall %s -o a.out && ./a.out"
+                   (shell-quote-argument (buffer-file-name)))))
+
 (hell-localleader-def '(f90-mode fortran-mode)
-  "b" '("compile fortran" . (lambda () (interactive) (compile (format "gfortran -Wall -c %s" (shell-quote-argument (buffer-file-name))))))
-  "r" '("run fortran" . (lambda () (interactive) (compile (format "gfortran -Wall %s -o a.out && ./a.out" (shell-quote-argument (buffer-file-name)))))))
+  "b" '("compile fortran" . hell-fortran-compile)
+  "r" '("run fortran" . hell-fortran-run))
 
 (provide 'lang-fortran-config)
 ;;; config.el ends here

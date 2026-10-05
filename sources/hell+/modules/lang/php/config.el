@@ -30,6 +30,16 @@
   (when (fboundp 'php-ts-mode)
     (add-hook 'php-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-php-composer-test ()
+  "Run the current PHP project's composer tests."
+  (interactive)
+  (compile "composer test"))
+
+(defun hell-php-run ()
+  "Run the current PHP file."
+  (interactive)
+  (compile (format "php %s" (shell-quote-argument (buffer-file-name)))))
+
 (hell-localleader-def '(php-mode php-ts-mode)
-  "b" '("composer test" . (lambda () (interactive) (compile "composer test")))
-  "r" '("run php" . (lambda () (interactive) (compile (format "php %s" (shell-quote-argument (buffer-file-name)))))))
+  "b" '("composer test" . hell-php-composer-test)
+  "r" '("run php" . hell-php-run))

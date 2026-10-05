@@ -32,9 +32,19 @@
   :config
   (add-hook 'rst-mode-hook #'lsp-deferred))
 
+(defun hell-rst-sphinx-build ()
+  "Build the current Sphinx project's HTML docs."
+  (interactive)
+  (compile "sphinx-build -b html . _build"))
+
+(defun hell-rst-preview ()
+  "Preview the current reStructuredText file."
+  (interactive)
+  (if (fboundp 'rst-compile) (rst-compile) (compile "rst2html.py")))
+
 (hell-localleader-def 'rst-mode
-  "c" '("sphinx compile" . (lambda () (interactive) (compile "sphinx-build -b html . _build")))
-  "p" '("preview rst" . (lambda () (interactive) (if (fboundp 'rst-compile) (rst-compile) (compile "rst2html.py")))))
+  "c" '("sphinx compile" . hell-rst-sphinx-build)
+  "p" '("preview rst" . hell-rst-preview))
 
 (provide 'lang-rst-config)
 ;;; config.el ends here

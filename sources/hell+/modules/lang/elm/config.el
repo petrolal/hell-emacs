@@ -31,10 +31,25 @@
   :config
   (add-hook 'elm-mode-hook #'lsp-deferred))
 
+(defun hell-elm-make ()
+  "Build src/Main.elm."
+  (interactive)
+  (compile "elm make src/Main.elm"))
+
+(defun hell-elm-test ()
+  "Run the current Elm project's tests."
+  (interactive)
+  (compile "elm-test"))
+
+(defun hell-elm-reactor ()
+  "Start elm-reactor for the current project."
+  (interactive)
+  (compile "elm reactor"))
+
 (hell-localleader-def 'elm-mode
-  "b" '("elm make" . (lambda () (interactive) (compile "elm make src/Main.elm")))
-  "t" '("elm-test" . (lambda () (interactive) (compile "elm-test")))
-  "r" '("elm reactor" . (lambda () (interactive) (compile "elm reactor"))))
+  "b" '("elm make" . hell-elm-make)
+  "t" '("elm-test" . hell-elm-test)
+  "r" '("elm reactor" . hell-elm-reactor))
 
 (provide 'lang-elm-config)
 ;;; config.el ends here

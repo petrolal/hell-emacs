@@ -31,10 +31,25 @@
   :config
   (add-hook 'crystal-mode-hook #'lsp-deferred))
 
+(defun hell-crystal-build ()
+  "Build the current Crystal project."
+  (interactive)
+  (compile "crystal build"))
+
+(defun hell-crystal-spec ()
+  "Run the current Crystal project's specs."
+  (interactive)
+  (compile "crystal spec"))
+
+(defun hell-crystal-run ()
+  "Run the current Crystal project."
+  (interactive)
+  (compile "crystal run"))
+
 (hell-localleader-def 'crystal-mode
-  "b" '("crystal build" . (lambda () (interactive) (compile "crystal build")))
-  "t" '("crystal spec" . (lambda () (interactive) (compile "crystal spec")))
-  "r" '("crystal run" . (lambda () (interactive) (compile "crystal run"))))
+  "b" '("crystal build" . hell-crystal-build)
+  "t" '("crystal spec" . hell-crystal-spec)
+  "r" '("crystal run" . hell-crystal-run))
 
 (provide 'lang-crystal-config)
 ;;; config.el ends here

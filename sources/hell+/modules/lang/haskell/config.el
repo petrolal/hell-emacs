@@ -33,10 +33,25 @@
   :config
   (add-hook 'haskell-mode-hook #'lsp-deferred))
 
+(defun hell-haskell-build ()
+  "Build the current cabal project."
+  (interactive)
+  (compile "cabal build"))
+
+(defun hell-haskell-test ()
+  "Run the current cabal project's tests."
+  (interactive)
+  (compile "cabal test"))
+
+(defun hell-haskell-run ()
+  "Run the current cabal project."
+  (interactive)
+  (compile "cabal run"))
+
 (hell-localleader-def 'haskell-mode
-  "b" '("cabal build" . (lambda () (interactive) (compile "cabal build")))
-  "t" '("cabal test" . (lambda () (interactive) (compile "cabal test")))
-  "r" '("cabal run" . (lambda () (interactive) (compile "cabal run"))))
+  "b" '("cabal build" . hell-haskell-build)
+  "t" '("cabal test" . hell-haskell-test)
+  "r" '("cabal run" . hell-haskell-run))
 
 (provide 'lang-haskell-config)
 ;;; config.el ends here

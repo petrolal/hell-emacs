@@ -31,9 +31,19 @@
   :config
   (add-hook 'solidity-mode-hook #'lsp-deferred))
 
+(defun hell-solidity-build ()
+  "Build the current Foundry project."
+  (interactive)
+  (compile "forge build"))
+
+(defun hell-solidity-test ()
+  "Run the current Foundry project's tests."
+  (interactive)
+  (compile "forge test"))
+
 (hell-localleader-def 'solidity-mode
-  "b" '("forge build" . (lambda () (interactive) (compile "forge build")))
-  "t" '("forge test" . (lambda () (interactive) (compile "forge test"))))
+  "b" '("forge build" . hell-solidity-build)
+  "t" '("forge test" . hell-solidity-test))
 
 (provide 'lang-solidity-config)
 ;;; config.el ends here

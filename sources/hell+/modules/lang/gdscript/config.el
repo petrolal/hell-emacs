@@ -31,9 +31,23 @@
   :config
   (add-hook 'gdscript-mode-hook #'lsp-deferred))
 
+(defun hell-gdscript-run-project ()
+  "Run the current Godot project."
+  (interactive)
+  (if (fboundp 'gdscript-godot-run-project)
+      (gdscript-godot-run-project)
+    (compile "godot")))
+
+(defun hell-gdscript-run-current-scene ()
+  "Run the current Godot scene."
+  (interactive)
+  (if (fboundp 'gdscript-godot-run-current-scene)
+      (gdscript-godot-run-current-scene)
+    (compile "godot")))
+
 (hell-localleader-def 'gdscript-mode
-  "r" '("run project" . (lambda () (interactive) (if (fboundp 'gdscript-godot-run-project) (gdscript-godot-run-project) (compile "godot"))))
-  "s" '("run current scene" . (lambda () (interactive) (if (fboundp 'gdscript-godot-run-current-scene) (gdscript-godot-run-current-scene) (compile "godot")))))
+  "r" '("run project" . hell-gdscript-run-project)
+  "s" '("run current scene" . hell-gdscript-run-current-scene))
 
 (provide 'lang-gdscript-config)
 ;;; config.el ends here

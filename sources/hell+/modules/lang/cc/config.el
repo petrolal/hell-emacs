@@ -37,6 +37,11 @@
   (when (fboundp 'c++-ts-mode)
     (add-hook 'c++-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-cc-build ()
+  "Build the current C/C++ project with make."
+  (interactive)
+  (compile "make -k"))
+
 (hell-localleader-def '(c-mode c++-mode c-ts-mode c++-ts-mode)
   "s" '("switch header/source" . ff-find-other-file)
-  "b" '("build" . (lambda () (interactive) (compile "make -k"))))
+  "b" '("build" . hell-cc-build))

@@ -413,11 +413,16 @@
   "r q" '("run quarkus dev" . hell-quarkus-dev)
   "r m" '("run micronaut dev" . hell-micronaut-dev))
 
+;;;###autoload
+(defun hell-template-cloud-dev ()
+  "Start this buffer's framework's cloud-native live development mode."
+  (interactive)
+  (cond ((hell-quarkus-project-p) (hell-quarkus-dev))
+        ((hell-micronaut-project-p) (hell-micronaut-dev))
+        (t (call-interactively #'hell-quarkus-dev))))
+
 (hell-localleader-def '(java-mode java-ts-mode)
-  "q" '("cloud live dev" . (lambda () (interactive)
-                             (cond ((hell-quarkus-project-p) (hell-quarkus-dev))
-                                   ((hell-micronaut-project-p) (hell-micronaut-dev))
-                                   (t (call-interactively #'hell-quarkus-dev))))))
+  "q" '("cloud live dev" . hell-template-cloud-dev))
 
 (provide 'tools-templates-config)
 ;;; config.el ends here

@@ -33,10 +33,25 @@
 (use-package geiser
   :after scheme)
 
+(defun hell-scheme-start-repl ()
+  "Start a Geiser REPL."
+  (interactive)
+  (if (fboundp 'geiser) (geiser nil) (compile "guile")))
+
+(defun hell-scheme-eval-buffer ()
+  "Evaluate the current Scheme buffer."
+  (interactive)
+  (when (fboundp 'geiser-eval-buffer) (geiser-eval-buffer)))
+
+(defun hell-scheme-eval-region ()
+  "Evaluate the current Scheme region."
+  (interactive)
+  (when (fboundp 'geiser-eval-region) (call-interactively 'geiser-eval-region)))
+
 (hell-localleader-def 'scheme-mode
-  "s" '("start Geiser REPL" . (lambda () (interactive) (if (fboundp 'geiser) (geiser nil) (compile "guile"))))
-  "b" '("eval buffer" . (lambda () (interactive) (when (fboundp 'geiser-eval-buffer) (geiser-eval-buffer))))
-  "l" '("eval region" . (lambda () (interactive) (when (fboundp 'geiser-eval-region) (call-interactively 'geiser-eval-region)))))
+  "s" '("start Geiser REPL" . hell-scheme-start-repl)
+  "b" '("eval buffer" . hell-scheme-eval-buffer)
+  "l" '("eval region" . hell-scheme-eval-region))
 
 (provide 'lang-scheme-config)
 ;;; config.el ends here

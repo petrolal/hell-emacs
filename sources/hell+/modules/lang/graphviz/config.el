@@ -29,9 +29,21 @@
 (use-package graphviz-dot-mode
   :mode ("\\.\(?:dot\\|gv\)\\'" . graphviz-dot-mode))
 
+(defun hell-graphviz-preview ()
+  "Preview the current DOT graph."
+  (interactive)
+  (if (fboundp 'compile-dot) (compile-dot) (compile "dot -Tpng -O")))
+
+(defun hell-graphviz-compile ()
+  "Compile the current DOT graph to SVG."
+  (interactive)
+  (compile (format "dot -Tsvg %s -o %s"
+                    (shell-quote-argument (buffer-file-name))
+                    (shell-quote-argument (concat (file-name-sans-extension (buffer-file-name)) ".svg")))))
+
 (hell-localleader-def 'graphviz-dot-mode
-  "p" '("preview graph" . (lambda () (interactive) (if (fboundp 'compile-dot) (compile-dot) (compile "dot -Tpng -O"))))
-  "c" '("compile graph" . (lambda () (interactive) (compile (format "dot -Tsvg %s -o %s" (shell-quote-argument (buffer-file-name)) (shell-quote-argument (concat (file-name-sans-extension (buffer-file-name)) ".svg")))))))
+  "p" '("preview graph" . hell-graphviz-preview)
+  "c" '("compile graph" . hell-graphviz-compile))
 
 (provide 'lang-graphviz-config)
 ;;; config.el ends here

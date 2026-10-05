@@ -31,10 +31,25 @@
   :config
   (add-hook 'janet-mode-hook #'lsp-deferred))
 
+(defun hell-janet-run ()
+  "Run the current Janet file."
+  (interactive)
+  (compile (format "janet %s" (shell-quote-argument (buffer-file-name)))))
+
+(defun hell-janet-test ()
+  "Run the current jpm project's tests."
+  (interactive)
+  (compile "jpm test"))
+
+(defun hell-janet-build ()
+  "Build the current jpm project."
+  (interactive)
+  (compile "jpm build"))
+
 (hell-localleader-def 'janet-mode
-  "r" '("run file" . (lambda () (interactive) (compile (format "janet %s" (shell-quote-argument (buffer-file-name))))))
-  "t" '("jpm test" . (lambda () (interactive) (compile "jpm test")))
-  "b" '("jpm build" . (lambda () (interactive) (compile "jpm build"))))
+  "r" '("run file" . hell-janet-run)
+  "t" '("jpm test" . hell-janet-test)
+  "b" '("jpm build" . hell-janet-build))
 
 (provide 'lang-janet-config)
 ;;; config.el ends here

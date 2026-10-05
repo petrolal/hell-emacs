@@ -30,7 +30,22 @@
   (when (fboundp 'go-ts-mode)
     (add-hook 'go-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-go-build ()
+  "Build the current Go module."
+  (interactive)
+  (compile "go build ./..."))
+
+(defun hell-go-test ()
+  "Run the current Go module's tests."
+  (interactive)
+  (compile "go test ./..."))
+
+(defun hell-go-run ()
+  "Run the current Go module."
+  (interactive)
+  (compile "go run ."))
+
 (hell-localleader-def '(go-mode go-ts-mode)
-  "b" '("build" . (lambda () (interactive) (compile "go build ./...")))
-  "t" '("test" . (lambda () (interactive) (compile "go test ./...")))
-  "r" '("run" . (lambda () (interactive) (compile "go run ."))))
+  "b" '("build" . hell-go-build)
+  "t" '("test" . hell-go-test)
+  "r" '("run" . hell-go-run))

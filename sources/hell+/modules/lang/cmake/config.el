@@ -34,10 +34,25 @@
   (when (fboundp 'cmake-ts-mode)
     (add-hook 'cmake-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-cmake-build ()
+  "Build the project in the \"build\" directory."
+  (interactive)
+  (compile "cmake --build build"))
+
+(defun hell-cmake-configure ()
+  "Configure the project into the \"build\" directory."
+  (interactive)
+  (compile "cmake -B build"))
+
+(defun hell-cmake-ctest ()
+  "Run ctest on the \"build\" directory."
+  (interactive)
+  (compile "ctest --test-dir build"))
+
 (hell-localleader-def '(cmake-mode cmake-ts-mode)
-  "b" '("cmake build" . (lambda () (interactive) (compile "cmake --build build")))
-  "c" '("cmake configure" . (lambda () (interactive) (compile "cmake -B build")))
-  "t" '("ctest" . (lambda () (interactive) (compile "ctest --test-dir build"))))
+  "b" '("cmake build" . hell-cmake-build)
+  "c" '("cmake configure" . hell-cmake-configure)
+  "t" '("ctest" . hell-cmake-ctest))
 
 (provide 'lang-cmake-config)
 ;;; config.el ends here

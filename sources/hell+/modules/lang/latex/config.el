@@ -32,9 +32,21 @@
   :config
   (add-hook 'LaTeX-mode-hook #'lsp-deferred))
 
+(defun hell-latex-compile ()
+  "Compile the current LaTeX document."
+  (interactive)
+  (if (fboundp 'TeX-command-master)
+      (TeX-command-master)
+    (compile "pdflatex -interaction=nonstopmode %s")))
+
+(defun hell-latex-view ()
+  "View the current LaTeX document's PDF."
+  (interactive)
+  (if (fboundp 'TeX-view) (TeX-view) (message "TeX-view not available")))
+
 (hell-localleader-def '(LaTeX-mode latex-mode)
-  "b" '("compile document" . (lambda () (interactive) (if (fboundp 'TeX-command-master) (TeX-command-master) (compile "pdflatex -interaction=nonstopmode %s"))))
-  "v" '("view pdf" . (lambda () (interactive) (if (fboundp 'TeX-view) (TeX-view) (message "TeX-view not available")))))
+  "b" '("compile document" . hell-latex-compile)
+  "v" '("view pdf" . hell-latex-view))
 
 (provide 'lang-latex-config)
 ;;; config.el ends here

@@ -31,10 +31,25 @@
   :config
   (add-hook 'swift-mode-hook #'lsp-deferred))
 
+(defun hell-swift-build ()
+  "Build the current Swift package."
+  (interactive)
+  (compile "swift build"))
+
+(defun hell-swift-test ()
+  "Run the current Swift package's tests."
+  (interactive)
+  (compile "swift test"))
+
+(defun hell-swift-run ()
+  "Run the current Swift package."
+  (interactive)
+  (compile "swift run"))
+
 (hell-localleader-def 'swift-mode
-  "b" '("swift build" . (lambda () (interactive) (compile "swift build")))
-  "t" '("swift test" . (lambda () (interactive) (compile "swift test")))
-  "r" '("swift run" . (lambda () (interactive) (compile "swift run"))))
+  "b" '("swift build" . hell-swift-build)
+  "t" '("swift test" . hell-swift-test)
+  "r" '("swift run" . hell-swift-run))
 
 (provide 'lang-swift-config)
 ;;; config.el ends here

@@ -37,7 +37,17 @@
   :after ruby-mode
   :hook (ruby-mode . inf-ruby-minor-mode))
 
+(defun hell-ruby-rake ()
+  "Run the current Ruby project's rake task via bundler."
+  (interactive)
+  (compile "bundle exec rake"))
+
+(defun hell-ruby-rspec ()
+  "Run the current Ruby project's tests with rspec via bundler."
+  (interactive)
+  (compile "bundle exec rspec"))
+
 (hell-localleader-def '(ruby-mode ruby-ts-mode)
-  "b" '("bundle exec" . (lambda () (interactive) (compile "bundle exec rake")))
-  "t" '("test / rspec" . (lambda () (interactive) (compile "bundle exec rspec")))
+  "b" '("bundle exec" . hell-ruby-rake)
+  "t" '("test / rspec" . hell-ruby-rspec)
   "s" '("inf-ruby console" . inf-ruby))

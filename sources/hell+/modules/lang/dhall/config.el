@@ -31,10 +31,25 @@
   :config
   (add-hook 'dhall-mode-hook #'lsp-deferred))
 
+(defun hell-dhall-format ()
+  "Format the current Dhall buffer's file in place."
+  (interactive)
+  (compile "dhall format --inplace"))
+
+(defun hell-dhall-lint ()
+  "Lint the current Dhall buffer's file in place."
+  (interactive)
+  (compile "dhall lint --inplace"))
+
+(defun hell-dhall-freeze ()
+  "Freeze the current Dhall buffer's imports in place."
+  (interactive)
+  (compile "dhall freeze --inplace"))
+
 (hell-localleader-def 'dhall-mode
-  "f" '("dhall format" . (lambda () (interactive) (compile "dhall format --inplace")))
-  "l" '("dhall lint" . (lambda () (interactive) (compile "dhall lint --inplace")))
-  "z" '("dhall freeze" . (lambda () (interactive) (compile "dhall freeze --inplace"))))
+  "f" '("dhall format" . hell-dhall-format)
+  "l" '("dhall lint" . hell-dhall-lint)
+  "z" '("dhall freeze" . hell-dhall-freeze))
 
 (provide 'lang-dhall-config)
 ;;; config.el ends here

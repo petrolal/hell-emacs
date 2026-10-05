@@ -31,10 +31,27 @@
   :config
   (add-hook 'sml-mode-hook #'lsp-deferred))
 
+(defun hell-sml-start-repl ()
+  "Start an SML REPL."
+  (interactive)
+  (if (fboundp 'sml-prog-proc) (sml-prog-proc) (compile "sml")))
+
+(defun hell-sml-load-file ()
+  "Load the current SML file into the REPL."
+  (interactive)
+  (if (fboundp 'sml-load-file)
+      (sml-load-file (buffer-file-name))
+    (compile "sml")))
+
+(defun hell-sml-compile ()
+  "Compile the current SML file with mlton."
+  (interactive)
+  (compile (format "mlton %s" (shell-quote-argument (buffer-file-name)))))
+
 (hell-localleader-def 'sml-mode
-  "s" '("run SML REPL" . (lambda () (interactive) (if (fboundp 'sml-prog-proc) (sml-prog-proc) (compile "sml"))))
-  "b" '("load file" . (lambda () (interactive) (if (fboundp 'sml-load-file) (sml-load-file (buffer-file-name)) (compile "sml"))))
-  "c" '("compile with mlton" . (lambda () (interactive) (compile (format "mlton %s" (shell-quote-argument (buffer-file-name)))))))
+  "s" '("run SML REPL" . hell-sml-start-repl)
+  "b" '("load file" . hell-sml-load-file)
+  "c" '("compile with mlton" . hell-sml-compile))
 
 (provide 'lang-sml-config)
 ;;; config.el ends here

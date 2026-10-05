@@ -33,9 +33,19 @@
   (when (fboundp 'nix-ts-mode)
     (add-hook 'nix-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-nix-build ()
+  "Build the current Nix flake or expression."
+  (interactive)
+  (compile "nix build"))
+
+(defun hell-nix-flake-check ()
+  "Check the current Nix flake."
+  (interactive)
+  (compile "nix flake check"))
+
 (hell-localleader-def '(nix-mode nix-ts-mode)
-  "b" '("nix build" . (lambda () (interactive) (compile "nix build")))
-  "f" '("flake check" . (lambda () (interactive) (compile "nix flake check"))))
+  "b" '("nix build" . hell-nix-build)
+  "f" '("flake check" . hell-nix-flake-check))
 
 (provide 'lang-nix-config)
 ;;; config.el ends here

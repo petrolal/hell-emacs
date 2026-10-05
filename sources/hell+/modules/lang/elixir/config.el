@@ -33,10 +33,25 @@
   (when (fboundp 'elixir-ts-mode)
     (add-hook 'elixir-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-elixir-compile ()
+  "Compile the current mix project."
+  (interactive)
+  (compile "mix compile"))
+
+(defun hell-elixir-test ()
+  "Run the current mix project's tests."
+  (interactive)
+  (compile "mix test"))
+
+(defun hell-elixir-run ()
+  "Run the current mix project."
+  (interactive)
+  (compile "mix run"))
+
 (hell-localleader-def '(elixir-mode elixir-ts-mode)
-  "b" '("mix compile" . (lambda () (interactive) (compile "mix compile")))
-  "t" '("mix test" . (lambda () (interactive) (compile "mix test")))
-  "r" '("mix run" . (lambda () (interactive) (compile "mix run"))))
+  "b" '("mix compile" . hell-elixir-compile)
+  "t" '("mix test" . hell-elixir-test)
+  "r" '("mix run" . hell-elixir-run))
 
 (provide 'lang-elixir-config)
 ;;; config.el ends here

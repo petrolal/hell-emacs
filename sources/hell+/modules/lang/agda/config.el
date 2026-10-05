@@ -29,10 +29,25 @@
 (use-package agda2-mode
   :mode ("\\.l?agda\\(?:\\.md\\)?\\'" . agda2-mode))
 
+(defun hell-agda-load ()
+  "Load and typecheck the current Agda buffer."
+  (interactive)
+  (if (fboundp 'agda2-load) (agda2-load) (compile "agda")))
+
+(defun hell-agda-compile ()
+  "Compile the current Agda buffer."
+  (interactive)
+  (if (fboundp 'agda2-compile) (agda2-compile) (compile "agda -c")))
+
+(defun hell-agda-quit ()
+  "Quit the running Agda process."
+  (interactive)
+  (when (fboundp 'agda2-quit) (agda2-quit)))
+
 (hell-localleader-def 'agda2-mode
-  "l" '("load/typecheck" . (lambda () (interactive) (if (fboundp 'agda2-load) (agda2-load) (compile "agda"))))
-  "c" '("compile" . (lambda () (interactive) (if (fboundp 'agda2-compile) (agda2-compile) (compile "agda -c"))))
-  "q" '("quit agda" . (lambda () (interactive) (when (fboundp 'agda2-quit) (agda2-quit)))))
+  "l" '("load/typecheck" . hell-agda-load)
+  "c" '("compile" . hell-agda-compile)
+  "q" '("quit agda" . hell-agda-quit))
 
 (provide 'lang-agda-config)
 ;;; config.el ends here

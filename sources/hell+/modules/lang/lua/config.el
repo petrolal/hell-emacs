@@ -34,8 +34,13 @@
   (when (fboundp 'lua-ts-mode)
     (add-hook 'lua-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-lua-run ()
+  "Run the current Lua script."
+  (interactive)
+  (compile (format "lua %s" (shell-quote-argument (buffer-file-name)))))
+
 (hell-localleader-def '(lua-mode lua-ts-mode)
-  "r" '("run script" . (lambda () (interactive) (compile (format "lua %s" (shell-quote-argument (buffer-file-name)))))))
+  "r" '("run script" . hell-lua-run))
 
 (provide 'lang-lua-config)
 ;;; config.el ends here

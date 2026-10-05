@@ -31,11 +31,31 @@
   :config
   (add-hook 'purescript-mode-hook #'lsp-deferred))
 
+(defun hell-purescript-build ()
+  "Build the current spago project."
+  (interactive)
+  (compile "spago build"))
+
+(defun hell-purescript-test ()
+  "Run the current spago project's tests."
+  (interactive)
+  (compile "spago test"))
+
+(defun hell-purescript-run ()
+  "Run the current spago project."
+  (interactive)
+  (compile "spago run"))
+
+(defun hell-purescript-repl ()
+  "Start a spago REPL."
+  (interactive)
+  (compile "spago repl"))
+
 (hell-localleader-def 'purescript-mode
-  "b" '("spago build" . (lambda () (interactive) (compile "spago build")))
-  "t" '("spago test" . (lambda () (interactive) (compile "spago test")))
-  "r" '("spago run" . (lambda () (interactive) (compile "spago run")))
-  "s" '("spago repl" . (lambda () (interactive) (compile "spago repl"))))
+  "b" '("spago build" . hell-purescript-build)
+  "t" '("spago test" . hell-purescript-test)
+  "r" '("spago run" . hell-purescript-run)
+  "s" '("spago repl" . hell-purescript-repl))
 
 (provide 'lang-purescript-config)
 ;;; config.el ends here

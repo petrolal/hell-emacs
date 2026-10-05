@@ -45,8 +45,13 @@
   (when (fboundp 'hell-lsp-status-register)
     (hell-lsp-status-register 'metals :label "Metals")))
 
+(defun hell-scala-build ()
+  "Compile the current sbt project."
+  (interactive)
+  (if (fboundp 'sbt-command) (sbt-command "compile") (compile "sbt compile")))
+
 (hell-localleader-def '(scala-mode scala-ts-mode)
-  "b" '("build/compile" . (lambda () (interactive) (if (fboundp 'sbt-command) (sbt-command "compile") (compile "sbt compile"))))
+  "b" '("build/compile" . hell-scala-build)
   "c" '("metals doctor" . lsp-metals-doctor-run)
   "d" '("metals dashboard" . lsp-metals-dashboard-show)
   "i" '("import build" . lsp-metals-build-import)

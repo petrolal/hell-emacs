@@ -31,11 +31,31 @@
   :config
   (add-hook 'tuareg-mode-hook #'lsp-deferred))
 
+(defun hell-ocaml-build ()
+  "Build the current dune project."
+  (interactive)
+  (compile "dune build"))
+
+(defun hell-ocaml-runtest ()
+  "Run the current dune project's tests."
+  (interactive)
+  (compile "dune runtest"))
+
+(defun hell-ocaml-exec ()
+  "Execute the current dune project."
+  (interactive)
+  (compile "dune exec"))
+
+(defun hell-ocaml-repl ()
+  "Start an OCaml REPL (utop)."
+  (interactive)
+  (if (fboundp 'tuareg-run-ocaml) (tuareg-run-ocaml) (compile "dune utop")))
+
 (hell-localleader-def 'tuareg-mode
-  "b" '("dune build" . (lambda () (interactive) (compile "dune build")))
-  "t" '("dune runtest" . (lambda () (interactive) (compile "dune runtest")))
-  "r" '("dune exec" . (lambda () (interactive) (compile "dune exec")))
-  "s" '("utop/repl" . (lambda () (interactive) (if (fboundp 'tuareg-run-ocaml) (tuareg-run-ocaml) (compile "dune utop")))))
+  "b" '("dune build" . hell-ocaml-build)
+  "t" '("dune runtest" . hell-ocaml-runtest)
+  "r" '("dune exec" . hell-ocaml-exec)
+  "s" '("utop/repl" . hell-ocaml-repl))
 
 (provide 'lang-ocaml-config)
 ;;; config.el ends here

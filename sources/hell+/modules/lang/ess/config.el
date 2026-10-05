@@ -33,10 +33,26 @@
   (add-hook 'R-mode-hook #'lsp-deferred)
   (add-hook 'ess-r-mode-hook #'lsp-deferred))
 
+(defun hell-ess-start-r ()
+  "Start an R session."
+  (interactive)
+  (if (fboundp 'R) (call-interactively 'R) (compile "R")))
+
+(defun hell-ess-eval-buffer ()
+  "Evaluate the current R buffer."
+  (interactive)
+  (when (fboundp 'ess-eval-buffer) (ess-eval-buffer nil)))
+
+(defun hell-ess-eval-line-or-region ()
+  "Evaluate the current R line or region, and step to the next."
+  (interactive)
+  (when (fboundp 'ess-eval-region-or-line-and-step)
+    (ess-eval-region-or-line-and-step)))
+
 (hell-localleader-def '(ess-r-mode R-mode)
-  "r" '("start R session" . (lambda () (interactive) (if (fboundp 'R) (call-interactively 'R) (compile "R"))))
-  "b" '("eval buffer" . (lambda () (interactive) (when (fboundp 'ess-eval-buffer) (ess-eval-buffer nil))))
-  "l" '("eval line/region" . (lambda () (interactive) (when (fboundp 'ess-eval-region-or-line-and-step) (ess-eval-region-or-line-and-step)))))
+  "r" '("start R session" . hell-ess-start-r)
+  "b" '("eval buffer" . hell-ess-eval-buffer)
+  "l" '("eval line/region" . hell-ess-eval-line-or-region))
 
 (provide 'lang-ess-config)
 ;;; config.el ends here

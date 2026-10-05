@@ -29,9 +29,21 @@
 (use-package plantuml-mode
   :mode ("\\.\(?:puml\\|plantuml\)\\'" . plantuml-mode))
 
+(defun hell-plantuml-preview ()
+  "Preview the current PlantUML diagram at point."
+  (interactive)
+  (if (fboundp 'plantuml-preview) (plantuml-preview nil) (compile "plantuml")))
+
+(defun hell-plantuml-preview-buffer ()
+  "Preview the current PlantUML buffer."
+  (interactive)
+  (if (fboundp 'plantuml-preview-current-buffer)
+      (plantuml-preview-current-buffer)
+    (compile "plantuml")))
+
 (hell-localleader-def 'plantuml-mode
-  "p" '("preview diagram" . (lambda () (interactive) (if (fboundp 'plantuml-preview) (plantuml-preview nil) (compile "plantuml"))))
-  "b" '("preview buffer" . (lambda () (interactive) (if (fboundp 'plantuml-preview-current-buffer) (plantuml-preview-current-buffer) (compile "plantuml")))))
+  "p" '("preview diagram" . hell-plantuml-preview)
+  "b" '("preview buffer" . hell-plantuml-preview-buffer))
 
 (provide 'lang-plantuml-config)
 ;;; config.el ends here

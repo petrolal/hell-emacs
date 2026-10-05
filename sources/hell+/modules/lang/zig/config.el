@@ -33,10 +33,25 @@
   (when (fboundp 'zig-ts-mode)
     (add-hook 'zig-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-zig-build ()
+  "Build the current Zig project."
+  (interactive)
+  (compile "zig build"))
+
+(defun hell-zig-test ()
+  "Run the current Zig project's tests."
+  (interactive)
+  (compile "zig build test"))
+
+(defun hell-zig-run ()
+  "Run the current Zig project."
+  (interactive)
+  (compile "zig build run"))
+
 (hell-localleader-def '(zig-mode zig-ts-mode)
-  "b" '("zig build" . (lambda () (interactive) (compile "zig build")))
-  "t" '("zig test" . (lambda () (interactive) (compile "zig build test")))
-  "r" '("zig run" . (lambda () (interactive) (compile "zig build run"))))
+  "b" '("zig build" . hell-zig-build)
+  "t" '("zig test" . hell-zig-test)
+  "r" '("zig run" . hell-zig-run))
 
 (provide 'lang-zig-config)
 ;;; config.el ends here

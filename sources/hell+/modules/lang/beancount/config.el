@@ -31,9 +31,19 @@
   :config
   (add-hook 'beancount-mode-hook #'lsp-deferred))
 
+(defun hell-beancount-check ()
+  "Check the balance of the current beancount ledger."
+  (interactive)
+  (compile "bean-check"))
+
+(defun hell-beancount-fava ()
+  "Start the Fava web UI on the current beancount ledger."
+  (interactive)
+  (compile "fava"))
+
 (hell-localleader-def 'beancount-mode
-  "c" '("check balance" . (lambda () (interactive) (compile "bean-check")))
-  "f" '("start fava" . (lambda () (interactive) (compile "fava"))))
+  "c" '("check balance" . hell-beancount-check)
+  "f" '("start fava" . hell-beancount-fava))
 
 (provide 'lang-beancount-config)
 ;;; config.el ends here

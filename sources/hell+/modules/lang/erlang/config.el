@@ -31,10 +31,25 @@
   :config
   (add-hook 'erlang-mode-hook #'lsp-deferred))
 
+(defun hell-erlang-compile ()
+  "Compile the current rebar3 project."
+  (interactive)
+  (compile "rebar3 compile"))
+
+(defun hell-erlang-eunit ()
+  "Run the current rebar3 project's EUnit tests."
+  (interactive)
+  (compile "rebar3 eunit"))
+
+(defun hell-erlang-shell ()
+  "Start a rebar3 shell for the current project."
+  (interactive)
+  (compile "rebar3 shell"))
+
 (hell-localleader-def 'erlang-mode
-  "b" '("rebar3 compile" . (lambda () (interactive) (compile "rebar3 compile")))
-  "t" '("rebar3 eunit" . (lambda () (interactive) (compile "rebar3 eunit")))
-  "r" '("rebar3 shell" . (lambda () (interactive) (compile "rebar3 shell"))))
+  "b" '("rebar3 compile" . hell-erlang-compile)
+  "t" '("rebar3 eunit" . hell-erlang-eunit)
+  "r" '("rebar3 shell" . hell-erlang-shell))
 
 (provide 'lang-erlang-config)
 ;;; config.el ends here

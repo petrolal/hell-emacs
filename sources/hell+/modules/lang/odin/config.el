@@ -31,10 +31,25 @@
   :config
   (add-hook 'odin-mode-hook #'lsp-deferred))
 
+(defun hell-odin-build ()
+  "Build the current Odin project."
+  (interactive)
+  (compile "odin build ."))
+
+(defun hell-odin-run ()
+  "Run the current Odin project."
+  (interactive)
+  (compile "odin run ."))
+
+(defun hell-odin-test ()
+  "Run the current Odin project's tests."
+  (interactive)
+  (compile "odin test ."))
+
 (hell-localleader-def 'odin-mode
-  "b" '("odin build" . (lambda () (interactive) (compile "odin build .")))
-  "r" '("odin run" . (lambda () (interactive) (compile "odin run .")))
-  "t" '("odin test" . (lambda () (interactive) (compile "odin test ."))))
+  "b" '("odin build" . hell-odin-build)
+  "r" '("odin run" . hell-odin-run)
+  "t" '("odin test" . hell-odin-test))
 
 (provide 'lang-odin-config)
 ;;; config.el ends here

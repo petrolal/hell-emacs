@@ -33,10 +33,25 @@
   (when (fboundp 'csharp-ts-mode)
     (add-hook 'csharp-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-csharp-build ()
+  "Build the current .NET project."
+  (interactive)
+  (compile "dotnet build"))
+
+(defun hell-csharp-test ()
+  "Run the current .NET project's tests."
+  (interactive)
+  (compile "dotnet test"))
+
+(defun hell-csharp-run ()
+  "Run the current .NET project."
+  (interactive)
+  (compile "dotnet run"))
+
 (hell-localleader-def '(csharp-mode csharp-ts-mode)
-  "b" '("dotnet build" . (lambda () (interactive) (compile "dotnet build")))
-  "t" '("dotnet test" . (lambda () (interactive) (compile "dotnet test")))
-  "r" '("dotnet run" . (lambda () (interactive) (compile "dotnet run"))))
+  "b" '("dotnet build" . hell-csharp-build)
+  "t" '("dotnet test" . hell-csharp-test)
+  "r" '("dotnet run" . hell-csharp-run))
 
 (provide 'lang-csharp-config)
 ;;; config.el ends here

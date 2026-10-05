@@ -31,11 +31,31 @@
   :config
   (add-hook 'gleam-ts-mode-hook #'lsp-deferred))
 
+(defun hell-gleam-build ()
+  "Build the current Gleam project."
+  (interactive)
+  (compile "gleam build"))
+
+(defun hell-gleam-test ()
+  "Run the current Gleam project's tests."
+  (interactive)
+  (compile "gleam test"))
+
+(defun hell-gleam-run ()
+  "Run the current Gleam project."
+  (interactive)
+  (compile "gleam run"))
+
+(defun hell-gleam-format ()
+  "Format the current Gleam project."
+  (interactive)
+  (compile "gleam format"))
+
 (hell-localleader-def 'gleam-ts-mode
-  "b" '("gleam build" . (lambda () (interactive) (compile "gleam build")))
-  "t" '("gleam test" . (lambda () (interactive) (compile "gleam test")))
-  "r" '("gleam run" . (lambda () (interactive) (compile "gleam run")))
-  "f" '("gleam format" . (lambda () (interactive) (compile "gleam format"))))
+  "b" '("gleam build" . hell-gleam-build)
+  "t" '("gleam test" . hell-gleam-test)
+  "r" '("gleam run" . hell-gleam-run)
+  "f" '("gleam format" . hell-gleam-format))
 
 (provide 'lang-gleam-config)
 ;;; config.el ends here

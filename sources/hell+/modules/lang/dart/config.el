@@ -31,9 +31,19 @@
   :config
   (add-hook 'dart-mode-hook #'lsp-deferred))
 
+(defun hell-dart-test ()
+  "Run the current Dart project's tests."
+  (interactive)
+  (compile "dart test"))
+
+(defun hell-dart-flutter-run ()
+  "Run the current Flutter project."
+  (interactive)
+  (compile "flutter run"))
+
 (hell-localleader-def 'dart-mode
-  "t" '("dart test" . (lambda () (interactive) (compile "dart test")))
-  "r" '("flutter run" . (lambda () (interactive) (compile "flutter run"))))
+  "t" '("dart test" . hell-dart-test)
+  "r" '("flutter run" . hell-dart-flutter-run))
 
 (provide 'lang-dart-config)
 ;;; config.el ends here

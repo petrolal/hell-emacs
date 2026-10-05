@@ -34,6 +34,16 @@
   (when (fboundp 'python-ts-mode)
     (add-hook 'python-ts-mode-hook #'lsp-deferred)))
 
+(defun hell-python-pytest ()
+  "Run the current Python project's tests with pytest."
+  (interactive)
+  (compile "pytest"))
+
+(defun hell-python-run ()
+  "Run the current Python script."
+  (interactive)
+  (compile (format "python3 %s" (shell-quote-argument (buffer-file-name)))))
+
 (hell-localleader-def '(python-mode python-ts-mode)
-  "b" '("build/test" . (lambda () (interactive) (compile "pytest")))
-  "r" '("run script" . (lambda () (interactive) (compile (format "python3 %s" (shell-quote-argument (buffer-file-name)))))))
+  "b" '("build/test" . hell-python-pytest)
+  "r" '("run script" . hell-python-run))

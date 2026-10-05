@@ -29,10 +29,29 @@
 (use-package racket-mode
   :mode ("\\.rkt\\'" . racket-mode))
 
+(defun hell-racket-run ()
+  "Run the current Racket file and switch to its REPL."
+  (interactive)
+  (if (fboundp 'racket-run-and-switch-to-repl)
+      (racket-run-and-switch-to-repl)
+    (compile (format "racket %s" (shell-quote-argument (buffer-file-name))))))
+
+(defun hell-racket-test ()
+  "Run the current Racket file's tests."
+  (interactive)
+  (if (fboundp 'racket-test)
+      (racket-test)
+    (compile (format "raco test %s" (shell-quote-argument (buffer-file-name))))))
+
+(defun hell-racket-make ()
+  "Byte-compile the current Racket file with raco make."
+  (interactive)
+  (compile (format "raco make %s" (shell-quote-argument (buffer-file-name)))))
+
 (hell-localleader-def 'racket-mode
-  "r" '("run racket" . (lambda () (interactive) (if (fboundp 'racket-run-and-switch-to-repl) (racket-run-and-switch-to-repl) (compile (format "racket %s" (shell-quote-argument (buffer-file-name)))))))
-  "t" '("test racket" . (lambda () (interactive) (if (fboundp 'racket-test) (racket-test) (compile (format "raco test %s" (shell-quote-argument (buffer-file-name)))))))
-  "b" '("raco make" . (lambda () (interactive) (compile (format "raco make %s" (shell-quote-argument (buffer-file-name)))))))
+  "r" '("run racket" . hell-racket-run)
+  "t" '("test racket" . hell-racket-test)
+  "b" '("raco make" . hell-racket-make))
 
 (provide 'lang-racket-config)
 ;;; config.el ends here
