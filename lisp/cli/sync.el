@@ -502,6 +502,16 @@ module's autoload.el. Signals an error if a package fails to install."
                                  (hell-profile--modules) ", "))
   (hell-sync--log "Installing and building packages (this can take a while)...")
   (hell-modules-install-packages)
+  (hell-sync--finish)
+  (unless noninteractive
+    (hell-sync--log "done. Restart Emacs to start from the new profile.")))
+
+(defun hell-sync--finish ()
+  "Everything a sync does once its packages are installed; return them.
+Checks the modules' dependencies and that every package built, writes
+the profile, runs `hell-sync-functions' (servers, grammars, the
+truststore) and records what's installed. `hell-sync' and `bin/hell
+upgrade' both end with it, so they can't drift apart."
   (hell-modules-check-dependencies)
   (hell-sync--check-failures)
   (let ((packages (hell-sync--write-profile)))
@@ -511,8 +521,7 @@ module's autoload.el. Signals an error if a package fails to install."
     ;; Last: what everything above installed, for `bin/hell verify'.
     (hell-require 'hell-cli 'verify)
     (hell-verify-record-installed)
-    (unless noninteractive
-      (hell-sync--log "done. Restart Emacs to start from the new profile."))))
+    packages))
 
 (hell-provide 'hell-cli 'sync)
 ;;; sync.el ends here

@@ -170,12 +170,8 @@ on a detached HEAD, which has no upstream to update from."
         (elpaca-merge id 'fetch)))
     (elpaca-process-queues)
     (hell--elpaca-wait))
-  ;; The rest is `hell-sync--run''s: an upgraded Hell Emacs may pin new
-  ;; servers, grammars or dependencies, which its sync steps install.
-  (hell-modules-check-dependencies)
-  (hell-sync--check-failures)
-  (hell-sync--log "Synced %d packages" (length (hell-sync--write-profile)))
-  (run-hooks 'hell-sync-functions)
-  (hell-verify-record-installed))
+  ;; As every sync ends: an upgraded Hell Emacs may pin new servers,
+  ;; grammars or dependencies, which its sync steps install.
+  (hell-sync--finish))
 
 ;;; hell-upgrade ends here
