@@ -123,13 +123,7 @@ Return their exit codes, in order (127 when PROGRAM can't be started)."
         (accept-process-output nil 0.005)))
     (append codes nil)))
 
-(defun hell-cli--run (program &rest args)
-  "Run PROGRAM with ARGS; return (EXIT-CODE . OUTPUT), OUTPUT trimmed."
-  (with-temp-buffer
-    (let ((code (condition-case nil
-                    (apply #'call-process program nil t nil args)
-                  (file-missing 127))))
-      (cons code (string-trim (buffer-string))))))
+(define-obsolete-function-alias 'hell-cli--run #'hell-process-output "1.1")
 
 ;;; Shared by several commands -------------------------------------------------
 

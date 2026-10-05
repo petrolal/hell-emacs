@@ -367,6 +367,19 @@ function or quoted list of functions; then the body proper."
   (declare (indent defun))
   `(lambda (&rest _) (interactive) ,@body))
 
+;;; Processes ---------------------------------------------------------------
+
+(defun hell-process-output (program &rest args)
+  "Run PROGRAM with ARGS; return (EXIT-CODE . OUTPUT), OUTPUT trimmed.
+OUTPUT is stdout and stderr together. EXIT-CODE is 127 when PROGRAM
+isn't there, 126 when it can't be run, as a shell says."
+  (with-temp-buffer
+    (let ((code (condition-case nil
+                    (apply #'call-process program nil t nil args)
+                  (file-missing 127)
+                  (file-error 126))))
+      (cons code (string-trim (buffer-string))))))
+
 ;;; Files --------------------------------------------------------------------
 
 (defun hell-file-sha256 (file)

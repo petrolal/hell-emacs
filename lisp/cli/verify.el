@@ -150,12 +150,8 @@ Elpaca loaded."
                  collect (cons (car entry) (plist-get recipe :ref)))))))
 
 (defun hell-verify--git (dir &rest args)
-  "(EXIT . OUTPUT) of git ARGS in DIR."
-  (with-temp-buffer
-    (let ((code (condition-case nil
-                    (apply #'call-process "git" nil t nil "-C" (expand-file-name dir) args)
-                  (file-error 127))))
-      (cons code (string-trim (buffer-string))))))
+  "(EXIT . OUTPUT) of git ARGS in DIR (`hell-process-output')."
+  (apply #'hell-process-output "git" "-C" (expand-file-name dir) args))
 
 (defun hell-verify--file-problems (recorded)
   "What differs between the RECORDED entries and what's on disk now."

@@ -31,7 +31,7 @@
 (defun hell-cli--version (program &rest args)
   "Return the first line PROGRAM prints for ARGS, or nil if it isn't installed."
   (when (executable-find program)
-    (car (split-string (cdr (apply #'hell-cli--run program args)) "\n"))))
+    (car (split-string (cdr (apply #'hell-process-output program args)) "\n"))))
 
 ;; The API a module's doctor.el uses.
 

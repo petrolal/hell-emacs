@@ -30,7 +30,7 @@
 
 (defun hell-cli-version (&rest _)
   "Say Hell Emacs' version (and its commit), its update channel and Emacs'."
-  (let ((described (hell-cli--run "git" "-C" hell-dir "describe" "--tags" "--always" "--dirty")))
+  (let ((described (hell-process-output "git" "-C" hell-dir "describe" "--tags" "--always" "--dirty")))
     (hell-cli--say "Hell Emacs %s%s" hell-version
                        (if (zerop (car described)) (format " (%s)" (cdr described)) "")))
   (hell-cli--say "Update channel: %s (`hell-upgrade-channel')" hell-upgrade-channel)

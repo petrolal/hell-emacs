@@ -170,9 +170,9 @@ directories holding each root are listed too."
   "Run tar with ARGS, or signal an error with its output."
   (unless (executable-find "tar")
     (error "tar is needed for offline bundles"))
-  (with-temp-buffer
-    (unless (zerop (apply #'call-process "tar" nil t nil args))
-      (error "tar failed: %s" (string-trim (buffer-string))))))
+  (pcase-let ((`(,code . ,output) (apply #'hell-process-output "tar" args)))
+    (unless (zerop code)
+      (error "tar failed: %s" output))))
 
 (defun hell-bundle--platform (&optional configuration)
   "The platform a bundle is for: CONFIGURATION (`system-configuration')

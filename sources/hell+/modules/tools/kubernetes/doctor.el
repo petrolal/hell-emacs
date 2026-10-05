@@ -26,7 +26,7 @@
 
 (when (hell-doctor-executable "kubectl" "kubel runs every command through it"
                               nil "version" "--client")
-  (pcase-let ((`(,code . ,context) (hell-cli--run "kubectl" "config" "current-context")))
+  (pcase-let ((`(,code . ,context) (hell-process-output "kubectl" "config" "current-context")))
     (if (and (zerop code) (not (string-empty-p context)))
         (hell-doctor-info "Kubernetes context: %s" context)
       (hell-doctor-info "No current Kubernetes context; kubel asks for one (`kubel-set-context')"))))

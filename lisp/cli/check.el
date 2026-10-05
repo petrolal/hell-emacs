@@ -66,18 +66,8 @@
     "Fallback print when hell-cli is not loaded."
     (princ (concat (apply #'format format-string args) "\n"))))
 
-(unless (fboundp 'hell-cli--run)
-  (defun hell-cli--run (program &rest args)
-    "Fallback run when hell-cli is not loaded."
-    (with-temp-buffer
-      (let ((code (condition-case nil
-                      (apply #'call-process program nil t nil args)
-                    (file-missing 127))))
-        (cons code (string-trim (buffer-string)))))))
-
 (declare-function hell-cli-help "hell-cli" (&optional command &rest _))
 (declare-function hell-cli--say "hell-cli" (format-string &rest args))
-(declare-function hell-cli--run "hell-cli" (program &rest args))
 
 ;;; Supported Languages & Tool Routing ----------------------------------------
 
@@ -318,7 +308,7 @@ Covers `package-lint' (linter) and `relint'; with RUN-CODE, also
      ;; Priority 1: Native `sblint' executable if present
      ((executable-find "sblint")
       (dolist (file files)
-        (let* ((cmd-output (cdr (hell-cli--run "sblint" file)))
+        (let* ((cmd-output (cdr (hell-process-output "sblint" file)))
                (lines (split-string cmd-output "\n" t)))
           (dolist (line lines)
             (if (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(?:\\[\\(.*?\\)\\] \\)?\\(.*\\)\\'" line)
@@ -346,7 +336,7 @@ Covers `package-lint' (linter) and `relint'; with RUN-CODE, also
                              (when (and fasl (probe-file fasl))
                                (delete-file fasl))))"
                         file file file file))
-               (res (cdr (hell-cli--run "sbcl" "--noinform" "--non-interactive" "--eval" sbcl-script)))
+               (res (cdr (hell-process-output "sbcl" "--noinform" "--non-interactive" "--eval" sbcl-script)))
                (lines (split-string res "\n" t)))
           (dolist (line lines)
             (when (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(?:\\[\\(.*?\\)\\] \\)?\\(.*\\)\\'" line)
@@ -395,7 +385,7 @@ LANG and TOOL are what produced it."
   (let (diags)
     ;; 1. clj-kondo
     (if (executable-find "clj-kondo")
-        (let* ((res (cdr (apply #'hell-cli--run "clj-kondo" "--lint" files)))
+        (let* ((res (cdr (apply #'hell-process-output "clj-kondo" "--lint" files)))
                (parsed (hell-check--parse-standard-diagnostics "Clojure" "clj-kondo" res)))
           (setq diags (append diags parsed)))
       (dolist (f files)
@@ -404,7 +394,7 @@ LANG and TOOL are what produced it."
               diags)))
     ;; 2. kibit
     (if (executable-find "kibit")
-        (let* ((res (cdr (apply #'hell-cli--run "kibit" files)))
+        (let* ((res (cdr (apply #'hell-process-output "kibit" files)))
                (lines (split-string res "\n" t))
                cur-file cur-line cur-msg)
           (dolist (line lines)
@@ -430,7 +420,7 @@ LANG and TOOL are what produced it."
   (let (diags)
     ;; 1. ktlint
     (if (executable-find "ktlint")
-        (let* ((res (cdr (apply #'hell-cli--run "ktlint" "--reporter=plain" files)))
+        (let* ((res (cdr (apply #'hell-process-output "ktlint" "--reporter=plain" files)))
                (lines (split-string res "\n" t)))
           (dolist (line lines)
             (if (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(.*?\\)\\(?: (\\([^)]+\\))\\)?\\'" line)
@@ -448,7 +438,7 @@ LANG and TOOL are what produced it."
     ;; 2. detekt
     (let ((detekt-bin (or (executable-find "detekt") (executable-find "detekt-cli"))))
       (if detekt-bin
-          (let* ((res (cdr (apply #'hell-cli--run detekt-bin "--input" (mapconcat #'identity files ","))))
+          (let* ((res (cdr (apply #'hell-process-output detekt-bin "--input" (mapconcat #'identity files ","))))
                  (lines (split-string res "\n" t)))
             (dolist (line lines)
               (when (string-match "\\([^:\n\t ]+\\.kts?\\):\\([0-9]+\\):\\([0-9]+\\): \\([A-Za-z0-9_-]+\\) - \\(.*\\)" line)
@@ -469,7 +459,7 @@ LANG and TOOL are what produced it."
   (let (diags)
     ;; 1. checkstyle
     (if (executable-find "checkstyle")
-        (let* ((res (cdr (apply #'hell-cli--run "checkstyle" files)))
+        (let* ((res (cdr (apply #'hell-process-output "checkstyle" files)))
                (lines (split-string res "\n" t)))
           (dolist (line lines)
             (when (string-match "\\[\\(WARN\\|ERROR\\|INFO\\)\\] \\([^:\n]+\\):\\([0-9]+\\):\\(?:\\([0-9]+\\):\\)? \\(.*?\\)\\(?: \\[\\([^]]+\\)\\]\\)?\\'" line)
@@ -486,7 +476,7 @@ LANG and TOOL are what produced it."
               diags)))
     ;; 2. spotbugs
     (if (executable-find "spotbugs")
-        (let* ((res (cdr (apply #'hell-cli--run "spotbugs" "-textui" files)))
+        (let* ((res (cdr (apply #'hell-process-output "spotbugs" "-textui" files)))
                (lines (split-string res "\n" t)))
           (dolist (line lines)
             (when (string-match "\\([MHL]\\) \\([A-Z]+\\) \\([A-Z0-9_]+\\): \\(.*\\) in \\([^ \n\t]+\\) at \\[line \\([0-9]+\\)\\]" line)
@@ -508,7 +498,7 @@ LANG and TOOL are what produced it."
   (let (diags)
     ;; 1. scalafmt
     (if (executable-find "scalafmt")
-        (let* ((res (cdr (apply #'hell-cli--run "scalafmt" "--test" files)))
+        (let* ((res (cdr (apply #'hell-process-output "scalafmt" "--test" files)))
                (lines (split-string res "\n" t)))
           (dolist (line lines)
             (when (string-match "\\([^:\n]+\\):\\([0-9]+\\):\\(?:\\([0-9]+\\):\\)? \\(.*\\)" line)
@@ -524,7 +514,7 @@ LANG and TOOL are what produced it."
               diags)))
     ;; 2. scalafix
     (if (executable-find "scalafix")
-        (let* ((res (cdr (apply #'hell-cli--run "scalafix" "--check" files)))
+        (let* ((res (cdr (apply #'hell-process-output "scalafix" "--check" files)))
                (lines (split-string res "\n" t)))
           (dolist (line lines)
             (when (string-match "\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(?:error\\|warning\\): \\(?:\\[\\(.*?\\)\\] \\)?\\(.*\\)" line)
@@ -546,7 +536,7 @@ LANG and TOOL are what produced it."
   (let (diags)
     (cond
      ((executable-find "npm-groovy-lint")
-      (let* ((res (cdr (apply #'hell-cli--run "npm-groovy-lint" "--files" (mapconcat #'identity files ",") "--output" "txt")))
+      (let* ((res (cdr (apply #'hell-process-output "npm-groovy-lint" "--files" (mapconcat #'identity files ",") "--output" "txt")))
              (lines (split-string res "\n" t)))
         (dolist (line lines)
           (when (string-match "\\([^:\n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), \\(error\\|warning\\|info\\) - \\(.*?\\)\\(?: (\\([^)]+\\))\\)?\\'" line)
@@ -558,7 +548,7 @@ LANG and TOOL are what produced it."
                   (rule (match-string 6 line)))
               (push (hell-check--make-diag "Groovy & Gradle" "npm-groovy-lint" sev f l c (or rule "npm-groovy-lint") msg) diags))))))
      ((executable-find "codenarc")
-      (let* ((res (cdr (apply #'hell-cli--run "codenarc" files)))
+      (let* ((res (cdr (apply #'hell-process-output "codenarc" files)))
              (lines (split-string res "\n" t)))
         (dolist (line lines)
           (when (string-match "Violation: Rule=\\([^ \n\t]+\\) P=\\([0-9]+\\) Line=\\([0-9]+\\) Msg=\\(.*\\)" line)
@@ -600,11 +590,11 @@ JVM-FILES are the project's source files."
   (let* ((root (file-name-directory wrapper))
          (default-directory root)
          ;; Attempt ./gradlew check detekt as specified in Requirement 2
-         (res (hell-cli--run wrapper "check" "detekt" "--console=plain"))
+         (res (hell-process-output wrapper "check" "detekt" "--console=plain"))
          ;; Fallback to just `check` if task `detekt` is not configured
          (actual-res (if (and (/= (car res) 0)
                               (string-match-p "Task 'detekt' not found" (cdr res)))
-                         (hell-cli--run wrapper "check" "--console=plain")
+                         (hell-process-output wrapper "check" "--console=plain")
                        res))
          (code (car actual-res))
          (output (cdr actual-res))
@@ -624,7 +614,7 @@ JVM-FILES are the project's source files."
   (let ((search-dir (hell-check--target-dir targets)))
     (when (and (executable-find "trunk")
                (locate-dominating-file search-dir ".trunk"))
-      (let* ((res (apply #'hell-cli--run "trunk" "check" "--no-fix" "--output=json" targets))
+      (let* ((res (apply #'hell-process-output "trunk" "check" "--no-fix" "--output=json" targets))
              (out (cdr res)))
         (condition-case nil
             (let* ((json-object-type 'alist)
@@ -650,7 +640,7 @@ JVM-FILES are the project's source files."
   (let ((search-dir (hell-check--target-dir targets)))
     (when (and (executable-find "pre-commit")
                (locate-dominating-file search-dir ".pre-commit-config.yaml"))
-      (let* ((res (apply #'hell-cli--run "pre-commit" "run" "--files" targets))
+      (let* ((res (apply #'hell-process-output "pre-commit" "run" "--files" targets))
              (code (car res))
              (out (cdr res)))
         (unless (zerop code)

@@ -218,9 +218,9 @@ error saying what's missing (a JDK, its keytool, a readable CA)."
          (tmp (concat hell-net-truststore ".part"))
          (pem (make-temp-file "hell-ca" nil ".pem"))
          (run (lambda (&rest args)
-                (with-temp-buffer
-                  (unless (zerop (apply #'call-process keytool nil t nil args))
-                    (error "keytool %s failed: %s" (car args) (string-trim (buffer-string))))))))
+                (pcase-let ((`(,code . ,output) (apply #'hell-process-output keytool args)))
+                  (unless (zerop code)
+                    (error "keytool %s failed: %s" (car args) output))))))
     (unless (file-executable-p keytool) (error "No keytool in %s" home))
     (unless certs (error "No certificate in `hell-ca-bundle' (%s)" (abbreviate-file-name ca)))
     (make-directory (file-name-directory hell-net-truststore) t)

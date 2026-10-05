@@ -96,7 +96,7 @@ ARGS may hold --channel stable|main (default `hell-upgrade-channel').
 Run by `bin/hell upgrade' first, so the package update that follows
 runs the new code."
   (let ((channel (if-let* ((name (hell-cli--option args "--channel"))) (intern name) hell-upgrade-channel))
-        (git (lambda (&rest args) (apply #'hell-cli--run "git" "-C" hell-dir args))))
+        (git (lambda (&rest args) (apply #'hell-process-output "git" "-C" hell-dir args))))
     (unless (memq channel '(stable main))
       (error "No channel `%s': it's stable (the latest release) or main" channel))
     (cond
@@ -123,7 +123,7 @@ when it isn't a git checkout at all)."
 Installing at an exact commit (from the lock file) leaves the checkout
 on a detached HEAD, which has no upstream to update from."
   (let* ((dir (elpaca<-source-dir e))
-         (git (lambda (&rest args) (apply #'hell-cli--run "git" "-C" dir args))))
+         (git (lambda (&rest args) (apply #'hell-process-output "git" "-C" dir args))))
     (let ((branch (or (plist-get (elpaca<-recipe e) :branch)
                       (let ((head (funcall git "symbolic-ref" "--short" "refs/remotes/origin/HEAD")))
                         (and (zerop (car head))

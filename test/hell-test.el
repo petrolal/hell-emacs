@@ -60,6 +60,17 @@
     (remove-hook! 'hell-test--hook #'ignore)
     (should-not (memq #'ignore hell-test--hook))))
 
+(ert-deftest hell-test-process-output ()
+  (skip-unless (executable-find "sh"))
+  (should (equal (hell-process-output "sh" "-c" "echo out; echo err >&2; exit 3")
+                 '(3 . "out\nerr")))
+  (should (equal (car (hell-process-output "hell-test-no-such-program")) 127))
+  (let ((file (make-temp-file "hell-test-not-executable")))
+    (unwind-protect
+        (progn (set-file-modes file #o644)
+               (should (equal (car (hell-process-output file)) 126)))
+      (delete-file file))))
+
 ;;; hell-core --------------------------------------------------------------
 
 (ert-deftest hell-test-state-file ()

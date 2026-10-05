@@ -31,6 +31,6 @@
                                 nil "--version")
     ;; podman has no contexts, only connections.
     (when (equal cli "docker")
-      (pcase-let ((`(,code . ,context) (hell-cli--run cli "context" "show")))
+      (pcase-let ((`(,code . ,context) (hell-process-output cli "context" "show")))
         (when (and (zerop code) (not (string-empty-p context)))
           (hell-doctor-info "Docker context: %s" context))))))
