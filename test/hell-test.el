@@ -320,6 +320,38 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
       (should-not (file-exists-p stamp))
       (should (equal (directory-files hell-profile-dir nil "\\`compiled") '("compiled"))))))
 
+;;; :config default ----------------------------------------------------------
+
+(declare-function hell--sync-in-background "../sources/hell+/modules/config/default/autoload"
+                  (on-success))
+
+(ert-deftest hell-test-sync-in-background ()
+  (load (expand-file-name "sources/hell+/modules/config/default/autoload.el" hell-dir) nil t)
+  (let* ((fake-dir (file-name-as-directory (make-temp-file "hell-test-dir" t)))
+         (hell-dir fake-dir)
+         (hell-profile nil)
+         (inhibit-message t))
+    (unwind-protect
+        (dolist (code '(0 1))
+          ;; A bin/hell that waits a moment (so a second sync meets the
+          ;; first), then exits with CODE.
+          (hell-test--write (expand-file-name "bin/hell" fake-dir)
+                            (format "#!/bin/sh\nsleep 0.3\necho \"synced $*\"\nexit %d\n" code))
+          (set-file-modes (expand-file-name "bin/hell" fake-dir) #o755)
+          (let* ((done nil)
+                 (proc (hell--sync-in-background (lambda () (setq done t)))))
+            ;; It returns at once; another sync meanwhile is refused.
+            (should (process-live-p proc))
+            (should-error (hell--sync-in-background #'ignore) :type 'user-error)
+            (with-timeout (10 (error "The sync never finished"))
+              (while (process-live-p proc)
+                (accept-process-output proc 0.05)))
+            (accept-process-output nil 0.05)   ; its sentinel
+            (should (eq done (zerop code)))
+            (should (string-match-p "synced sync" (with-current-buffer "*hell-sync*" (buffer-string))))))
+      (delete-directory fake-dir t)
+      (when (get-buffer "*hell-sync*") (kill-buffer "*hell-sync*")))))
+
 ;;; cli/bundle -------------------------------------------------------------
 
 (defmacro hell-test--with-bundle-root (&rest body)

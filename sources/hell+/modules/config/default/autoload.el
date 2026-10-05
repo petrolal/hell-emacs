@@ -23,39 +23,50 @@
 
 ;; Commands behind the `C-c h' (Hell Emacs) group.
 
+(defun hell--sync-in-background (on-success)
+  "Run `bin/hell sync' in a child Emacs, output in *hell-sync*; then ON-SUCCESS.
+It doesn't block, and C-g doesn't stop it: an interrupted sync can leave
+no profile to start from. Quitting Emacs while it runs asks first.
+ON-SUCCESS is called with no arguments once it exits with 0; on failure
+*hell-sync* is shown. Returns the process."
+  (let ((buffer (get-buffer-create "*hell-sync*")))
+    (when (process-live-p (get-buffer-process buffer))
+      (user-error "A sync is already running; see *hell-sync*"))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t)) (erase-buffer)))
+    (message "Hell Emacs: syncing in the background (*hell-sync*)...")
+    (make-process
+     :name "hell-sync" :buffer buffer :connection-type 'pipe
+     :command (append (list (expand-file-name "bin/hell" hell-dir))
+                      (and hell-profile (list "--profile" hell-profile))
+                      '("sync"))
+     :sentinel (lambda (proc _event)
+                 (unless (process-live-p proc)
+                   (if (zerop (process-exit-status proc))
+                       (funcall on-success)
+                     (display-buffer buffer)
+                     (message "Hell Emacs: sync failed; see *hell-sync*")))))))
+
 ;;;###autoload
 (defun hell-reload ()
   "Sync, then reload the profile's init file, and with it your config.
-As Doom's `doom/reload': `bin/hell sync' runs in a child Emacs (its
-output in *hell-sync*), so this session never loads the package
-manager; then the new init file loads here."
+As Doom's `doom/reload': `bin/hell sync' runs in a child Emacs, in the
+background (its output in *hell-sync*), so this session never loads the
+package manager; once it succeeds, the new init file loads here."
   (interactive)
-  (let ((buffer (get-buffer-create "*hell-sync*")))
-    (with-current-buffer buffer (erase-buffer))
-    (message "Hell Emacs: syncing...")
-    (if (zerop (apply #'call-process (expand-file-name "bin/hell" hell-dir) nil buffer t
-                      (append (and hell-profile (list "--profile" hell-profile))
-                              '("sync"))))
-        (progn
-          (with-hell-context 'reload
-            (hell-start))
-          (message "Hell Emacs: synced and reloaded"))
-      (pop-to-buffer buffer)
-      (user-error "Sync failed; see *hell-sync*"))))
+  (hell--sync-in-background
+   (lambda ()
+     (with-hell-context 'reload
+       (hell-start))
+     (message "Hell Emacs: synced and reloaded"))))
 
 ;;;###autoload
 (defun hell-sync-child ()
-  "Sync in a child Emacs process (output in *hell-sync*), as `C-c h R' does."
+  "Sync in a child Emacs, in the background (output in *hell-sync*).
+`C-c h R' (`hell-reload') also loads the result here."
   (interactive)
-  (let ((buffer (get-buffer-create "*hell-sync*")))
-    (with-current-buffer buffer (erase-buffer))
-    (message "Hell Emacs: syncing...")
-    (if (zerop (apply #'call-process (expand-file-name "bin/hell" hell-dir) nil buffer t
-                      (append (and hell-profile (list "--profile" hell-profile))
-                              '("sync"))))
-        (message "Hell Emacs: synced successfully")
-      (pop-to-buffer buffer)
-      (user-error "Sync failed; see *hell-sync*"))))
+  (hell--sync-in-background
+   (lambda () (message "Hell Emacs: synced; restart Emacs, or C-c h R, to use it"))))
 
 ;;;###autoload
 (defun hell-list-modules ()
