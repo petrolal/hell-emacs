@@ -293,15 +293,10 @@ the reply fails to encode, and it's never sent."
   :hook
   ((java-mode java-ts-mode) . lsp-deferred)
   :custom
-  (lsp-java-java-path (hell-jvm-java-executable))
-  (lsp-java-vmargs (hell-jvm--vmargs))
   ;; Your build tools' own settings, as on the command line: Maven's
   ;; settings.xml, Gradle's home (with its gradle.properties and init.d),
   ;; and the proxy and truststore for the Gradle JVM JDTLS imports with.
-  (lsp-java-configuration-maven-user-settings (hell-jvm-maven-settings))
   (lsp-java-import-gradle-user-home (getenv "GRADLE_USER_HOME"))
-  (lsp-java-import-gradle-jvm-arguments (and (hell-net-jvm-options)
-                                             (vconcat (hell-net-jvm-options))))
   (lsp-java-content-provider-preferred "fernflower") ; decompile library classes for M-.
   (lsp-java-maven-download-sources t)
   (lsp-java-format-tab-size #'hell-jvm-format-tab-size)
@@ -312,7 +307,17 @@ the reply fails to encode, and it's never sent."
   (lsp-java-implementations-code-lens-enabled nil)
   (lsp-java-completion-favorite-static-members
    ["org.junit.jupiter.api.Assertions.*" "org.assertj.core.api.Assertions.*"
-    "org.mockito.Mockito.*" "org.mockito.ArgumentMatchers.*"]))
+    "org.mockito.Mockito.*" "org.mockito.ArgumentMatchers.*"])
+  :config
+  ;; These read the filesystem and your build tools' own settings;
+  ;; `:custom' evaluates even for a deferred package, so they'd run on
+  ;; every startup rather than when a Java buffer actually loads
+  ;; lsp-java. `:config' only runs once the package does.
+  (customize-set-variable 'lsp-java-java-path (hell-jvm-java-executable))
+  (customize-set-variable 'lsp-java-vmargs (hell-jvm--vmargs))
+  (customize-set-variable 'lsp-java-configuration-maven-user-settings (hell-jvm-maven-settings))
+  (customize-set-variable 'lsp-java-import-gradle-jvm-arguments
+                           (and (hell-net-jvm-options) (vconcat (hell-net-jvm-options)))))
 
 ;; `C-x p c' proposes the project's own Gradle/Maven build, and tests run
 ;; through it (:tools build).

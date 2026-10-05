@@ -56,7 +56,6 @@
 
            :emacs
            dired              ; enhanced dired (nerd-icons, wdired)
-           ;;electric         ; [idea] smarter electric indentation
            ;;eww              ; [idea] the built-in web browser
            ;;ibuffer          ; [idea] ibuffer grouped by project
            ;;vc               ; [idea] built-in version control tweaks
