@@ -264,6 +264,33 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
                                       (and msg (compilation--message->type msg))))
                    '(2 1 0)))))
 
+(ert-deftest hell-test-check-only ()
+  (hell-test--with-checked-project
+    (hell-test--write (expand-file-name "A.java" dir) "class A {}\n")
+    (let ((hell-check-only '(elisp)))
+      (should (equal (plist-get (hell-check-discover-files (list dir)) :files)
+                     (list (expand-file-name "x.el" dir)))))
+    (should (equal (hell-check--parse-languages "elisp, java") '(elisp java)))
+    (should-error (hell-check--parse-languages "elisp,cobol") :type 'user-error)
+    (let ((hell-profile nil))
+      (should (string-suffix-p (concat " check /p --only " (shell-quote-argument "elisp,java") " -o /r.md")
+                               (hell-check--command "/p" nil '(elisp java) "/r.md"))))))
+
+(ert-deftest hell-test-check-tool-crash-is-reported ()
+  (let ((diags (hell-check--run-tool "Emacs Lisp" "relint" "/x.el" (lambda () (error "Boom")))))
+    (should (equal (mapcar (lambda (d) (list (plist-get d :severity) (plist-get d :rule-id)
+                                             (plist-get d :message)))
+                           diags)
+                   '(("Info" "tool-crashed" "relint crashed: Boom"))))))
+
+(ert-deftest hell-test-static-analysis-run-is-the-gate ()
+  (let (called)
+    (cl-letf (((symbol-function 'hell-check) (lambda (&rest args) (setq called args))))
+      (hell-static-analysis-run "/tmp/")
+      (should (equal called '("/tmp/" (elisp) "/tmp/.hell/reports/lint-report.md")))
+      (hell-static-analysis-run "/tmp/x.el" "/tmp/r.md")
+      (should (equal called '("/tmp/x.el" (elisp) "/tmp/r.md"))))))
+
 (defvar hell-test--local-var nil)
 
 (ert-deftest hell-test-static-analysis-reads-without-visiting ()
