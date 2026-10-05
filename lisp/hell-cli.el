@@ -341,10 +341,12 @@ Commands (short names in brackets):
              List the modules on by default that your hell! block misses
              (made from an older template?); --add-defaults adds them, keeping
              a backup of init.el. Then run sync.
-  check [lint] [TARGETS...] [-o OUT] [--format FORMAT] [--strict]
+  check [lint] [TARGETS...] [-o OUT] [--format FORMAT] [--strict] [--trust]
              Run unified static analysis and linting quality gate across
              detected languages (Clojure, Kotlin, Java, Scala, Groovy,
              Emacs Lisp, Common Lisp), generating diagnostic report.
+             Checks that run the project's own code (./gradlew, pre-commit,
+             byte-compile...) ask first, or are skipped; --trust runs them.
   help [h] [COMMAND]
              Show this help, or detailed help and options for COMMAND.
 

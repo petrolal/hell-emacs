@@ -41,12 +41,33 @@
     ;; Secrets: the file is plain text, and every process Emacs starts
     ;; would get them.
     "TOKEN" "SECRET" "PASSWORD" "PASSWD" "PASSPHRASE" "CREDENTIAL"
-    "API_?KEY" "PRIVATE_?KEY")
+    "API_?KEY" "PRIVATE_?KEY" "\\(?:\\`\\|_\\)AUTH\\'" "_PAT\\'")
   "Regexps of variables `bin/hell env' never saves.
 They describe the terminal or session the command ran in, not your
 shell setup, and would be wrong -- or harmful -- inside Emacs later;
 or they look like secrets (tokens, passwords, API keys), which don't
 belong in a saved file. Matched against the name, ignoring case.")
+
+(defconst hell-env--credentials-regexp "://[^/@[:space:]]*:[^/@[:space:]]*@"
+  "A URL with a password in it: scheme://user:password@host.")
+
+(defun hell-env--savable (environment)
+  "The ENVIRONMENT entries (\"VAR=value\") `bin/hell env' may save.
+Returns (SAVED . WITHHELD): SAVED leaves out what `hell-env-deny'
+names, and any variable whose value carries a password in a URL
+\(HTTPS_PROXY=http://user:pass@proxy, DATABASE_URL=...), whose names
+are WITHHELD. Leaving one out, rather than its password, keeps the
+working value Emacs inherits from your shell: a saved one would win."
+  (let (saved withheld)
+    (dolist (entry environment)
+      (let* ((name (car (split-string entry "=")))
+             (value (substring entry (min (length entry) (1+ (length name)))))
+             (case-fold-search t))
+        (cond ((seq-some (lambda (re) (string-match-p re name)) hell-env-deny))
+              ((string-match-p hell-env--credentials-regexp value)
+               (push name withheld))
+              (t (push entry saved)))))
+    (cons (nreverse saved) (sort withheld #'string<))))
 
 (defun hell-cli-env (&rest args)
   "Save the current shell environment for Emacs to load at startup.
@@ -57,14 +78,10 @@ With --clear in ARGS, delete the saved environment instead."
           (delete-file hell-env-file))
         (hell-cli--say "Removed the saved environment (%s)"
                        (abbreviate-file-name hell-env-file)))
-    (let ((vars (seq-remove
-                 (lambda (entry)
-                   (let ((name (car (split-string entry "=")))
-                         (case-fold-search t))
-                     (seq-some (lambda (re) (string-match-p re name)) hell-env-deny)))
+    (pcase-let ((`(,vars . ,withheld)
                  ;; `initial-environment' is what bin/hell was run with,
                  ;; before Emacs (or early-init.el) changed anything.
-                 initial-environment)))
+                 (hell-env--savable initial-environment)))
       (make-directory (file-name-directory hell-env-file) t)
       ;; Yours alone to read, even an older file written before.
       (when (file-exists-p hell-env-file)
@@ -79,6 +96,9 @@ With --clear in ARGS, delete the saved environment instead."
           (insert "\n")))
       (hell-cli--say "Saved %d environment variables to %s (PATH has %d entries)"
                      (length vars) (abbreviate-file-name hell-env-file)
-                         (length (parse-colon-path (getenv "PATH")))))))
+                         (length (parse-colon-path (getenv "PATH"))))
+      (when withheld
+        (hell-cli--say "  Not saved, their values hold a password: %s. Emacs started \
+from your shell still gets them." (string-join withheld ", "))))))
 
 ;;; hell-env ends here

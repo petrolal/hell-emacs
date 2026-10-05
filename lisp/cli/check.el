@@ -656,6 +656,62 @@ JVM-FILES are the project's source files."
         (unless (zerop code)
           (hell-check--parse-standard-diagnostics "Pre-Commit" "pre-commit" out))))))
 
+;;; Trusting the target ----------------------------------------------------------
+;;
+;; Most checks only read the files. Some run code the checked project
+;; controls: its build scripts, its hooks, its macros. On a repository you
+;; just cloned that is running a stranger's code, so those wait for your
+;; word: --trust, `hell-check-trusted-directories', or a yes on a terminal.
+;; Without it they're skipped, and the report says so.
+
+(defcustom hell-check-trusted-directories nil
+  "Directories whose own code `bin/hell check' and `hell-check' may run.
+A target inside one runs ./gradlew, pre-commit, trunk, byte-compile and
+the like without asking (see `hell-check--code-runners')."
+  :type '(repeat directory)
+  :group 'hell-static-analysis)
+
+(defvar hell-check-trust nil
+  "Non-nil if this check may run the target's own code: `check --trust'.")
+
+(declare-function hell-cli--yes-p "hell-cli" (prompt &optional default))
+
+(defun hell-check--code-runners (targets by-lang)
+  "The checks of TARGETS that would run code the checked project controls.
+BY-LANG is `hell-check-discover-files''s :by-language. Each is a string
+naming the tool and what of the project's it runs."
+  (let ((dir (hell-check--target-dir targets)))
+    (delq nil
+          (list (and (executable-find "trunk") (locate-dominating-file dir ".trunk")
+                     "trunk (the linters .trunk/ sets up)")
+                (and (executable-find "pre-commit") (locate-dominating-file dir ".pre-commit-config.yaml")
+                     "pre-commit (the hooks .pre-commit-config.yaml names)")
+                (and (or (alist-get 'java by-lang) (alist-get 'kotlin by-lang)
+                         (alist-get 'groovy-gradle by-lang))
+                     (hell-check--find-gradle-wrapper dir)
+                     "./gradlew (the build's own scripts)")
+                (and (alist-get 'elisp by-lang)
+                     "byte-compile and Elsa (the files' macros and eval-when-compile)")
+                (and (alist-get 'common-lisp by-lang)
+                     "sblint (it loads the files into SBCL)")))))
+
+(defun hell-check--trusted-p (dir)
+  "Non-nil if DIR's own code may run.
+That's with `hell-check-trust', or DIR in `hell-check-trusted-directories'."
+  (or hell-check-trust
+      (seq-some (lambda (trusted) (file-in-directory-p dir trusted))
+                hell-check-trusted-directories)))
+
+(defun hell-check--allow-code-p (dir runners)
+  "Non-nil if RUNNERS, checks running DIR's own code, may run.
+Trusted (`hell-check--trusted-p'), or yes on a terminal (`bin/hell -!'
+answers yes); with no one to ask, no."
+  (or (null runners)
+      (hell-check--trusted-p dir)
+      (and (fboundp 'hell-cli--yes-p)
+           (hell-cli--yes-p (format "Checking %s runs its own code: %s. Trust it? "
+                                    (abbreviate-file-name dir) (string-join runners ", "))))))
+
 ;;; Quality Gate Coordinator --------------------------------------------------
 
 (defun hell-check-run-all (targets)
@@ -666,23 +722,34 @@ Returns a plist containing results, summary, tool listing, and diagnostics."
          (files (plist-get discovery :files))
          (by-lang (plist-get discovery :by-language))
          (search-dir (hell-check--target-dir targets))
+         (runners (hell-check--code-runners targets by-lang))
+         (run-code (hell-check--allow-code-p search-dir runners))
          (tools-invoked nil)
          (all-diags nil))
 
+    ;; 0. What was skipped for want of trust, said where it's seen.
+    (unless run-code
+      (dolist (runner runners)
+        (push (hell-check--make-diag
+               "-" "hell-check" "Info" search-dir 1 1 "untrusted"
+               (format "Skipped %s: it runs this project's own code. Pass --trust, \
+or add the directory to `hell-check-trusted-directories'" runner))
+              all-diags)))
+
     ;; 1. Check community wrappers first
-    (when-let* ((trunk-diags (hell-check-run-trunk targets)))
+    (when-let* ((trunk-diags (and run-code (hell-check-run-trunk targets))))
       (push "trunk" tools-invoked)
       (setq all-diags (append all-diags trunk-diags)))
 
-    (when-let* ((pc-diags (hell-check-run-pre-commit files)))
+    (when-let* ((pc-diags (and run-code (hell-check-run-pre-commit files))))
       (push "pre-commit" tools-invoked)
       (setq all-diags (append all-diags pc-diags)))
 
-    ;; 2. Gradle-managed JVM project detection
+    ;; 2. Gradle-managed JVM project detection; untrusted, the native tools.
     (let* ((jvm-files (append (alist-get 'java by-lang)
                               (alist-get 'kotlin by-lang)
                               (alist-get 'groovy-gradle by-lang)))
-           (gradlew (and jvm-files (hell-check--find-gradle-wrapper search-dir))))
+           (gradlew (and run-code jvm-files (hell-check--find-gradle-wrapper search-dir))))
       (if gradlew
           (progn
             (push "gradlew" tools-invoked)
@@ -710,11 +777,14 @@ Returns a plist containing results, summary, tool listing, and diagnostics."
 
     ;; 5. Emacs Lisp (custom Lisp batch pipeline)
     (when-let* ((el-files (alist-get 'elisp by-lang)))
-      (setq tools-invoked (append tools-invoked '("package-lint" "elsa" "relint" "byte-compile")))
-      (setq all-diags (append all-diags (hell-check-run-elisp el-files))))
+      (setq tools-invoked (append tools-invoked
+                                  (if run-code
+                                      '("package-lint" "elsa" "relint" "byte-compile")
+                                    '("package-lint" "relint"))))
+      (setq all-diags (append all-diags (hell-check-run-elisp el-files run-code))))
 
     ;; 6. Common Lisp (sblint via SBCL batch runner)
-    (when-let* ((cl-files (alist-get 'common-lisp by-lang)))
+    (when-let* ((cl-files (and run-code (alist-get 'common-lisp by-lang))))
       (setq tools-invoked (append tools-invoked '("sblint")))
       (setq all-diags (append all-diags (hell-check-run-common-lisp cl-files))))
 
@@ -926,10 +996,14 @@ Options:
                       (default: .hell/reports/lint-report.md)
   --format FORMAT     Report format: `markdown' (default) or `json'
   --strict            Fail quality gate on warnings as well as errors
+  --trust             Run the checks that execute the target's own code
+                      (./gradlew, pre-commit, trunk, byte-compile, sblint)
+                      without asking; else asked on a terminal, or skipped
   -h, --help          Show command usage"
   (let ((output-file nil)
         (format-type nil)
         (strict-p nil)
+        (trust nil)
         (targets nil)
         (rest args))
     (while rest
@@ -949,6 +1023,8 @@ Options:
           (setq format-type (intern (downcase (substring arg (length "--format="))))))
          ((string= arg "--strict")
           (setq strict-p t))
+         ((string= arg "--trust")
+          (setq trust t))
          ((or (string= arg "-h") (string= arg "--help"))
           (hell-cli-help "check")
           (kill-emacs 0))
@@ -972,7 +1048,8 @@ Options:
                           (expand-file-name ".hell/reports/lint-report.md" default-directory))))
 
     ;; Run quality gate
-    (let* ((results (hell-check-run-all targets))
+    (let* ((results (let ((hell-check-trust (or hell-check-trust trust)))
+                       (hell-check-run-all targets)))
            (written-report (hell-check-write-report results output-file format-type))
            (passed (hell-check-render-terminal results written-report strict-p)))
       (if noninteractive
@@ -990,16 +1067,57 @@ Options:
 (defalias 'hell-cli-lint #'hell-cli-check
   "Alias for `hell-cli-check'.")
 
+;;; In Emacs ---------------------------------------------------------------------
+
+(defvar hell-dir)                       ; early-init.el
+(defvar hell-profile)
+
+(defconst hell-check--error-regexp
+  '(hell-check "^  \\(?:✗\\|\\(!\\)\\|\\(·\\)\\) \\(.+?\\):\\([0-9]+\\):\\([0-9]+\\): \\["
+               3 4 5 (1 . 2))
+  "`hell-check-render-terminal''s diagnostic lines, for `compilation-mode'.")
+
+(define-compilation-mode hell-check-mode "Hell-Check"
+  "Output of `hell-check': each diagnostic links to its place."
+  (setq-local compilation-error-regexp-alist-alist
+              (cons hell-check--error-regexp compilation-error-regexp-alist-alist))
+  (setq-local compilation-error-regexp-alist '(hell-check)))
+
+(defun hell-check--command (target trust)
+  "The `bin/hell check' command line for TARGET, with --trust if TRUST."
+  (mapconcat #'shell-quote-argument
+             (append (list (expand-file-name "bin/hell" hell-dir))
+                     (and hell-profile (list "--profile" hell-profile))
+                     (list "check" target)
+                     (and trust (list "--trust")))
+             " "))
+
 ;;;###autoload
 (defun hell-check (&optional target)
   "Run the unified Static Analysis and Linting Quality Gate on TARGET.
-Interactively, prompt for target directory or file (defaults to project root)."
+Interactively, the current project; with a prefix argument, a file or
+directory you choose. It runs `bin/hell check' in the background, its
+diagnostics links in *hell-check*. If TARGET's own code would run
+\(`hell-check--code-runners'), it asks first, unless TARGET is
+trusted (`hell-check-trusted-directories')."
   (interactive
    (list (if current-prefix-arg
              (read-file-name "Target to check: " default-directory default-directory t)
            (or (when-let* ((proj (project-current))) (project-root proj))
                default-directory))))
-  (hell-cli-check (or target default-directory)))
+  (let* ((target (expand-file-name (or target default-directory)))
+         (dir (hell-check--target-dir (list target)))
+         (runners (hell-check--code-runners
+                   (list target)
+                   (plist-get (hell-check-discover-files (list target)) :by-language)))
+         (trust (and runners
+                     (or (hell-check--trusted-p dir)
+                         (yes-or-no-p (format "Checking %s runs its own code: %s. Trust it? "
+                                              (abbreviate-file-name dir)
+                                              (string-join runners ", "))))))
+         (default-directory dir))
+    (compilation-start (hell-check--command target trust) #'hell-check-mode
+                       (lambda (_) "*hell-check*"))))
 
 ;;;###autoload
 (defalias 'hell-lint #'hell-check

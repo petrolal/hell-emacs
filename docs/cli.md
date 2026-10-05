@@ -86,12 +86,17 @@ since the last sync), and every enabled module's needs: JDKs, language
 servers, fonts, `direnv`... `--network` also checks every host Hell Emacs
 fetches from (always, when a proxy, CA or mirror is set).
 
-**`check [-o FILE] [--format FORMAT] [--strict]`** [`lint`]
+**`check [-o FILE] [--format FORMAT] [--strict] [--trust]`** [`lint`]
 Unified static analysis and linting quality gate. Analyzes Elisp (package-lint,
 elsa, relint, byte-compile) and JVM source files (ktlint, detekt, checkstyle,
 spotbugs, codenarc, clj-kondo) across the workspace. Generates a markdown report
 (default `.hell/reports/lint-report.md`) or JSON output, and returns exit code 0
 when clean or exit code 1 if errors or strict violations are found.
+Checks that run the project's own code (`./gradlew`, pre-commit, trunk,
+byte-compile and Elsa, sblint) ask first on a terminal and are otherwise
+skipped, as the report says; `--trust`, or the directory in
+`hell-check-trusted-directories`, runs them. In Emacs, `C-c c x` runs it in
+the background, its diagnostics links in `*hell-check*`.
 
 **`info`**
 What a bug report needs: Hell Emacs' version and commit, Emacs and its build

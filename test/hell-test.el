@@ -159,6 +159,79 @@
     ;; nil, or a number when the key's prefix isn't bound either.
     (should-not (commandp (keymap-lookup mode-specific-map key)))))
 
+(defmacro hell-test--with-checked-project (&rest body)
+  "Run BODY with `dir', a project whose x.el writes `marker' when compiled.
+No one to ask (no terminal, no -!), and nothing trusted beforehand."
+  (declare (indent 0))
+  `(let* ((dir (file-name-as-directory (make-temp-file "hell-test-check" t)))
+          (marker (expand-file-name "ran" dir))
+          (hell-check-trust nil)
+          (hell-check-trusted-directories nil)
+          (process-environment (seq-remove (lambda (e) (string-match-p "\\`\\(?:__HELLTTY\\|HELL_FORCE\\)=" e))
+                                           process-environment))
+          (inhibit-message t))
+     (unwind-protect
+         (progn
+           (with-temp-file (expand-file-name "x.el" dir)
+             (insert ";;; x.el --- test -*- lexical-binding: t; -*-\n"
+                     (format "(eval-when-compile (with-temp-file %S (insert \"ran\")))\n" marker)))
+           ,@body)
+       (delete-directory dir t))))
+
+(ert-deftest hell-test-check-untrusted-skips-project-code ()
+  (hell-test--with-checked-project
+    (let ((results (hell-check-run-all (list dir))))
+      (should-not (file-exists-p marker))
+      (should-not (member "byte-compile" (plist-get results :tools)))
+      ;; Said in the report, as information: the gate doesn't fail for it.
+      (should (seq-find (lambda (d) (equal (plist-get d :rule-id) "untrusted"))
+                        (plist-get results :diagnostics)))
+      (should (zerop (plist-get results :errors))))))
+
+(ert-deftest hell-test-check-trusted-runs-project-code ()
+  (hell-test--with-checked-project
+    (let ((hell-check-trust t))
+      (should (member "byte-compile" (plist-get (hell-check-run-all (list dir)) :tools)))
+      (should (file-exists-p marker))))
+  (hell-test--with-checked-project
+    (let ((hell-check-trusted-directories (list dir)))
+      (hell-check-run-all (list dir))
+      (should (file-exists-p marker)))))
+
+(ert-deftest hell-test-check-command-and-links ()
+  (let ((hell-profile nil))
+    (should (equal (hell-check--command "/p/x y" t)
+                   (concat (shell-quote-argument (expand-file-name "bin/hell" hell-dir))
+                           " check /p/x\\ y --trust"))))
+  ;; *hell-check*'s diagnostics are links, of their severity.
+  (with-temp-buffer
+    (insert "  ✗ /tmp/a.el:12:3: [Emacs Lisp/byte-compile] (r) broken\n"
+            "  ! /tmp/b.el:4:1: [Java/checkstyle] (r) style\n"
+            "  · /tmp/c.el:1:1: [-/hell-check] (untrusted) skipped\n")
+    (hell-check-mode)
+    (compilation--ensure-parse (point-max))
+    (goto-char (point-min))
+    (should (equal (cl-loop repeat 3
+                            collect (let ((msg (get-text-property (+ (point) 4) 'compilation-message)))
+                                      (forward-line 1)
+                                      (and msg (compilation--message->type msg))))
+                   '(2 1 0)))))
+
+;;; bin/hell-env -----------------------------------------------------------
+
+(declare-function hell-env--savable "../bin/hell-env" (environment))
+
+(ert-deftest hell-test-env-withholds-secrets ()
+  (hell-cli-load "env")
+  (should (equal (hell-env--savable
+                  '("PATH=/usr/bin" "HTTP_PROXY=http://proxy:3128" "GIT_AUTHOR_NAME=Me"
+                    "REPO=git@github.com:a/b.git" "SSH_URL=ssh://git@host/x" "EMPTY="
+                    "HTTPS_PROXY=http://me:pw@proxy:3128" "DATABASE_URL=postgres://me:pw@db/x"
+                    "GITHUB_TOKEN=x" "NPM_CONFIG__AUTH=x" "GH_PAT=x"))
+                 '(("PATH=/usr/bin" "HTTP_PROXY=http://proxy:3128" "GIT_AUTHOR_NAME=Me"
+                    "REPO=git@github.com:a/b.git" "SSH_URL=ssh://git@host/x" "EMPTY=")
+                   . ("DATABASE_URL" "HTTPS_PROXY")))))
+
 ;;; cli/bundle -------------------------------------------------------------
 
 (defmacro hell-test--with-bundle-root (&rest body)
