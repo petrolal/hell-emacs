@@ -151,6 +151,7 @@
            ;;fsharp           ; [idea] F#: fsautocomplete
            ;;gdscript         ; [idea] Godot GDScript: the Godot editor's server
            ;;gleam            ; [idea] Gleam: gleam lsp
+           ;;glsl             ; [idea] GLSL (OpenGL shaders): glsl-language-server (glslls)
            ;;graphql          ; [idea] GraphQL: graphql-lsp
            ;;graphviz         ; [idea] Graphviz dot files (no LSP)
            ;;haskell          ; [idea] Haskell: haskell-language-server

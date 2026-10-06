@@ -9,6 +9,41 @@ supports, and how long it gets security fixes, is in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- `:lang web`: a pinned `vscode-css-language-server` (via npm, SHA-256
+  verified) for CSS/SCSS/Less in `css-mode`, alongside `web-mode`'s
+  existing HTML/Thymeleaf/FreeMarker/Velocity/JSP templates.
+- `:lang glsl`: GLSL (OpenGL shading language) editing, using
+  `lsp-mode`'s built-in `glslls` client; localleader commands to
+  validate a shader (`glslangValidator`) and compile it to SPIR-V
+  (`glslc`).
+
+### Fixed
+
+- Dropped `:emacs electric`: it duplicated behavior already on
+  unconditionally in `lisp/hell-emacs.el` (`electric-pair-mode`) or by
+  default since Emacs 24.4 (`electric-indent-mode`), so enabling the
+  module changed nothing.
+- `:lang java`: moved `lsp-java` settings that read the filesystem or a
+  build tool's config (`lsp-java-java-path`, `lsp-java-vmargs`, Maven
+  user settings, Gradle JVM args) from `:custom` to `:config`, so they
+  run when a Java buffer actually loads `lsp-java` rather than on every
+  startup.
+- Named every `:lang` module's localleader lambda (compile/run/test
+  commands) across all 44 language modules, and the three remaining
+  anonymous leader-bound lambdas (the Altar's "Issue Sanctum" button,
+  `:app calendar`'s and `:app irc`'s open commands), so they show up
+  under `M-x`, `where-is` and `C-h k` instead of as an opaque closure.
+- Audited and documented the localleader/leader key ranges each module
+  owns where more than one module shares a map (`:tools lsp` on
+  `lsp-mode-map`, `:tools build`/`:tools test` on `hell-forge-mode`'s
+  "t" group, `:tools templates` on `java-mode`'s map), to keep future
+  bindings from colliding; plus assorted docstring/error-message style
+  fixes (capitalized error messages, quoted symbols) across `lisp/`.
+
 ## [1.0.0] - 2026-10-03
 
 The 1.0.0 release of Hell Emacs. Meets all enterprise criteria with verified

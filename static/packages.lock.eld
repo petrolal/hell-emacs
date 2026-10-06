@@ -25,9 +25,9 @@
  (agda2-mode :source "elpaca-menu-lock-file" :recipe
 	     (:source "User Declaration" :package "agda2-mode" :id
 		      agda2-mode :host github :repo "agda/agda" :files
-		      ("src/data/emacs-mode/*.el") :type git :protocol
-		      https :inherit t :depth treeless :ref
-		      "da66a8c75f11d10699a6b38b261efdf244b66f2a"))
+		      ("src/data/emacs-mode/*.el") :ref
+		      "cccf42fa88eae25ccbe2623f489021d2075f6f73" :type
+		      git :protocol https :inherit t :depth treeless))
  (aio :source "elpaca-menu-lock-file" :recipe
       (:package "aio" :fetcher github :repo "skeeto/emacs-aio" :files
 		("aio.el" "README.md" "UNLICENSE") :source "MELPA" :id
@@ -437,9 +437,13 @@
  (eat :source "elpaca-menu-lock-file" :recipe
       (:package "eat" :repo "emacsmirror/eat" :tar "0.9.4" :host
 		github :files
-		("*.el" ("term" "term/*.el") "*.texi" "*.ti") :source
-		"NonGNU ELPA" :id eat :type git :protocol https
-		:inherit t :depth treeless :ref
+		("*.el" ("term" "term/*.el") "*.texi" "*.ti"
+		 ("terminfo/e" "terminfo/e/*")
+		 ("terminfo/65" "terminfo/65/*")
+		 ("integration" "integration/*")
+		 (:exclude ".dir-locals.el" "*-tests.el"))
+		:source "NonGNU ELPA" :id eat :type git :protocol
+		https :inherit t :depth treeless :ref
 		"3a6f418f55d183b9d86f99c140caed4ba3d44f93"))
  (editorconfig :source "elpaca-menu-lock-file" :recipe
 	       (:package "editorconfig" :fetcher github :repo
@@ -694,6 +698,19 @@
 			  gleam-ts-mode :type git :protocol https
 			  :inherit t :depth treeless :ref
 			  "5fd0ad952e60ee0032688cb7c2d9fd09e79eff62"))
+ (glsl-mode :source "elpaca-menu-lock-file" :recipe
+	    (:package "glsl-mode" :repo "jimhourihan/glsl-mode"
+		      :fetcher github :files
+		      ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+		       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+		       "doc/*.texinfo" "lisp/*.el" "docs/dir"
+		       "docs/*.info" "docs/*.texi" "docs/*.texinfo"
+		       (:exclude ".dir-locals.el" "test.el" "tests.el"
+				 "*-test.el" "*-tests.el" "LICENSE"
+				 "README*" "*-pkg.el"))
+		      :source "MELPA" :id glsl-mode :type git
+		      :protocol https :inherit t :depth treeless :ref
+		      "515a2ba4dab3ec89c83a962902a123ddf81e3cfe"))
  (go-mode :source "elpaca-menu-lock-file" :recipe
 	  (:package "go-mode" :repo "dominikh/go-mode.el" :fetcher
 		    github :files ("go-mode.el") :source "MELPA" :id
