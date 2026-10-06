@@ -4,7 +4,18 @@
 ;; License: GPL-3.0-or-later
 
 ;; Web templates, HTML, CSS/SCSS/Less, Thymeleaf, Velocity, FreeMarker, JSP
-;; in `web-mode' and built-in `css-mode'.
+;; in `web-mode' and built-in `css-mode'. CSS/SCSS/Less get the pinned
+;; vscode-css-language-server through lsp-mode (`+paths'); web-mode's own
+;; markup doesn't have a server here, so `lsp-deferred' on it is a no-op
+;; until one is wired up.
+
+(hell-module-load "+paths")
+
+(after! lsp-css
+  ;; The pinned install only, never npm's "latest".
+  (lsp-dependency 'css-languageserver `(:system ,hell-web-css-ls-executable)))
+
+(hell-lsp-pin-installer 'css-languageserver '(:lang . web) 'hell-web-css-sync-install-server)
 
 (use-package web-mode
   :mode ("\\.p?html?\\'"
