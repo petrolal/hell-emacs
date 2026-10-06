@@ -226,7 +226,7 @@ Options:
   (mapcar (lambda (name)
             (let ((lang (intern name)))
               (unless (assq lang hell-check-languages)
-                (user-error "--only: no language `%s'; it's one of %s" name
+                (user-error "No such language `%s' for --only; it's one of %s" name
                             (mapconcat (lambda (l) (symbol-name (car l))) hell-check-languages ", ")))
               lang))
           (split-string spec "[, ]+" t)))

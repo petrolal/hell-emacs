@@ -948,9 +948,10 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
 (declare-function hell-cli--upgrade-packages "../bin/hell-upgrade" ())
 
 (defun hell-test--fake-git (verify-code calls)
-  "A git for `hell-cli--upgrade-to-release': releases v1.0.0 and v1.1.0,
-HEAD at neither, `verify-tag' exiting VERIFY-CODE. Each call's
-arguments are pushed onto the symbol CALLS' value."
+  "A fake git for `hell-cli--upgrade-to-release'.
+Releases v1.0.0 and v1.1.0, HEAD at neither, `verify-tag' exiting
+VERIFY-CODE. Each call's arguments are pushed onto the symbol CALLS'
+value."
   (lambda (&rest args)
     (set calls (cons args (symbol-value calls)))
     (pcase (car args)

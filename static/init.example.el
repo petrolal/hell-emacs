@@ -44,7 +44,7 @@
            file-templates     ; new files filled from a template (auto-insert): FooTest.java gets its package, imports and class; needs snippets
            fold               ; code folding on stock C-c @ (treesit-fold, hideshow)
            format             ; formatters: google-java-format, ktfmt, cljfmt, on C-c c f (+onsave)
-           ;;multiple-cursors ; [idea] multiple cursors, on stock keys
+           ;;multiple-cursors ; multiple cursors (mc/iedit), on stock keys + C-c c e/m
            ;;parinfer         ; indentation-driven Lisp editing (parinfer-rust-mode)
            ;;smartparens      ; structural editing for Lisps and brackets
            snippets           ; snippets (tempel): junit, controller, dataclass, deftest, munit; complete a name with C-M-i
@@ -61,10 +61,10 @@
            ;;vc               ; [idea] built-in version control tweaks
 
            :term
-           ;;eshell           ; [idea] eshell with project-aware prompts
-           ;;shell            ; [idea] comint shells
-           ;;eat              ; [idea] a terminal emulator in pure Elisp
-           ;;vterm            ; [idea] a real terminal (needs a C toolchain)
+           ;;eshell           ; eshell with project-aware prompts, elisp-native, C-c o e
+           ;;shell            ; comint shells, C-c o s
+           ;;eat              ; a terminal emulator in pure Elisp, C-c o T/o P
+           ;;vterm            ; a real terminal (needs a C toolchain), C-c o t
 
            :checkers
            ;;static           ; Checkstyle, PMD, SpotBugs results from your build, as flymake diagnostics (+sonarlint: SonarLint, 227 MB)
@@ -85,7 +85,7 @@
            ;;db               ; databases over JDBC: sql-mode + sqlline, .hell-emacs/db.eld, passwords in auth-source
            ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
            editorconfig       ; the project's .editorconfig: indentation, charset, line endings (built in)
-           ;;eval             ; [idea] run code in a REPL or inline, per language
+           ;;eval             ; quick inline run via quickrun, C-c c q/c Q
            ;;forge            ; GitHub/GitLab pull requests from Magit
            ;;kubernetes       ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
            ;;llm              ; [idea] LLM chat and code actions (gptel)

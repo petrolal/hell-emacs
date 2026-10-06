@@ -31,16 +31,17 @@
 ;; the foundational folding mechanism across all languages.
 (add-hook 'prog-mode-hook #'hs-minor-mode)
 
+(defun hell-fold--treesit-maybe-enable-h ()
+  "Turn on `treesit-fold-mode' if the buffer has a tree-sitter parser."
+  (when (and (fboundp 'treesit-parser-list) (treesit-parser-list))
+    (treesit-fold-mode 1)))
+
 ;; Tree-sitter AST-aware folding when treesit is available.
 (use-package treesit-fold
   :defer t
   :init
   (when (and (fboundp 'treesit-available-p) (treesit-available-p))
-    (add-hook 'prog-mode-hook
-              (lambda ()
-                (when (and (fboundp 'treesit-parser-list)
-                           (treesit-parser-list))
-                  (treesit-fold-mode 1))))))
+    (add-hook 'prog-mode-hook #'hell-fold--treesit-maybe-enable-h)))
 
 ;; Remaps, not the stock `C-c @' keys themselves (13.5): whichever key
 ;; the user (or another package) has hs-toggle-hiding/hs-show-all/

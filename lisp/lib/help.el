@@ -68,7 +68,7 @@
 (defvar hell-localleader-maps)
 
 (defun hell-help--keys (command buffer)
-  "COMMAND's keys as bound in BUFFER (up to two), or \"M-x COMMAND\".
+  "COMMAND's keys as bound in BUFFER (up to two), or its name as a fallback.
 The `C-c l' localleader's keys are behind a filter `where-is' can't see
 through, so its maps are searched too."
   (let* ((keys (with-current-buffer buffer

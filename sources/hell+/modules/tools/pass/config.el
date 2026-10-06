@@ -33,7 +33,7 @@
   :commands (pass)
   :init
   (hell-leader-def
-    "o P" '("passwords" . pass)))
+    "o v" '("vault (pass)" . pass)))
 
 (provide 'tools-pass-config)
 ;;; config.el ends here

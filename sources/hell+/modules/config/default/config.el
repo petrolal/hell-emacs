@@ -197,7 +197,9 @@
 ;; by the language server), `C-x p c' (build, which `:tools build' makes
 ;; the project's), `C-h .' (help at point). `:tools lsp' adds the server's
 ;; actions to this group in its buffers, and lsp-mode's whole map on
-;; its own `s-l'; `C-c s e' jumps to a diagnostic.
+;; its own `s-l'; `C-c s e' jumps to a diagnostic. `:tools lsp' claims
+;; `a r o f i t k' directly on `lsp-mode-map' (not here, so it only
+;; applies where lsp-mode runs) -- leave those letters free below.
 
 (hell-leader-def
   "c"   "code"

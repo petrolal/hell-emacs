@@ -267,7 +267,7 @@ See `modulep!' for testing modules and flags from code."
       (cond ((keywordp item)
              (setq group item))
             ((null group)
-             (user-error "hell!: module `%s' comes before any :group" item))
+             (user-error "`hell!': module `%s' comes before any :group" item))
             ((symbolp item)
              (hell-module-enable group item))
             ((consp item)
@@ -332,7 +332,7 @@ Inside a module's own files, the group and name can be left out:
   (let ((key (if (keywordp (car args))
                  (cons (pop args) (pop args))
                (or hell--current-module
-                   (error "modulep!: no module given, and not inside a module")))))
+                   (error "`modulep!': no module given, and not inside a module")))))
     `(hell-module-p ',(car key) ',(cdr key) ',args)))
 
 ;;; Declaring dependencies: depends-on! -------------------------------------
@@ -363,7 +363,7 @@ declares (lsp-mode, say) comes before what this module builds on it."
 (defun hell-module-depend (group name flags)
   "Record that current module needs GROUP NAME with FLAGS.  See `depends-on!'."
   (let ((key (or hell--current-module
-                 (error "depends-on!: not inside a module's packages.el")))
+                 (error "`depends-on!': not inside a module's packages.el")))
         (dep (cons group (cons name flags))))
     (let ((deps (alist-get key hell-module-dependencies nil nil #'equal)))
       (unless (member dep deps)

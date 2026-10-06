@@ -49,6 +49,8 @@
   (add-hook 'compilation-finish-functions #'hell-test-results--after-build-h)
   (add-hook 'compilation-finish-functions #'hell-coverage--after-build-h))
 
+;; `hell-forge-mode's localleader "t" group is split with `:tools build',
+;; which owns "t t" and "t T"; keep this file's sub-keys disjoint from those.
 (hell-localleader-def 'hell-forge-mode
   "t"   "test"
   "t r" '("test results" . hell-test-results)

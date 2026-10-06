@@ -104,7 +104,7 @@ until then a warning says to sync."
 (defun hell-treesit-declare (grammars remap)
   "Record the current module's GRAMMARS and REMAP. See `hell-treesit!'."
   (let ((key (or (bound-and-true-p hell--current-module)
-                 (error "hell-treesit!: not inside a module's packages.el"))))
+                 (error "`hell-treesit!': not inside a module's packages.el"))))
     (setf (alist-get key hell-treesit-declarations nil nil #'equal)
           (list :grammars grammars :remap remap))))
 
@@ -212,7 +212,7 @@ in a temporary directory, and only then puts the library in place."
   (pcase-let* ((`(,url ,_label ,commit ,directory) (hell-treesit--source lang))
                (directory (and (stringp directory) directory)) ; not :license
                (tmp (make-temp-file "hell-treesit" t)))
-    (unless (executable-find "git") (error "git is needed to fetch tree-sitter grammars"))
+    (unless (executable-find "git") (error "Git is needed to fetch tree-sitter grammars"))
     (with-hell-network               ; the proxy, CA and mirrors, for git
       (unwind-protect
           (let ((src (expand-file-name (format "tree-sitter-%s" lang) tmp)))

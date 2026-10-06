@@ -56,6 +56,8 @@
   (add-hook 'compilation-start-hook #'hell-forge--note-start-h)
   (add-hook 'compilation-finish-functions #'hell-forge--report-h))
 
+;; `hell-forge-mode's localleader "t" group is split with `:tools test',
+;; which owns "t r f c s h"; keep this file's sub-keys disjoint from those.
 (hell-localleader-def 'hell-forge-mode
   "t"   "test"
   "t t" '("test at point" . hell-forge-test-at-point)

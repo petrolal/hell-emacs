@@ -158,10 +158,10 @@ directories holding each root are listed too."
 (defun hell-bundle--tar (&rest args)
   "Run tar with ARGS, or signal an error with its output."
   (unless (executable-find "tar")
-    (error "tar is needed for offline bundles"))
+    (error "Tar is needed for offline bundles"))
   (pcase-let ((`(,code . ,output) (apply #'hell-process-output "tar" args)))
     (unless (zerop code)
-      (error "tar failed: %s" output))))
+      (error "Tar failed: %s" output))))
 
 (defun hell-bundle--platform (&optional configuration)
   "The platform a bundle is for: CONFIGURATION (`system-configuration')

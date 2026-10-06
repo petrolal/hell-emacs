@@ -51,7 +51,7 @@
 ;;
 ;; Batch sessions start the same way:
 ;;
-;;   emacs --batch -l early-init.el -f hell-start -l SCRIPT.el
+;;   `emacs' --batch -l early-init.el -f hell-start -l SCRIPT.el
 
 ;;; Code:
 
@@ -443,7 +443,7 @@ Called by early-init.el, in every session (the CLI's too), as Doom's
 Emacs does it itself (the entry point in lisp/hell-emacs.el); batch
 sessions call it:
 
-  emacs --batch -l early-init.el -f hell-start -l SCRIPT.el
+  `emacs' --batch -l early-init.el -f hell-start -l SCRIPT.el
 
 Signals `hell-nosync-error' if there's no init file: `bin/hell
 sync' (or `install') writes it."

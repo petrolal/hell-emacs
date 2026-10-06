@@ -220,7 +220,7 @@ error saying what's missing (a JDK, its keytool, a readable CA)."
          (run (lambda (&rest args)
                 (pcase-let ((`(,code . ,output) (apply #'hell-process-output keytool args)))
                   (unless (zerop code)
-                    (error "keytool %s failed: %s" (car args) output))))))
+                    (error "Keytool %s failed: %s" (car args) output))))))
     (unless (file-executable-p keytool) (error "No keytool in %s" home))
     (unless certs (error "No certificate in `hell-ca-bundle' (%s)" (abbreviate-file-name ca)))
     (make-directory (file-name-directory hell-net-truststore) t)
@@ -341,7 +341,7 @@ $HTTPS_PROXY itself."
     (pcase (process-status proc)
       ('open (set-process-sentinel proc #'ignore) proc)
       ('connect (delete-process proc) (error "%s:%s didn't answer in %ds" host port hell-net-probe-timeout))
-      (_ (delete-process proc) (error "connecting to %s:%s %s" host port (or event "failed"))))))
+      (_ (delete-process proc) (error "Connecting to %s:%s %s" host port (or event "failed"))))))
 
 (defun hell-net--probe-tunnel (proc host port proxy)
   "Ask the proxy on PROC for a tunnel to HOST:PORT; signal an error if refused.
@@ -360,9 +360,9 @@ PROXY is its URL, whose user and password, if any, authenticate."
       (accept-process-output nil 0.05))
     (set-process-filter proc #'internal-default-process-filter)
     (unless (string-match "\\`HTTP/[0-9.]+ \\([0-9]+\\)\\([^\r\n]*\\)" reply)
-      (error "it sent no HTTP answer"))
+      (error "It sent no HTTP answer"))
     (unless (equal (match-string 1 reply) "200")
-      (error "it refused the tunnel (HTTP %s%s)" (match-string 1 reply) (match-string 2 reply)))))
+      (error "It refused the tunnel (HTTP %s%s)" (match-string 1 reply) (match-string 2 reply)))))
 
 (defun hell-net--probe-tls (proc host)
   "Check HOST's certificate over PROC, a connection to it.
@@ -374,7 +374,7 @@ signals an error. This one can't time out: run it in
                         :trustfiles (delete-dups (append (gnutls-trustfiles)
                                                          (and hell-ca-bundle
                                                               (list (expand-file-name hell-ca-bundle))))))
-    (error (error "its TLS handshake failed%s"
+    (error (error "Its TLS handshake failed%s"
                   (if-let* ((code (car (last err))) ((integerp code)))
                       (concat ": " (gnutls-error-string code))
                     ""))))

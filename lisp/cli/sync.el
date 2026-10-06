@@ -181,7 +181,7 @@ into a temporary directory; INSTALL-FN is called with that directory to
 move what it needs into place. MARKER then records SHA256 (see
 `hell-marker-current-p'). Nothing is left behind on failure."
   (unless (executable-find "unzip")
-    (error "unzip is needed to install %s" label))
+    (error "Unzip is needed to install %s" label))
   (let ((zip (expand-file-name (concat (file-name-base url) ".zip") dir))
         (stage (make-temp-file "hell-unzip" t)))
     (unwind-protect
@@ -242,7 +242,7 @@ The lockfile's SHA-256 is recorded (`hell-npm-installed-p')."
       (let ((process-environment (append (hell-npm-environment) process-environment)))
         (with-temp-buffer
           (unless (zerop (call-process "npm" nil t nil "ci" "--ignore-scripts" "--no-audit" "--no-fund"))
-            (error "npm couldn't install %s: %s" label (string-trim (buffer-string)))))))
+            (error "Npm couldn't install %s: %s" label (string-trim (buffer-string)))))))
     (hell-marker-write marker (hell-file-sha256 (expand-file-name "package-lock.json" lock-dir)))))
 
 (defun hell-sync--packages ()

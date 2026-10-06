@@ -124,7 +124,10 @@ Servers send large JSON payloads; lsp-mode recommends 1MB.")
 ;; only where lsp-mode runs. Diagnostics are flymake's, built into Emacs
 ;; (`lsp-diagnostics-provider' above), so Hell Emacs adds no key to them
 ;; (13.9): `C-c s e' jumps to one, `M-x flymake-goto-next-error' and
-;; `M-x flymake-show-buffer-diagnostics' do the rest.
+;; `M-x flymake-show-buffer-diagnostics' do the rest. Bound directly on
+;; `lsp-mode-map' rather than via `hell-leader-def' so the keys exist
+;; only where lsp-mode runs; `a r o f i t k' are reserved here and must
+;; stay free in `:config default's leader "code" group.
 (defvar lsp-mode-map)
 (after! lsp-mode
   (keymap-set lsp-mode-map "C-c c a" (cons "code action" #'lsp-execute-code-action))

@@ -162,7 +162,7 @@ Without a person to answer (no terminal), return DEFAULT; with
   "SPEC, the text of a `hell!' block's arguments, as a list."
   (let ((modules (condition-case nil
                      (car (read-from-string (concat "(" spec ")")))
-                   (error (error "--modules: can't read %S" spec)))))
+                   (error (error "Can't read --modules: %S" spec)))))
     (unless (keywordp (car modules))
       (error "--modules must start with a group, as in \":lang java kotlin :tools lsp\""))
     modules))

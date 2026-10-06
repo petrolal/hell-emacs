@@ -421,6 +421,8 @@
         ((hell-micronaut-project-p) (hell-micronaut-dev))
         (t (call-interactively #'hell-quarkus-dev))))
 
+;; Adds "q" to java-mode's localleader map; `:lang java' owns
+;; "b u i g s e m v c h" there, so keep this key disjoint from those.
 (hell-localleader-def '(java-mode java-ts-mode)
   "q" '("cloud live dev" . hell-template-cloud-dev))
 

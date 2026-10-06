@@ -270,7 +270,7 @@ followed by either:
   - arbitrary forms, wrapped in a lambda
 
   (add-hook! \\='prog-mode-hook #\\='display-line-numbers-mode)
-  (add-hook! (text-mode prog-mode) (setq-local fill-column 100))
+  (add-hook! (text-mode `prog-mode') (setq-local fill-column 100))
   (add-hook! \\='after-init-hook
     (defun my-thing-h () ...))"
   (declare (indent defun))
@@ -310,7 +310,7 @@ forms) for anything you may want to remove later."
 HOOKS is as in `add-hook!'. Each pair gets its own named hook function,
 so re-evaluating the form replaces rather than duplicates it.
 
-  (setq-hook! \\='java-mode-hook tab-width 4 fill-column 120)"
+  (setq-hook! \\='java-mode-hook `tab-width' 4 `fill-column' 120)"
   (declare (indent 1))
   (let ((hooks (hell--resolve-hooks hooks)))
     (macroexp-progn
@@ -568,7 +568,7 @@ A later declaration with the same :name replaces the earlier one."
 
 (defun hell-component-declare (props)
   "Record the component PROPS. See `hell-component!'."
-  (let ((name (or (plist-get props :name) (error "hell-component!: no :name"))))
+  (let ((name (or (plist-get props :name) (error "`hell-component!' needs a :name"))))
     (setq hell-components
           (cons props (seq-remove (lambda (c) (equal (plist-get c :name) name))
                                   hell-components)))))
