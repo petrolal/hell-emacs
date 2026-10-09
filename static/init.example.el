@@ -63,11 +63,11 @@
            :term
            ;;eshell           ; eshell with project-aware prompts, elisp-native, C-c o e
            ;;shell            ; comint shells, C-c o s
-           ;;eat              ; a terminal emulator in pure Elisp, C-c o T/o P
+           eat                ; a terminal emulator in pure Elisp, C-c o T/o P
            ;;vterm            ; a real terminal (needs a C toolchain), C-c o t
 
            :checkers
-           ;;static           ; Checkstyle, PMD, SpotBugs results from your build, as flymake diagnostics (+sonarlint: SonarLint, 227 MB)
+           static             ; Checkstyle, PMD, SpotBugs results from your build, as flymake diagnostics (+sonarlint: SonarLint, 227 MB)
            ;;syntax           ; [idea] flycheck instead of flymake (lsp diagnostics use flymake)
            ;;spell            ; [idea] spell checking (jinx)
            ;;grammar          ; [idea] grammar checking (LanguageTool, harper-ls)
@@ -82,18 +82,18 @@
            test               ; test results (JUnit XML) and JaCoCo coverage marks, C-c l t (+watch)
            ;;ansible          ; [idea] Ansible playbooks
            ;;biblio           ; [idea] citations and bibliographies
-           ;;db               ; databases over JDBC: sql-mode + sqlline, .hell-emacs/db.eld, passwords in auth-source
-           ;;docker           ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
+           db                 ; databases over JDBC: sql-mode + sqlline, .hell-emacs/db.eld, passwords in auth-source
+           docker             ; containers, images, logs and Compose (docker.el), C-c o d; your docker or podman
            editorconfig       ; the project's .editorconfig: indentation, charset, line endings (built in)
            ;;eval             ; quick inline run via quickrun, C-c c q/c Q
-           ;;forge            ; GitHub/GitLab pull requests from Magit
-           ;;kubernetes       ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
+           forge              ; GitHub/GitLab pull requests from Magit
+           kubernetes         ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
            ;;llm              ; [idea] LLM chat and code actions (gptel)
            ;;lookup           ; documentation and definition lookup (devdocs)
            ;;make             ; run Makefile targets (makefile-executor)
            ;;pass             ; [idea] the pass password store
            ;;pdf              ; [idea] read PDFs (pdf-tools)
-           ;;http             ; IntelliJ .http files: restclient, env files (+httpyac: JS handlers, needs Node)
+           http               ; IntelliJ .http files: restclient, env files (+httpyac: JS handlers, needs Node)
            ;;rgb              ; [idea] show colours in code (rainbow-mode)
            ;;taskrunner       ; [idea] run npm, just, make and Gradle tasks
            ;;tmux             ; [idea] send commands to tmux
