@@ -29,8 +29,73 @@
 
 ;; JDTLS's workspace and project index: regenerable, but only by
 ;; reimporting every project, so data rather than disposable cache.
-(setq lsp-java-workspace-dir (expand-file-name "jvm/workspace/" hell-data-dir)
-      lsp-java-workspace-cache-dir (expand-file-name "jvm/workspace/.cache/" hell-data-dir))
+(defvar hell-jvm-workspace-root-dir (expand-file-name "jvm/workspace/" hell-data-dir)
+  "Base directory JDTLS's per-project workspaces (`hell-jvm--workspace-dir')
+live under.  The default below, before any Java buffer narrows it.")
+
+(setq lsp-java-workspace-dir (expand-file-name "default/" hell-jvm-workspace-root-dir)
+      lsp-java-workspace-cache-dir (expand-file-name "default/.cache/" hell-jvm-workspace-root-dir))
+
+;; Isolate JDTLS's workspace per project: with one shared `-data' dir,
+;; opening two unrelated projects in the same Emacs (two different
+;; clients' repositories, for a consultancy) mixes their index and
+;; metadata in JDTLS's workspace cache. Each project root gets its own
+;; subdirectory instead, keyed by a hash of the root, set buffer-locally
+;; before `lsp'/`lsp-deferred' starts (or reuses) JDTLS for that buffer.
+(declare-function project-current "project" (&optional maybe-prompt directory))
+(declare-function project-root "project" (project))
+
+(defun hell-jvm--project-root ()
+  "The current buffer's project root, or `default-directory' if it has none."
+  (expand-file-name
+   (or (when-let* ((project (project-current nil default-directory)))
+         (project-root project))
+       default-directory)))
+
+(defun hell-jvm--workspace-dir (root)
+  "JDTLS's isolated workspace directory for project ROOT.
+Keyed by ROOT's SHA-1, so two different projects never share JDTLS's
+index or metadata even when both are open in the same session."
+  (expand-file-name (secure-hash 'sha1 root) hell-jvm-workspace-root-dir))
+
+(defun hell-jvm-isolate-workspace-h ()
+  "Give this buffer's project its own JDTLS workspace, buffer-locally.
+Run from `java-mode-hook'/`java-ts-mode-hook', before JDTLS starts for
+this root, so `lsp-java--ls-command' (and any \"clean workspace\" or
+\"update project configuration\" command run from this buffer) picks up
+this project's own directory instead of the shared default."
+  (let ((dir (hell-jvm--workspace-dir (hell-jvm--project-root))))
+    (setq-local lsp-java-workspace-dir dir
+                lsp-java-workspace-cache-dir (expand-file-name ".cache/" dir))))
+
+(add-hook! (java-mode java-ts-mode) #'hell-jvm-isolate-workspace-h)
+
+;; A separate workspace dir isn't enough by itself: `lsp-mode' registers
+;; jdtls with `:multi-root t', and opening a file from a second project
+;; while a JDTLS for a first one is still running folds it into that
+;; *same* running server (`lsp--find-multiroot-workspace' in lsp-mode.el),
+;; no prompt, regardless of `lsp-java-workspace-dir'. Refuse that merge
+;; for jdtls, so visiting a file always gets its own server (and its
+;; own workspace dir, from `hell-jvm-isolate-workspace-h' above) instead
+;; of silently joining another client's.
+(defcustom hell-jvm-isolate-sessions t
+  "Never let JDTLS fold a new project into an already-running session.
+Set to nil in your init.el to restore `lsp-mode''s stock multi-root
+behavior. To add a folder to an existing JDTLS session on purpose,
+call `lsp-workspace-folders-add' yourself; this only stops it from
+happening as a side effect of opening a file."
+  :type 'boolean)
+
+(declare-function lsp--client-server-id "ext:lsp-mode")
+
+(defun hell-jvm--no-silent-multiroot-a (orig session client project-root)
+  "Refuse jdtls' auto-merge across projects; see `hell-jvm-isolate-sessions'."
+  (if (and hell-jvm-isolate-sessions (eq (lsp--client-server-id client) 'jdtls))
+      nil
+    (funcall orig session client project-root)))
+
+(with-eval-after-load 'lsp-mode
+  (advice-add 'lsp--find-multiroot-workspace :around #'hell-jvm--no-silent-multiroot-a))
 
 ;; JDTLS itself: a pinned milestone, checked by SHA-256 (eclipse.org's own
 ;; .sha256 matched), installed by `bin/hell sync'. lsp-java's installer

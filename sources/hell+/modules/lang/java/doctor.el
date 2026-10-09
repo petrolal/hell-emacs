@@ -86,3 +86,22 @@
                           (hell-jvm-java-debug-jar-valid-p) (file-exists-p hell-jvm-java-debug-jar)
                           :stale-note " (the one lsp-java installs can't debug on JDK 22+)"
                           :missing-note " with JDTLS"))
+
+;; The guard (+paths.el) against JDTLS silently folding a second
+;; project into a session already running for a first one (two
+;; clients' codebases sharing one server) advises a private lsp-mode
+;; function. An lsp-mode update could rename or drop it, turning the
+;; guard into a silent no-op. Requiring lsp-mode here runs the
+;; `with-eval-after-load' that attaches the advice, so this checks the
+;; real thing, not just that the code defining it loaded.
+(if (not hell-jvm-isolate-sessions)
+    (hell-doctor-info "JDTLS session isolation is off (`hell-jvm-isolate-sessions' is nil)")
+  (if (not (require 'lsp-mode nil t))
+      (hell-doctor-warn :topic 'installs "lsp-mode isn't installed yet; can't check the JDTLS session-isolation guard")
+    (cond
+     ((not (fboundp 'lsp--find-multiroot-workspace))
+      (hell-doctor-error :topic 'config "lsp-mode no longer has `lsp--find-multiroot-workspace'; the guard stopping JDTLS from merging different clients' projects into one session is now silently a no-op"))
+     ((advice-member-p #'hell-jvm--no-silent-multiroot-a 'lsp--find-multiroot-workspace)
+      (hell-doctor-ok "JDTLS session isolation: different projects never silently share a server"))
+     (t
+      (hell-doctor-error :topic 'config "The guard stopping JDTLS from merging different clients' projects into one session isn't attached")))))
