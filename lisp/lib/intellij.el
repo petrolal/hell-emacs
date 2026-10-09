@@ -24,7 +24,10 @@
 ;;; Commentary:
 
 ;; IntelliJ IDEA and Eclipse to Hell Emacs cheat sheet and interactive
-;; search tool (`M-x hell-where-is-intellij' on `C-c h k').
+;; search tool (`M-x hell-where-is-intellij' on `C-c h k'), and a
+;; handoff to IntelliJ IDEA, Eclipse or VS Code (`M-x
+;; hell-handoff-open-file' on `C-c h e'): for a production incident or
+;; a debugging session someone else needs to drive from their own IDE.
 ;;
 ;; Loaded on demand through `(hell-require 'hell-lib 'intellij)'.
 
@@ -279,6 +282,70 @@ QUERY is the key or action to look up."
                    (y-or-n-p (format "Run `%s' now? " cmd)))
           (call-interactively cmd))))))
 
+;;; Handoff: open the current file in a real IDE ------------------------------
+;;
+;; A quick escape hatch for a production incident or a pairing session
+;; where the other side drives from their own IDE: open the file (at
+;; this line, where the IDE's CLI supports it) in whichever one you
+;; picked as your fallback.
+
+(defcustom hell-handoff-editor 'auto
+  "Which external IDE `hell-handoff-open-file' hands the current file to.
+One of `idea' (IntelliJ IDEA), `eclipse', `code' (VS Code), or `auto'
+to use the first one found on the PATH, in that order."
+  :type '(choice (const :tag "Auto-detect" auto)
+                 (const :tag "IntelliJ IDEA" idea)
+                 (const :tag "Eclipse" eclipse)
+                 (const :tag "VS Code" code))
+  :group 'hell)
+
+(defconst hell-handoff--editors
+  '((idea    :find ("idea" "idea.sh" "idea64.exe")
+             ;; Documented IDEA CLI: `idea [--line N] [--column N] <path>'.
+             :args ("--line" "%l" "%f"))
+    (eclipse :find ("eclipse")
+             ;; No documented CLI flag to open at a line; the plain file
+             ;; argument at least opens it, at its start.
+             :args ("%f"))
+    (code    :find ("code")
+             ;; `code --goto <path>:<line>[:<column>]'.
+             :args ("--goto" "%f:%l")))
+  "Alist: editor symbol -> its executable names and open-at-line CLI args.
+In \":args\", \"%f\" is the file and \"%l\" the line number.")
+
+(defun hell-handoff--executable (name)
+  "The executable for editor NAME found on the PATH, or nil."
+  (seq-some #'executable-find (plist-get (alist-get name hell-handoff--editors) :find)))
+
+(defun hell-handoff--detect-editor ()
+  "The first editor `hell-handoff--editors' lists that's on the PATH, or nil."
+  (seq-find #'hell-handoff--executable (mapcar #'car hell-handoff--editors)))
+
+;;;###autoload
+(defun hell-handoff-open-file ()
+  "Open the current file in IntelliJ IDEA, Eclipse or VS Code.
+Which one is `hell-handoff-editor', or the first found on the PATH
+with `auto'. Opens at the current line where the IDE's CLI supports
+it (IDEA, VS Code; Eclipse has no documented flag for it). Either
+way, \"FILE:LINE\" goes on the kill ring, to paste into the IDE's own
+Go to File / Open Resource."
+  (interactive)
+  (unless buffer-file-name (user-error "This buffer isn't visiting a file"))
+  (let* ((name (if (eq hell-handoff-editor 'auto) (hell-handoff--detect-editor) hell-handoff-editor))
+         (editor (and name (alist-get name hell-handoff--editors)))
+         (bin (and editor (hell-handoff--executable name)))
+         (file (buffer-file-name))
+         (line (number-to-string (line-number-at-pos)))
+         (location (format "%s:%s" file line)))
+    (kill-new location)
+    (if (not bin)
+        (user-error "No %s found on the PATH (copied %s to the kill ring)"
+                    (if name (symbol-name name) "supported editor") location)
+      (let ((args (mapcar (lambda (arg) (pcase arg ("%f" file) ("%l" line) (_ arg)))
+                          (plist-get editor :args))))
+        (apply #'call-process bin nil 0 nil args)
+        (message "Handed %s to %s (%s copied to the kill ring)"
+                 (file-name-nondirectory file) name location)))))
 
 (hell-provide 'hell-lib 'intellij)
 

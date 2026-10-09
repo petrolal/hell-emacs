@@ -158,8 +158,49 @@ Language modules add their REPLs' (`:lang clojure' adds CIDER's).")
     (dolist (hook hell-ux-jvm-output-hooks)
       (add-hook hook #'hell-ux--highlight-jvm-exceptions-h))))
 
+(defun hell-ux-deactivate ()
+  "Undo `hell-ux-activate': stock prompts and error reporting.
+For `hell-pair-mode-toggle'; buffers already highlighting JVM
+exceptions keep doing so (`font-lock-add-keywords' doesn't undo), new
+ones won't."
+  (advice-remove 'save-buffers-kill-emacs #'hell-ux--kill-emacs-a)
+  (setq command-error-function #'command-error-default-function)
+  (dolist (hook hell-ux-jvm-output-hooks)
+    (remove-hook hook #'hell-ux--highlight-jvm-exceptions-h)))
+
 ;; After the user's init.el, where `hell-ux-enable' can be set.
 (add-hook 'hell-after-init-hook #'hell-ux-activate)
+
+;;; Pair mode --------------------------------------------------------------------
+;;
+;; A live, no-restart switch to a screen-share-safe look, for pairing
+;; or presenting to a client: unlike `hell-ux-enable'/`hell-splash-enable'
+;; (read once at startup -- see "Branding" in CLAUDE.md), this toggles
+;; without restarting Emacs. Core only knows about its own prompts and
+;; error reporting; other modules (`:ui theme''s neutral theme swap)
+;; hook into `hell-pair-mode-functions' instead of being named here,
+;; the way `:lang' modules hook `hell-reload-function' and the like.
+
+(defvar hell-pair-mode nil
+  "Non-nil while `hell-pair-mode-toggle''s neutral look is on.")
+
+(defvar hell-pair-mode-functions nil
+  "Functions run by `hell-pair-mode-toggle', each with one argument:
+non-nil to switch to the neutral look, nil to switch back.")
+
+;;;###autoload
+(defun hell-pair-mode-toggle ()
+  "Toggle a neutral, screen-share-safe look, without restarting Emacs.
+Switches `hell-ux-enable''s prompts and error reporting off (on
+`hell-ux-enable' itself) and runs `hell-pair-mode-functions' --
+`:ui theme' uses it to swap to a neutral theme and back."
+  (interactive)
+  (setq hell-pair-mode (not hell-pair-mode))
+  (if hell-pair-mode
+      (when hell-ux-enable (hell-ux-deactivate))
+    (when hell-ux-enable (hell-ux-activate)))
+  (run-hook-with-args 'hell-pair-mode-functions hell-pair-mode)
+  (message "Pair mode: %s" (if hell-pair-mode "on (neutral)" "off (Hell look)")))
 
 (provide 'hell-ux)
 ;;; +ux.el ends here

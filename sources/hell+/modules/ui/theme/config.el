@@ -58,3 +58,20 @@
   ;; through where this one leaves a face unset.
   (mapc #'disable-theme custom-enabled-themes)
   (load-theme hell-theme :no-confirm))
+
+;;; Pair mode: swap to a neutral theme and back, without restarting --------------
+
+(defcustom hell-pair-mode-theme 'modus-operandi
+  "Theme `hell-pair-mode-toggle' switches to: built into Emacs, so it
+needs nothing installed. nil leaves whatever theme is loaded alone."
+  :type '(choice (const :tag "Leave the theme alone" nil) symbol))
+
+(defun hell-theme--pair-mode-h (neutral)
+  "Switch to `hell-pair-mode-theme' (NEUTRAL) or back to `hell-theme'.
+On `hell-pair-mode-functions'."
+  (when hell-pair-mode-theme
+    (mapc #'disable-theme custom-enabled-themes)
+    (let ((theme (if neutral hell-pair-mode-theme hell-theme)))
+      (when theme (load-theme theme :no-confirm)))))
+
+(add-hook 'hell-pair-mode-functions #'hell-theme--pair-mode-h)
