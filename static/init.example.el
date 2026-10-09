@@ -90,7 +90,7 @@
            lookup             ; documentation and definition lookup (devdocs)
            make               ; run Makefile targets (makefile-executor)
            ;;pass             ; the pass password store
-           ;;pdf              ; read PDFs (pdf-tools)
+           pdf                ; read PDFs (pdf-tools)
            http               ; IntelliJ .http files: restclient, env files (+httpyac: JS handlers, needs Node)
            ;;rgb              ; show colours in code (rainbow-mode)
            ;;taskrunner       ; run npm, just, make and Gradle tasks
@@ -149,7 +149,7 @@
            ;;fsharp           ; F#: fsautocomplete
            ;;gdscript         ; Godot GDScript: the Godot editor's server
            ;;gleam            ; Gleam: gleam lsp
-           ;;glsl             ; GLSL (OpenGL shaders): glsl-language-server (glslls)
+           glsl               ; GLSL (OpenGL shaders): glsl-language-server (glslls)
            ;;graphql          ; GraphQL: graphql-lsp
            ;;graphviz         ; Graphviz dot files (no LSP)
            ;;haskell          ; Haskell: haskell-language-server
@@ -160,10 +160,10 @@
            ;;ledger           ; Ledger accounting (no LSP)
            ;;lua              ; Lua: lua-language-server
            ;;nim              ; Nim: nimlangserver
-           ;;nix              ; Nix: nixd (nil)
+           nix                ; Nix: nixd (nil)
            ;;ocaml            ; OCaml: ocaml-lsp-server
            ;;odin             ; Odin: ols
-           ;;org              ; Org mode (no LSP)
+           org                ; Org mode (no LSP)
            ;;plantuml         ; PlantUML diagrams (no LSP)
            ;;purescript       ; PureScript: purescript-language-server
            ;;racket           ; Racket: racket-langserver
