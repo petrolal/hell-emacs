@@ -23,3 +23,9 @@
 
 (package! treemacs)
 (package! treemacs-nerd-icons)
+
+;; Error/warning icons on the tree, from lsp-mode's diagnostics table
+;; (JDTLS and the rest), when `:tools lsp' is enabled.
+(when (modulep! :tools lsp)
+  (depends-on! :tools lsp)
+  (package! lsp-treemacs))

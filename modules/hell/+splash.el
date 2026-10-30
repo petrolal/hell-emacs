@@ -242,6 +242,48 @@ at the Relic Chamber: packages come from `package!', never package.el."
 (advice-add #'fancy-startup-screen :around #'hell-splash--startup-screen-a)
 (advice-add #'fancy-startup-tail :around #'hell-splash--startup-tail-a)
 
+;; Emacs falls back to `normal-splash-screen', the plain-text screen with
+;; no logo, whenever the frame is too short for the image
+;; (`use-fancy-splash-screens-p'; a few stacked Hyprland tiles are enough
+;; to cross that line). It has no `fancy-startup-text' to substitute, so
+;; it's themed by editing the words it already inserted.
+(defun hell-splash--normal-welcome ()
+  "Replace `normal-splash-screen''s plain welcome line with Hell Emacs' own.
+Same words as `hell-splash--startup-text', in `insert-button' (works
+without a logo or images, so it fits the plain screen)."
+  (goto-char (point-min))
+  (when (re-search-forward "\\`Welcome to GNU Emacs, [^\n]*\n" nil t)
+    (replace-match "")
+    (goto-char (point-min))
+    (insert "Welcome to ")
+    (insert-button "Hell Emacs"
+                   'action (hell-splash--browse "https://github.com/petrolal/hell-emacs")
+                   'follow-link t
+                   'help-echo "Browse https://github.com/petrolal/hell-emacs")
+    (insert ", the infernal JVM forge of ")
+    (insert-button "GNU Emacs"
+                   'action (hell-splash--browse "https://www.gnu.org/software/emacs/")
+                   'follow-link t
+                   'help-echo "Browse https://www.gnu.org/software/emacs/")
+    (insert ".\n\n")
+    (insert-button "Hell Emacs Manual" 'action (lambda (_button) (hell-info-manual))
+                   'follow-link t)
+    (insert "\tThe Hell Emacs guide, using Info\n")))
+
+(defun hell-splash--normal-screen-a (fn &rest args)
+  "Around `normal-splash-screen' (FN with ARGS): Hell Emacs' words, no logo."
+  (prog1 (apply fn args)
+    (when (and (car args) (hell-splash--themed-p) (get-buffer hell-splash--buffer-name))
+      (with-current-buffer hell-splash--buffer-name
+        (let ((inhibit-read-only t))
+          (save-excursion
+            (hell-splash--normal-welcome)
+            (goto-char (point-max))
+            (insert "\n" (hell-splash-startup-line) "\n"))
+          (set-buffer-modified-p nil))))))
+
+(advice-add #'normal-splash-screen :around #'hell-splash--normal-screen-a)
+
 ;;; Showing it ----------------------------------------------------------------
 
 (defun hell-splash-buffer ()

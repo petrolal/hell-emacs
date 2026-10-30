@@ -30,7 +30,7 @@
            ;;minimap          ; a code minimap
            ;;nav-flash        ; flash the line after a big jump
            ;;tabs             ; tab-line tabs per window
-           ;;treemacs         ; a project file tree
+           treemacs           ; a project file tree
            ;;unicode          ; fallback fonts for every script
            vc-gutter          ; changed lines in the fringe or terminal margin (diff-hl), C-x v [ ] * n S
            ;;window-select    ; pick a window by number (ace-window)

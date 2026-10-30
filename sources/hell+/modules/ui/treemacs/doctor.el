@@ -25,3 +25,6 @@
 
 ;; Checked by `bin/hell doctor'.
 (hell-doctor-ok "Treemacs project file tree configured")
+(if (modulep! :tools lsp)
+    (hell-doctor-ok "Treemacs shows lsp-mode diagnostics (lsp-treemacs)")
+  (hell-doctor-ok "Treemacs running without lsp-mode diagnostics (:tools lsp disabled)"))
