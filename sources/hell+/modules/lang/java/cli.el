@@ -305,3 +305,49 @@ downloads when the bundle isn't the pinned release."
     (hell-sync-download-verified hell-jvm-java-debug-url hell-jvm-java-debug-jar
                                      hell-jvm-java-debug-sha256 "java-debug")
     (hell-sync--log "java-debug %s installed (SHA-256 verified)" hell-jvm-java-debug-version))))
+
+;;; `bin/hell check' (lisp/lib/check-tools.el) -----------------------------------
+
+(hell-require 'hell-lib 'check-tools)
+
+(defun hell-jvm-check-run (files)
+  "Run Java quality checks on FILES: checkstyle & spotbugs.
+For `hell-check-register-runner', when a Gradle wrapper doesn't claim them."
+  (let (diags)
+    ;; 1. checkstyle
+    (if (executable-find "checkstyle")
+        (let* ((res (cdr (apply #'hell-process-output "checkstyle" files)))
+               (lines (split-string res "\n" t)))
+          (dolist (line lines)
+            (when (string-match "\\[\\(WARN\\|ERROR\\|INFO\\)\\] \\([^:\n]+\\):\\([0-9]+\\):\\(?:\\([0-9]+\\):\\)? \\(.*?\\)\\(?: \\[\\([^]]+\\)\\]\\)?\\'" line)
+              (let ((sev (match-string 1 line))
+                    (f (match-string 2 line))
+                    (l (string-to-number (match-string 3 line)))
+                    (c (if (match-string 4 line) (string-to-number (match-string 4 line)) 1))
+                    (msg (match-string 5 line))
+                    (rule (match-string 6 line)))
+                (push (hell-check-make-diag "Java" "checkstyle" sev f l c (or rule "checkstyle") msg) diags)))))
+      (dolist (f files)
+        (push (hell-check-make-diag "Java" "checkstyle" "Info" f 1 1 "tool-missing"
+                                     "checkstyle not found on PATH")
+              diags)))
+    ;; 2. spotbugs
+    (if (executable-find "spotbugs")
+        (let* ((res (cdr (apply #'hell-process-output "spotbugs" "-textui" files)))
+               (lines (split-string res "\n" t)))
+          (dolist (line lines)
+            (when (string-match "\\([MHL]\\) \\([A-Z]+\\) \\([A-Z0-9_]+\\): \\(.*\\) in \\([^ \n\t]+\\) at \\[line \\([0-9]+\\)\\]" line)
+              (let* ((p (match-string 1 line))
+                     (rule (match-string 3 line))
+                     (msg (match-string 4 line))
+                     (f (match-string 5 line))
+                     (l (string-to-number (match-string 6 line)))
+                     (sev (if (string= p "H") "Error" "Warning")))
+                (push (hell-check-make-diag "Java" "spotbugs" sev f l 1 rule msg) diags)))))
+      (dolist (f files)
+        (push (hell-check-make-diag "Java" "spotbugs" "Info" f 1 1 "tool-missing"
+                                     "spotbugs not found on PATH")
+              diags)))
+    (list :diagnostics diags :tools '("checkstyle" "spotbugs"))))
+
+(hell-check-register-runner 'java #'hell-jvm-check-run)

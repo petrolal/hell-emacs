@@ -70,3 +70,44 @@ For `hell-bundle-functions'."
   (list hell-clojure-lsp-dir))
 
 (add-hook 'hell-bundle-functions #'hell-clojure-bundle-paths)
+
+;;; `bin/hell check' (lisp/lib/check-tools.el) -----------------------------------
+
+(hell-require 'hell-lib 'check-tools)
+
+(defun hell-clojure-check-run (files)
+  "Run Clojure quality checks on FILES: kibit & clj-kondo. For `hell-check-register-runner'."
+  (let (diags)
+    ;; 1. clj-kondo
+    (if (executable-find "clj-kondo")
+        (let* ((res (cdr (apply #'hell-process-output "clj-kondo" "--lint" files)))
+               (parsed (hell-check-parse-standard-diagnostics "Clojure" "clj-kondo" res)))
+          (setq diags (append diags parsed)))
+      (dolist (f files)
+        (push (hell-check-make-diag "Clojure" "clj-kondo" "Info" f 1 1 "tool-missing"
+                                     "clj-kondo native binary not found on PATH")
+              diags)))
+    ;; 2. kibit
+    (if (executable-find "kibit")
+        (let* ((res (cdr (apply #'hell-process-output "kibit" files)))
+               (lines (split-string res "\n" t))
+               cur-file cur-line cur-msg)
+          (dolist (line lines)
+            (cond
+             ((string-match "At \\([^:\n]+\\):\\([0-9]+\\):" line)
+              (when (and cur-file cur-msg)
+                (push (hell-check-make-diag "Clojure" "kibit" "Warning" cur-file cur-line 1 "kibit/idiom" (string-trim cur-msg)) diags)
+                (setq cur-msg nil))
+              (setq cur-file (match-string 1 line)
+                    cur-line (string-to-number (match-string 2 line))))
+             ((and cur-file (not (string-empty-p line)))
+              (setq cur-msg (concat (or cur-msg "") " " (string-trim line))))))
+          (when (and cur-file cur-msg)
+            (push (hell-check-make-diag "Clojure" "kibit" "Warning" cur-file cur-line 1 "kibit/idiom" (string-trim cur-msg)) diags)))
+      (dolist (f files)
+        (push (hell-check-make-diag "Clojure" "kibit" "Info" f 1 1 "tool-missing"
+                                     "kibit executable not found on PATH")
+              diags)))
+    (list :diagnostics diags :tools '("kibit" "clj-kondo"))))
+
+(hell-check-register-runner 'clojure #'hell-clojure-check-run)

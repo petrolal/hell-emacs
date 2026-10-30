@@ -54,12 +54,14 @@
      :name "Kotlin"
      :extensions (".kt" ".kts")
      :style-linters ("ktlint")
-     :static-analyzers ("detekt"))
+     :static-analyzers ("detekt")
+     :gradle-managed t)
     (java
      :name "Java"
      :extensions (".java")
      :style-linters ("checkstyle")
-     :static-analyzers ("spotbugs"))
+     :static-analyzers ("spotbugs")
+     :gradle-managed t)
     (scala
      :name "Scala"
      :extensions (".scala" ".sc")
@@ -69,7 +71,8 @@
      :name "Groovy & Gradle"
      :extensions (".groovy" "build.gradle" ".gradle.kts" ".gradle")
      :style-linters ("npm-groovy-lint" "codenarc")
-     :static-analyzers ("npm-groovy-lint" "codenarc"))
+     :static-analyzers ("npm-groovy-lint" "codenarc")
+     :gradle-managed t)
     (elisp
      :name "Emacs Lisp"
      :extensions (".el")
@@ -79,7 +82,44 @@
      :name "Common Lisp"
      :extensions (".lisp" ".cl")
      :style-linters ("sblint")
-     :static-analyzers ("sblint"))))
+     :static-analyzers ("sblint")))
+  "Languages `bin/hell check' recognizes, and how to tell their files apart.
+:gradle-managed means a project that builds with Gradle (a wrapper
+found above it) runs its `./gradlew check' instead of this language's
+own tools (`hell-check--code-runners', `hell-check-run-all'). Each
+language's actual checker is a `:lang' module's, registered with
+`hell-check-register-runner' in its cli.el; without one enabled, files
+of that language are reported as such instead of checked.")
+
+(defvar hell-check-runners nil
+  "Alist: a `hell-check-languages' key -> its runner, newest first.
+Populated by `hell-check-register-runner'; this file never names a
+language's own tools.")
+
+(defun hell-check-register-runner (lang fn)
+  "Register FN as the way `bin/hell check' checks LANG's files.
+LANG is a key of `hell-check-languages'. FN, called with a list of
+files, returns a plist (:diagnostics DIAGS :tools TOOL-NAMES): DIAGS
+is their diagnostics (`hell-check-make-diag', wrapped in
+`hell-check-run-tool' if FN calls out to another program), TOOL-NAMES
+every tool FN ran, whether or not it had anything to report. Put it
+in the `:lang' module's cli.el, which `bin/hell' loads before any
+command."
+  (setf (alist-get lang hell-check-runners) fn))
+
+(defun hell-check--run-registered (lang files)
+  "FILES' (:diagnostics DIAGS :tools TOOL-NAMES) from LANG's registered runner.
+One Info diagnostic per file instead, if no `:lang' module registered
+one (it isn't enabled, or has no checker)."
+  (if-let* ((fn (alist-get lang hell-check-runners)))
+      (funcall fn files)
+    (let ((name (or (plist-get (alist-get lang hell-check-languages) :name) (symbol-name lang))))
+      (list :diagnostics
+            (mapcar (lambda (f)
+                      (hell-check-make-diag name "hell-check" "Info" f 1 1 "lang-not-enabled"
+                                            (format "No `:lang' module registered a checker for %s" name)))
+                    files)
+            :tools nil))))
 
 (defcustom hell-check-ignored-directories
   '(".git" ".svn" ".hg" "elpaca" "builds" "sources" "compiled"
@@ -180,7 +220,7 @@ only of `hell-check-only''s languages when it's set."
 
 ;;; Diagnostic Structure ------------------------------------------------------
 
-(defun hell-check--make-diag (lang tool severity file line col rule-id message)
+(defun hell-check-make-diag (lang tool severity file line col rule-id message)
   "Create a unified diagnostic plist.
 LANG and TOOL say what reported it; SEVERITY, FILE, LINE, COL, RULE-ID
 and MESSAGE what was reported."
@@ -206,14 +246,14 @@ and MESSAGE what was reported."
 
 ;;; Headless Lisp Pipelines ---------------------------------------------------
 
-(defun hell-check--run-tool (lang tool file thunk)
+(defun hell-check-run-tool (lang tool file thunk)
   "THUNK's diagnostics, from TOOL checking FILE (or a project) in LANG.
 If TOOL crashes, one Info diagnostic says so, rather than its silence
 reading as \"no issues\"."
   (condition-case err
       (funcall thunk)
     (error
-     (list (hell-check--make-diag lang tool "Info" file 1 1 "tool-crashed"
+     (list (hell-check-make-diag lang tool "Info" file 1 1 "tool-crashed"
                                   (format "%s crashed: %s" tool (error-message-string err)))))))
 
 (defconst hell-check--elisp-tools
@@ -244,11 +284,11 @@ the tools in `hell-static-analysis-linters'."
       (pcase-dolist (`(,name ,fn ,_) hell-check--elisp-tools)
         (let ((tool (symbol-name name)))
           (when (member tool tools)
-            (dolist (d (hell-check--run-tool
+            (dolist (d (hell-check-run-tool
                         "Emacs Lisp" tool file
                         (lambda ()
                           (mapcar (lambda (d)
-                                    (hell-check--make-diag
+                                    (hell-check-make-diag
                                      "Emacs Lisp" tool (plist-get d :severity) (plist-get d :file)
                                      (plist-get d :line) (plist-get d :col) tool (plist-get d :message)))
                                   (funcall fn file)))))
@@ -271,8 +311,8 @@ the tools in `hell-static-analysis-linters'."
                       (c (string-to-number (match-string 3 line)))
                       (sev (match-string 4 line))
                       (msg (match-string 5 line)))
-                  (push (hell-check--make-diag "Common Lisp" "sblint" (or sev "Warning") f l c "sblint" msg) diags))
-              (push (hell-check--make-diag "Common Lisp" "sblint" "Warning" file 1 1 "sblint" line) diags))))))
+                  (push (hell-check-make-diag "Common Lisp" "sblint" (or sev "Warning") f l c "sblint" msg) diags))
+              (push (hell-check-make-diag "Common Lisp" "sblint" "Warning" file 1 1 "sblint" line) diags))))))
 
      ;; Priority 2: Headless SBCL batch runner
      ((executable-find "sbcl")
@@ -299,17 +339,17 @@ the tools in `hell-static-analysis-linters'."
                     (c (string-to-number (match-string 3 line)))
                     (sev (match-string 4 line))
                     (msg (match-string 5 line)))
-                (push (hell-check--make-diag "Common Lisp" "sblint" (or sev "Warning") f l c "sbcl-sblint" msg) diags)))))))
+                (push (hell-check-make-diag "Common Lisp" "sblint" (or sev "Warning") f l c "sbcl-sblint" msg) diags)))))))
      (t
       (dolist (file files)
-        (push (hell-check--make-diag "Common Lisp" "sblint" "Info" file 1 1 "tool-missing"
+        (push (hell-check-make-diag "Common Lisp" "sblint" "Info" file 1 1 "tool-missing"
                                      "sblint and sbcl executables not found on PATH")
               diags))))
     (nreverse diags)))
 
-;;; JVM & Other Language Runners ----------------------------------------------
+;;; A standard diagnostic format, for a `:lang' module's own runner --------
 
-(defun hell-check--parse-standard-diagnostics (lang tool output)
+(defun hell-check-parse-standard-diagnostics (lang tool output)
   "Parse standard file:line:col or file:line diagnostic lines from OUTPUT.
 LANG and TOOL are what produced it."
   (let (diags
@@ -324,200 +364,15 @@ LANG and TOOL are what produced it."
               (sev (or (match-string 4 line) "Warning"))
               (rule (match-string 5 line))
               (msg (match-string 6 line)))
-          (push (hell-check--make-diag lang tool sev f l c (or rule tool) msg) diags)))
+          (push (hell-check-make-diag lang tool sev f l c (or rule tool) msg) diags)))
        ;; Format: file:line: msg
        ((string-match "\\`\\([^:\n\t]+\\):\\([0-9]+\\): \\(?:\\(error\\|warning\\|info\\): \\)?\\(.*\\)\\'" line)
         (let ((f (match-string 1 line))
               (l (string-to-number (match-string 2 line)))
               (sev (or (match-string 3 line) "Warning"))
               (msg (match-string 4 line)))
-          (push (hell-check--make-diag lang tool sev f l 1 tool msg) diags)))))
+          (push (hell-check-make-diag lang tool sev f l 1 tool msg) diags)))))
     (nreverse diags)))
-
-(defun hell-check-run-clojure (files)
-  "Run Clojure quality checks on FILES: kibit & clj-kondo."
-  (let (diags)
-    ;; 1. clj-kondo
-    (if (executable-find "clj-kondo")
-        (let* ((res (cdr (apply #'hell-process-output "clj-kondo" "--lint" files)))
-               (parsed (hell-check--parse-standard-diagnostics "Clojure" "clj-kondo" res)))
-          (setq diags (append diags parsed)))
-      (dolist (f files)
-        (push (hell-check--make-diag "Clojure" "clj-kondo" "Info" f 1 1 "tool-missing"
-                                     "clj-kondo native binary not found on PATH")
-              diags)))
-    ;; 2. kibit
-    (if (executable-find "kibit")
-        (let* ((res (cdr (apply #'hell-process-output "kibit" files)))
-               (lines (split-string res "\n" t))
-               cur-file cur-line cur-msg)
-          (dolist (line lines)
-            (cond
-             ((string-match "At \\([^:\n]+\\):\\([0-9]+\\):" line)
-              (when (and cur-file cur-msg)
-                (push (hell-check--make-diag "Clojure" "kibit" "Warning" cur-file cur-line 1 "kibit/idiom" (string-trim cur-msg)) diags)
-                (setq cur-msg nil))
-              (setq cur-file (match-string 1 line)
-                    cur-line (string-to-number (match-string 2 line))))
-             ((and cur-file (not (string-empty-p line)))
-              (setq cur-msg (concat (or cur-msg "") " " (string-trim line))))))
-          (when (and cur-file cur-msg)
-            (push (hell-check--make-diag "Clojure" "kibit" "Warning" cur-file cur-line 1 "kibit/idiom" (string-trim cur-msg)) diags)))
-      (dolist (f files)
-        (push (hell-check--make-diag "Clojure" "kibit" "Info" f 1 1 "tool-missing"
-                                     "kibit executable not found on PATH")
-              diags)))
-    diags))
-
-(defun hell-check-run-kotlin (files)
-  "Run Kotlin quality checks on FILES: ktlint & detekt."
-  (let (diags)
-    ;; 1. ktlint
-    (if (executable-find "ktlint")
-        (let* ((res (cdr (apply #'hell-process-output "ktlint" "--reporter=plain" files)))
-               (lines (split-string res "\n" t)))
-          (dolist (line lines)
-            (if (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(.*?\\)\\(?: (\\([^)]+\\))\\)?\\'" line)
-                (let ((f (match-string 1 line))
-                      (l (string-to-number (match-string 2 line)))
-                      (c (string-to-number (match-string 3 line)))
-                      (msg (match-string 4 line))
-                      (rule (match-string 5 line)))
-                  (push (hell-check--make-diag "Kotlin" "ktlint" "Warning" f l c (or rule "ktlint") msg) diags))
-              (push (hell-check--make-diag "Kotlin" "ktlint" "Warning" (car files) 1 1 "ktlint" line) diags))))
-      (dolist (f files)
-        (push (hell-check--make-diag "Kotlin" "ktlint" "Info" f 1 1 "tool-missing"
-                                     "ktlint not found on PATH")
-              diags)))
-    ;; 2. detekt
-    (let ((detekt-bin (or (executable-find "detekt") (executable-find "detekt-cli"))))
-      (if detekt-bin
-          (let* ((res (cdr (apply #'hell-process-output detekt-bin "--input" (mapconcat #'identity files ","))))
-                 (lines (split-string res "\n" t)))
-            (dolist (line lines)
-              (when (string-match "\\([^:\n\t ]+\\.kts?\\):\\([0-9]+\\):\\([0-9]+\\): \\([A-Za-z0-9_-]+\\) - \\(.*\\)" line)
-                (let ((f (match-string 1 line))
-                      (l (string-to-number (match-string 2 line)))
-                      (c (string-to-number (match-string 3 line)))
-                      (rule (match-string 4 line))
-                      (msg (match-string 5 line)))
-                  (push (hell-check--make-diag "Kotlin" "detekt" "Warning" f l c rule msg) diags)))))
-        (dolist (f files)
-          (push (hell-check--make-diag "Kotlin" "detekt" "Info" f 1 1 "tool-missing"
-                                       "detekt not found on PATH")
-                diags))))
-    diags))
-
-(defun hell-check-run-java (files)
-  "Run Java quality checks on FILES: checkstyle & spotbugs."
-  (let (diags)
-    ;; 1. checkstyle
-    (if (executable-find "checkstyle")
-        (let* ((res (cdr (apply #'hell-process-output "checkstyle" files)))
-               (lines (split-string res "\n" t)))
-          (dolist (line lines)
-            (when (string-match "\\[\\(WARN\\|ERROR\\|INFO\\)\\] \\([^:\n]+\\):\\([0-9]+\\):\\(?:\\([0-9]+\\):\\)? \\(.*?\\)\\(?: \\[\\([^]]+\\)\\]\\)?\\'" line)
-              (let ((sev (match-string 1 line))
-                    (f (match-string 2 line))
-                    (l (string-to-number (match-string 3 line)))
-                    (c (if (match-string 4 line) (string-to-number (match-string 4 line)) 1))
-                    (msg (match-string 5 line))
-                    (rule (match-string 6 line)))
-                (push (hell-check--make-diag "Java" "checkstyle" sev f l c (or rule "checkstyle") msg) diags)))))
-      (dolist (f files)
-        (push (hell-check--make-diag "Java" "checkstyle" "Info" f 1 1 "tool-missing"
-                                     "checkstyle not found on PATH")
-              diags)))
-    ;; 2. spotbugs
-    (if (executable-find "spotbugs")
-        (let* ((res (cdr (apply #'hell-process-output "spotbugs" "-textui" files)))
-               (lines (split-string res "\n" t)))
-          (dolist (line lines)
-            (when (string-match "\\([MHL]\\) \\([A-Z]+\\) \\([A-Z0-9_]+\\): \\(.*\\) in \\([^ \n\t]+\\) at \\[line \\([0-9]+\\)\\]" line)
-              (let* ((p (match-string 1 line))
-                     (rule (match-string 3 line))
-                     (msg (match-string 4 line))
-                     (f (match-string 5 line))
-                     (l (string-to-number (match-string 6 line)))
-                     (sev (if (string= p "H") "Error" "Warning")))
-                (push (hell-check--make-diag "Java" "spotbugs" sev f l 1 rule msg) diags)))))
-      (dolist (f files)
-        (push (hell-check--make-diag "Java" "spotbugs" "Info" f 1 1 "tool-missing"
-                                     "spotbugs not found on PATH")
-              diags)))
-    diags))
-
-(defun hell-check-run-scala (files)
-  "Run Scala quality checks on FILES: scalafmt & scalafix."
-  (let (diags)
-    ;; 1. scalafmt
-    (if (executable-find "scalafmt")
-        (let* ((res (cdr (apply #'hell-process-output "scalafmt" "--test" files)))
-               (lines (split-string res "\n" t)))
-          (dolist (line lines)
-            (when (string-match "\\([^:\n]+\\):\\([0-9]+\\):\\(?:\\([0-9]+\\):\\)? \\(.*\\)" line)
-              (push (hell-check--make-diag "Scala" "scalafmt" "Warning"
-                                           (match-string 1 line)
-                                           (string-to-number (match-string 2 line))
-                                           (if (match-string 3 line) (string-to-number (match-string 3 line)) 1)
-                                           "scalafmt" (match-string 4 line))
-                    diags))))
-      (dolist (f files)
-        (push (hell-check--make-diag "Scala" "scalafmt" "Info" f 1 1 "tool-missing"
-                                     "scalafmt not found on PATH")
-              diags)))
-    ;; 2. scalafix
-    (if (executable-find "scalafix")
-        (let* ((res (cdr (apply #'hell-process-output "scalafix" "--check" files)))
-               (lines (split-string res "\n" t)))
-          (dolist (line lines)
-            (when (string-match "\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(?:error\\|warning\\): \\(?:\\[\\(.*?\\)\\] \\)?\\(.*\\)" line)
-              (push (hell-check--make-diag "Scala" "scalafix" "Error"
-                                           (match-string 1 line)
-                                           (string-to-number (match-string 2 line))
-                                           (string-to-number (match-string 3 line))
-                                           (or (match-string 4 line) "scalafix")
-                                           (match-string 5 line))
-                    diags))))
-      (dolist (f files)
-        (push (hell-check--make-diag "Scala" "scalafix" "Info" f 1 1 "tool-missing"
-                                     "scalafix not found on PATH")
-              diags)))
-    diags))
-
-(defun hell-check-run-groovy-gradle (files)
-  "Run Groovy & Gradle quality checks on FILES: npm-groovy-lint / codenarc."
-  (let (diags)
-    (cond
-     ((executable-find "npm-groovy-lint")
-      (let* ((res (cdr (apply #'hell-process-output "npm-groovy-lint" "--files" (mapconcat #'identity files ",") "--output" "txt")))
-             (lines (split-string res "\n" t)))
-        (dolist (line lines)
-          (when (string-match "\\([^:\n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), \\(error\\|warning\\|info\\) - \\(.*?\\)\\(?: (\\([^)]+\\))\\)?\\'" line)
-            (let ((f (match-string 1 line))
-                  (l (string-to-number (match-string 2 line)))
-                  (c (string-to-number (match-string 3 line)))
-                  (sev (match-string 4 line))
-                  (msg (match-string 5 line))
-                  (rule (match-string 6 line)))
-              (push (hell-check--make-diag "Groovy & Gradle" "npm-groovy-lint" sev f l c (or rule "npm-groovy-lint") msg) diags))))))
-     ((executable-find "codenarc")
-      (let* ((res (cdr (apply #'hell-process-output "codenarc" files)))
-             (lines (split-string res "\n" t)))
-        (dolist (line lines)
-          (when (string-match "Violation: Rule=\\([^ \n\t]+\\) P=\\([0-9]+\\) Line=\\([0-9]+\\) Msg=\\(.*\\)" line)
-            (let ((rule (match-string 1 line))
-                  (p (match-string 2 line))
-                  (l (string-to-number (match-string 3 line)))
-                  (msg (match-string 4 line)))
-              (push (hell-check--make-diag "Groovy & Gradle" "codenarc" (if (string= p "1") "Error" "Warning")
-                                           (car files) l 1 rule msg) diags))))))
-     (t
-      (dolist (f files)
-        (push (hell-check--make-diag "Groovy & Gradle" "codenarc" "Info" f 1 1 "tool-missing"
-                                     "npm-groovy-lint and codenarc not found on PATH")
-              diags))))
-    diags))
 
 ;;; Community Wrappers & Gradle Dispatch --------------------------------------
 
@@ -555,10 +410,10 @@ JVM-FILES are the project's source files."
          (diags nil))
     (if (zerop code)
         diags
-      (let ((parsed (hell-check--parse-standard-diagnostics "JVM" "gradle" output)))
+      (let ((parsed (hell-check-parse-standard-diagnostics "JVM" "gradle" output)))
         (if parsed
             parsed
-          (list (hell-check--make-diag "JVM" "gradle" "Error"
+          (list (hell-check-make-diag "JVM" "gradle" "Error"
                                        (or (car jvm-files) (expand-file-name "build.gradle" root))
                                        1 1 "gradle/check"
                                        (format "Gradle check failed with exit code %d" code))))))))
@@ -570,7 +425,7 @@ JVM-FILES are the project's source files."
                (locate-dominating-file search-dir ".trunk"))
       (let* ((res (apply #'hell-process-output "trunk" "check" "--no-fix" "--output=json" targets))
              (out (cdr res)))
-        (hell-check--run-tool
+        (hell-check-run-tool
          "-" "trunk" search-dir
          (lambda ()
            (let* ((json-object-type 'alist)
@@ -587,7 +442,7 @@ JVM-FILES are the project's source files."
                       (rule (or (alist-get 'rule iss) linter))
                       (lang (if f (hell-check--detect-file-language f) 'unknown))
                       (lang-name (symbol-name (or lang 'unknown))))
-                 (push (hell-check--make-diag lang-name linter sev f l c rule msg) diags)))
+                 (push (hell-check-make-diag lang-name linter sev f l c rule msg) diags)))
              diags)))))))
 
 (defun hell-check-run-pre-commit (targets)
@@ -599,7 +454,7 @@ JVM-FILES are the project's source files."
              (code (car res))
              (out (cdr res)))
         (unless (zerop code)
-          (hell-check--parse-standard-diagnostics "Pre-Commit" "pre-commit" out))))))
+          (hell-check-parse-standard-diagnostics "Pre-Commit" "pre-commit" out))))))
 
 ;;; Trusting the target ----------------------------------------------------------
 ;;
@@ -632,8 +487,10 @@ naming the tool and what of the project's it runs."
                 (and (null hell-check-only) (executable-find "pre-commit")
                      (locate-dominating-file dir ".pre-commit-config.yaml")
                      "pre-commit (the hooks .pre-commit-config.yaml names)")
-                (and (or (alist-get 'java by-lang) (alist-get 'kotlin by-lang)
-                         (alist-get 'groovy-gradle by-lang))
+                (and (seq-some (lambda (pair) (and (plist-get (alist-get (car pair) hell-check-languages)
+                                                              :gradle-managed)
+                                                   (cdr pair)))
+                               by-lang)
                      (hell-check--find-gradle-wrapper dir)
                      "./gradlew (the build's own scripts)")
                 (and (alist-get 'elisp by-lang)
@@ -676,7 +533,7 @@ Returns a plist containing results, summary, tool listing, and diagnostics."
     ;; 0. What was skipped for want of trust, said where it's seen.
     (unless run-code
       (dolist (runner runners)
-        (push (hell-check--make-diag
+        (push (hell-check-make-diag
                "-" "hell-check" "Info" search-dir 1 1 "untrusted"
                (format "Skipped %s: it runs this project's own code. Pass --trust, \
 or add the directory to `hell-check-trusted-directories'" runner))
@@ -691,42 +548,38 @@ or add the directory to `hell-check-trusted-directories'" runner))
       (push "pre-commit" tools-invoked)
       (setq all-diags (append all-diags pc-diags)))
 
-    ;; 2. Gradle-managed JVM project detection; untrusted, the native tools.
-    (let* ((jvm-files (append (alist-get 'java by-lang)
-                              (alist-get 'kotlin by-lang)
-                              (alist-get 'groovy-gradle by-lang)))
-           (gradlew (and run-code jvm-files (hell-check--find-gradle-wrapper search-dir))))
+    ;; 2. Languages a Gradle wrapper manages together: its own check,
+    ;; or each's own registered runner (`hell-check-register-runner').
+    (let* ((gradle-langs (seq-filter (lambda (entry) (plist-get (cdr entry) :gradle-managed))
+                                     hell-check-languages))
+           (gradle-files (mapcan (lambda (entry) (copy-sequence (alist-get (car entry) by-lang)))
+                                 gradle-langs))
+           (gradlew (and run-code gradle-files (hell-check--find-gradle-wrapper search-dir))))
       (if gradlew
           (progn
             (push "gradlew" tools-invoked)
-            (setq all-diags (append all-diags (hell-check-run-gradle gradlew jvm-files))))
-        ;; Otherwise route JVM languages to native tools
-        (when-let* ((java-files (alist-get 'java by-lang)))
-          (setq tools-invoked (append tools-invoked '("checkstyle" "spotbugs")))
-          (setq all-diags (append all-diags (hell-check-run-java java-files))))
-        (when-let* ((kotlin-files (alist-get 'kotlin by-lang)))
-          (setq tools-invoked (append tools-invoked '("ktlint" "detekt")))
-          (setq all-diags (append all-diags (hell-check-run-kotlin kotlin-files))))
-        (when-let* ((groovy-files (alist-get 'groovy-gradle by-lang)))
-          (setq tools-invoked (append tools-invoked '("npm-groovy-lint" "codenarc")))
-          (setq all-diags (append all-diags (hell-check-run-groovy-gradle groovy-files))))))
+            (setq all-diags (append all-diags (hell-check-run-gradle gradlew gradle-files))))
+        (dolist (entry gradle-langs)
+          (when-let* ((files (alist-get (car entry) by-lang)))
+            (let ((result (hell-check--run-registered (car entry) files)))
+              (setq tools-invoked (append tools-invoked (plist-get result :tools)))
+              (setq all-diags (append all-diags (plist-get result :diagnostics))))))))
 
-    ;; 3. Clojure
-    (when-let* ((clj-files (alist-get 'clojure by-lang)))
-      (setq tools-invoked (append tools-invoked '("kibit" "clj-kondo")))
-      (setq all-diags (append all-diags (hell-check-run-clojure clj-files))))
+    ;; 3. Every other `:lang' module's own language (clojure, scala, ...).
+    (dolist (entry hell-check-languages)
+      (let ((lang (car entry)))
+        (unless (or (plist-get (cdr entry) :gradle-managed) (memq lang '(elisp common-lisp)))
+          (when-let* ((files (alist-get lang by-lang)))
+            (let ((result (hell-check--run-registered lang files)))
+              (setq tools-invoked (append tools-invoked (plist-get result :tools)))
+              (setq all-diags (append all-diags (plist-get result :diagnostics))))))))
 
-    ;; 4. Scala
-    (when-let* ((scala-files (alist-get 'scala by-lang)))
-      (setq tools-invoked (append tools-invoked '("scalafmt" "scalafix")))
-      (setq all-diags (append all-diags (hell-check-run-scala scala-files))))
-
-    ;; 5. Emacs Lisp (custom Lisp batch pipeline)
+    ;; 4. Emacs Lisp (custom Lisp batch pipeline)
     (when-let* ((el-files (alist-get 'elisp by-lang)))
       (setq tools-invoked (append tools-invoked (hell-check--elisp-tool-names run-code)))
       (setq all-diags (append all-diags (hell-check-run-elisp el-files run-code))))
 
-    ;; 6. Common Lisp (sblint via SBCL batch runner)
+    ;; 5. Common Lisp (sblint via SBCL batch runner)
     (when-let* ((cl-files (and run-code (alist-get 'common-lisp by-lang))))
       (setq tools-invoked (append tools-invoked '("sblint")))
       (setq all-diags (append all-diags (hell-check-run-common-lisp cl-files))))

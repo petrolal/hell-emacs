@@ -169,4 +169,48 @@ For `hell-sync-functions'."
 
 (add-hook 'hell-bundle-functions #'hell-groovy-bundle-paths)
 
+;;; `bin/hell check' (lisp/lib/check-tools.el) -----------------------------------
+
+(hell-require 'hell-lib 'check-tools)
+
+(defun hell-groovy-check-run (files)
+  "Run Groovy & Gradle quality checks on FILES: npm-groovy-lint / codenarc.
+For `hell-check-register-runner', when a Gradle wrapper doesn't claim them."
+  (let (diags tools)
+    (cond
+     ((executable-find "npm-groovy-lint")
+      (push "npm-groovy-lint" tools)
+      (let* ((res (cdr (apply #'hell-process-output "npm-groovy-lint" "--files" (mapconcat #'identity files ",") "--output" "txt")))
+             (lines (split-string res "\n" t)))
+        (dolist (line lines)
+          (when (string-match "\\([^:\n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), \\(error\\|warning\\|info\\) - \\(.*?\\)\\(?: (\\([^)]+\\))\\)?\\'" line)
+            (let ((f (match-string 1 line))
+                  (l (string-to-number (match-string 2 line)))
+                  (c (string-to-number (match-string 3 line)))
+                  (sev (match-string 4 line))
+                  (msg (match-string 5 line))
+                  (rule (match-string 6 line)))
+              (push (hell-check-make-diag "Groovy & Gradle" "npm-groovy-lint" sev f l c (or rule "npm-groovy-lint") msg) diags))))))
+     ((executable-find "codenarc")
+      (push "codenarc" tools)
+      (let* ((res (cdr (apply #'hell-process-output "codenarc" files)))
+             (lines (split-string res "\n" t)))
+        (dolist (line lines)
+          (when (string-match "Violation: Rule=\\([^ \n\t]+\\) P=\\([0-9]+\\) Line=\\([0-9]+\\) Msg=\\(.*\\)" line)
+            (let ((rule (match-string 1 line))
+                  (p (match-string 2 line))
+                  (l (string-to-number (match-string 3 line)))
+                  (msg (match-string 4 line)))
+              (push (hell-check-make-diag "Groovy & Gradle" "codenarc" (if (string= p "1") "Error" "Warning")
+                                           (car files) l 1 rule msg) diags))))))
+     (t
+      (setq tools '("codenarc"))
+      (dolist (f files)
+        (push (hell-check-make-diag "Groovy & Gradle" "codenarc" "Info" f 1 1 "tool-missing"
+                                     "npm-groovy-lint and codenarc not found on PATH")
+              diags))))
+    (list :diagnostics diags :tools tools)))
+
+(hell-check-register-runner 'groovy-gradle #'hell-groovy-check-run)
+
 ;;; lang/groovy/cli.el ends here

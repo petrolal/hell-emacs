@@ -473,7 +473,7 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
                                (hell-check--command "/p" nil '(elisp java) "/r.md"))))))
 
 (ert-deftest hell-test-check-tool-crash-is-reported ()
-  (let ((diags (hell-check--run-tool "Emacs Lisp" "relint" "/x.el" (lambda () (error "Boom")))))
+  (let ((diags (hell-check-run-tool "Emacs Lisp" "relint" "/x.el" (lambda () (error "Boom")))))
     (should (equal (mapcar (lambda (d) (list (plist-get d :severity) (plist-get d :rule-id)
                                              (plist-get d :message)))
                            diags)

@@ -61,3 +61,49 @@ the pinned release (also after lsp-mode installed a different one)."
   (list hell-kotlin-ls-dir))
 
 (add-hook 'hell-bundle-functions #'hell-kotlin-bundle-paths)
+
+;;; `bin/hell check' (lisp/lib/check-tools.el) -----------------------------------
+
+(hell-require 'hell-lib 'check-tools)
+
+(defun hell-kotlin-check-run (files)
+  "Run Kotlin quality checks on FILES: ktlint & detekt.
+For `hell-check-register-runner', when a Gradle wrapper doesn't claim them."
+  (let (diags)
+    ;; 1. ktlint
+    (if (executable-find "ktlint")
+        (let* ((res (cdr (apply #'hell-process-output "ktlint" "--reporter=plain" files)))
+               (lines (split-string res "\n" t)))
+          (dolist (line lines)
+            (if (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(.*?\\)\\(?: (\\([^)]+\\))\\)?\\'" line)
+                (let ((f (match-string 1 line))
+                      (l (string-to-number (match-string 2 line)))
+                      (c (string-to-number (match-string 3 line)))
+                      (msg (match-string 4 line))
+                      (rule (match-string 5 line)))
+                  (push (hell-check-make-diag "Kotlin" "ktlint" "Warning" f l c (or rule "ktlint") msg) diags))
+              (push (hell-check-make-diag "Kotlin" "ktlint" "Warning" (car files) 1 1 "ktlint" line) diags))))
+      (dolist (f files)
+        (push (hell-check-make-diag "Kotlin" "ktlint" "Info" f 1 1 "tool-missing"
+                                     "ktlint not found on PATH")
+              diags)))
+    ;; 2. detekt
+    (let ((detekt-bin (or (executable-find "detekt") (executable-find "detekt-cli"))))
+      (if detekt-bin
+          (let* ((res (cdr (apply #'hell-process-output detekt-bin "--input" (mapconcat #'identity files ","))))
+                 (lines (split-string res "\n" t)))
+            (dolist (line lines)
+              (when (string-match "\\([^:\n\t ]+\\.kts?\\):\\([0-9]+\\):\\([0-9]+\\): \\([A-Za-z0-9_-]+\\) - \\(.*\\)" line)
+                (let ((f (match-string 1 line))
+                      (l (string-to-number (match-string 2 line)))
+                      (c (string-to-number (match-string 3 line)))
+                      (rule (match-string 4 line))
+                      (msg (match-string 5 line)))
+                  (push (hell-check-make-diag "Kotlin" "detekt" "Warning" f l c rule msg) diags)))))
+        (dolist (f files)
+          (push (hell-check-make-diag "Kotlin" "detekt" "Info" f 1 1 "tool-missing"
+                                       "detekt not found on PATH")
+                diags))))
+    (list :diagnostics diags :tools '("ktlint" "detekt"))))
+
+(hell-check-register-runner 'kotlin #'hell-kotlin-check-run)
