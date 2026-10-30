@@ -115,21 +115,23 @@ nil searches `hell-jdk-default-roots'."
 (defvar hell-jdk-file (expand-file-name "jvm/jdks.eld" hell-data-dir)
   "Where `bin/hell sync' stores the JDKs it found.")
 
+(defun hell-jdk--getenv (var &optional default)
+  "Non-empty value of environment variable VAR, or DEFAULT."
+  (let ((value (getenv var)))
+    (if (and value (not (string-empty-p value))) value default)))
+
 ;;;###autoload
 (defun hell-jdk-default-roots ()
   "Where JDK installers put JDKs, following their own variables when set."
-  (let ((env (lambda (var default)
-               (let ((value (getenv var)))
-                 (expand-file-name (if (and value (not (string-empty-p value))) value default))))))
-    (list (expand-file-name "candidates/java" (funcall env "SDKMAN_DIR" "~/.sdkman"))
-          "/usr/lib/jvm"
-          "/usr/lib64/jvm"
-          "/Library/Java/JavaVirtualMachines"
-          (expand-file-name "~/Library/Java/JavaVirtualMachines")
-          (expand-file-name "installs/java" (funcall env "ASDF_DATA_DIR" "~/.asdf"))
-          (expand-file-name "versions" (funcall env "JENV_ROOT" "~/.jenv"))
-          (expand-file-name "installs/java" (funcall env "MISE_DATA_DIR" "~/.local/share/mise"))
-          (expand-file-name "~/.jdks"))))       ; IntelliJ's downloads, which Gradle finds too
+  (list (expand-file-name "candidates/java" (expand-file-name (hell-jdk--getenv "SDKMAN_DIR" "~/.sdkman")))
+        "/usr/lib/jvm"
+        "/usr/lib64/jvm"
+        "/Library/Java/JavaVirtualMachines"
+        (expand-file-name "~/Library/Java/JavaVirtualMachines")
+        (expand-file-name "installs/java" (expand-file-name (hell-jdk--getenv "ASDF_DATA_DIR" "~/.asdf")))
+        (expand-file-name "versions" (expand-file-name (hell-jdk--getenv "JENV_ROOT" "~/.jenv")))
+        (expand-file-name "installs/java" (expand-file-name (hell-jdk--getenv "MISE_DATA_DIR" "~/.local/share/mise")))
+        (expand-file-name "~/.jdks")))       ; IntelliJ's downloads, which Gradle finds too
 
 (defun hell-jdk--homes (root)
   "The JDK homes directly under ROOT; macOS keeps a JDK's in Contents/Home."
@@ -173,8 +175,8 @@ A link is recorded as where it leads, and counts once with it."
 JAVA_HOME's comes first for its release, then the PATH's java, then
 those in `hell-jdk-roots'."
   (hell-jdk--collect
-   (append (delq nil (list (let ((home (getenv "JAVA_HOME")))
-                             (and home (not (string-empty-p home)) (expand-file-name home)))
+   (append (delq nil (list (when-let* ((home (hell-jdk--getenv "JAVA_HOME")))
+                             (expand-file-name home))
                            (hell-jdk--path-home)))
            (mapcan #'hell-jdk--homes (or hell-jdk-roots (hell-jdk-default-roots))))))
 
@@ -186,8 +188,7 @@ those in `hell-jdk-roots'."
 For the JVM tools Hell Emacs runs (formatters, sqlline...). \"java\" if
 there is none, so the error names it."
   (let* ((path-java (executable-find "java"))
-         (homes (delq nil (append (list (let ((home (getenv "JAVA_HOME")))
-                                          (and home (not (string-empty-p home)) home)))
+         (homes (delq nil (append (list (hell-jdk--getenv "JAVA_HOME"))
                                   (mapcar #'cdr (hell-jdk-read))
                                   (list (and path-java (hell-jdk--path-home))))))
          (home (seq-find (lambda (home)
@@ -349,8 +350,7 @@ nil when the build asks for none."
   "The JDKs listed for Gradle in org.gradle.java.installations.paths.
 From the gradle.properties of the build around DIR, then of the Gradle
 user home ($GRADLE_USER_HOME, else ~/.gradle)."
-  (let ((home (or (let ((h (getenv "GRADLE_USER_HOME"))) (and h (not (string-empty-p h)) h))
-                  "~/.gradle")))
+  (let ((home (hell-jdk--getenv "GRADLE_USER_HOME" "~/.gradle")))
     (mapcan (lambda (props)
               (when-let* ((value (hell-jdk--property props "org.gradle.java.installations.paths")))
                 (split-string value "[ \t]*,[ \t]*" t)))
@@ -407,8 +407,7 @@ Gradle's compatibility matrix, newest first; older releases run on 8.")
   "Non-nil if the Gradle build at ROOT chooses its own JVM.
 A daemon JVM criteria file, or org.gradle.java.home in the build's or
 the Gradle user home's gradle.properties."
-  (let ((home (or (let ((h (getenv "GRADLE_USER_HOME"))) (and h (not (string-empty-p h)) h))
-                  "~/.gradle")))
+  (let ((home (hell-jdk--getenv "GRADLE_USER_HOME" "~/.gradle")))
     (or (file-exists-p (expand-file-name "gradle/gradle-daemon-jvm.properties" root))
         (seq-some (lambda (props) (hell-jdk--property props "org.gradle.java.home"))
                   (list (expand-file-name "gradle.properties" root)
@@ -424,9 +423,7 @@ chooses its own JVM."
   (when-let* ((root (hell-jdk--gradle-wrapper-root dir))
               (range (hell-jdk-gradle-daemon-range (hell-jdk-gradle-version root))))
     (unless (hell-jdk--gradle-picks-own-jvm-p root)
-      (let* ((current (or (let ((home (getenv "JAVA_HOME")))
-                            (and home (not (string-empty-p home)) home))
-                          (hell-jdk--path-home)))
+      (let* ((current (or (hell-jdk--getenv "JAVA_HOME") (hell-jdk--path-home)))
              (major (and current (hell-jdk-home-major current))))
         (unless (and major (<= (car range) major (cdr range)))
           (when-let* ((home (hell-jdk-pick (reverse (mapcar #'cdr (hell-jdk-read)))

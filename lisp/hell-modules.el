@@ -215,10 +215,11 @@ Supports separate INIT-DEPTH and CONFIG-DEPTH (by default DEPTH, then
 the values in .hellmodule, else 0). Returns nil (and warns) if the
 module doesn't exist."
   (if-let* ((path (hell-module-locate-path group name)))
-      (let* ((meta-depth (hell-module-metadata path 'depth))
+      (let* ((meta (hell-module-metadata path))
+             (meta-depth (alist-get 'depth meta))
              (base-depth (or depth meta-depth 0))
-             (i-depth (or init-depth depth (hell-module-metadata path 'init-depth) meta-depth 0))
-             (c-depth (or config-depth depth (hell-module-metadata path 'config-depth) meta-depth 0)))
+             (i-depth (or init-depth depth (alist-get 'init-depth meta) meta-depth 0))
+             (c-depth (or config-depth depth (alist-get 'config-depth meta) meta-depth 0)))
         (puthash (cons group name)
                  (list :path path
                        :flags flags

@@ -68,17 +68,7 @@ Each entry is a plist: (:group GROUP :name NAME :enabled ENABLED-P :desc DESC
                   (let* ((mod-name (intern (file-name-nondirectory mod-dir)))
                          (group-kw (intern (format ":%s" group)))
                          (enabled (hell-module-p group-kw mod-name))
-                         (manifest (expand-file-name ".hellmodule" mod-dir))
-                         (desc ""))
-                    (when (and manifest (file-exists-p manifest))
-                      (with-temp-buffer
-                        (insert-file-contents manifest)
-                        (goto-char (point-min))
-                        (condition-case nil
-                            (let ((_ver (read (current-buffer)))
-                                  (data (read (current-buffer))))
-                              (setq desc (or (cdr (assq 'doc data)) "")))
-                          (error nil))))
+                         (desc (or (hell-module-metadata mod-dir 'doc) "")))
                     (push (list :group group
                                 :name mod-name
                                 :enabled (if enabled t nil)

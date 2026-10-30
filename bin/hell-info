@@ -40,10 +40,10 @@
 
 (defcli! info (&rest _)
   "Print Hell Emacs', Emacs', the system's and the config's details."
-  (let ((described (hell-process-output "git" "-C" hell-dir "describe" "--tags" "--always" "--dirty"))
+  (let ((described (hell-version-described t))
         (init-file (hell-init-file)))
     (hell-cli--say "hell-emacs %s%s, channel %s" hell-version
-                   (if (zerop (car described)) (format " (%s)" (cdr described)) "")
+                   (if described (format " (%s)" described) "")
                        hell-upgrade-channel)
     (hell-cli--say "emacs     %s (%s)" emacs-version
                    (string-join (delq nil (list (and (fboundp 'native-comp-available-p)

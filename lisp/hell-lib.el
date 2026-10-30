@@ -388,6 +388,13 @@ isn't there, 126 when it can't be run, as a shell says."
                   (file-error 126))))
       (cons code (string-trim (buffer-string))))))
 
+(defun hell-version-described (&optional dirty)
+  "`git describe' of `hell-dir': its tag, or commit when untagged, or nil.
+DIRTY also flags a dirty worktree (\"-dirty\")."
+  (let ((described (apply #'hell-process-output "git" "-C" hell-dir "describe" "--tags" "--always"
+                          (and dirty '("--dirty")))))
+    (and (zerop (car described)) (cdr described))))
+
 ;;; Files --------------------------------------------------------------------
 
 (defun hell-file-sha256 (file)

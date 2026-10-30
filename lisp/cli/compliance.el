@@ -335,7 +335,7 @@ ones come first."
 (defun hell-compliance-cyclonedx-sbom (&optional components)
   "A CycloneDX 1.5 bill of materials for COMPONENTS.
 Default is everything installed.  An alist for `json-encode'."
-  (let ((version (ignore-errors (car (process-lines "git" "-C" hell-dir "describe" "--tags" "--always")))))
+  (let ((version (hell-version-described)))
     `((bomFormat . "CycloneDX")
       (specVersion . "1.5")
       (serialNumber . ,(concat "urn:uuid:" (hell-compliance--uuid)))
