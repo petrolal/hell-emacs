@@ -217,17 +217,18 @@ module doesn't exist."
   (if-let* ((path (hell-module-locate-path group name)))
       (let* ((meta (hell-module-metadata path))
              (meta-depth (alist-get 'depth meta))
-             (base-depth (or depth meta-depth 0))
-             (i-depth (or init-depth depth (alist-get 'init-depth meta) meta-depth 0))
-             (c-depth (or config-depth depth (alist-get 'config-depth meta) meta-depth 0)))
-        (puthash (cons group name)
-                 (list :path path
-                       :flags flags
-                       :depth base-depth
-                       :init-depth i-depth
-                       :config-depth c-depth
-                       :index (hash-table-count hell-modules))
-                 hell-modules))
+             (base-depth (or depth meta-depth 0)))
+        (cl-flet ((pick (specific key)
+                    (or specific depth (alist-get key meta) meta-depth 0)))
+          (hell--module-list-reset)
+          (puthash (cons group name)
+                   (list :path path
+                         :flags flags
+                         :depth base-depth
+                         :init-depth (pick init-depth 'init-depth)
+                         :config-depth (pick config-depth 'config-depth)
+                         :index (hash-table-count hell-modules))
+                   hell-modules)))
     (display-warning 'hell
                      (if-let* ((why (alist-get (cons group name) hell-module-removed
                                                nil nil #'equal)))
@@ -263,6 +264,7 @@ See `modulep!' for testing modules and flags from code."
 (defun hell--enable-modules (spec)
   "Enable every module in SPEC, the argument list of `hell!'."
   (clrhash hell-modules)
+  (hell--module-list-reset)
   (let (group)
     (dolist (item spec)
       (cond ((keywordp item)
@@ -281,24 +283,45 @@ See `modulep!' for testing modules and flags from code."
                          (t (push x flags)))))
                (hell-module-enable group name (nreverse flags) depth init-depth config-depth)))))))
 
+(defvar hell--module-list-cache nil
+  "Cached orderings for `hell-module-list': (TABLE COUNT (TYPE . KEYS) ...).")
+
+(defun hell--module-list-reset ()
+  "Invalidate `hell--module-list-cache'."
+  (setq hell--module-list-cache nil))
+
 (defun hell-module-list (&optional type)
   "Return the keys of enabled modules, in load order.
 TYPE can be `:init' to sort by :init-depth, `:config' to sort by
 :config-depth, or nil to sort by :depth."
-  (let ((depth-key (pcase type
-                     (:init :init-depth)
-                     (:config :config-depth)
-                     (_ :depth)))
-        keys)
-    (maphash (lambda (k _) (push k keys)) hell-modules)
-    (sort keys (lambda (a b)
-                 (let* ((pa (gethash a hell-modules))
-                        (pb (gethash b hell-modules))
-                        (da (or (plist-get pa depth-key) (plist-get pa :depth) 0))
-                        (db (or (plist-get pb depth-key) (plist-get pb :depth) 0)))
-                   (if (= da db)
-                       (< (plist-get pa :index) (plist-get pb :index))
-                     (< da db)))))))
+  (let ((cached (and (consp hell--module-list-cache)
+                     (eq (car hell--module-list-cache) hell-modules)
+                     (= (cadr hell--module-list-cache) (hash-table-count hell-modules))
+                     (assq type (cddr hell--module-list-cache)))))
+    (if cached
+        (copy-sequence (cdr cached))
+      (let ((depth-key (pcase type
+                         (:init :init-depth)
+                         (:config :config-depth)
+                         (_ :depth)))
+            keys)
+        (maphash (lambda (k _) (push k keys)) hell-modules)
+        (let ((sorted (sort keys (lambda (a b)
+                                   (let* ((pa (gethash a hell-modules))
+                                          (pb (gethash b hell-modules))
+                                          (da (or (plist-get pa depth-key) (plist-get pa :depth) 0))
+                                          (db (or (plist-get pb depth-key) (plist-get pb :depth) 0)))
+                                     (if (= da db)
+                                         (< (plist-get pa :index) (plist-get pb :index))
+                                       (< da db)))))))
+          (if (and (consp hell--module-list-cache)
+                   (eq (car hell--module-list-cache) hell-modules)
+                   (= (cadr hell--module-list-cache) (hash-table-count hell-modules)))
+              (setcdr (cdr hell--module-list-cache)
+                      (cons (cons type sorted) (cddr hell--module-list-cache)))
+            (setq hell--module-list-cache
+                  (list hell-modules (hash-table-count hell-modules) (cons type sorted))))
+          (copy-sequence sorted))))))
 
 (defun hell-module-get (key prop)
   "Return PROP of the enabled module KEY, a (GROUP . NAME) cons."

@@ -3,7 +3,7 @@
 What the 2026-10-30 `/simplify` + altitude review found *and fixed*, across
 `lisp/`, `bin/`, `modules/hell/`, `test/`, and (for the altitude pass)
 `sources/hell+/modules/`. Everything below passed `make compile`, `make
-test` (53/53) and `make checkdoc`. What's left for later is in
+test` (55/55) and `make checkdoc`. What's left for later is in
 [review-todo.md](review-todo.md).
 
 ---
@@ -21,6 +21,15 @@ test` (53/53) and `make checkdoc`. What's left for later is in
 - **`lisp/hell-modules.el`**: `hell-module-enable` now reads a module's
   `.hellmodule` once instead of walking the directory tree
   (`locate-dominating-file`) three times per module.
+- **`lisp/hell-modules.el`**: factored `hell-module-enable`'s depth-fallback
+  chain using a local `pick` helper instead of duplicated 4-level fallback forms.
+- **`lisp/hell-modules.el`**: cached `hell-module-list` sorted orderings
+  in `hell--module-list-cache`, invalidated when modules are enabled or cleared.
+- **`lisp/hell-profiles.el` & `lisp/cli/sync.el`**: compute per-module autoload
+  files once and thread `module-autoload-files` through `hell-sync--write-profile`,
+  `hell-profile--generate-loaddefs-modules`, and `hell-profile--inputs`.
+- **`lisp/cli/sync.el`**: compute `hell-profile--modules` once in `hell-sync--run`
+  and pass it down to `hell-sync--finish` and `hell-sync--write-profile`.
 
 ## Altitude pass: core and `:tools` no longer name a language
 
@@ -93,7 +102,7 @@ rule; all five are now fixed:
 - `lisp/hell-lib.el`, `lisp/hell-modules.el`, `lisp/hell-profiles.el`,
   `lisp/lib/help.el`, `lisp/lib/intellij.el`, `lisp/lib/jdk.el`,
   `lisp/lib/check-tools.el`, `lisp/hell-plugins.el`
-- `bin/hell-version`, `bin/hell-info`, `lisp/cli/compliance.el`
+- `bin/hell-version`, `bin/hell-info`, `lisp/cli/compliance.el`, `lisp/cli/sync.el`
 - `sources/hell+/modules/lang/java/{+paths,config,cli,autoload}.el`
 - `sources/hell+/modules/lang/kotlin/{config,cli}.el`
 - `sources/hell+/modules/lang/clojure/{config,cli}.el`

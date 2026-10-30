@@ -147,6 +147,17 @@
     (should-not (hell-module-p :completion 'corfu '(+orderless)))
     (should-not (hell-module-p :completion 'vertico))))
 
+(ert-deftest hell-test-module-list-cache ()
+  (hell-test--with-modules
+    (hell-module-enable :completion 'vertico)
+    (should (equal (hell-module-list) '((:completion . vertico))))
+    ;; Cached call returns equal list
+    (should (equal (hell-module-list) '((:completion . vertico))))
+    ;; Modifying enabled modules invalidates cache
+    (hell-module-enable :ui 'theme nil -10)
+    (should (equal (hell-module-list) '((:ui . theme) (:completion . vertico))))
+    (should (equal (hell-module-list :init) '((:ui . theme) (:completion . vertico))))))
+
 (ert-deftest hell-test-package-disabled-p ()
   (hell-test--with-modules
     (setq hell-packages '((foo :disable t) (bar)))
@@ -758,6 +769,13 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
                (remq (car (last hell-profile-generate-functions)) hell-profile-generate-functions)))
           (hell-profile-generate '(:load-path nil :autoloads nil)))
         (should-not (string-search "50-mine" (hell-test--read file)))))))
+
+(ert-deftest hell-test-profile-threaded-autoloads ()
+  (hell-test--with-modules
+    (hell-module-enable :ui 'theme)
+    (let ((autoloads '(((:ui . theme) . ("/fake/autoload.el")))))
+      (should (member '("/fake/autoload.el")
+                      (hell-profile--inputs autoloads))))))
 
 
 ;;; lib/net: git's settings ---------------------------------------------------

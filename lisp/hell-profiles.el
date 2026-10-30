@@ -88,10 +88,11 @@ a file named NN-NAME.init.el; parts are concatenated in NN order.")
             (list key (hell-module-get key :flags) (hell-module-get key :path)))
           (hell-module-list)))
 
-(defun hell-profile--inputs ()
+(defun hell-profile--inputs (&optional module-autoload-files)
   "Return the files a profile depends on, each paired with its mtime.
 The mtime is nil for files that don't exist, so creating one counts
-as a change too."
+as a change too.  If MODULE-AUTOLOAD-FILES (an alist of module KEY
+to files) is given, use it instead of scanning each module directory."
   (mapcar (lambda (file)
             (cons file (when-let* ((attrs (file-attributes file)))
                          (float-time (file-attribute-modification-time attrs)))))
@@ -105,7 +106,9 @@ as a change too."
                      (cl-loop for key in (hell-module-list)
                               for dir = (hell-module-get key :path)
                               collect (expand-file-name "packages.el" dir)
-                              append (hell-module-autoload-files key))))))
+                              append (if module-autoload-files
+                                         (alist-get key module-autoload-files nil nil #'equal)
+                                       (hell-module-autoload-files key)))))))
 
 (defun hell-profile--stale-reason (profile)
   "Return why PROFILE doesn't match the current config, or nil if it does.
@@ -198,8 +201,9 @@ as recorded at sync time."
             append (cl-loop for (var . value) in (plist-get plist :env)
                             collect `(setenv ,var ,value)))))
 
-(defun hell-profile--generate-loaddefs-modules (_data)
-  "Part 60: autoloads of lisp/lib/ and of every enabled module."
+(defun hell-profile--generate-loaddefs-modules (data)
+  "Part 60: autoloads of lisp/lib/ and of every enabled module.
+DATA is the profile plist, which may contain `:module-autoload-files'."
   (hell-profile--write-part
    "60-hell-module-loaddefs.init.el"
    `((defun hell--startup-loaddefs-modules (_profile)
@@ -207,18 +211,22 @@ as recorded at sync time."
           (file-expand-wildcards (expand-file-name "lib/*.el" hell-core-dir))
           ;; lib/jdk: `load-path' has the compiled core first.
           (lambda (file) (concat "lib/" (file-name-base file))))
-       ,@(hell-profile--module-autoloads))
+       ,@(hell-profile--module-autoloads (plist-get data :module-autoload-files)))
      (add-hook 'hell-startup-functions #'hell--startup-loaddefs-modules 60))))
 
-(defun hell-profile--module-autoloads ()
+(defun hell-profile--module-autoloads (&optional module-autoload-files)
   "Autoload forms of every enabled module, one `let' per file.
 Each file's autoloads load it by the name `hell-module--autoload-name'
 gives at startup: its compiled copy from the sync, unless the source
-was edited since."
+was edited since.  If MODULE-AUTOLOAD-FILES (an alist of module KEY
+to files) is given, use it instead of scanning each module directory."
   (let ((placeholder (make-string 1 0)))
     (cl-loop for key in (hell-module-list)
              for dir = (hell-module-get key :path)
-             append (cl-loop for file in (hell-module-autoload-files key)
+             for files = (if module-autoload-files
+                             (alist-get key module-autoload-files nil nil #'equal)
+                           (hell-module-autoload-files key))
+             append (cl-loop for file in files
                              for forms = (hell-scan-autoloads
                                           (list file) (lambda (_) placeholder))
                              when forms
