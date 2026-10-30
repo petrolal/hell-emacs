@@ -93,10 +93,10 @@ it has already are kept. Returns HANDLERS."
       (puthash method #'ignore handlers)))
   handlers)
 
-(defconst hell-spring--skipped-dirs
-  (append hell-ignored-dirs hell-build-output-dirs '("test"))
+(defun hell-spring--skipped-dirs ()
   "Directories never searched for profiles: build output, VCS, IDE state, and
-test sources (src/test/resources isn't on the application's classpath).")
+test sources (src/test/resources isn't on the application's classpath)."
+  (append hell-ignored-dirs hell-build-output-dirs '("test")))
 
 ;; The run list asks for the profiles every time it opens: remembered per
 ;; project, with the time of each directory walked. Adding, removing or
@@ -122,14 +122,14 @@ directories they were looked for in.")
 (defun hell-spring--walk-profiles (root)
   "(DIR-TIMES . PROFILE-FILES) under ROOT, skipping `hell-spring--skipped-dirs'.
 Links to directories aren't followed."
-  (let (times files)
+  (let ((skipped (hell-spring--skipped-dirs)) times files)
     (cl-labels ((walk (dir)
                   (push (cons dir (hell-spring--dir-time dir)) times)
                   (dolist (entry (directory-files dir nil directory-files-no-dot-files-regexp t))
                     (let ((path (expand-file-name entry dir)))
                       (cond ((file-symlink-p path))
                             ((file-directory-p path)
-                             (unless (member entry hell-spring--skipped-dirs)
+                             (unless (member entry skipped)
                                (walk path)))
                             ((string-match-p hell-spring--profile-file-regexp entry)
                              (push entry files)))))))

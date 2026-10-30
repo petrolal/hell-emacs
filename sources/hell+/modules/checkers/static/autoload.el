@@ -197,16 +197,13 @@ Class files have no line for a field, so SpotBugs gives none."
                root "\\.xml\\'" nil
                (lambda (dir) (not (member (file-name-nondirectory dir) hell-static--skipped-dirs))))))
 
-(defconst hell-static--build-files hell-build-files
-  "Files that mark a build's directory.")
-
 (defun hell-static--root (&optional dir)
   "The project around DIR (default: `default-directory'): its root, else its outermost build."
   (let ((dir (or dir default-directory)))
     (or (when-let* ((project (project-current nil dir))) (expand-file-name (project-root project)))
         (let (top)
           (while dir
-            (when (seq-some (lambda (f) (file-exists-p (expand-file-name f dir))) hell-static--build-files)
+            (when (seq-some (lambda (f) (file-exists-p (expand-file-name f dir))) hell-build-files)
               (setq top dir))
             (let ((parent (file-name-directory (directory-file-name dir))))
               (setq dir (and (not (equal parent dir)) parent))))

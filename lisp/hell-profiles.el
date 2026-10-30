@@ -145,31 +145,6 @@ Only `bin/hell doctor' asks: startup never checks, as in Doom."
     (insert ";; -*- lexical-binding: t; -*-\n"
             (hell-profile--print forms))))
 
-(defun hell-profile--scan-autoloads (files &optional load-name)
-  "Autoload forms for every `;;;###autoload' in FILES.
-A cookie before a definition yields an `autoload' form; before any other
-form, the form itself is kept, as in Emacs' own loaddefs. LOAD-NAME,
-called with a file, returns the name the autoloads load it by (default:
-the file without its extension)."
-  (require 'loaddefs-gen)
-  (let (forms)
-    (dolist (file files)
-      (when (file-exists-p file)
-        (let ((name (if load-name (funcall load-name file) (file-name-sans-extension file))))
-          (with-temp-buffer
-            (insert-file-contents file)
-            (emacs-lisp-mode)
-            (goto-char (point-min))
-            (while (re-search-forward "^;;;###autoload[ \t]*$" nil t)
-              (let ((form (read (current-buffer))))
-                (push (or (funcall (if (fboundp 'loaddefs-generate--make-autoload)
-                                       #'loaddefs-generate--make-autoload
-                                     'make-autoload)
-                                   form name)
-                          form)
-                      forms)))))))
-    (nreverse forms)))
-
 ;;; The parts ---------------------------------------------------------------
 
 (defun hell-profile--generate-init (data)
@@ -195,7 +170,7 @@ the file without its extension)."
   "Part 10: autoloads of core's own files (lisp/hell-*.el)."
   (hell-profile--write-part
    "10-hell-loaddefs.init.el"
-   (hell-profile--scan-autoloads
+   (hell-scan-autoloads
     (file-expand-wildcards (expand-file-name "hell-*.el" hell-core-dir))
     ;; By feature name: `load-path' has the compiled core first.
     #'file-name-base)))
@@ -228,7 +203,7 @@ as recorded at sync time."
   (hell-profile--write-part
    "60-hell-module-loaddefs.init.el"
    `((defun hell--startup-loaddefs-modules (_profile)
-       ,@(hell-profile--scan-autoloads
+       ,@(hell-scan-autoloads
           (file-expand-wildcards (expand-file-name "lib/*.el" hell-core-dir))
           ;; lib/jdk: `load-path' has the compiled core first.
           (lambda (file) (concat "lib/" (file-name-base file))))
@@ -244,7 +219,7 @@ was edited since."
     (cl-loop for key in (hell-module-list)
              for dir = (hell-module-get key :path)
              append (cl-loop for file in (hell-module-autoload-files key)
-                             for forms = (hell-profile--scan-autoloads
+                             for forms = (hell-scan-autoloads
                                           (list file) (lambda (_) placeholder))
                              when forms
                              collect `(let ((hell--autoload-file

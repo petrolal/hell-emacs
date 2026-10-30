@@ -235,6 +235,35 @@ a later ProjectStatus OK (after fixing the cause) means it recovered."
   :on-log #'hell-jvm--note-log
   :on-notification #'hell-jvm--note-notification)
 
+;; `hell-help''s "JVM TOOLING & RUNTIME STATUS" (lisp/lib/help.el): rows
+;; this module contributes, so core doesn't name Java, Gradle or Maven.
+(hell-require 'hell-lib 'help)
+
+(hell-help-status-register
+ 'lsp (lambda ()
+        (cons "Java"
+              (if (file-directory-p (expand-file-name "lsp/eclipse.jdt.ls" hell-data-dir))
+                  (concat (propertize "✓ Eclipse JDTLS (Ready)" 'face 'success)
+                          " + Spring Boot Tools + Lombok")
+                (propertize "! Not installed (run bin/hell sync)" 'face 'warning)))))
+
+(hell-help-status-register
+ 'debugger (lambda ()
+             (list (cons "Java Debug"
+                         (if (file-exists-p (expand-file-name
+                                              "lsp/eclipse.jdt.ls/bundles/com.microsoft.java.debug.plugin-0.53.1.jar"
+                                              hell-data-dir))
+                             (propertize "✓ java-debug 0.53.1 (DAP Ready)" 'face 'success)
+                           (propertize "✓ DAP Integration Active" 'face 'success)))
+                   (cons "JUnit" (propertize "✓ JUnit 4 & 5 Runner (Active)" 'face 'success)))))
+
+(hell-help-status-register
+ 'build (lambda ()
+          (list (cons "Gradle" (if (executable-find "gradle")
+                                   (propertize "✓ Installed" 'face 'success) "· Wrapper only"))
+                (cons "Maven" (if (executable-find "mvn")
+                                  (propertize "✓ Installed" 'face 'success) "· Wrapper only")))))
+
 ;;; lsp-java -------------------------------------------------------------------
 
 (defconst hell-jvm--base-vmargs
@@ -514,3 +543,28 @@ A `:filter-return' advice on `dap-java--populate-launch-args'."
   "v" '("extract local variable" . lsp-java-extract-to-local-variable)
   "c" '("extract constant" . lsp-java-extract-to-constant)
   "h" '("type hierarchy" . lsp-java-type-hierarchy))
+
+;; `hell-where-is-intellij' (lisp/lib/intellij.el): the rows above as
+;; IntelliJ/Eclipse keybinding parity, so the shared table stays free
+;; of JDTLS-specific commands.
+(hell-require 'hell-lib 'intellij)
+
+(hell-intellij-register-actions
+ '((:action "Type hierarchy"
+    :intellij "Ctrl+H" :eclipse "F4" :key "C-c l h" :command lsp-java-type-hierarchy
+    :category "Navigation" :doc "Inspect supertypes and subtypes hierarchy in Java buffers.")
+   (:action "Extract method"
+    :intellij "Ctrl+Alt+M" :eclipse "Alt+Shift+M" :key "C-c l m" :command lsp-java-extract-method
+    :category "Refactoring" :doc "Extract selected code into a new method (Java).")
+   (:action "Extract variable"
+    :intellij "Ctrl+Alt+V" :eclipse "Alt+Shift+L" :key "C-c l v" :command lsp-java-extract-to-local-variable
+    :category "Refactoring" :doc "Extract selected expression into a local variable (Java).")
+   (:action "Extract constant"
+    :intellij "Ctrl+Alt+C" :eclipse "—" :key "C-c l c" :command lsp-java-extract-to-constant
+    :category "Refactoring" :doc "Extract selected expression into a static constant (Java).")
+   (:action "Generate getters and setters"
+    :intellij "Alt+Insert" :eclipse "Alt+Shift+S" :key "C-c l g" :command lsp-java-generate-getters-and-setters
+    :category "Refactoring" :doc "Generate getters, setters, toString, equals/hashCode (C-c l s / C-c l e).")
+   (:action "Implement methods"
+    :intellij "Ctrl+I" :eclipse "Quick Fix" :key "C-c l i" :command lsp-java-add-unimplemented-methods
+    :category "Refactoring" :doc "Implement or override interface/superclass methods (Java).")))

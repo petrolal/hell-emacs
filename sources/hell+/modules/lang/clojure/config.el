@@ -194,3 +194,13 @@
   :label "clojure-lsp"
   :on-notification #'hell-clojure--note-notification
   :on-request #'hell-clojure--note-request)
+
+;; `hell-help''s "JVM TOOLING & RUNTIME STATUS" (lisp/lib/help.el).
+(hell-require 'hell-lib 'help)
+
+(hell-help-status-register
+ 'lsp (lambda ()
+        (cons "Clojure"
+              (if (executable-find "clojure-lsp")
+                  (propertize "✓ clojure-lsp (Ready)" 'face 'success)
+                (propertize "· Available via :lang clojure" 'face 'shadow)))))

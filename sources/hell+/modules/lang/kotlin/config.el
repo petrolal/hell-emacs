@@ -138,3 +138,18 @@ included (`fun `greets by name`()'). Not a helper: see
   :label "Kotlin server"
   :on-log #'hell-kotlin--note-log)
 
+;; `hell-help''s "JVM TOOLING & RUNTIME STATUS" (lisp/lib/help.el).
+(hell-require 'hell-lib 'help)
+
+(hell-help-status-register
+ 'lsp (lambda ()
+        (cons "Kotlin"
+              (if (file-directory-p hell-kotlin-ls-dir)
+                  (propertize "✓ kotlin-language-server (Ready)" 'face 'success)
+                (propertize "· Available via :lang kotlin" 'face 'shadow)))))
+
+(hell-help-status-register
+ 'build (lambda ()
+          (cons "Kotlin CLI" (if (executable-find "kotlinc")
+                                 (propertize "✓ kotlinc" 'face 'success) "· None"))))
+

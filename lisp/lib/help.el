@@ -65,6 +65,45 @@
         (error
          (user-error "Hell Emacs Info manual not found at %s. Run makeinfo docs/hell-emacs.texi" info-file))))))
 
+;;; Status rows: `hell-help' hub, section 1 -----------------------------------
+;;
+;; A `:lang' or `:tools' module registers what it wants shown under
+;; "JVM TOOLING & RUNTIME STATUS", instead of this file naming it:
+;;
+;;   (hell-help-status-register 'lsp (lambda () (cons "Java" "...")))
+;;
+;; SECTION is `lsp', `debugger' or `build'; FN takes no arguments and
+;; returns a (LABEL . STATUS-STRING) cons, a list of such conses (for a
+;; module with several rows, like Java's LSP + Spring Boot + Lombok),
+;; or nil to contribute nothing right now (not installed, not enabled).
+
+(defvar hell-help-status-sections nil
+  "Alist: section symbol -> status-row functions, newest first.
+Populated by `hell-help-status-register'; read by `hell-help--status-rows'.")
+
+(defun hell-help-status-register (section fn)
+  "Register FN to contribute rows to SECTION (`lsp', `debugger' or `build')
+in `hell-help'. FN takes no arguments; see this file's Commentary for
+what it returns."
+  (push fn (alist-get section hell-help-status-sections)))
+
+(defun hell-help--status-rows (section)
+  "Every (LABEL . STATUS-STRING) SECTION's registered functions return now."
+  (let (rows)
+    (dolist (fn (reverse (alist-get section hell-help-status-sections)))
+      (when-let* ((result (funcall fn)))
+        (if (stringp (car-safe result))
+            (push result rows)
+          (setq rows (append (reverse result) rows)))))
+    (nreverse rows)))
+
+(defun hell-help--insert-status-rows (section fallback)
+  "Insert SECTION's status rows, or FALLBACK (a string) when it has none."
+  (if-let* ((rows (hell-help--status-rows section)))
+      (dolist (row rows)
+        (insert (format "    - %-13s %s\n" (concat (car row) ":") (cdr row))))
+    (insert (format "    %s\n" fallback))))
+
 (defvar hell-localleader-maps)
 
 (defun hell-help--keys (command buffer)
@@ -105,38 +144,15 @@ through, so its maps are searched too."
 
         ;; LSP Status
         (insert (propertize "  • Language Servers (LSP):\n" 'face 'bold))
-        (insert "    - Java:        ")
-        (let ((jdtls-dir (expand-file-name "lsp/eclipse.jdt.ls" hell-data-dir)))
-          (if (file-directory-p jdtls-dir)
-              (insert (propertize "✓ Eclipse JDTLS (Ready)" 'face 'success) " + Spring Boot Tools + Lombok\n")
-            (insert (propertize "! Not installed (run bin/hell sync)" 'face 'warning) "\n")))
-        (insert "    - Kotlin:      ")
-        (if (file-directory-p (expand-file-name "lsp/kotlin" hell-data-dir))
-            (insert (propertize "✓ kotlin-language-server (Ready)\n" 'face 'success))
-          (insert (propertize "· Available via :lang kotlin\n" 'face 'shadow)))
-        (insert "    - Clojure:     ")
-        (if (executable-find "clojure-lsp")
-            (insert (propertize "✓ clojure-lsp (Ready)\n" 'face 'success))
-          (insert (propertize "· Available via :lang clojure\n" 'face 'shadow)))
-        (insert "    - Groovy:      ")
-        (if (file-directory-p (expand-file-name "lsp/groovy" hell-data-dir))
-            (insert (propertize "✓ groovy-language-server (Ready)\n" 'face 'success))
-          (insert (propertize "· Available via :lang groovy\n" 'face 'shadow)))
+        (hell-help--insert-status-rows 'lsp "· (enable a :lang module for its language server)")
 
         ;; Debugger Status
         (insert (propertize "  • Debugger (DAP) & Test Runner:\n" 'face 'bold))
-        (insert "    - Java Debug:  ")
-        (if (file-exists-p (expand-file-name "lsp/eclipse.jdt.ls/bundles/com.microsoft.java.debug.plugin-0.53.1.jar" hell-data-dir))
-            (insert (propertize "✓ java-debug 0.53.1 (DAP Ready)\n" 'face 'success))
-          (insert (propertize "✓ DAP Integration Active\n" 'face 'success)))
-        (insert "    - JUnit:       ")
-        (insert (propertize "✓ JUnit 4 & 5 Runner (Active)\n" 'face 'success))
+        (hell-help--insert-status-rows 'debugger "· (enable a :lang module for its debugger)")
 
         ;; Build Systems & Compilers
         (insert (propertize "  • Build Systems & Compilers:\n" 'face 'bold))
-        (insert (format "    - Gradle:      %s\n" (if (executable-find "gradle") (propertize "✓ Installed" 'face 'success) "· Wrapper only")))
-        (insert (format "    - Maven:       %s\n" (if (executable-find "mvn") (propertize "✓ Installed" 'face 'success) "· Wrapper only")))
-        (insert (format "    - Kotlin CLI:  %s\n" (if (executable-find "kotlinc") (propertize "✓ kotlinc" 'face 'success) "· None")))
+        (hell-help--insert-status-rows 'build "· (enable a :lang module for its build tools)")
 
         ;; Discovered JDKs
         (insert (propertize "  • Discovered JDKs (SDKMAN, System, Mise, ASDF):\n" 'face 'bold))

@@ -60,9 +60,9 @@
 (defvar hell-run-debug-port 5005
   "The port a build task's application listens on for the debugger.")
 
-(defconst hell-run--skipped-dirs
-  (append hell-ignored-dirs hell-build-output-dirs)
-  "Directories never searched for `.launch' files: build output, VCS, IDE state.")
+(defun hell-run--skipped-dirs ()
+  "Directories never searched for `.launch' files: build output, VCS, IDE state."
+  (append hell-ignored-dirs hell-build-output-dirs))
 
 ;;; Reading them ---------------------------------------------------------------------
 
@@ -237,7 +237,7 @@
             (when (> depth 0)
               (mapcan (lambda (dir) (hell-run--launch-files dir (1- depth)))
                       (seq-filter (lambda (d) (and (file-directory-p d) (not (file-symlink-p d))
-                                                   (not (member (file-name-nondirectory d) hell-run--skipped-dirs))))
+                                                   (not (member (file-name-nondirectory d) (hell-run--skipped-dirs)))))
                                   (directory-files root t directory-files-no-dot-files-regexp)))))))
 
 (defun hell-run--root (&optional dir)

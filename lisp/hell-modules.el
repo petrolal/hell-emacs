@@ -925,19 +925,17 @@ Running the sync again usually finishes the job." (length pending)))
 (autoload 'hell-sync (hell--part-file 'hell-cli 'sync)
   "Install every declared package, then write the synced profile." t)
 
-;; JDK discovery: run by sync, read back when lsp-java loads, never at startup.
-;; Every `;;;###autoload' function in lisp/lib/jdk.el belongs here.
-(defconst hell-modules--jdk-autoloads
-  '(hell-jdk-release-name hell-jdk-parse-release-content
-    hell-jdk-home-release hell-jdk-home-major hell-jdk-pick hell-jdk-default-roots hell-jdk-scan-roots hell-jdk-detect
-    hell-jdk-write hell-jdk-read hell-jdk-lsp-runtimes hell-jdk-java-executable
-    hell-jdk-parse-toolchains-xml hell-jdk-parse-gradle-toolchain
-    hell-jdk-toolchains-xml-jdks hell-jdk-build-request
-    hell-jdk-gradle-installation-paths hell-jdk-gradle-provisions-p
-    hell-jdk-gradle-daemon-range hell-jdk-gradle-version hell-jdk-gradle-environment)
-  "The functions core autoloads from lisp/lib/jdk.el.")
-(dolist (fn hell-modules--jdk-autoloads)
-  (autoload fn (hell--part-file 'hell-lib 'jdk)))
+;; A lib/ file's `;;;###autoload' functions may run before any module
+;; requires it (e.g. a packages.el or a module's config.el calling into
+;; lib/jdk.el during `bin/hell sync', before :lang java loads it) -- so
+;; every one of them, in every lib/ file, is autoloaded here, the same
+;; way `hell-profile--generate-loaddefs-modules' autoloads them for a
+;; synced profile's normal startup. Core never names which lib/ file or
+;; language these belong to.
+(dolist (form (hell-scan-autoloads
+               (file-expand-wildcards (expand-file-name "lib/*.el" hell-core-dir))
+               (lambda (file) (hell--part-file 'hell-lib (intern (file-name-base file))))))
+  (eval form t))
 
 ;; The SBOM and license report: `bin/hell sbom' and `licenses'.
 (dolist (fn '(hell-compliance-components hell-compliance-collect-licenses

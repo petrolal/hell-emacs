@@ -35,7 +35,7 @@
 
 (declare-function hell-provide "hell-lib" (feature part))
 
-(defconst hell-intellij-actions
+(defvar hell-intellij-actions
   '(;; Finding things
     (:action "Any command / Action search"
      :intellij "Ctrl+Shift+A" :eclipse "Ctrl+3" :key "M-x" :command execute-extended-command
@@ -87,9 +87,6 @@
     (:action "Go to type declaration"
      :intellij "Ctrl+Shift+B" :eclipse "—" :key "C-c c t" :command lsp-find-type-definition
      :category "Navigation" :doc "Jump to definition of the type of the symbol at point.")
-    (:action "Type hierarchy"
-     :intellij "Ctrl+H" :eclipse "F4" :key "C-c l h" :command lsp-java-type-hierarchy
-     :category "Navigation" :doc "Inspect supertypes and subtypes hierarchy in Java buffers.")
     (:action "Quick documentation / Hover"
      :intellij "Ctrl+Q" :eclipse "F2" :key "C-c c k" :command lsp-describe-thing-at-point
      :category "Navigation" :doc "Show documentation and signature at point (or lsp-describe-thing-at-point).")
@@ -119,21 +116,6 @@
     (:action "Rename symbol"
      :intellij "Shift+F6" :eclipse "Alt+Shift+R" :key "C-c c r" :command lsp-rename
      :category "Refactoring" :doc "Workspace-wide semantic rename of class, method, or variable.")
-    (:action "Extract method"
-     :intellij "Ctrl+Alt+M" :eclipse "Alt+Shift+M" :key "C-c l m" :command lsp-java-extract-method
-     :category "Refactoring" :doc "Extract selected code into a new method (Java).")
-    (:action "Extract variable"
-     :intellij "Ctrl+Alt+V" :eclipse "Alt+Shift+L" :key "C-c l v" :command lsp-java-extract-to-local-variable
-     :category "Refactoring" :doc "Extract selected expression into a local variable (Java).")
-    (:action "Extract constant"
-     :intellij "Ctrl+Alt+C" :eclipse "—" :key "C-c l c" :command lsp-java-extract-to-constant
-     :category "Refactoring" :doc "Extract selected expression into a static constant (Java).")
-    (:action "Generate getters and setters"
-     :intellij "Alt+Insert" :eclipse "Alt+Shift+S" :key "C-c l g" :command lsp-java-generate-getters-and-setters
-     :category "Refactoring" :doc "Generate getters, setters, toString, equals/hashCode (C-c l s / C-c l e).")
-    (:action "Implement methods"
-     :intellij "Ctrl+I" :eclipse "Quick Fix" :key "C-c l i" :command lsp-java-override-methods
-     :category "Refactoring" :doc "Implement or override interface/superclass methods (Java).")
     (:action "Organize imports"
      :intellij "Ctrl+Alt+O" :eclipse "Ctrl+Shift+O" :key "C-c c o" :command lsp-organize-imports
      :category "Refactoring" :doc "Sort imports, add missing, and remove unused imports.")
@@ -231,7 +213,17 @@
     (:action "Settings / Preferences"
      :intellij "Ctrl+Alt+S" :eclipse "Preferences" :key "C-x d" :command dired
      :category "Editor & UI" :doc "Dired on your configuration directory: C-x d, then ~/.config/hell-emacs/."))
-  "Registry of IntelliJ IDEA / Eclipse actions and Hell Emacs equivalents.")
+  "Registry of IntelliJ IDEA / Eclipse actions and Hell Emacs equivalents.
+A `:lang' module adds its own (its localleader's, like JDTLS's
+refactorings) with `hell-intellij-register-actions', so this stays the
+stock-Emacs and `:tools' actions every session has, whatever `:lang'
+modules are enabled.")
+
+(defun hell-intellij-register-actions (entries)
+  "Add ENTRIES, in `hell-intellij-actions'' format, from a `:lang' module.
+Put it next to where the module's localleader actually binds them, so
+the two can't drift apart."
+  (setq hell-intellij-actions (append hell-intellij-actions entries)))
 
 (defun hell-intellij--format-candidate (entry max-action max-intellij max-key)
   "Format an ENTRY with aligned columns.

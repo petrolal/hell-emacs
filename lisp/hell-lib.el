@@ -395,6 +395,33 @@ DIRTY also flags a dirty worktree (\"-dirty\")."
                           (and dirty '("--dirty")))))
     (and (zerop (car described)) (cdr described))))
 
+;;; Autoload cookies -----------------------------------------------------------
+
+(defun hell-scan-autoloads (files &optional load-name)
+  "Autoload forms for every `;;;###autoload' in FILES.
+A cookie before a definition yields an `autoload' form; before any other
+form, the form itself is kept, as in Emacs' own loaddefs. LOAD-NAME,
+called with a file, returns the name the autoloads load it by (default:
+the file without its extension)."
+  (require 'loaddefs-gen)
+  (let (forms)
+    (dolist (file files)
+      (when (file-exists-p file)
+        (let ((name (if load-name (funcall load-name file) (file-name-sans-extension file))))
+          (with-temp-buffer
+            (insert-file-contents file)
+            (emacs-lisp-mode)
+            (goto-char (point-min))
+            (while (re-search-forward "^;;;###autoload[ \t]*$" nil t)
+              (let ((form (read (current-buffer))))
+                (push (or (funcall (if (fboundp 'loaddefs-generate--make-autoload)
+                                       #'loaddefs-generate--make-autoload
+                                     'make-autoload)
+                                   form name)
+                          form)
+                      forms)))))))
+    (nreverse forms)))
+
 ;;; Files --------------------------------------------------------------------
 
 (defun hell-file-sha256 (file)
@@ -526,15 +553,29 @@ nil on an operating system no pinned download is made for."
 
 ;;; Build output -----------------------------------------------------------
 
-(defconst hell-build-files
-  '("pom.xml" "build.gradle" "build.gradle.kts" "settings.gradle" "settings.gradle.kts")
-  "Files at the root of a Maven or Gradle build.")
+(defvar hell-build-files nil
+  "Files at a build's root, as a `:lang' module's `hell-build-markers!' declared.")
 
 (defconst hell-ignored-dirs '(".git" ".hg" ".svn" ".idea" "node_modules")
   "Directories no walk of a project's files looks in: VCS, IDE state, npm's.")
 
-(defconst hell-build-output-dirs '("build" "bin" "out" "target" ".gradle")
-  "Directories Gradle, Maven, IntelliJ (out/) and JDTLS write output to.")
+(defvar hell-build-output-dirs nil
+  "Directories a build writes output to, as `hell-build-markers!' declared.")
+
+(defmacro hell-build-markers! (&rest props)
+  "Declare a build system's root files and output directories (evaluated).
+PROPS: `:files', the files at the build's root; `:output-dirs', the
+directories it writes output to. Put it in the `:lang' module's
++paths.el, next to its other pins; every enabled module's markers end
+up in `hell-build-files' and `hell-build-output-dirs', read by
+`:tools' modules that walk a project without naming which build
+system or language they came from."
+  `(hell-build-markers-declare ,(plist-get props :files) ,(plist-get props :output-dirs)))
+
+(defun hell-build-markers-declare (files output-dirs)
+  "Record FILES and OUTPUT-DIRS. See `hell-build-markers!'."
+  (dolist (file files) (add-to-list 'hell-build-files file))
+  (dolist (dir output-dirs) (add-to-list 'hell-build-output-dirs dir)))
 
 (defun hell-build-output-regexp (root)
   "Matches a directory of `hell-build-output-dirs' in any module under ROOT.

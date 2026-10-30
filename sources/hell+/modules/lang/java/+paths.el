@@ -27,6 +27,14 @@
 ;; lsp-java: `lsp-java-server-install-dir' is computed from
 ;; `lsp-server-install-dir' when lsp-java loads.
 
+;; Maven's and Gradle's own root markers and output directories, for
+;; `:tools' modules that walk a project without naming a build system
+;; (`hell-build-output-regexp', `tools/lsp's ignored-dirs, ...).
+(hell-build-markers!
+ :files '("pom.xml" "build.gradle" "build.gradle.kts" "settings.gradle" "settings.gradle.kts")
+ ;; build, bin: Gradle's and Maven's own; out: IntelliJ's; .gradle: its cache.
+ :output-dirs '("build" "bin" "out" "target" ".gradle"))
+
 ;; JDTLS's workspace and project index: regenerable, but only by
 ;; reimporting every project, so data rather than disposable cache.
 (defvar hell-jvm-workspace-root-dir (expand-file-name "jvm/workspace/" hell-data-dir)

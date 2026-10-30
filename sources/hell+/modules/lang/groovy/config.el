@@ -86,6 +86,16 @@ Replaces `lsp-groovy--lsp-command'."
 
 (hell-lsp-status-register 'groovy-ls :label "Groovy server")
 
+;; `hell-help''s "JVM TOOLING & RUNTIME STATUS" (lisp/lib/help.el).
+(hell-require 'hell-lib 'help)
+
+(hell-help-status-register
+ 'lsp (lambda ()
+        (cons "Groovy"
+              (if (hell-groovy-server-installed-p)
+                  (propertize "✓ groovy-language-server (Ready)" 'face 'success)
+                (propertize "· Available via :lang groovy" 'face 'shadow)))))
+
 (defun hell-groovy--send-classpath (workspace root)
   "Ask ROOT's build for its classpath and give it to WORKSPACE's server.
 The project is ready once the server has it; failed if the build can't say."

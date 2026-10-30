@@ -384,7 +384,7 @@ Every package is queued, finished, with its checkout in `hell-test--repo'."
 
 (ert-deftest hell-test-static-analysis-run-autoloaded ()
   ;; Core's loaddefs (profile part 10) must autoload it, for `C-c c s'.
-  (let ((forms (hell-profile--scan-autoloads
+  (let ((forms (hell-scan-autoloads
                 (list (expand-file-name "hell-static-analysis.el" hell-core-dir))
                 #'file-name-base)))
     (should (seq-some (lambda (form)
