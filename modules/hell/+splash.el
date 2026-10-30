@@ -268,10 +268,12 @@ without a logo or images, so it fits the plain screen)."
     (insert ".\n\n")
     (insert-button "Hell Emacs Manual" 'action (lambda (_button) (hell-info-manual))
                    'follow-link t)
-    (insert "\tThe Hell Emacs guide, using Info\n")))
+    (insert "\tThe Hell Emacs guide, using Info\n\n")))
 
 (defun hell-splash--normal-screen-a (fn &rest args)
-  "Around `normal-splash-screen' (FN with ARGS): Hell Emacs' words, no logo."
+  "Around `normal-splash-screen' (FN with ARGS): Hell Emacs' words, no logo.
+Also appends the forge line and the Portals buttons (`hell-splash-buttons'),
+as `hell-splash--startup-tail-a' does for the fancy screen."
   (prog1 (apply fn args)
     (when (and (car args) (hell-splash--themed-p) (get-buffer hell-splash--buffer-name))
       (with-current-buffer hell-splash--buffer-name
@@ -279,7 +281,8 @@ without a logo or images, so it fits the plain screen)."
           (save-excursion
             (hell-splash--normal-welcome)
             (goto-char (point-max))
-            (insert "\n" (hell-splash-startup-line) "\n"))
+            (insert "\n" (hell-splash-startup-line) "\n")
+            (hell-splash--insert-buttons))
           (set-buffer-modified-p nil))))))
 
 (advice-add #'normal-splash-screen :around #'hell-splash--normal-screen-a)
