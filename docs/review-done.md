@@ -3,7 +3,7 @@
 What the 2026-10-30 `/simplify` + altitude review found *and fixed*, across
 `lisp/`, `bin/`, `modules/hell/`, `test/`, and (for the altitude pass)
 `sources/hell+/modules/`. Everything below passed `make compile`, `make
-test` (55/55) and `make checkdoc`. What's left for later is in
+test` (56/56) and `make checkdoc`. What's left for later is in
 [review-todo.md](review-todo.md).
 
 ---
@@ -89,13 +89,17 @@ rule; all five are now fixed:
    instead of silently trying tools for a language you don't use. Also
    generalized the Gradle-wrapper dispatch (run `./gradlew check` instead
    of per-language native tools) via a `:gradle-managed` flag on each
-   language entry, instead of hard-coding `java`/`kotlin`/`groovy-gradle`
-   in two separate places. Created `sources/hell+/modules/lang/scala/cli.el`
-   (didn't exist before). Renamed three previously "private"
-   (double-dash) helpers — `hell-check-make-diag`,
+   language entry, and handled project code execution via `:runs-project-code`
+   flags. Created `sources/hell+/modules/lang/scala/cli.el` and
+   `sources/hell+/modules/lang/common-lisp/cli.el`. Renamed three previously
+   "private" (double-dash) helpers — `hell-check-make-diag`,
    `hell-check-parse-standard-diagnostics`, `hell-check-run-tool` — to
    public names, since `:lang` modules now call them legitimately across
    the module boundary.
+
+- **Resilient module paths (`lang/groovy/+paths.el`)**:
+  Made `hell-groovy-verification-metadata` fall back to `hell-module-locate-path`
+  so it resolves properly even when compiled into profile artifacts.
 
 ### Files touched
 
@@ -106,8 +110,9 @@ rule; all five are now fixed:
 - `sources/hell+/modules/lang/java/{+paths,config,cli,autoload}.el`
 - `sources/hell+/modules/lang/kotlin/{config,cli}.el`
 - `sources/hell+/modules/lang/clojure/{config,cli}.el`
-- `sources/hell+/modules/lang/groovy/{config,cli}.el`
+- `sources/hell+/modules/lang/groovy/{+paths,config,cli}.el`
 - `sources/hell+/modules/lang/scala/cli.el` (new)
+- `sources/hell+/modules/lang/common-lisp/cli.el` (new)
 - `sources/hell+/modules/checkers/static/autoload.el`
 - `sources/hell+/modules/tools/run/autoload.el`
 - `test/hell-test.el`

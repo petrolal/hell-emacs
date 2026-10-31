@@ -20,6 +20,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `lsp-mode`'s built-in `glslls` client; localleader commands to
   validate a shader (`glslangValidator`) and compile it to SPIR-V
   (`glslc`).
+- Quality check runner registries: decentralized `bin/hell check` tool
+  execution via `hell-check-register-runner`, moving language checkers out
+  of core into `:lang` modules (`clojure`, `groovy`, `java`, `kotlin`,
+  `scala`, and `common-lisp`). Core maintains lightweight file descriptors
+  and routes execution to owning modules.
+- Shared registries for JVM status, build-root markers, and IDE fallback
+  cheat-sheets (`hell-help-status-register`, `hell-build-markers!`, and
+  `hell-intellij-register-actions`), completely decoupling core from
+  language-specific tooling.
+- The Altar: refreshed layout and typography for the startup screen banner.
+
+### Changed
+
+- Module listing & profile generation: cached sorted module orderings in
+  `hell--module-list-cache`, threaded pre-scanned autoload files and
+  precomputed module lists through `bin/hell sync`, and factored
+  depth-fallback resolution in `hell-module-enable`.
+- Factored shared utilities: centralized `hell-version-described` across
+  CLI commands and consolidated JDK environment variable resolution.
 
 ### Fixed
 
@@ -32,6 +51,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   user settings, Gradle JVM args) from `:custom` to `:config`, so they
   run when a Java buffer actually loads `lsp-java` rather than on every
   startup.
+- Decoupled `common-lisp` checking out of core `lisp/lib/check-tools.el`
+  into `sources/hell+/modules/lang/common-lisp/cli.el`, removing hardcoded
+  language dispatch branches.
+- `:lang groovy`: made `hell-groovy-verification-metadata` fall back to
+  `hell-module-locate-path` to safeguard against compiled profile path
+  dereferences.
 - Named every `:lang` module's localleader lambda (compile/run/test
   commands) across all 44 language modules, and the three remaining
   anonymous leader-bound lambdas (the Altar's "Issue Sanctum" button,

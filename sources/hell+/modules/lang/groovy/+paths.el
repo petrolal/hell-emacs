@@ -56,9 +56,12 @@
 
 (defconst hell-groovy-verification-metadata
   (expand-file-name "verification-metadata.xml"
-                    (if hell--current-module
-                        (hell-module-get hell--current-module :path)
-                      (file-name-directory (or load-file-name buffer-file-name))))
+                    (or (and hell--current-module
+                             (hell-module-get hell--current-module :path))
+                        (hell-module-locate-path :lang 'groovy)
+                        (and load-file-name (file-name-directory load-file-name))
+                        (and buffer-file-name (file-name-directory buffer-file-name))
+                        default-directory))
   "The SHA-256 of every dependency the server's build resolves.")
 
 (defvar hell-groovy-server-dir (expand-file-name "groovy/" lsp-server-install-dir)

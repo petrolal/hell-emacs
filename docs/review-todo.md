@@ -2,7 +2,7 @@
 
 All findings from the core review (`lisp/`, `bin/`, `modules/hell/`, `test/`)
 have now been implemented and verified with `make compile`, `make checkdoc`,
-and `make test` (55/55). See [review-done.md](review-done.md).
+and `make test` (56/56). See [review-done.md](review-done.md).
 
 ---
 

@@ -77,12 +77,14 @@
      :name "Emacs Lisp"
      :extensions (".el")
      :style-linters ("package-lint")
-     :static-analyzers ("elsa" "relint" "byte-compile"))
+     :static-analyzers ("elsa" "relint" "byte-compile")
+     :runs-project-code "byte-compile and Elsa (the files' macros and eval-when-compile)")
     (common-lisp
      :name "Common Lisp"
      :extensions (".lisp" ".cl")
      :style-linters ("sblint")
-     :static-analyzers ("sblint")))
+     :static-analyzers ("sblint")
+     :runs-project-code "sblint (it loads the files into SBCL)"))
   "Languages `bin/hell check' recognizes, and how to tell their files apart.
 :gradle-managed means a project that builds with Gradle (a wrapper
 found above it) runs its `./gradlew check' instead of this language's
@@ -295,57 +297,6 @@ the tools in `hell-static-analysis-linters'."
               (push d diags))))))
     (nreverse diags)))
 
-(defun hell-check-run-common-lisp (files)
-  "Execute Common Lisp analysis (sblint via SBCL batch runner) across FILES."
-  (let (diags)
-    (cond
-     ;; Priority 1: Native `sblint' executable if present
-     ((executable-find "sblint")
-      (dolist (file files)
-        (let* ((cmd-output (cdr (hell-process-output "sblint" file)))
-               (lines (split-string cmd-output "\n" t)))
-          (dolist (line lines)
-            (if (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(?:\\[\\(.*?\\)\\] \\)?\\(.*\\)\\'" line)
-                (let ((f (match-string 1 line))
-                      (l (string-to-number (match-string 2 line)))
-                      (c (string-to-number (match-string 3 line)))
-                      (sev (match-string 4 line))
-                      (msg (match-string 5 line)))
-                  (push (hell-check-make-diag "Common Lisp" "sblint" (or sev "Warning") f l c "sblint" msg) diags))
-              (push (hell-check-make-diag "Common Lisp" "sblint" "Warning" file 1 1 "sblint" line) diags))))))
-
-     ;; Priority 2: Headless SBCL batch runner
-     ((executable-find "sbcl")
-      (dolist (file files)
-        (let* ((sbcl-script
-                (format "(handler-bind ((style-warning (lambda (c)
-                                                        (format t \"~A:1:1: [Warning] ~A~%%\" %S c)
-                                                        (muffle-warning c)))
-                                       (warning (lambda (c)
-                                                  (format t \"~A:1:1: [Warning] ~A~%%\" %S c)
-                                                  (muffle-warning c)))
-                                       (error (lambda (c)
-                                                (format t \"~A:1:1: [Error] ~A~%%\" %S c))))
-                           (let ((fasl (compile-file %S :print nil :verbose nil)))
-                             (when (and fasl (probe-file fasl))
-                               (delete-file fasl))))"
-                        file file file file))
-               (res (cdr (hell-process-output "sbcl" "--noinform" "--non-interactive" "--eval" sbcl-script)))
-               (lines (split-string res "\n" t)))
-          (dolist (line lines)
-            (when (string-match "\\`\\([^:\n]+\\):\\([0-9]+\\):\\([0-9]+\\): \\(?:\\[\\(.*?\\)\\] \\)?\\(.*\\)\\'" line)
-              (let ((f (match-string 1 line))
-                    (l (string-to-number (match-string 2 line)))
-                    (c (string-to-number (match-string 3 line)))
-                    (sev (match-string 4 line))
-                    (msg (match-string 5 line)))
-                (push (hell-check-make-diag "Common Lisp" "sblint" (or sev "Warning") f l c "sbcl-sblint" msg) diags)))))))
-     (t
-      (dolist (file files)
-        (push (hell-check-make-diag "Common Lisp" "sblint" "Info" file 1 1 "tool-missing"
-                                     "sblint and sbcl executables not found on PATH")
-              diags))))
-    (nreverse diags)))
 
 ;;; A standard diagnostic format, for a `:lang' module's own runner --------
 
@@ -482,21 +433,23 @@ BY-LANG is `hell-check-discover-files''s :by-language. Each is a string
 naming the tool and what of the project's it runs."
   (let ((dir (hell-check--target-dir targets)))
     (delq nil
-          (list (and (null hell-check-only) (executable-find "trunk") (locate-dominating-file dir ".trunk")
-                     "trunk (the linters .trunk/ sets up)")
-                (and (null hell-check-only) (executable-find "pre-commit")
-                     (locate-dominating-file dir ".pre-commit-config.yaml")
-                     "pre-commit (the hooks .pre-commit-config.yaml names)")
-                (and (seq-some (lambda (pair) (and (plist-get (alist-get (car pair) hell-check-languages)
-                                                              :gradle-managed)
-                                                   (cdr pair)))
-                               by-lang)
-                     (hell-check--find-gradle-wrapper dir)
-                     "./gradlew (the build's own scripts)")
-                (and (alist-get 'elisp by-lang)
-                     "byte-compile and Elsa (the files' macros and eval-when-compile)")
-                (and (alist-get 'common-lisp by-lang)
-                     "sblint (it loads the files into SBCL)")))))
+          (append
+           (list (and (null hell-check-only) (executable-find "trunk") (locate-dominating-file dir ".trunk")
+                      "trunk (the linters .trunk/ sets up)")
+                 (and (null hell-check-only) (executable-find "pre-commit")
+                      (locate-dominating-file dir ".pre-commit-config.yaml")
+                      "pre-commit (the hooks .pre-commit-config.yaml names)")
+                 (and (seq-some (lambda (pair) (and (plist-get (alist-get (car pair) hell-check-languages)
+                                                               :gradle-managed)
+                                                    (cdr pair)))
+                                by-lang)
+                      (hell-check--find-gradle-wrapper dir)
+                      "./gradlew (the build's own scripts)"))
+           (delq nil
+                 (mapcar (lambda (pair)
+                           (and (cdr pair)
+                                (plist-get (alist-get (car pair) hell-check-languages) :runs-project-code)))
+                         by-lang))))))
 
 (defun hell-check--trusted-p (dir)
   "Non-nil if DIR's own code may run.
@@ -565,24 +518,28 @@ or add the directory to `hell-check-trusted-directories'" runner))
               (setq tools-invoked (append tools-invoked (plist-get result :tools)))
               (setq all-diags (append all-diags (plist-get result :diagnostics))))))))
 
-    ;; 3. Every other `:lang' module's own language (clojure, scala, ...).
+    ;; 3. Every other `:lang' module's own language (clojure, scala, common-lisp, ...).
     (dolist (entry hell-check-languages)
       (let ((lang (car entry)))
-        (unless (or (plist-get (cdr entry) :gradle-managed) (memq lang '(elisp common-lisp)))
+        (unless (or (plist-get (cdr entry) :gradle-managed) (eq lang 'elisp))
           (when-let* ((files (alist-get lang by-lang)))
-            (let ((result (hell-check--run-registered lang files)))
-              (setq tools-invoked (append tools-invoked (plist-get result :tools)))
-              (setq all-diags (append all-diags (plist-get result :diagnostics))))))))
+            (if (and (plist-get (cdr entry) :runs-project-code) (not run-code))
+                (setq all-diags
+                      (append all-diags
+                              (mapcar (lambda (f)
+                                        (hell-check-make-diag
+                                         (plist-get (cdr entry) :name) "hell-check" "Info" f 1 1 "untrusted"
+                                         (format "Untrusted project: skipped %s"
+                                                 (plist-get (cdr entry) :runs-project-code))))
+                                      files)))
+              (let ((result (hell-check--run-registered lang files)))
+                (setq tools-invoked (append tools-invoked (plist-get result :tools)))
+                (setq all-diags (append all-diags (plist-get result :diagnostics)))))))))
 
     ;; 4. Emacs Lisp (custom Lisp batch pipeline)
     (when-let* ((el-files (alist-get 'elisp by-lang)))
       (setq tools-invoked (append tools-invoked (hell-check--elisp-tool-names run-code)))
       (setq all-diags (append all-diags (hell-check-run-elisp el-files run-code))))
-
-    ;; 5. Common Lisp (sblint via SBCL batch runner)
-    (when-let* ((cl-files (and run-code (alist-get 'common-lisp by-lang))))
-      (setq tools-invoked (append tools-invoked '("sblint")))
-      (setq all-diags (append all-diags (hell-check-run-common-lisp cl-files))))
 
     ;; Remove duplicate tools from tools-invoked
     (setq tools-invoked (delete-dups tools-invoked))

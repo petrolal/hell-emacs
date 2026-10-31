@@ -483,6 +483,13 @@ No one to ask (no terminal, no -!), and nothing trusted beforehand."
       (should (string-suffix-p (concat " check /p --only " (shell-quote-argument "elisp,java") " -o /r.md")
                                (hell-check--command "/p" nil '(elisp java) "/r.md"))))))
 
+(declare-function hell-common-lisp-check-run "../sources/hell+/modules/lang/common-lisp/cli" (files))
+
+(ert-deftest hell-test-check-common-lisp-registered ()
+  (load (expand-file-name "sources/hell+/modules/lang/common-lisp/cli.el" hell-dir) nil t)
+  (should (fboundp 'hell-common-lisp-check-run))
+  (should (eq (alist-get 'common-lisp hell-check-runners) #'hell-common-lisp-check-run)))
+
 (ert-deftest hell-test-check-tool-crash-is-reported ()
   (let ((diags (hell-check-run-tool "Emacs Lisp" "relint" "/x.el" (lambda () (error "Boom")))))
     (should (equal (mapcar (lambda (d) (list (plist-get d :severity) (plist-get d :rule-id)
