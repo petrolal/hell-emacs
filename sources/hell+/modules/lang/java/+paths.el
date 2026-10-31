@@ -155,12 +155,14 @@ other JDKs: see `hell-jdks'."
   "The JDK home that runs JDTLS: see `hell-jvm-java-home'.
 nil when none JDTLS runs on is known (then the PATH's java is tried)."
   (or hell-jvm-java-home
-      (hell-jdk-pick
-       (append (list (let ((home (getenv "JAVA_HOME")))
-                       (and home (not (string-empty-p home)) (directory-file-name (expand-file-name home))))
-                     (hell-jvm--path-java-home))
-               (reverse (mapcar #'cdr (or (bound-and-true-p hell-jdks) (hell-jdk-read)))))
-       hell-jvm-jdtls-java-min hell-jvm-jdtls-java-max)))
+      (progn
+        (hell-require 'hell-lib 'jdk)
+        (hell-jdk-pick
+         (append (list (let ((home (getenv "JAVA_HOME")))
+                         (and home (not (string-empty-p home)) (directory-file-name (expand-file-name home))))
+                       (hell-jvm--path-java-home))
+                 (reverse (mapcar #'cdr (or (bound-and-true-p hell-jdks) (hell-jdk-read)))))
+         hell-jvm-jdtls-java-min hell-jvm-jdtls-java-max))))
 
 (defun hell-jvm-runtime-jdks (jdks)
   "JDKS, as (NAME . HOME), without the releases the pinned JDTLS doesn't know.
