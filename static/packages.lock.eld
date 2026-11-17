@@ -1885,6 +1885,19 @@
 		      :source "MELPA" :id toml-mode :type git
 		      :protocol https :inherit t :depth treeless :ref
 		      "f6c61817b00f9c4a3cab1bae9c309e0fc45cdd06"))
+ (transient :source "elpaca-menu-lock-file" :recipe
+	    (:package "transient" :fetcher github :repo
+		      "magit/transient" :files
+		      ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+		       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+		       "doc/*.texinfo" "lisp/*.el" "docs/dir"
+		       "docs/*.info" "docs/*.texi" "docs/*.texinfo"
+		       (:exclude ".dir-locals.el" "test.el" "tests.el"
+				 "*-test.el" "*-tests.el" "LICENSE"
+				 "README*" "*-pkg.el"))
+		      :source "MELPA" :id transient :type git
+		      :protocol https :inherit t :depth treeless :ref
+		      "93423bb0c97aea87d49c50676ee63d1e5817c787"))
  (treemacs :source "elpaca-menu-lock-file" :recipe
 	   (:package "treemacs" :fetcher github :repo
 		     "Alexander-Miller/treemacs" :files

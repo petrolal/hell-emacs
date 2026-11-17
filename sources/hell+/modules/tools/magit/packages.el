@@ -22,7 +22,9 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-;; Shared by magit, magit-section and with-editor: declared up front so
-;; Elpaca builds each exactly once (see lisp/packages.el).
-(package! cond-let) (package! llama)
+;; Shared by magit, magit-section, transient and with-editor: declared up
+;; front so Elpaca builds each exactly once (see lisp/packages.el).
+;; `transient' is also declared explicitly so Elpaca upgrades Emacs'
+;; older built-in copy (0.4 in Emacs 29, 0.8 in Emacs 30; Magit needs 0.13+).
+(package! cond-let) (package! llama) (package! transient) (package! with-editor)
 (package! magit)

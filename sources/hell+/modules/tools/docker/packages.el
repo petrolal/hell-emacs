@@ -23,6 +23,7 @@
 
 ;; docker.el runs the developer's own docker (or podman) CLI. Its
 ;; dependencies are declared up front, so Elpaca builds each once: dash
-;; and s are shared with lsp-mode and kubel (see lisp/packages.el).
-(package! dash) (package! s) (package! aio) (package! tablist)
+;; and s are shared with lsp-mode and kubel, and transient upgrades
+;; Emacs 29.1's built-in 0.4.1 (docker.el needs 0.4.3+).
+(package! dash) (package! s) (package! aio) (package! tablist) (package! transient)
 (package! docker)

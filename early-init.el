@@ -349,7 +349,12 @@ Used to tell whether a package is built into Emacs (`package!'s
 
 ;; Emacs 31 warns about every package file lacking a `lexical-binding'
 ;; cookie; users can't act on that for third-party packages.
-(add-to-list 'warning-inhibit-types '(files missing-lexbind-cookie))
+;; (add-to-list 'warning-inhibit-types '(files missing-lexbind-cookie))
+
+(when (boundp 'warning-inhibit-types)
+  (unless (member '(files missing-lexbind-cookie) warning-inhibit-types)
+    (setq warning-inhibit-types (cons '(files missing-lexbind-cookie) warning-inhibit-types))))
+
 
 ;; DEBUG=1 as an alternative to --debug-init, e.g. for bin/hell:
 ;; more logging (`hell-log') and backtraces on errors.

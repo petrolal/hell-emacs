@@ -30,9 +30,33 @@
 ;;; Code:
 
 (declare-function treemacs "treemacs" (&optional arg))
+(declare-function treemacs-start-on-boot "treemacs" (&optional focus-treemacs))
 (declare-function treemacs-load-theme "treemacs" (name))
 (declare-function treemacs-node-at-point "treemacs")
 (declare-function treemacs-button-get "treemacs" (button prop))
+(declare-function treemacs-workspace->is-empty? "treemacs-workspaces")
+(declare-function treemacs--read-first-project-path "treemacs-core-utils" ())
+(declare-function treemacs-follow-mode "treemacs-follow-mode" (&optional arg))
+(declare-function treemacs-project-follow-mode "treemacs-project-follow-mode" (&optional arg))
+
+(defcustom hell-treemacs-start-on-boot t
+  "Whether to open the Treemacs project tree automatically at startup."
+  :type 'boolean
+  :group 'hell)
+
+(defun hell-treemacs--first-project-path-a ()
+  "Seed an empty Treemacs workspace from the current project or directory.
+Avoids blocking a fresh installation's first startup with a minibuffer
+`read-directory-name' prompt."
+  (when (treemacs-workspace->is-empty?)
+    (file-truename (or (when-let* ((proj (project-current)))
+                         (project-root proj))
+                       default-directory))))
+
+(defun hell-treemacs--start-on-boot-h ()
+  "Open Treemacs on startup without stealing focus from the initial window."
+  (when (and hell-treemacs-start-on-boot (not noninteractive))
+    (treemacs-start-on-boot)))
 
 (defun hell-treemacs-dired-here ()
   "Open Dired on the directory of the treemacs node at point.
@@ -47,17 +71,24 @@ Treemacs stays read-only navigation; batch writes (including
 
 (use-package treemacs
   :defer t
-  :commands (treemacs)
+  :commands (treemacs treemacs-start-on-boot)
   :init
   (hell-leader-def
     "o p" '("project tree" . treemacs))
+  (add-hook 'window-setup-hook #'hell-treemacs--start-on-boot-h)
   :custom
   ;; A plain window, not a dedicated side-window: keeps treemacs a
   ;; normal buffer under `C-x o'/`C-x 0' and the window-resize keys.
   (treemacs-display-in-side-window nil)
+  (treemacs-persist-file (hell-state-file "treemacs-persist"))
+  (treemacs-last-error-persist-file (hell-state-file "treemacs-persist-at-last-error"))
   :config
   (defvar treemacs-mode-map)
   (keymap-set treemacs-mode-map "C-c C-d" #'hell-treemacs-dired-here)
+  (advice-add #'treemacs--read-first-project-path :override
+              #'hell-treemacs--first-project-path-a)
+  (treemacs-follow-mode 1)
+  (treemacs-project-follow-mode 1)
   (with-eval-after-load 'treemacs-nerd-icons
     (treemacs-load-theme "nerd-icons")))
 

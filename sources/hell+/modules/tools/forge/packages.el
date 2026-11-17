@@ -21,4 +21,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+(depends-on! :tools magit)
+
+;; Shared by forge, closql, ghub and lsp-docker: declared up front so
+;; Elpaca builds each once (see lisp/packages.el).
+(package! emacsql) (package! closql) (package! treepy) (package! ghub)
+(package! markdown-mode) (package! yaml)
 (package! forge)

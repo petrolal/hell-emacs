@@ -21,6 +21,13 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;; Shared by treemacs, cfrs, hydra and lsp-mode: declared up front so
+;; Elpaca builds each once (see lisp/packages.el).
+(package! dash) (package! s) (package! ht) (package! pfuture)
+(package! avy) (package! ace-window)
+(package! lv) (package! hydra)
+(package! posframe) (package! cfrs)
+(package! nerd-icons)
 (package! treemacs)
 (package! treemacs-nerd-icons)
 
