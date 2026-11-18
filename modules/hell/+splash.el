@@ -1,4 +1,4 @@
-;;; hell/+splash.el --- The Altar: GNU Emacs' startup screen, themed -*- lexical-binding: t; -*-
+;;; hell/+splash.el --- The Altar: Hell Emacs Workspace Dashboard -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 petrolal <petrolalucas@gmail.com>
 ;;
@@ -21,15 +21,18 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; The Altar is GNU Emacs' own startup screen (`fancy-startup-screen',
-;; the `*GNU Emacs*' buffer), not a replacement for it (13.4): the same
-;; layout, keys and features (the concise screen beside files given on
-;; the command line, the auto-save notice, the newcomer presets, the
-;; version line, `C-h C-a'), drawn by Emacs' own code. Hell Emacs only
-;; supplies the logo and the words: the chimera skull instead of the GNU
-;; logo, a Hell Emacs welcome line and manual, the forge line under the
-;; version, and buttons at the bottom for what the stock screen lacks.
-;; With `hell-ux-enable' nil it is the stock screen, untouched.
+;;; Commentary:
+
+;; The Altar: a centered, workspace-oriented startup dashboard for
+;; Hell Emacs (replacing GNU Emacs' stock FSF links in `*GNU Emacs*').
+;; Displays the Hell Emacs logo, startup telemetry, 1-key quick actions
+;; (`p' Open Project Workspace, `n' New Project with Specs, `a' Open Agent,
+;; `s' Open Spec), Recent Workspaces (`1'..`5' to launch a full 3-column
+;; workspace in one keystroke), and Recent Specifications formatted as
+;; `[project-name] -> relative/path/spec.md'.
+;; With `hell-ux-enable' nil it falls back to the stock startup screen.
+
+;;; Code:
 
 (require 'seq)
 (require 'subr-x)
@@ -38,272 +41,368 @@
 (defvar hell-profile)
 (defvar hell-init-time)
 (defvar hell-ux-enable)
-(defvar browse-url-browser-function)
+
+(declare-function nerd-icons-octicon "nerd-icons" (icon-name &rest args))
+(declare-function hell-agent-project-root "hell-agent" (&optional dir))
+(declare-function hell-agent-register-global-keys "hell-agent" ())
 
 (autoload 'hell-info-manual "lib/help" nil t)
 (autoload 'hell-plugins "hell-plugins" nil t)
+(autoload 'hell-where-is-intellij "lib/intellij" nil t)
+(autoload 'hell-workspace-open "hell-agent" nil t)
+(autoload 'hell-workspace-layout "hell-agent" nil t)
+(autoload 'hell-agent-toggle "hell-agent" nil t)
+(autoload 'hell-agent-select "hell-agent" nil t)
+(autoload 'hell-agent-known-projects "hell-agent" nil t)
+(autoload 'hell-agent-recent-specs "hell-agent" nil t)
+(autoload 'hell-agent-project-root "hell-agent" nil)
+(autoload 'hell-agent-register-global-keys "hell-agent" nil)
+(autoload 'hell-spec-create "hell-agent" nil t)
+(autoload 'hell-spec-open "hell-agent" nil t)
+(autoload 'hell-agent-hooks-mode "hell-agent" nil t)
 
 (defgroup hell-splash nil
-  "The Hell Emacs startup screen."
+  "The Hell Emacs workspace startup dashboard (the Altar)."
   :group 'hell)
 
 (defcustom hell-splash-enable t
-  "Whether Emacs starts on the Altar (GNU Emacs' startup screen).
-Nil is `inhibit-startup-screen': Emacs starts on *scratch*."
+  "Whether Emacs starts on the Altar (Hell Emacs' workspace dashboard).
+Nil sets `inhibit-startup-screen' so Emacs starts on `*scratch*'."
   :type 'boolean
   :group 'hell-splash)
 
-(defcustom hell-splash-line-spacing 0.3
+(defcustom hell-splash-line-spacing 0.25
   "Extra space between the Altar's lines, as `line-spacing', for legibility."
   :type '(choice (const :tag "Emacs' default" nil) number)
   :group 'hell-splash)
 
 (defconst hell-splash--buffer-name "*GNU Emacs*"
-  "The Altar's buffer: `fancy-startup-screen' hard-codes this name.")
+  "The Altar's buffer name (`display-startup-screen' uses `*GNU Emacs*').")
+
+(defconst hell-splash--block-width 74
+  "Target width in columns of the centered dashboard content block.")
 
 (defface hell-splash-welcome
-  '((t (:inherit font-lock-comment-face)))
-  "Face for the Altar's welcome line (stock: `font-lock-comment-face')."
+  '((t (:inherit font-lock-keyword-face :weight bold)))
+  "Face for the Altar's title and section headers."
   :group 'hell-splash)
 
 (defface hell-splash-altar
-  '((t (:inherit font-lock-builtin-face)))
-  "Face for the Altar's forge line, under the Emacs version."
+  '((t (:inherit font-lock-builtin-face :weight bold)))
+  "Face for the Altar's forge telemetry line."
+  :group 'hell-splash)
+
+(defface hell-splash-key
+  '((t (:inherit font-lock-constant-face :weight bold)))
+  "Face for 1-key shortcut badges (`[p]', `[a]', `[1-5]') on the Altar."
   :group 'hell-splash)
 
 (defface hell-splash-button
-  '((t (:box (:line-width (1 . 1) :color "#3a1c28")
-        :background "#1c1e24" :foreground "#f8f8f2" :weight bold)))
-  "Face for the Altar's buttons, at the bottom of the screen."
+  '((t (:box nil :inherit font-lock-function-name-face :weight bold)))
+  "Face for the Altar's borderless action buttons."
   :group 'hell-splash)
 
 (defface hell-splash-button-active
-  '((t (:box (:line-width (1 . 1) :color "#ff5555")
-        :background "#282a36" :foreground "#ff79c6" :weight bold)))
+  '((t (:box nil :inherit highlight :weight bold)))
   "Face for the Altar's button under the mouse."
   :group 'hell-splash)
 
-
 (defun hell-splash--themed-p ()
-  "Whether the Altar wears Hell Emacs' look (see `hell-ux-enable')."
+  "Whether the Altar wears Hell Emacs' workspace look (`hell-ux-enable')."
   (or (not (boundp 'hell-ux-enable)) hell-ux-enable))
-
-;;; The words -----------------------------------------------------------------
-
-(defun hell-splash--browse (url)
-  "Return a button action browsing URL, as the stock screen's links do."
-  (lambda (_button)
-    (let ((browse-url-browser-function 'eww-browse-url))
-      (browse-url url))))
-
-(defun hell-splash--startup-text (stock)
-  "Return STOCK `fancy-startup-text' with Hell Emacs' welcome and manual.
-Only the welcome line before the stock \" operating system.\" is
-replaced, and a Hell Emacs manual row put above the stock rows; when a
-future Emacs words it differently, STOCK is returned as is."
-  (let* ((stock-entry (car stock))
-         (rows (cdr (member " operating system.\n\n" stock-entry))))
-    (if (null rows)
-        stock
-      (cons `(:face (variable-pitch hell-splash-welcome)
-              "Welcome to "
-              :link ("Hell Emacs"
-                     ,(hell-splash--browse "https://github.com/petrolal/hell-emacs")
-                     "Browse https://github.com/petrolal/hell-emacs")
-              ", the infernal JVM forge of "
-              :link ("GNU Emacs"
-                     ,(hell-splash--browse "https://www.gnu.org/software/emacs/")
-                     "Browse https://www.gnu.org/software/emacs/")
-              ".\n\n"
-              :face variable-pitch
-              :link ("Hell Emacs Manual" ,(lambda (_button) (hell-info-manual)))
-              "\tThe Hell Emacs guide, using Info\n"
-              ,@rows)
-            (cdr stock)))))
 
 (defun hell-splash-startup-line ()
   "Return the Altar's forge line: the profile and the startup time."
-  (format "Hell Emacs%s // [ JVM FORGE IGNITED ] // Bound in %.2fs with %d collections."
+  (format "Hell Emacs%s // [ FORGE IGNITED ] // Bound in %.2fs with %d GCs."
           (if (bound-and-true-p hell-profile) (format " [%s]" hell-profile) "")
           (or (bound-and-true-p hell-init-time)
               (float-time (time-subtract (current-time) before-init-time)))
           gcs-done))
 
-(defun hell-splash--theme-tail (tail-start)
-  "Theme the stock tail inserted after TAIL-START in the current buffer.
-Adds the forge line after the copyright, and points \"Explore Packages\"
-at the Relic Chamber: packages come from `package!', never package.el."
-  (save-excursion
-    (goto-char tail-start)
-    (when (search-forward emacs-copyright nil t)
-      (forward-line 1)
-      (fancy-splash-insert :face '(variable-pitch (:height 0.5)) "\n"
-                           :face '(variable-pitch hell-splash-altar)
-                           (hell-splash-startup-line) "\n")))
-  (save-excursion
-    (goto-char tail-start)
-    (when (search-forward "Explore Packages" nil t)
-      (when-let* ((button (button-at (match-beginning 0))))
-        (button-put button 'action (lambda (_button) (call-interactively #'hell-plugins)))
-        (button-put button 'help-echo
-                    "mouse-2, RET: Browse Hell Emacs modules and plugins (the Relic Chamber)")))))
-
-(defun hell-splash--startup-tail-a (fn &rest args)
-  "Around `fancy-startup-tail' (FN with ARGS): theme what it inserts."
-  (let ((start (point)))
-    (prog1 (apply fn args)
-      (when (hell-splash--themed-p)
-        ;; Set before Emacs displays (and, when concise, fits) the window.
-        (setq-local line-spacing hell-splash-line-spacing)
-        (hell-splash--theme-tail start)
-        (save-excursion
-          (goto-char (point-max))
-          (hell-splash--insert-buttons))))))
-
-;;; The buttons ---------------------------------------------------------------
-;;
-;; Only what the stock screen and keys don't already offer (13.9): files,
-;; projects, buffers and shells are `C-x C-f', `C-x p p', `C-x b' and
-;; `M-x eshell'; the manual, the plugins and the repository are links
-;; above ("Hell Emacs Manual", "Explore Packages", "Hell Emacs").
-
-(defun hell-splash--releases ()
-  "Show Hell Emacs' changelog, or its releases page."
-  (interactive)
-  (let ((changelog (expand-file-name "CHANGELOG.md" hell-dir)))
-    (if (file-readable-p changelog)
-        (view-file changelog)
-      (browse-url "https://github.com/petrolal/hell-emacs/releases"))))
-
-(defun hell-splash--issues ()
-  "Browse Hell Emacs' issue tracker."
-  (interactive)
-  (browse-url "https://github.com/petrolal/hell-emacs/issues"))
-
-(defconst hell-splash-buttons
-  '(("Portals..."
-     ("IntelliJ Exorcism" hell-where-is-intellij "IntelliJ key finder (C-c h k)" "intellij.svg")
-     ("Issue Sanctum" hell-splash--issues
-      "Browse https://github.com/petrolal/hell-emacs/issues" "github.svg")
-     ("Release Grimoires" hell-splash--releases "The changelog and release notes" "manual.svg")))
-  "The Altar's buttons, by row: (HEADING (LABEL COMMAND HELP ICON)...).")
-
-(autoload 'hell-where-is-intellij "lib/intellij" nil t)
-
-(defun hell-splash--button-icon (file)
-  "Return FILE from assets/buttons/ as an image string, or \"\"."
-  (let ((path (expand-file-name (concat "assets/buttons/" file) hell-dir)))
-    (if (and (display-graphic-p)
-             (image-type-available-p 'svg)
-             (file-readable-p path))
-        (concat (propertize " " 'display
-                            (create-image path 'svg nil :ascent 'center
-                                          :max-height 18 :max-width 18))
-                " ")
-      "")))
-
-(defun hell-splash--insert-buttons ()
-  "Insert the Altar's buttons, aligned like the stock \"To start...\" links."
-  (pcase-dolist (`(,heading . ,buttons) hell-splash-buttons)
-    (fancy-splash-insert :face 'variable-pitch (concat "\n" heading "\t"))
-    (seq-do-indexed
-     (pcase-lambda (`(,label ,command ,help ,icon) i)
-       (when (and (> i 0) (zerop (% i 3)))
-         (fancy-splash-insert :face 'variable-pitch "\n\t"))
-       (insert-text-button (concat " " (hell-splash--button-icon icon) label " ")
-                           'action (lambda (_button) (call-interactively command))
-                           'follow-link t
-                           'help-echo (concat "mouse-2, RET: " help)
-                           'face '(hell-splash-button variable-pitch)
-                           'mouse-face 'hell-splash-button-active)
-       (fancy-splash-insert :face 'variable-pitch " "))
-     buttons))
-  (insert "\n"))
-
 (defun hell-splash--logo ()
-  "Return the Altar's logo file, or nil for GNU Emacs' own."
+  "Return the Altar's logo file, or nil when unavailable."
   (let ((file (expand-file-name "assets/banners/splash.svg" hell-dir)))
     (and (display-graphic-p)
          (image-type-available-p 'svg)
          (file-readable-p file)
          file)))
 
-(defun hell-splash--startup-screen-a (fn &rest args)
-  "Around `fancy-startup-screen' (FN with ARGS): Hell Emacs' logo and words."
+(defun hell-splash--icon (octicon-name fallback)
+  "Return a `nerd-icons' glyph for OCTICON-NAME, or FALLBACK string."
+  (or (and (require 'nerd-icons nil t)
+           (fboundp 'nerd-icons-octicon)
+           (ignore-errors
+             (concat (nerd-icons-octicon octicon-name :face 'hell-splash-welcome) " ")))
+      fallback))
+
+;;; Horizontal Centering & Formatting Helpers ---------------------------------
+
+(defun hell-splash--window-width ()
+  "Return the current width of the splash window, or 100 in batch mode."
+  (if-let* ((win (get-buffer-window hell-splash--buffer-name t)))
+      (window-body-width win)
+    (window-body-width)))
+
+(defun hell-splash--pad (width)
+  "Return left-padding whitespace to center a line/block of WIDTH columns."
+  (let* ((win-w (hell-splash--window-width))
+         (margin (max 4 (/ (- win-w width) 2))))
+    (make-string margin ?\s)))
+
+(defun hell-splash--insert-centered-line (text &optional face)
+  "Insert TEXT centered horizontally in the window, optionally with FACE."
+  (let ((pad (hell-splash--pad (string-width text))))
+    (insert pad (if face (propertize text 'face face) text) "\n")))
+
+(defun hell-splash--command-key-hint (command)
+  "Return the live global keybinding string for COMMAND."
+  (let ((raw (substitute-command-keys
+              (format "\\<global-map>\\[%s]" command))))
+    (if (string-prefix-p "M-x " raw)
+        ""
+      (format "(%s)" raw))))
+
+(defun hell-splash--format-spec-label (spec-file)
+  "Format SPEC-FILE as `[project-name] -> relative/path/spec.md'."
+  (let* ((dir (file-name-directory spec-file))
+         (root (or (ignore-errors (hell-agent-project-root dir))
+                   (locate-dominating-file dir ".git")
+                   (when-let* ((os (locate-dominating-file dir "openspec")))
+                     os)
+                   (when-let* ((sp (locate-dominating-file dir "specs")))
+                     sp)))
+         (proj-name (if root
+                        (file-name-nondirectory
+                         (directory-file-name (expand-file-name root)))
+                      "workspace"))
+         (rel-path (if root
+                       (file-relative-name spec-file (expand-file-name root))
+                     (abbreviate-file-name spec-file))))
+    (format "[%s] -> %s" proj-name rel-path)))
+
+;;; Workspace Splash Mode & Keymap --------------------------------------------
+
+(defvar-local hell-splash--recent-projects nil
+  "List of recent project roots displayed on the current splash buffer.")
+
+(defun hell-splash-open-recent-project (index)
+  "Open the INDEX-th (1-based) recent project from the splash screen."
+  (let ((proj (nth (1- index) hell-splash--recent-projects)))
+    (if proj
+        (hell-workspace-open proj)
+      (call-interactively #'hell-workspace-open))))
+
+(defvar-keymap hell-splash-mode-map
+  :doc "Keymap for `hell-splash-mode' (Hell Emacs Workspace Altar)."
+  :parent special-mode-map
+  "p" #'hell-workspace-open
+  "n" #'hell-spec-create
+  "a" #'hell-agent-toggle
+  "A" #'hell-agent-select
+  "s" #'hell-spec-open
+  "w" #'hell-workspace-layout
+  "h" #'hell-agent-hooks-mode
+  "m" #'hell-info-manual
+  "P" #'hell-plugins
+  "k" #'hell-where-is-intellij
+  "g" #'hell-splash
+  "TAB" #'forward-button
+  "<backtab>" #'backward-button
+  "1" (lambda () (interactive) (hell-splash-open-recent-project 1))
+  "2" (lambda () (interactive) (hell-splash-open-recent-project 2))
+  "3" (lambda () (interactive) (hell-splash-open-recent-project 3))
+  "4" (lambda () (interactive) (hell-splash-open-recent-project 4))
+  "5" (lambda () (interactive) (hell-splash-open-recent-project 5)))
+
+(defun hell-splash--on-window-resize-h (&optional _frame)
+  "Re-center the Altar dashboard when the window width changes."
+  (when-let* ((buf (get-buffer hell-splash--buffer-name))
+              (win (get-buffer-window buf t)))
+    (with-current-buffer buf
+      (when (derived-mode-p 'hell-splash-mode)
+        (let ((pt (point)))
+          (hell-splash--render-workspace)
+          (goto-char (min pt (point-max))))))))
+
+(define-derived-mode hell-splash-mode special-mode "Altar"
+  "Major mode for the Hell Emacs Workspace startup screen."
+  (setq-local buffer-read-only t
+              truncate-lines t
+              cursor-type nil
+              line-spacing hell-splash-line-spacing)
+  (add-hook 'window-size-change-functions #'hell-splash--on-window-resize-h nil t))
+
+;;; Rendering the Centered Workspace Dashboard --------------------------------
+
+(defun hell-splash--insert-section-title (icon-name title)
+  "Insert a centered section header with ICON-NAME and TITLE."
+  (let ((margin (hell-splash--pad hell-splash--block-width)))
+    (insert margin
+            (hell-splash--icon icon-name "◆ ")
+            (propertize title 'face 'hell-splash-welcome)
+            "\n")))
+
+(defun hell-splash--insert-action-row (key icon-name label command desc)
+  "Insert a centered quick-action row with KEY, ICON-NAME, LABEL, COMMAND, DESC."
+  (let* ((margin (hell-splash--pad hell-splash--block-width))
+         (key-badge (propertize (format "[%s]" key) 'face 'hell-splash-key))
+         (icon (hell-splash--icon icon-name ""))
+         (key-hint (hell-splash--command-key-hint command))
+         (padded-label (format "%-23s" label)))
+    (insert margin "  " key-badge "  " icon)
+    (insert-text-button padded-label
+                        'action (lambda (_btn) (call-interactively command))
+                        'follow-link t
+                        'help-echo (format "%s %s" desc key-hint)
+                        'face 'hell-splash-button
+                        'mouse-face 'hell-splash-button-active)
+    (insert " " (propertize desc 'face 'font-lock-comment-face))
+    (unless (string-empty-p key-hint)
+      (insert " " (propertize key-hint 'face 'font-lock-doc-face)))
+    (insert "\n")))
+
+(defun hell-splash--render-workspace ()
+  "Populate the current buffer with the centered Hell Emacs workspace dashboard."
+  (ignore-errors (hell-agent-register-global-keys))
+  (let ((inhibit-read-only t)
+        (projects (seq-take (or (ignore-errors (hell-agent-known-projects)) nil) 5))
+        (specs (or (ignore-errors (hell-agent-recent-specs 5)) nil))
+        (block-pad (hell-splash--pad hell-splash--block-width)))
+    (erase-buffer)
+    (hell-splash-mode)
+    (setq-local hell-splash--recent-projects projects)
+    (insert "\n")
+
+    ;; 1. Centered Logo / Banner
+    (if-let* ((logo (hell-splash--logo)))
+        (let* ((img (create-image logo 'svg nil :max-height 180))
+               (img-w (car (image-size img)))
+               (win-w (hell-splash--window-width))
+               (align (max 4 (round (/ (- win-w img-w) 2.0)))))
+          (insert (propertize " " 'display `(space :align-to ,align)))
+          (insert-image img)
+          (insert "\n\n"))
+      (let* ((banner-lines
+              '("╦ ╦╔═╗╦  ╦    ╔═╗╔╦╗╔═╗╔═╗╔═╗  //  THE INFERNAL FORGE"
+                "╠═╣║╣ ║  ║    ║╣ ║║║╠═╣║  ╚═╗  //  Spec-Driven & Agentic IDE"
+                "╩ ╩╚═╝╩═╝╩═╝  ╚═╝╩ ╩╩ ╩╚═╝╚═╝  //  ACP · GPTel · MCP · FIM"))
+             (banner-pad (hell-splash--pad
+                          (apply #'max (mapcar #'string-width banner-lines)))))
+        (dolist (line banner-lines)
+          (insert banner-pad (propertize line 'face 'hell-splash-welcome) "\n")))
+      (insert "\n"))
+
+    ;; 2. Centered Telemetry Line
+    (hell-splash--insert-centered-line (hell-splash-startup-line) 'hell-splash-altar)
+    (insert "\n")
+
+    ;; 3. Quick Actions (live keybindings via `substitute-command-keys')
+    (hell-splash--insert-section-title "nf-oct-zap" "Quick Actions")
+    (hell-splash--insert-action-row
+     "p" "nf-oct-repo" "Open Project Workspace" #'hell-workspace-open
+     "Select project & open 3-column layout")
+    (hell-splash--insert-action-row
+     "n" "nf-oct-file_code" "New Project with Specs" #'hell-spec-create
+     "Scaffold openspec/ (requirements, design, tasks)")
+    (hell-splash--insert-action-row
+     "a" "nf-oct-hubot" "Open Project Agent" #'hell-agent-toggle
+     "Launch agent-shell with steering")
+    (hell-splash--insert-action-row
+     "A" "nf-oct-gear" "Select Agent Provider" #'hell-agent-select
+     "Choose Claude, Gemini, Codex, OpenCode or GPTel")
+    (hell-splash--insert-action-row
+     "s" "nf-oct-book" "Open Specification" #'hell-spec-open
+     "Jump to requirements.md, design.md, or tasks.md")
+    (hell-splash--insert-action-row
+     "P" "nf-oct-package" "Relic Chamber" #'hell-plugins
+     "Manage Hell Emacs modules & plugins")
+    (hell-splash--insert-action-row
+     "m" "nf-oct-mortar_board" "Hell Emacs Manual" #'hell-info-manual
+     "Read the Hell Emacs Info manual")
+    (insert "\n")
+
+    ;; 4. Recent Workspaces (1-key launchers)
+    (hell-splash--insert-section-title "nf-oct-project" "Recent Workspaces (1-key launch)")
+    (if (null projects)
+        (insert block-pad "  "
+                (propertize "No recent projects recorded yet. Press [p] to open a project.\n"
+                            'face 'font-lock-comment-face))
+      (seq-do-indexed
+       (lambda (proj idx)
+         (let* ((num (1+ idx))
+                (name (file-name-nondirectory (directory-file-name proj)))
+                (abbr (abbreviate-file-name proj))
+                (badge (propertize (format "[%d]" num) 'face 'hell-splash-key)))
+           (insert block-pad "  " badge "  " (hell-splash--icon "nf-oct-file_directory" ""))
+           (insert-text-button
+            (format "%-22s" name)
+            'action (lambda (_btn) (hell-workspace-open proj))
+            'follow-link t
+            'help-echo (format "Open 3-column workspace at %s" abbr)
+            'face 'hell-splash-button
+            'mouse-face 'hell-splash-button-active)
+           (insert "  " (propertize abbr 'face 'font-lock-comment-face) "\n")))
+       projects))
+    (insert "\n")
+
+    ;; 5. Recent Specifications (`[project-name] -> relative/path/spec.md')
+    (hell-splash--insert-section-title "nf-oct-checklist" "Recent Specifications")
+    (if (null specs)
+        (insert block-pad "  "
+                (propertize "No specs found. Press [n] to create requirements.md, design.md & tasks.md.\n"
+                            'face 'font-lock-comment-face))
+      (dolist (spec specs)
+        (let ((label (hell-splash--format-spec-label spec))
+              (abbr (abbreviate-file-name spec)))
+          (insert block-pad "  "
+                  (propertize "•" 'face 'hell-splash-key)
+                  "    "
+                  (hell-splash--icon "nf-oct-markdown" ""))
+          (insert-text-button
+           label
+           'action (lambda (_btn) (find-file spec))
+           'follow-link t
+           'help-echo (format "Open specification %s" abbr)
+           'face 'hell-splash-button
+           'mouse-face 'hell-splash-button-active)
+          (insert "\n"))))
+
+    (insert "\n")
+    (hell-splash--insert-centered-line
+     "[p] Project  [n] New Spec  [a] Agent  [A] Provider  [s] Specs  [1-5] Workspace  [q] Quit"
+     'font-lock-comment-face)
+    (goto-char (point-min))
+    (forward-button 1 nil nil t)
+    (set-buffer-modified-p nil)))
+
+(defun hell-splash--display-screen-a (fn &rest args)
+  "Override `display-startup-screen' (FN with ARGS) with the Workspace Altar."
   (if (not (hell-splash--themed-p))
       (apply fn args)
-    (let ((fancy-startup-text (hell-splash--startup-text fancy-startup-text))
-          (fancy-splash-image (or fancy-splash-image (hell-splash--logo))))
-      (prog1 (apply fn args)
-        ;; Taller lines can scroll the window off the logo; start at the top.
-        (dolist (window (get-buffer-window-list hell-splash--buffer-name nil t))
-          (set-window-start window 1))))))
+    (let ((buf (get-buffer-create hell-splash--buffer-name)))
+      (with-current-buffer buf
+        (hell-splash--render-workspace))
+      (switch-to-buffer buf)
+      (delete-other-windows))))
 
-(advice-add #'fancy-startup-screen :around #'hell-splash--startup-screen-a)
-(advice-add #'fancy-startup-tail :around #'hell-splash--startup-tail-a)
-
-;; Emacs falls back to `normal-splash-screen', the plain-text screen with
-;; no logo, whenever the frame is too short for the image
-;; (`use-fancy-splash-screens-p'; a few stacked Hyprland tiles are enough
-;; to cross that line). It has no `fancy-startup-text' to substitute, so
-;; it's themed by editing the words it already inserted.
-(defun hell-splash--normal-welcome ()
-  "Replace `normal-splash-screen''s plain welcome line with Hell Emacs' own.
-Same words as `hell-splash--startup-text', in `insert-button' (works
-without a logo or images, so it fits the plain screen)."
-  (goto-char (point-min))
-  (when (re-search-forward "\\`Welcome to GNU Emacs, [^\n]*\n" nil t)
-    (replace-match "")
-    (goto-char (point-min))
-    (insert "Welcome to ")
-    (insert-button "Hell Emacs"
-                   'action (hell-splash--browse "https://github.com/petrolal/hell-emacs")
-                   'follow-link t
-                   'help-echo "Browse https://github.com/petrolal/hell-emacs")
-    (insert ", the infernal JVM forge of ")
-    (insert-button "GNU Emacs"
-                   'action (hell-splash--browse "https://www.gnu.org/software/emacs/")
-                   'follow-link t
-                   'help-echo "Browse https://www.gnu.org/software/emacs/")
-    (insert ".\n\n")
-    (insert-button "Hell Emacs Manual" 'action (lambda (_button) (hell-info-manual))
-                   'follow-link t)
-    (insert "\tThe Hell Emacs guide, using Info\n\n")))
-
-(defun hell-splash--normal-screen-a (fn &rest args)
-  "Around `normal-splash-screen' (FN with ARGS): Hell Emacs' words, no logo.
-Also appends the forge line and the Portals buttons (`hell-splash-buttons'),
-as `hell-splash--startup-tail-a' does for the fancy screen."
-  (prog1 (apply fn args)
-    (when (and (car args) (hell-splash--themed-p) (get-buffer hell-splash--buffer-name))
-      (with-current-buffer hell-splash--buffer-name
-        (let ((inhibit-read-only t))
-          (save-excursion
-            (hell-splash--normal-welcome)
-            (goto-char (point-max))
-            (insert "\n" (hell-splash-startup-line) "\n")
-            (hell-splash--insert-buttons))
-          (set-buffer-modified-p nil))))))
-
-(advice-add #'normal-splash-screen :around #'hell-splash--normal-screen-a)
+(advice-add #'display-startup-screen :around #'hell-splash--display-screen-a)
 
 ;;; Showing it ----------------------------------------------------------------
 
 (defun hell-splash-buffer ()
   "Return the Altar's buffer, drawn afresh, without displaying it."
-  (when-let* ((old (get-buffer hell-splash--buffer-name)))
-    (kill-buffer old))
-  (save-window-excursion
-    (display-startup-screen))
-  (get-buffer hell-splash--buffer-name))
+  (let ((buf (get-buffer-create hell-splash--buffer-name)))
+    (with-current-buffer buf
+      (hell-splash--render-workspace))
+    buf))
 
 ;;;###autoload
-(defun hell-splash ()
-  "Return to the Altar, GNU Emacs' startup screen, drawn afresh."
+(defun hell-splash (&optional _title)
+  "Display the Altar, Hell Emacs' workspace startup dashboard."
   (interactive)
-  (when-let* ((old (get-buffer hell-splash--buffer-name)))
-    (kill-buffer old))
-  (display-startup-screen))
+  (let ((buf (hell-splash-buffer)))
+    (switch-to-buffer buf)
+    (delete-other-windows)))
 
 (add-hook 'hell-after-init-hook
           (defun hell-splash--setup-h ()

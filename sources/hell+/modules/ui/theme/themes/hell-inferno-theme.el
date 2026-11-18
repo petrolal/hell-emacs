@@ -345,10 +345,10 @@
 
    ;;; Hell Emacs' own faces (defined in modules/hell/+splash.el and
    ;;; modules/hell/+ux.el, with these colours as defaults)
-   `(hell-splash-welcome ((t (:foreground ,inferno-crimson))))
+   `(hell-splash-welcome ((t (:foreground ,inferno-crimson :weight bold))))
    `(hell-splash-altar ((t (:foreground ,ember-amber :weight bold))))
-   `(hell-splash-button ((t (:box (:line-width (1 . 1) :color ,forge-gray) :background ,bg-alt :foreground ,fg-main :weight bold))))
-   `(hell-splash-button-active ((t (:box (:line-width (1 . 1) :color ,inferno-crimson) :background ,bg-hl :foreground ,reap-gold :weight bold))))
+   `(hell-splash-button ((t (:box nil :foreground ,fg-main :weight bold))))
+   `(hell-splash-button-active ((t (:box nil :background ,bg-hl :foreground ,reap-gold :weight bold))))
    `(hell-fatality ((t (:foreground ,inferno-crimson :weight bold))))))
 
 ;;;###autoload

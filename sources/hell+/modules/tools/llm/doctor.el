@@ -21,7 +21,28 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; Health checks for the `:tools llm' agentic stack (`bin/hell doctor').
+
 ;;; Code:
 
-;; Checked by `bin/hell doctor'.
-(hell-doctor-ok "AI assistant (gptel) configured")
+(declare-function hell-doctor-ok "bin/hell-doctor" (format-string &rest args))
+(declare-function hell-doctor-info "bin/hell-doctor" (format-string &rest args))
+
+(hell-doctor-ok "Agentic AI stack (agent-shell/acp, gptel/mcp, minuet FIM) configured")
+
+(let ((agents (delq nil
+                    (mapcar (lambda (bin)
+                              (and (executable-find bin) bin))
+                            '("claude" "gemini" "opencode" "codex")))))
+  (if agents
+      (hell-doctor-ok "ACP agent CLIs found on PATH: %s" (string-join agents ", "))
+    (hell-doctor-info "No external ACP agent CLI (claude, gemini, opencode, codex) found on PATH for agent-shell")))
+
+(if-let* ((ollama (executable-find "ollama")))
+    (hell-doctor-ok "Local LLM runtime (ollama): %s" (abbreviate-file-name ollama))
+  (hell-doctor-info "ollama CLI not found on PATH; gptel and minuet will use remote API keys if configured"))
+
+(provide 'tools-llm-doctor)
+;;; doctor.el ends here

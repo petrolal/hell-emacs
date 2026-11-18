@@ -54,8 +54,13 @@ Avoids blocking a fresh installation's first startup with a minibuffer
                        default-directory))))
 
 (defun hell-treemacs--start-on-boot-h ()
-  "Open Treemacs on startup without stealing focus from the initial window."
-  (when (and hell-treemacs-start-on-boot (not noninteractive))
+  "Open Treemacs on boot only when starting directly in a Git project buffer.
+Never opens Treemacs over an empty splash screen without an active project."
+  (when (and hell-treemacs-start-on-boot
+             (not noninteractive)
+             (project-current nil)
+             (not (get-buffer-window "*GNU Emacs*" t))
+             (not (string= (buffer-name) "*GNU Emacs*")))
     (treemacs-start-on-boot)))
 
 (defun hell-treemacs-dired-here ()
@@ -77,9 +82,10 @@ Treemacs stays read-only navigation; batch writes (including
     "o p" '("project tree" . treemacs))
   (add-hook 'window-setup-hook #'hell-treemacs--start-on-boot-h)
   :custom
-  ;; A plain window, not a dedicated side-window: keeps treemacs a
-  ;; normal buffer under `C-x o'/`C-x 0' and the window-resize keys.
-  (treemacs-display-in-side-window nil)
+  ;; Dock Treemacs as the left column in the 3-column Hell Emacs workspace layout.
+  (treemacs-display-in-side-window t)
+  (treemacs-position 'left)
+  (treemacs-width 32)
   (treemacs-persist-file (hell-state-file "treemacs-persist"))
   (treemacs-last-error-persist-file (hell-state-file "treemacs-persist-at-last-error"))
   :config

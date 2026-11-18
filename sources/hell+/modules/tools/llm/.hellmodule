@@ -1,2 +1,3 @@
 "0.9.0"
-((name :tools llm))
+((name :tools llm)
+ (doc . "Agentic AI IDE: ACP agent-shell, gptel + MCP tools, and Minuet FIM"))

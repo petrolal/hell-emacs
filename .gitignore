@@ -67,6 +67,12 @@ projectile.cache
 .idea/
 .vscode/
 .elsa/
+.agent-shell/
+.claude/
+.gptel*
+.minuet*
+.mcp*
+.aider*
 
 # Package & backup archives.
 *.tar.gz

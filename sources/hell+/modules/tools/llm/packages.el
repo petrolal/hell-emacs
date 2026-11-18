@@ -21,4 +21,15 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;; 1. ACP & Agent Shell (Claude Code, Gemini CLI, OpenCode, Codex)
+(package! acp)
+(package! shell-maker)
+(package! agent-shell)
+
+;; 2. Native Elisp LLM chat, tool-use & Model Context Protocol (MCP)
 (package! gptel)
+(package! mcp)
+
+;; 3. Inline FIM Autocomplete
+(package! plz)
+(package! minuet)

@@ -1053,5 +1053,131 @@ value."
                 (should-not (file-exists-p sandbox))))))
       (delete-directory dir t))))
 
+;;; hell-agent & Workspace Splash --------------------------------------------
+
+(require 'hell-agent)
+
+(ert-deftest hell-test-agent-spec-and-steering ()
+  (let ((dir (file-name-as-directory (make-temp-file "hell-test-agent" t)))
+        (inhibit-message t))
+    (unwind-protect
+        (progn
+          (hell-test--write (expand-file-name "CLAUDE.md" dir) "# Steering\nUse strict lexical binding.\n")
+          (hell-test--write (expand-file-name ".hell/steering/tech.md" dir) "# Tech\nJVM 21.\n")
+          (let ((steering (hell-agent-discover-steering-files dir))
+                (ctx (hell-agent-steering-context dir)))
+            (should (= (length steering) 2))
+            (should (string-match-p "Use strict lexical binding" ctx))
+            (should (string-match-p "JVM 21" ctx)))
+          (save-window-excursion
+            (hell-spec-create "auth-flow" dir))
+          (dolist (f '("requirements.md" "design.md" "tasks.md"))
+            (should (file-exists-p (expand-file-name (concat "openspec/auth-flow/" f) dir))))
+          (with-temp-buffer
+            (insert "- [ ] 1.1 Implement token validator _(Req 1.1)_\n")
+            (goto-char (point-min))
+            (should (equal (hell-spec--extract-task-at-point)
+                           "1.1 Implement token validator _(Req 1.1)_")))
+          (with-temp-buffer
+            (insert "** TODO Implement OAuth2 callback\n")
+            (goto-char (point-min))
+            (should (equal (hell-spec--extract-task-at-point)
+                           "Implement OAuth2 callback"))))
+      (dolist (buf (buffer-list))
+        (when (and (buffer-file-name buf)
+                   (file-in-directory-p (buffer-file-name buf) dir))
+          (kill-buffer buf)))
+      (delete-directory dir t))))
+
+(ert-deftest hell-test-agent-hooks ()
+  (let* ((dir (file-name-as-directory (make-temp-file "hell-test-hooks" t)))
+         (file (expand-file-name "src/Main.java" dir))
+         (triggered nil))
+    (unwind-protect
+        (with-temp-buffer
+          (hell-test--write file "class Main {}\n")
+          (setq buffer-file-name file
+                default-directory dir)
+          (let ((hell-agent-hooks
+                 (list (list :name "test-hook"
+                             :event 'after-save
+                             :match "\\`src/.*\\.java\\'"
+                             :action (lambda (f) (setq triggered f))))))
+            ;; Off by default: saving does nothing.
+            (hell-agent-hooks--after-save-h)
+            (should-not triggered)
+            ;; Enabled: saving triggers the matching rule.
+            (hell-agent-hooks-mode 1)
+            (hell-agent-hooks--after-save-h)
+            (should (equal triggered file))
+            (hell-agent-hooks-mode -1)))
+      (setq buffer-file-name nil)
+      (delete-directory dir t))))
+
+(ert-deftest hell-test-agent-keybindings ()
+  (hell-agent-register-global-keys)
+  (should (eq (key-binding (kbd "C-c a a")) #'hell-agent-toggle))
+  (should (eq (key-binding (kbd "C-c a s")) #'hell-agent-select))
+  (should (eq (key-binding (kbd "C-c a r")) #'hell-agent-send-region))
+  (should (eq (key-binding (kbd "C-c a c")) #'hell-gptel-chat))
+  (should (eq (key-binding (kbd "C-c s w")) #'hell-workspace-open))
+  (should (eq (key-binding (kbd "C-c s n")) #'hell-spec-create))
+  (should (eq (key-binding (kbd "C-c s a")) #'hell-spec-advance-phase))
+  (should (eq (key-binding (kbd "C-c s o")) #'hell-spec-open))
+  (should (eq (key-binding (kbd "C-c s e")) #'hell-spec-execute-task))
+  (should (eq (key-binding (kbd "C-c s t")) #'hell-spec-toggle-task))
+  (should (eq (key-binding (kbd "C-c w 1")) #'hell-workspace-sidebar-explorer))
+  (should (eq (key-binding (kbd "C-c w 2")) #'hell-workspace-sidebar-specs))
+  (should (eq (key-binding (kbd "C-c w 3")) #'hell-workspace-sidebar-forge))
+  (should (eq (key-binding (kbd "C-c w w")) #'hell-workspace-open)))
+
+(ert-deftest hell-test-spec-mode-overlays-and-sidebars ()
+  (let ((dir (file-name-as-directory (make-temp-file "hell-test-spec-ui" t)))
+        (inhibit-message t))
+    (unwind-protect
+        (progn
+          (save-window-excursion
+            (hell-spec-create "billing" dir))
+          (let ((tasks-file (expand-file-name "openspec/billing/tasks.md" dir)))
+            (with-current-buffer (find-file-noselect tasks-file)
+              (hell-spec-mode 1)
+              (should (string-match-p "\\[3\\. Tasks\\]" (eval header-line-format)))
+              (let ((ovs (seq-filter (lambda (o) (overlay-get o 'hell-spec-task))
+                                     (overlays-in (point-min) (point-max)))))
+                (should (>= (length ovs) 3))
+                (should (string-match-p "Run Task"
+                                        (overlay-get (car ovs) 'after-string))))
+              ;; Toggle first task -> [x]
+              (goto-char (point-min))
+              (re-search-forward "^- \\[ \\]")
+              (hell-spec-toggle-task)
+              (beginning-of-line)
+              (should (looking-at-p "^- \\[x\\]"))
+              (should (equal (car (hell-spec--task-counts tasks-file)) 1))))
+          ;; Test glob-to-regexp for .hell-hooks.el
+          (let ((re (hell-hooks--glob-to-regexp "src/**/*.kt")))
+            (should (string-match-p re "src/main/App.kt"))
+            (should (string-match-p re "src/App.kt"))
+            (should-not (string-match-p re "test/App.kt")))
+          ;; Test sidebars rendering
+          (let ((default-directory dir))
+            (hell-workspace-sidebar-specs)
+            (with-current-buffer "*Hell Specs*"
+              (should (string-match-p "HELL SPECS" (buffer-string)))
+              (should (string-match-p "billing" (buffer-string))))
+            (hell-workspace-sidebar-forge)
+            (with-current-buffer "*Hell Forge*"
+              (should (string-match-p "STEERING RULES" (buffer-string)))
+              (should (string-match-p "AGENT HOOKS" (buffer-string))))))
+      (dolist (buf (buffer-list))
+        (when (and (buffer-file-name buf)
+                   (file-in-directory-p (buffer-file-name buf) dir))
+          (with-current-buffer buf
+            (set-buffer-modified-p nil))
+          (kill-buffer buf)))
+      (dolist (b '("*Hell Specs*" "*Hell Forge*"))
+        (when (get-buffer b) (kill-buffer b)))
+      (delete-directory dir t))))
+
 (provide 'hell-test)
 ;;; hell-test.el ends here

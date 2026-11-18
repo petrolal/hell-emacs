@@ -210,6 +210,67 @@
   "c l" '("quality lint" . hell-lint)
   "c s" '("static analysis" . hell-static-analysis-run))
 
+;;; C-c a (Hell Agent), C-c s (Hell Specs) & C-c w (Hell Workspace) ------------
+
+(autoload 'hell-agent-toggle "hell-agent" "Toggle project agent in right side window." t)
+(autoload 'hell-agent-start "hell-agent" "Start a new project agent session." t)
+(autoload 'hell-agent-select "hell-agent" "Select agent CLI or Elisp provider." t)
+(autoload 'hell-agent-send-region "hell-agent" "Send region or buffer to agent." t)
+(autoload 'hell-agent-send-file "hell-agent" "Send current file to agent." t)
+(autoload 'hell-gptel-chat "hell-agent" "Open native Elisp chat via gptel." t)
+(autoload 'hell-workspace-open "hell-agent" "Select project and open 3-column layout." t)
+(autoload 'hell-workspace-layout "hell-agent" "Arrange project in 3-column layout." t)
+(autoload 'hell-workspace-sidebar-explorer "hell-agent" "Switch left sidebar to Explorer." t)
+(autoload 'hell-workspace-sidebar-specs "hell-agent" "Switch left sidebar to Specs panel." t)
+(autoload 'hell-workspace-sidebar-forge "hell-agent" "Switch left sidebar to Hooks & Steering." t)
+(autoload 'hell-spec-create "hell-agent" "Create project openspec/ specification suite." t)
+(autoload 'hell-spec-advance-phase "hell-agent" "Advance spec phase (Req -> Design -> Tasks)." t)
+(autoload 'hell-spec-open "hell-agent" "Open a project specification file." t)
+(autoload 'hell-spec-execute-task "hell-agent" "Execute spec task at point in agent." t)
+(autoload 'hell-spec-toggle-task "hell-agent" "Toggle checkbox task on current line." t)
+(autoload 'hell-spec-mode "hell-agent" "Interactive Spec-Driven minor mode." t)
+(autoload 'hell-spec-maybe-enable-h "hell-agent" "Enable hell-spec-mode in spec files.")
+(autoload 'hell-spec-generate-with-ai "hell-agent" "Generate spec drafts with AI." t)
+(autoload 'hell-agent-inject-steering "hell-agent" "Inject project steering into agent." t)
+(autoload 'hell-agent-steering-edit "hell-agent" "Edit project steering rules." t)
+(autoload 'hell-agent-hooks-mode "hell-agent" "Toggle opt-in Agent Hooks mode." t)
+(autoload 'hell-agent-hooks-add-rule "hell-agent" "Add an Agent Hook rule." t)
+(autoload 'hell-agent-hooks-show-log "hell-agent" "Show Agent Hooks log buffer." t)
+
+(add-hook 'find-file-hook #'hell-spec-maybe-enable-h)
+
+(hell-leader-def
+  "a"   "Hell Agent"
+  "a a" '("toggle project agent" . hell-agent-toggle)
+  "a A" '("new project agent" . hell-agent-start)
+  "a s" '("select agent provider" . hell-agent-select)
+  "a r" '("send region/buffer to agent" . hell-agent-send-region)
+  "a f" '("send file to agent" . hell-agent-send-file)
+  "a c" '("gptel native chat" . hell-gptel-chat)
+  "a e" '("execute spec task in agent" . hell-spec-execute-task)
+  "a i" '("inject steering context" . hell-agent-inject-steering)
+
+  "s w" '("open project workspace" . hell-workspace-open)
+  "s l" '("3-column workspace layout" . hell-workspace-layout)
+  "s n" '("create project spec suite" . hell-spec-create)
+  "s a" '("advance spec phase" . hell-spec-advance-phase)
+  "s o" '("open spec file" . hell-spec-open)
+  "s e" '("execute spec task at point" . hell-spec-execute-task)
+  "s t" '("toggle spec task checkbox" . hell-spec-toggle-task)
+  "s g" '("generate spec with ai" . hell-spec-generate-with-ai)
+  "s i" '("inject project steering" . hell-agent-inject-steering)
+  "s S" '("edit steering rules" . hell-agent-steering-edit)
+  "s h" '("toggle agent hooks mode" . hell-agent-hooks-mode)
+  "s H" '("add agent hook rule" . hell-agent-hooks-add-rule)
+  "s L" '("view agent hooks log" . hell-agent-hooks-show-log)
+
+  "w"   "Hell Workspace"
+  "w w" '("open 3-column workspace" . hell-workspace-open)
+  "w l" '("arrange 3-column layout" . hell-workspace-layout)
+  "w 1" '("sidebar: project files" . hell-workspace-sidebar-explorer)
+  "w 2" '("sidebar: specs panel" . hell-workspace-sidebar-specs)
+  "w 3" '("sidebar: hooks & steering" . hell-workspace-sidebar-forge))
+
 ;; Winner's layout undo, on its own `C-c <left>' / `C-c <right>'.
 (add-hook 'hell-first-input-hook #'winner-mode)
 

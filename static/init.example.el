@@ -86,7 +86,7 @@
            eval               ; quick inline run via quickrun, C-c c q/c Q
            forge              ; GitHub/GitLab pull requests from Magit
            kubernetes         ; pods, logs, port forwards and shells (kubel), C-c o k; your kubectl and context
-           ;;llm              ; LLM chat and code actions (gptel)
+           llm                ; Agentic AI IDE: agent-shell (ACP), gptel + MCP tools, Minuet FIM, on C-c a
            lookup             ; documentation and definition lookup (devdocs)
            make               ; run Makefile targets (makefile-executor)
            ;;pass             ; the pass password store

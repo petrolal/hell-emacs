@@ -318,13 +318,26 @@ Used to tell whether a package is built into Emacs (`package!'s
         native-comp-async-jobs-number
         (max 1 (if (fboundp 'num-processors) (/ (num-processors) 2) 2))))
 
-;;; 6. UI: GNU Emacs' own frame and startup screen ----------------------
+;;; 6. UI: Clean frame chrome and workspace startup screen ---------------
 ;;
-;; Unlike Doom, the frame keeps stock Emacs' chrome -- menu bar, tool
-;; bar, scroll bars, tooltips -- and Emacs' own startup screen and echo
-;; area message (13.4): the layout is GNU Emacs', the look Hell Emacs'.
-;; modules/hell/+splash.el themes the startup screen; a user who wants
-;; less turns the stock modes off in their config.el.
+;; Disable menu-bar (still accessible via F10), tool-bar, and scroll-bar
+;; before the first frame is created so window systems never allocate or
+;; resize for them during boot.
+;; modules/hell/+splash.el provides the workspace-oriented startup screen.
+
+(push '(menu-bar-lines . 0) default-frame-alist)
+(push '(tool-bar-lines . 0) default-frame-alist)
+(push '(vertical-scroll-bars . nil) default-frame-alist)
+(push '(horizontal-scroll-bars . nil) default-frame-alist)
+(setq menu-bar-mode nil
+      tool-bar-mode nil
+      scroll-bar-mode nil)
+(when (fboundp 'menu-bar-mode)
+  (menu-bar-mode -1))
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+(when (fboundp 'scroll-bar-mode)
+  (scroll-bar-mode -1))
 
 (setq initial-scratch-message nil
       inhibit-default-init t

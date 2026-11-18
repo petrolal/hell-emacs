@@ -12,6 +12,18 @@
 		       :source "MELPA" :id ace-window :type git
 		       :protocol https :inherit t :depth treeless :ref
 		       "77115afc1b0b9f633084cf7479c767988106c196"))
+ (acp :source "elpaca-menu-lock-file" :recipe
+      (:package "acp" :fetcher github :repo "xenodium/acp.el" :files
+		("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
+		 "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
+		 "lisp/*.el" "docs/dir" "docs/*.info" "docs/*.texi"
+		 "docs/*.texinfo"
+		 (:exclude ".dir-locals.el" "test.el" "tests.el"
+			   "*-test.el" "*-tests.el" "LICENSE"
+			   "README*" "*-pkg.el"))
+		:source "MELPA" :id acp :type git :protocol https
+		:inherit t :depth treeless :ref
+		"0b4240f07d4f3476e49b4a352ee854ff9d28e556"))
  (adaptive-wrap :source "elpaca-menu-lock-file" :recipe
 		(:package "adaptive-wrap" :repo
 			  ("https://github.com/emacsmirror/gnu_elpa"
@@ -28,6 +40,20 @@
 		      ("src/data/emacs-mode/*.el") :ref
 		      "cccf42fa88eae25ccbe2623f489021d2075f6f73" :type
 		      git :protocol https :inherit t :depth treeless))
+ (agent-shell :source "elpaca-menu-lock-file" :recipe
+	      (:package "agent-shell" :fetcher github :repo
+			"xenodium/agent-shell" :files
+			("*.el" "*.el.in" "dir" "*.info" "*.texi"
+			 "*.texinfo" "doc/dir" "doc/*.info"
+			 "doc/*.texi" "doc/*.texinfo" "lisp/*.el"
+			 "docs/dir" "docs/*.info" "docs/*.texi"
+			 "docs/*.texinfo"
+			 (:exclude ".dir-locals.el" "test.el"
+				   "tests.el" "*-test.el" "*-tests.el"
+				   "LICENSE" "README*" "*-pkg.el"))
+			:source "MELPA" :id agent-shell :type git
+			:protocol https :inherit t :depth treeless :ref
+			"83b22ac45faf64fff1128556f18829953c3c5714"))
  (aio :source "elpaca-menu-lock-file" :recipe
       (:package "aio" :fetcher github :repo "skeeto/emacs-aio" :files
 		("aio.el" "README.md" "UNLICENSE") :source "MELPA" :id
@@ -1162,6 +1188,19 @@
 			  :protocol https :inherit t :depth treeless
 			  :ref
 			  "76cb4ffecfdf95ee769e5cb4608e04202c3c1521"))
+ (mcp :source "elpaca-menu-lock-file" :recipe
+      (:package "mcp" :fetcher github :repo "lizqwerscott/mcp.el"
+		:files
+		("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
+		 "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
+		 "lisp/*.el" "docs/dir" "docs/*.info" "docs/*.texi"
+		 "docs/*.texinfo"
+		 (:exclude ".dir-locals.el" "test.el" "tests.el"
+			   "*-test.el" "*-tests.el" "LICENSE"
+			   "README*" "*-pkg.el"))
+		:source "MELPA" :id mcp :type git :protocol https
+		:inherit t :depth treeless :ref
+		"2d172809cbdb2a40d86b28ad73bd65547cefe0e1"))
  (minimap :source "elpaca-menu-lock-file" :recipe
 	  (:package "minimap" :repo
 		    ("https://github.com/emacsmirror/gnu_elpa"
@@ -1171,6 +1210,19 @@
 		    :id minimap :type git :protocol https :inherit t
 		    :depth treeless :ref
 		    "b295cab07c1932c11dd00f23ba29c1ff0de486ab"))
+ (minuet :source "elpaca-menu-lock-file" :recipe
+	 (:package "minuet" :fetcher github :repo
+		   "milanglacier/minuet-ai.el" :files
+		   ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+		    "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+		    "doc/*.texinfo" "lisp/*.el" "docs/dir"
+		    "docs/*.info" "docs/*.texi" "docs/*.texinfo"
+		    (:exclude ".dir-locals.el" "test.el" "tests.el"
+			      "*-test.el" "*-tests.el" "LICENSE"
+			      "README*" "*-pkg.el"))
+		   :source "MELPA" :id minuet :type git :protocol
+		   https :inherit t :depth treeless :ref
+		   "7b9822d97972fd4a936a8ea3826ee8d2f215f5b2"))
  (multiple-cursors :source "elpaca-menu-lock-file" :recipe
 		   (:package "multiple-cursors" :fetcher github :repo
 			     "magnars/multiple-cursors.el" :files
@@ -1515,6 +1567,14 @@
 			  :protocol https :inherit t :depth treeless
 			  :ref
 			  "a4a63efa4a3980bfbd825bfb3a263c6664401e79"))
+ (plz :source "elpaca-menu-lock-file" :recipe
+      (:package "plz" :repo
+		("https://github.com/alphapapa/plz.el.git" . "plz")
+		:tar "0.9.1" :host gnu :files
+		("*" (:exclude ".git" "LICENSE")) :source "GNU ELPA"
+		:id plz :type git :protocol https :inherit t :depth
+		treeless :ref
+		"e2d07838e3b64ee5ebe59d4c3c9011adefb7b58e"))
  (popon :source "elpaca-menu-lock-file" :recipe
 	(:package "popon" :repo
 		  ("https://codeberg.org/akib/emacs-popon" . "popon")
@@ -1713,6 +1773,20 @@
 		   :source "MELPA" :id sesman :type git :protocol
 		   https :inherit t :depth treeless :ref
 		   "7eb733acb33e610a53979fa7fc13393eeda3cc53"))
+ (shell-maker :source "elpaca-menu-lock-file" :recipe
+	      (:package "shell-maker" :fetcher github :repo
+			"xenodium/shell-maker" :files
+			("*.el" "*.el.in" "dir" "*.info" "*.texi"
+			 "*.texinfo" "doc/dir" "doc/*.info"
+			 "doc/*.texi" "doc/*.texinfo" "lisp/*.el"
+			 "docs/dir" "docs/*.info" "docs/*.texi"
+			 "docs/*.texinfo"
+			 (:exclude ".dir-locals.el" "test.el"
+				   "tests.el" "*-test.el" "*-tests.el"
+				   "LICENSE" "README*" "*-pkg.el"))
+			:source "MELPA" :id shell-maker :type git
+			:protocol https :inherit t :depth treeless :ref
+			"cba42efd503bbdf19a7244b9119efd8764e99ecb"))
  (slime :source "elpaca-menu-lock-file" :recipe
 	(:package "slime" :fetcher github :repo "slime/slime" :files
 		  ("*.el" ("lib" "lib/hyperspec.el") "swank" "*.lisp"
